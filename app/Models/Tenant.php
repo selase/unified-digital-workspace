@@ -60,6 +60,21 @@ final class Tenant extends Model
         return $this->hasMany(TenantFeature::class);
     }
 
+    public function modules(): HasMany
+    {
+        return $this->hasMany(TenantModule::class);
+    }
+
+    public function enabledModules(): HasMany
+    {
+        return $this->hasMany(TenantModule::class)->where('is_enabled', true);
+    }
+
+    public function hasModule(string $moduleSlug): bool
+    {
+        return $this->modules()->where('module_slug', $moduleSlug)->where('is_enabled', true)->exists();
+    }
+
     public function featureEnabled(string $key): bool
     {
         return $this->features()->where('feature_key', $key)->where('enabled', true)->exists();

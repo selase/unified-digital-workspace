@@ -97,6 +97,7 @@ final class Kernel extends HttpKernel
         'verified' => EnsureEmailIsVerified::class,
         'feature' => Middleware\EnsureFeatureEnabled::class,
         'feature_limit' => Middleware\EnsureFeatureLimit::class,
+        'module' => Middleware\EnsureModuleEnabled::class,
         'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
         'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
         'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,

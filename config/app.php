@@ -252,6 +252,7 @@ return [
         RouteServiceProvider::class,
         App\Providers\FeatureServiceProvider::class,
         HealthServiceProvider::class,
+        App\Providers\ModuleServiceProvider::class,
 
     ],
 
