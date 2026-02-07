@@ -13,10 +13,11 @@ Tenant-scoped document management with versioning, access control, quizzes/analy
 ## Goals
 
 - Document CRUD with version history and download/preview
-- Polymorphic visibility (per-tenant roles/teams/users)
+- Polymorphic visibility (per-tenant users/teams/departments/directorates/tenant-wide)
+- Personal/private documents (visible only to uploader) and shared views (“shared with me”, “shared by me”)
 - Document quizzes with attempts and analytics
 - Audit trail for views/downloads/updates
-- Search/filter by tags/category/status
+- Search/filter by tags/category/status/date/owner with visibility enforcement
 
 ---
 
@@ -27,12 +28,11 @@ Tenant-scoped document management with versioning, access control, quizzes/analy
 - Use `Helper::processUploadedFile` for uploads; store disk/path/mime/size
 - Slugs lowercased and unique per tenant
 - Activity logging for create/update/version/publish/download
+- Supported file types include pdf, docx, video, and audio (validated via mime)
 
 ---
 
-## Schema (Tenant)
-
-- `documents`: id, uuid, tenant_id, title, slug, description, status, visibility (jsonb), current_version_id, owner_id, category, tags (jsonb), metadata (jsonb), published_at, soft deletes, timestamps. Unique (tenant_id, slug).
+- `documents`: id, uuid, tenant_id, title, slug, description, status, visibility (jsonb), current_version_id, owner_id, category, tags (jsonb), metadata (jsonb), published_at, soft deletes, timestamps. Unique (tenant_id, slug). Visibility supports user/team/department/directorate/tenant-wide and personal (owner-only).
 - `document_versions`: id, document_id, version_number, checksum_sha256, disk, path, mime_type, size_bytes, uploaded_by_id, notes, created_at. Unique (document_id, version_number).
 - `document_quizzes`: id, document_id, title, description, settings (jsonb), timestamps.
 - `document_quiz_questions`: id, quiz_id, body, options (jsonb), correct_option, points, sort_order.
@@ -43,9 +43,7 @@ Indexes: documents (tenant_id, status, published_at), versions (document_id, ver
 
 ---
 
-## API Surface (v1)
-
-- `GET /api/document-management/v1/documents` (filters: status, category, tag, owner, published_from/to)
+- `GET /api/document-management/v1/documents` (filters: status, category, tag, owner, shared_with_me, shared_by_me, published_from/to)
 - `POST /documents`, `GET/PUT/DELETE /documents/{uuid}`
 - `POST /documents/{uuid}/versions` (upload new version)
 - `GET /documents/{uuid}/versions`
