@@ -14,10 +14,10 @@
 
 - [ ] Track 03 – Module System → `docs/tracks/TRACK_03_MODULE_SYSTEM.md`
 - [ ] Track 05 – Scheduling → track doc pending
-- [ ] Track 07 – Document Management → track doc pending
-- [ ] Track 08 – Quality Monitoring → track doc pending
-- [ ] Track 09 – Forums & Messaging → track doc pending
-- [ ] Track 11 – Memos → track doc pending
+- [ ] Track 07 – Document Management → `docs/tracks/TRACK_07_DOCUMENT_MANAGEMENT.md`
+- [ ] Track 08 – Quality Monitoring → `docs/tracks/TRACK_08_QUALITY_MONITORING.md`
+- [ ] Track 09 – Forums & Messaging → `docs/tracks/TRACK_09_FORUMS_MESSAGING.md`
+- [ ] Track 11 – Memos → `docs/tracks/TRACK_11_MEMOS.md`
 - [ ] Track 12 – Deployment & Operations → track doc pending
 
 ### Notes
