@@ -1,0 +1,55 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Modules\IncidentManagement\Models;
+
+use App\Models\User;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+/**
+ * @property int $id
+ * @property string $incident_id
+ * @property string $user_id
+ * @property string $body
+ * @property bool $is_internal
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ */
+final class IncidentComment extends Model
+{
+    protected $table = 'incident_comments';
+
+    protected $connection = 'landlord';
+
+    protected $fillable = [
+        'incident_id',
+        'user_id',
+        'body',
+        'is_internal',
+    ];
+
+    /**
+     * @return BelongsTo<Incident, $this>
+     */
+    public function incident(): BelongsTo
+    {
+        return $this->belongsTo(Incident::class, 'incident_id');
+    }
+
+    /**
+     * @return BelongsTo<User, $this>
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'is_internal' => 'boolean',
+        ];
+    }
+}

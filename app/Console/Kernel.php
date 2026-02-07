@@ -31,6 +31,11 @@ final class Kernel extends ConsoleKernel
 
         // Invoicing
         $schedule->command('billing:generate-invoices')->monthlyOn(1, '05:00');
+
+        // Incident Management
+        $schedule->command('incidents:check-sla')->hourly();
+        $schedule->command('incidents:generate-reminders')->hourlyAt(15);
+        $schedule->command('incidents:dispatch-reminders')->everyTenMinutes();
     }
 
     /**

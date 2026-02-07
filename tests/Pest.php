@@ -74,7 +74,7 @@ function setActiveTenantForTest(?User $user = null, array $overrides = []): Tena
 {
     $tenant = Tenant::factory()->create($overrides + [
         'name' => 'Test Tenant',
-        'slug' => 'test-tenant',
+        'slug' => 'test-tenant-'.uniqid(),
         'isolation_mode' => 'shared',
     ]);
 

@@ -15,6 +15,7 @@ final class AuthServiceProvider extends ServiceProvider
      */
     protected $policies = [
         \App\Models\UserLoginHistory::class => \App\Policies\UserLoginHistoryPolicy::class,
+        \App\Modules\IncidentManagement\Models\Incident::class => \App\Policies\IncidentPolicy::class,
     ];
 
     public function register(): void
