@@ -1,0 +1,52 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Modules\ProjectManagement\Models;
+
+use App\Models\User;
+use App\Traits\BelongsToTenant;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+final class TaskAttachment extends Model
+{
+    use BelongsToTenant;
+    use HasFactory;
+
+    protected $connection = 'landlord';
+
+    protected $fillable = [
+        'task_id',
+        'disk',
+        'path',
+        'filename',
+        'mime_type',
+        'size_bytes',
+        'uploaded_by_id',
+    ];
+
+    /**
+     * @return BelongsTo<Task, $this>
+     */
+    public function task(): BelongsTo
+    {
+        return $this->belongsTo(Task::class);
+    }
+
+    /**
+     * @return BelongsTo<User, $this>
+     */
+    public function uploadedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'uploaded_by_id');
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'size_bytes' => 'integer',
+        ];
+    }
+}

@@ -183,7 +183,7 @@ unified-digital-workspace/
 
 ### Track 05: Scheduling Module
 **Duration:** 4 weeks
-**Status:** 🔲 To Build
+**Status:** 🔲 In Progress
 **Link:** [TRACK_05_SCHEDULING.md](tracks/TRACK_05_SCHEDULING.md)
 
 **Key Deliverables:**
