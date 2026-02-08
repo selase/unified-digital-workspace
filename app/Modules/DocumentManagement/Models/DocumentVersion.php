@@ -14,9 +14,10 @@ final class DocumentVersion extends Model
     use BelongsToTenant;
     use HasFactory;
 
-    protected $connection = 'landlord';
+    protected $connection;
 
     protected $fillable = [
+        'tenant_id',
         'document_id',
         'version_number',
         'disk',

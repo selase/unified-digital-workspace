@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Modules\DocumentManagement\Models;
 
 use App\Modules\DocumentManagement\Models\Concerns\HasDocumentUuid;
+use App\Modules\HrmsCore\Models\Employees\Employee;
+use App\Services\Tenancy\TenantContext;
 use App\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -20,7 +22,9 @@ final class Document extends Model
     use HasDocumentUuid;
     use HasFactory;
 
-    protected $connection = 'landlord';
+    public const STATUSES = ['draft', 'published', 'archived'];
+
+    protected $connection;
 
     protected $fillable = [
         'uuid',
@@ -46,6 +50,11 @@ final class Document extends Model
             if (! $document->slug) {
                 $document->slug = Str::slug($document->title);
             }
+
+            if (! $document->tenant_id) {
+                $tenantId = session('active_tenant_id') ?? app(TenantContext::class)->getTenant()?->id;
+                $document->tenant_id = $tenantId;
+            }
         });
     }
 
@@ -54,11 +63,26 @@ final class Document extends Model
      */
     public function scopeVisibleTo(Builder $query, string $userId): void
     {
-        $query->where(function (Builder $q) use ($userId): void {
+        $tenantScope = $this->teamId();
+        $org = $this->resolveOrgScope($userId);
+
+        $query->where(function (Builder $q) use ($userId, $tenantScope, $org): void {
             $q->where('owner_id', $userId)
                 ->orWhereJsonContains('visibility->users', $userId)
+                ->orWhereJsonContains('visibility->departments', $org['departments'])
+                ->orWhereJsonContains('visibility->directorates', $org['directorates'])
+                ->orWhereJsonContains('visibility->teams', $tenantScope)
                 ->orWhere('visibility->tenant_wide', true)
                 ->orWhereNull('visibility');
+        });
+
+        $query->where(function (Builder $q) use ($userId): void {
+            $q->where('visibility->is_private', '!=', true)
+                ->orWhereNull('visibility->is_private')
+                ->orWhere(function (Builder $qq) use ($userId): void {
+                    $qq->where('visibility->is_private', true)
+                        ->where('owner_id', $userId);
+                });
         });
     }
 
@@ -109,6 +133,46 @@ final class Document extends Model
             'tags' => 'array',
             'metadata' => 'array',
             'published_at' => 'datetime',
+        ];
+    }
+
+    private function teamId(): string
+    {
+        if (app()->bound('permissions.team_id')) {
+            return (string) app('permissions.team_id');
+        }
+
+        return (string) session('active_tenant_id', '');
+    }
+
+    /**
+     * @return array{departments: array<int|string>, directorates: array<int|string>}
+     */
+    private function resolveOrgScope(string $userId): array
+    {
+        $departments = [];
+        $directorates = [];
+
+        $tenantDriver = config('database.connections.tenant.driver');
+        if ($tenantDriver === null) {
+            return [
+                'departments' => $departments,
+                'directorates' => $directorates,
+            ];
+        }
+
+        $employee = Employee::query()
+            ->where('user_id', $userId)
+            ->first();
+
+        if ($employee) {
+            $departments = $employee->departmentTypes()->pluck('department_id')->filter()->values()->all();
+            $directorates = $employee->directorates()->pluck('id')->filter()->values()->all();
+        }
+
+        return [
+            'departments' => $departments,
+            'directorates' => $directorates,
         ];
     }
 }

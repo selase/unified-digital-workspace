@@ -23,6 +23,7 @@ Route::prefix('v1')->name('v1.')->group(function (): void {
     Route::get('documents/{document}', [DocumentController::class, 'show'])->name('documents.show');
     Route::put('documents/{document}', [DocumentController::class, 'update'])->name('documents.update');
     Route::delete('documents/{document}', [DocumentController::class, 'destroy'])->name('documents.destroy');
+    Route::post('documents/{document}/publish', [DocumentController::class, 'publish'])->name('documents.publish');
 
     Route::post('documents/{document}/versions', [DocumentVersionController::class, 'store'])->name('documents.versions.store');
     Route::get('documents/{document}/versions', [DocumentVersionController::class, 'index'])->name('documents.versions.index');

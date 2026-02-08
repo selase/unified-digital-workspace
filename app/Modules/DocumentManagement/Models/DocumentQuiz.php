@@ -15,9 +15,10 @@ final class DocumentQuiz extends Model
     use BelongsToTenant;
     use HasFactory;
 
-    protected $connection = 'landlord';
+    protected $connection;
 
     protected $fillable = [
+        'tenant_id',
         'document_id',
         'title',
         'description',

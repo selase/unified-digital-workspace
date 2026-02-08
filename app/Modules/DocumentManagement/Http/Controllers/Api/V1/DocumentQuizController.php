@@ -19,6 +19,7 @@ final class DocumentQuizController extends Controller
         $data = $request->validated();
 
         $quiz = DocumentQuiz::create([
+            'tenant_id' => $document->tenant_id,
             'document_id' => $document->id,
             'title' => $data['title'],
             'description' => $data['description'] ?? null,
@@ -27,6 +28,7 @@ final class DocumentQuizController extends Controller
 
         foreach ($data['questions'] ?? [] as $questionData) {
             DocumentQuizQuestion::create([
+                'tenant_id' => $document->tenant_id,
                 'quiz_id' => $quiz->id,
                 'body' => $questionData['body'],
                 'options' => $questionData['options'],

@@ -14,9 +14,10 @@ final class DocumentQuizAttempt extends Model
     use BelongsToTenant;
     use HasFactory;
 
-    protected $connection = 'landlord';
+    protected $connection;
 
     protected $fillable = [
+        'tenant_id',
         'quiz_id',
         'user_id',
         'score',

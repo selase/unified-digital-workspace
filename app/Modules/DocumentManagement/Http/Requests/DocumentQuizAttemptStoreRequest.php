@@ -20,6 +20,8 @@ final class DocumentQuizAttemptStoreRequest extends FormRequest
     {
         return [
             'responses' => ['required', 'array'],
+            'responses.*.question_id' => ['required', 'integer'],
+            'responses.*.answer' => ['required', 'string'],
         ];
     }
 }

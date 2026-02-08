@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Modules\DocumentManagement\Http\Requests;
 
+use App\Modules\DocumentManagement\Models\Document;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 final class DocumentUpdateRequest extends FormRequest
 {
@@ -22,7 +24,7 @@ final class DocumentUpdateRequest extends FormRequest
             'title' => ['sometimes', 'required', 'string', 'max:255'],
             'slug' => ['sometimes', 'nullable', 'string', 'max:255'],
             'description' => ['sometimes', 'nullable', 'string'],
-            'status' => ['sometimes', 'nullable', 'string'],
+            'status' => ['sometimes', 'nullable', 'string', Rule::in(Document::STATUSES)],
             'visibility' => ['sometimes', 'nullable', 'array'],
             'visibility.users' => ['nullable', 'array'],
             'visibility.teams' => ['nullable', 'array'],

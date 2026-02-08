@@ -14,9 +14,10 @@ final class DocumentAudit extends Model
 
     public $timestamps = false;
 
-    protected $connection = 'landlord';
+    protected $connection;
 
     protected $fillable = [
+        'tenant_id',
         'document_id',
         'user_id',
         'event',
