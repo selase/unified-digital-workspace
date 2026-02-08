@@ -34,6 +34,7 @@ final class Workplan extends Model
         return [
             'period_start' => 'date',
             'period_end' => 'date',
+            'org_scope' => 'array',
             'metadata' => 'array',
         ];
     }

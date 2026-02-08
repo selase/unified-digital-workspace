@@ -5,15 +5,52 @@ declare(strict_types=1);
 namespace App\Modules\QualityMonitoring\Models;
 
 use App\Traits\BelongsToTenant;
-use App\Traits\HasUuid;
-use App\Traits\SpatieActivityLogs;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 final class Activity extends Model
 {
     use BelongsToTenant;
     use HasFactory;
-    use HasUuid;
-    use SpatieActivityLogs;
+
+    protected $table = 'qm_activities';
+
+    protected $fillable = [
+        'tenant_id',
+        'objective_id',
+        'title',
+        'description',
+        'responsible_id',
+        'start_date',
+        'due_date',
+        'status',
+        'weight',
+        'sort_order',
+    ];
+
+    /**
+     * @return BelongsTo<Objective, $this>
+     */
+    public function objective(): BelongsTo
+    {
+        return $this->belongsTo(Objective::class);
+    }
+
+    /**
+     * @return HasMany<Kpi, $this>
+     */
+    public function kpis(): HasMany
+    {
+        return $this->hasMany(Kpi::class);
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'start_date' => 'date',
+            'due_date' => 'date',
+        ];
+    }
 }
