@@ -36,6 +36,9 @@ final class Kernel extends ConsoleKernel
         $schedule->command('incidents:check-sla')->hourly();
         $schedule->command('incidents:generate-reminders')->hourlyAt(15);
         $schedule->command('incidents:dispatch-reminders')->everyTenMinutes();
+
+        // Quality Monitoring
+        $schedule->command('quality:generate-alerts')->dailyAt('08:00');
     }
 
     /**
