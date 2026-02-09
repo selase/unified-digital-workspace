@@ -44,7 +44,7 @@ function createQualityApiContext(): array
         ],
     ]);
 
-    foreach (['qm.workplans.view', 'qm.workplans.manage'] as $permission) {
+    foreach (['qm.workplans.view', 'qm.workplans.manage', 'qm.approvals.manage'] as $permission) {
         Permission::firstOrCreate([
             'name' => $permission,
             'category' => 'quality',
@@ -53,7 +53,7 @@ function createQualityApiContext(): array
         ]);
     }
 
-    $user->givePermissionTo(['qm.workplans.view', 'qm.workplans.manage']);
+    $user->givePermissionTo(['qm.workplans.view', 'qm.workplans.manage', 'qm.approvals.manage']);
 
     app(ModuleManager::class)->enableForTenant('quality-monitoring', $tenant);
 
@@ -87,6 +87,39 @@ it('creates and updates workplans', function (): void {
     $update->assertSuccessful()->assertJsonFragment([
         'status' => 'submitted',
     ]);
+});
+
+it('submits and approves workplans', function (): void {
+    [$user] = createQualityApiContext();
+
+    $create = actingAs($user, 'sanctum')->postJson('/api/quality-monitoring/v1/workplans', [
+        'title' => 'Q2 Plan',
+        'period_start' => now()->toDateString(),
+        'period_end' => now()->addMonths(3)->toDateString(),
+        'status' => 'draft',
+    ]);
+
+    $create->assertCreated();
+
+    $workplanId = $create->json('id');
+
+    actingAs($user, 'sanctum')
+        ->postJson("/api/quality-monitoring/v1/workplans/{$workplanId}/submit", [
+            'notes' => 'Ready for review',
+        ])
+        ->assertSuccessful()
+        ->assertJsonFragment([
+            'status' => 'submitted',
+        ]);
+
+    actingAs($user, 'sanctum')
+        ->postJson("/api/quality-monitoring/v1/workplans/{$workplanId}/approve", [
+            'comments' => 'Approved',
+        ])
+        ->assertSuccessful()
+        ->assertJsonFragment([
+            'status' => 'approved',
+        ]);
 });
 
 it('lists workplans with filters', function (): void {

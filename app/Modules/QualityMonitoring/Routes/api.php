@@ -25,6 +25,9 @@ Route::prefix('v1')->name('v1.')->group(function (): void {
     Route::get('workplans/{workplan}', [WorkplanController::class, 'show'])->name('workplans.show');
     Route::put('workplans/{workplan}', [WorkplanController::class, 'update'])->name('workplans.update');
     Route::delete('workplans/{workplan}', [WorkplanController::class, 'destroy'])->name('workplans.destroy');
+    Route::post('workplans/{workplan}/submit', [WorkplanController::class, 'submit'])->name('workplans.submit');
+    Route::post('workplans/{workplan}/approve', [WorkplanController::class, 'approve'])->name('workplans.approve');
+    Route::post('workplans/{workplan}/reject', [WorkplanController::class, 'reject'])->name('workplans.reject');
 
     Route::post('workplans/{workplan}/objectives', [ObjectiveController::class, 'store'])->name('objectives.store');
     Route::put('workplans/{workplan}/objectives/{objective}', [ObjectiveController::class, 'update'])->name('objectives.update');

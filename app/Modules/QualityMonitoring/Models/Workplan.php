@@ -8,6 +8,7 @@ use App\Traits\BelongsToTenant;
 use App\Traits\HasUuid;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 final class Workplan extends Model
 {
@@ -28,6 +29,22 @@ final class Workplan extends Model
         'org_scope',
         'metadata',
     ];
+
+    /**
+     * @return HasMany<WorkplanVersion, $this>
+     */
+    public function versions(): HasMany
+    {
+        return $this->hasMany(WorkplanVersion::class);
+    }
+
+    /**
+     * @return HasMany<Review, $this>
+     */
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(Review::class);
+    }
 
     protected function casts(): array
     {

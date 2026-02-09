@@ -5,11 +5,17 @@ declare(strict_types=1);
 namespace App\Modules\QualityMonitoring\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Modules\QualityMonitoring\Http\Requests\WorkplanApproveRequest;
+use App\Modules\QualityMonitoring\Http\Requests\WorkplanRejectRequest;
 use App\Modules\QualityMonitoring\Http\Requests\WorkplanStoreRequest;
+use App\Modules\QualityMonitoring\Http\Requests\WorkplanSubmitRequest;
 use App\Modules\QualityMonitoring\Http\Requests\WorkplanUpdateRequest;
+use App\Modules\QualityMonitoring\Models\Review;
 use App\Modules\QualityMonitoring\Models\Workplan;
+use App\Modules\QualityMonitoring\Models\WorkplanVersion;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 final class WorkplanController extends Controller
 {
@@ -80,5 +86,86 @@ final class WorkplanController extends Controller
         $workplan->delete();
 
         return response()->json([], 204);
+    }
+
+    public function submit(WorkplanSubmitRequest $request, Workplan $workplan): JsonResponse
+    {
+        $workplan->load('versions');
+
+        $versionNo = ($workplan->versions()->max('version_no') ?? 0) + 1;
+
+        $payload = $workplan->only([
+            'title',
+            'period_start',
+            'period_end',
+            'status',
+            'owner_id',
+            'org_scope',
+            'metadata',
+        ]);
+
+        DB::transaction(function () use ($workplan, $versionNo, $payload, $request): void {
+            WorkplanVersion::create([
+                'workplan_id' => $workplan->id,
+                'version_no' => $versionNo,
+                'status' => 'submitted',
+                'payload' => $payload,
+                'submitted_at' => now(),
+                'created_by' => $request->user()?->id,
+            ]);
+
+            $workplan->status = 'submitted';
+            $workplan->save();
+        });
+
+        return response()->json($workplan->refresh());
+    }
+
+    public function approve(WorkplanApproveRequest $request, Workplan $workplan): JsonResponse
+    {
+        $latest = $workplan->versions()->latest('version_no')->first();
+
+        Review::create([
+            'workplan_id' => $workplan->id,
+            'reviewer_id' => $request->user()?->id,
+            'status' => 'approved',
+            'comments' => $request->input('comments'),
+            'submitted_at' => now(),
+            'approved_at' => now(),
+        ]);
+
+        if ($latest) {
+            $latest->status = 'approved';
+            $latest->approved_at = now();
+            $latest->save();
+        }
+
+        $workplan->status = 'approved';
+        $workplan->save();
+
+        return response()->json($workplan->refresh());
+    }
+
+    public function reject(WorkplanRejectRequest $request, Workplan $workplan): JsonResponse
+    {
+        $latest = $workplan->versions()->latest('version_no')->first();
+
+        Review::create([
+            'workplan_id' => $workplan->id,
+            'reviewer_id' => $request->user()?->id,
+            'status' => 'rejected',
+            'comments' => $request->input('comments'),
+            'submitted_at' => now(),
+        ]);
+
+        if ($latest) {
+            $latest->status = 'rejected';
+            $latest->save();
+        }
+
+        $workplan->status = 'rejected';
+        $workplan->save();
+
+        return response()->json($workplan->refresh());
     }
 }
