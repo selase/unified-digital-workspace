@@ -46,6 +46,14 @@ final class Activity extends Model
         return $this->hasMany(Kpi::class);
     }
 
+    /**
+     * @return HasMany<Variance, $this>
+     */
+    public function variances(): HasMany
+    {
+        return $this->hasMany(Variance::class);
+    }
+
     protected function casts(): array
     {
         return [

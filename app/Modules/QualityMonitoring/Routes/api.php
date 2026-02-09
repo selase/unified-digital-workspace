@@ -3,11 +3,13 @@
 declare(strict_types=1);
 
 use App\Modules\QualityMonitoring\Http\Controllers\Api\V1\ActivityController;
+use App\Modules\QualityMonitoring\Http\Controllers\Api\V1\AlertController;
 use App\Modules\QualityMonitoring\Http\Controllers\Api\V1\DataSourceController;
 use App\Modules\QualityMonitoring\Http\Controllers\Api\V1\IndicatorController;
 use App\Modules\QualityMonitoring\Http\Controllers\Api\V1\KpiController;
 use App\Modules\QualityMonitoring\Http\Controllers\Api\V1\KpiUpdateController;
 use App\Modules\QualityMonitoring\Http\Controllers\Api\V1\ObjectiveController;
+use App\Modules\QualityMonitoring\Http\Controllers\Api\V1\VarianceController;
 use App\Modules\QualityMonitoring\Http\Controllers\Api\V1\WorkplanController;
 use Illuminate\Support\Facades\Route;
 
@@ -48,4 +50,9 @@ Route::prefix('v1')->name('v1.')->group(function (): void {
 
     Route::get('data-sources', [DataSourceController::class, 'index'])->name('data-sources.index');
     Route::post('data-sources', [DataSourceController::class, 'store'])->name('data-sources.store');
+
+    Route::post('activities/{activity}/variances', [VarianceController::class, 'store'])->name('variances.store');
+
+    Route::get('alerts', [AlertController::class, 'index'])->name('alerts.index');
+    Route::post('alerts/{alert}/ack', [AlertController::class, 'acknowledge'])->name('alerts.ack');
 });

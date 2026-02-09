@@ -44,7 +44,7 @@ function createQualityApiContext(): array
         ],
     ]);
 
-    foreach (['qm.workplans.view', 'qm.workplans.manage', 'qm.approvals.manage'] as $permission) {
+    foreach (['qm.workplans.view', 'qm.workplans.manage', 'qm.approvals.manage', 'qm.variances.manage', 'qm.alerts.manage', 'qm.kpis.manage'] as $permission) {
         Permission::firstOrCreate([
             'name' => $permission,
             'category' => 'quality',
@@ -53,7 +53,7 @@ function createQualityApiContext(): array
         ]);
     }
 
-    $user->givePermissionTo(['qm.workplans.view', 'qm.workplans.manage', 'qm.approvals.manage']);
+    $user->givePermissionTo(['qm.workplans.view', 'qm.workplans.manage', 'qm.approvals.manage', 'qm.variances.manage', 'qm.alerts.manage', 'qm.kpis.manage']);
 
     app(ModuleManager::class)->enableForTenant('quality-monitoring', $tenant);
 
@@ -136,5 +136,47 @@ it('lists workplans with filters', function (): void {
 
     $response->assertSuccessful()->assertJsonFragment([
         'title' => 'Annual Plan',
+    ]);
+});
+
+it('stores variance and acknowledges alerts', function (): void {
+    [$user] = createQualityApiContext();
+
+    $workplan = Workplan::create([
+        'title' => 'Variance Plan',
+        'period_start' => now()->toDateString(),
+        'period_end' => now()->addMonths(6)->toDateString(),
+        'status' => 'approved',
+    ]);
+
+    $objective = App\Modules\QualityMonitoring\Models\Objective::create([
+        'workplan_id' => $workplan->id,
+        'title' => 'Objective',
+    ]);
+
+    $activity = App\Modules\QualityMonitoring\Models\Activity::create([
+        'objective_id' => $objective->id,
+        'title' => 'Activity',
+    ]);
+
+    $variance = actingAs($user, 'sanctum')->postJson("/api/quality-monitoring/v1/activities/{$activity->id}/variances", [
+        'category' => 'delay',
+        'narrative' => 'Late due to dependency',
+    ]);
+
+    $variance->assertCreated();
+
+    $alert = App\Modules\QualityMonitoring\Models\Alert::create([
+        'workplan_id' => $workplan->id,
+        'type' => 'overdue',
+        'status' => 'open',
+    ]);
+
+    $ack = actingAs($user, 'sanctum')->postJson("/api/quality-monitoring/v1/alerts/{$alert->id}/ack", [
+        'notes' => 'Noted',
+    ]);
+
+    $ack->assertSuccessful()->assertJsonFragment([
+        'status' => 'acknowledged',
     ]);
 });
