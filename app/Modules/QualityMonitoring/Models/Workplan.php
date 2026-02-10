@@ -46,6 +46,14 @@ final class Workplan extends Model
         return $this->hasMany(Review::class);
     }
 
+    /**
+     * @return HasMany<Objective, $this>
+     */
+    public function objectives(): HasMany
+    {
+        return $this->hasMany(Objective::class);
+    }
+
     protected function casts(): array
     {
         return [

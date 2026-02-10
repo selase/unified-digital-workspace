@@ -30,6 +30,7 @@ Route::prefix('v1')->name('v1.')->group(function (): void {
     Route::post('workplans/{workplan}/submit', [WorkplanController::class, 'submit'])->name('workplans.submit');
     Route::post('workplans/{workplan}/approve', [WorkplanController::class, 'approve'])->name('workplans.approve');
     Route::post('workplans/{workplan}/reject', [WorkplanController::class, 'reject'])->name('workplans.reject');
+    Route::get('workplans/{workplan}/dashboard', [WorkplanController::class, 'dashboard'])->name('workplans.dashboard');
 
     Route::post('workplans/{workplan}/objectives', [ObjectiveController::class, 'store'])->name('objectives.store');
     Route::put('workplans/{workplan}/objectives/{objective}', [ObjectiveController::class, 'update'])->name('objectives.update');

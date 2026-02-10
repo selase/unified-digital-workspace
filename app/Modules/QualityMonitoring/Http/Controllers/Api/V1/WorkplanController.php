@@ -10,7 +10,13 @@ use App\Modules\QualityMonitoring\Http\Requests\WorkplanRejectRequest;
 use App\Modules\QualityMonitoring\Http\Requests\WorkplanStoreRequest;
 use App\Modules\QualityMonitoring\Http\Requests\WorkplanSubmitRequest;
 use App\Modules\QualityMonitoring\Http\Requests\WorkplanUpdateRequest;
+use App\Modules\QualityMonitoring\Models\Activity;
+use App\Modules\QualityMonitoring\Models\Alert;
+use App\Modules\QualityMonitoring\Models\Kpi;
+use App\Modules\QualityMonitoring\Models\KpiUpdate;
+use App\Modules\QualityMonitoring\Models\Objective;
 use App\Modules\QualityMonitoring\Models\Review;
+use App\Modules\QualityMonitoring\Models\Variance;
 use App\Modules\QualityMonitoring\Models\Workplan;
 use App\Modules\QualityMonitoring\Models\WorkplanVersion;
 use Illuminate\Http\JsonResponse;
@@ -167,5 +173,24 @@ final class WorkplanController extends Controller
         $workplan->save();
 
         return response()->json($workplan->refresh());
+    }
+
+    public function dashboard(Workplan $workplan): JsonResponse
+    {
+        abort_if(! request()->user()?->can('qm.workplans.view'), 403);
+
+        $objectiveIds = Objective::query()->where('workplan_id', $workplan->id)->pluck('id');
+        $activityIds = Activity::query()->whereIn('objective_id', $objectiveIds)->pluck('id');
+        $kpiIds = Kpi::query()->whereIn('activity_id', $activityIds)->pluck('id');
+
+        return response()->json([
+            'workplan_id' => $workplan->id,
+            'objectives' => $objectiveIds->count(),
+            'activities' => $activityIds->count(),
+            'kpis' => $kpiIds->count(),
+            'kpi_updates' => KpiUpdate::query()->whereIn('kpi_id', $kpiIds)->count(),
+            'variances' => Variance::query()->where('workplan_id', $workplan->id)->count(),
+            'alerts' => Alert::query()->where('workplan_id', $workplan->id)->count(),
+        ]);
     }
 }

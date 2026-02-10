@@ -139,6 +139,62 @@ it('lists workplans with filters', function (): void {
     ]);
 });
 
+it('returns workplan dashboard stats', function (): void {
+    [$user] = createQualityApiContext();
+
+    $workplan = Workplan::create([
+        'title' => 'Dashboard Plan',
+        'period_start' => now()->toDateString(),
+        'period_end' => now()->addMonths(3)->toDateString(),
+        'status' => 'draft',
+    ]);
+
+    $objective = App\Modules\QualityMonitoring\Models\Objective::create([
+        'workplan_id' => $workplan->id,
+        'title' => 'Objective',
+    ]);
+
+    $activity = App\Modules\QualityMonitoring\Models\Activity::create([
+        'objective_id' => $objective->id,
+        'title' => 'Activity',
+    ]);
+
+    $kpi = App\Modules\QualityMonitoring\Models\Kpi::create([
+        'activity_id' => $activity->id,
+        'name' => 'KPI',
+    ]);
+
+    App\Modules\QualityMonitoring\Models\KpiUpdate::create([
+        'kpi_id' => $kpi->id,
+        'value' => 10,
+    ]);
+
+    App\Modules\QualityMonitoring\Models\Variance::create([
+        'workplan_id' => $workplan->id,
+        'activity_id' => $activity->id,
+        'category' => 'delay',
+        'narrative' => 'Delay reason',
+    ]);
+
+    App\Modules\QualityMonitoring\Models\Alert::create([
+        'workplan_id' => $workplan->id,
+        'type' => 'overdue',
+        'status' => 'open',
+    ]);
+
+    $response = actingAs($user, 'sanctum')->getJson("/api/quality-monitoring/v1/workplans/{$workplan->id}/dashboard");
+
+    $response->assertSuccessful()->assertJsonFragment([
+        'workplan_id' => $workplan->id,
+        'objectives' => 1,
+        'activities' => 1,
+        'kpis' => 1,
+        'kpi_updates' => 1,
+        'variances' => 1,
+        'alerts' => 1,
+    ]);
+});
+
 it('stores variance and acknowledges alerts', function (): void {
     [$user] = createQualityApiContext();
 
