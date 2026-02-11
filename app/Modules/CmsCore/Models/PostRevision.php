@@ -5,12 +5,13 @@ declare(strict_types=1);
 namespace App\Modules\CmsCore\Models;
 
 use App\Models\User;
-use App\Traits\UsesTenantConnection;
+use App\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @property int $id
+ * @property string $tenant_id
  * @property int $post_id
  * @property string $user_id
  * @property string $title
@@ -21,13 +22,14 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 final class PostRevision extends Model
 {
-    use UsesTenantConnection;
+    use BelongsToTenant;
 
     public $timestamps = false;
 
     protected $table = 'post_revisions';
 
     protected $fillable = [
+        'tenant_id',
         'post_id',
         'user_id',
         'title',

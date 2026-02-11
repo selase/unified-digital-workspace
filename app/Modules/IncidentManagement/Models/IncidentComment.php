@@ -5,12 +5,13 @@ declare(strict_types=1);
 namespace App\Modules\IncidentManagement\Models;
 
 use App\Models\User;
-use App\Traits\UsesTenantConnection;
+use App\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @property int $id
+ * @property string $tenant_id
  * @property string $incident_id
  * @property string $user_id
  * @property string $body
@@ -20,11 +21,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 final class IncidentComment extends Model
 {
-    use UsesTenantConnection;
+    use BelongsToTenant;
 
     protected $table = 'incident_comments';
 
     protected $fillable = [
+        'tenant_id',
         'incident_id',
         'user_id',
         'body',

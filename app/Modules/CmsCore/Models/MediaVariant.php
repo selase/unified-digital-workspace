@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace App\Modules\CmsCore\Models;
 
-use App\Traits\UsesTenantConnection;
+use App\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @property int $id
+ * @property string $tenant_id
  * @property int $media_id
  * @property string $variant
  * @property string $disk
@@ -23,11 +24,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 final class MediaVariant extends Model
 {
-    use UsesTenantConnection;
+    use BelongsToTenant;
 
     protected $table = 'media_variants';
 
     protected $fillable = [
+        'tenant_id',
         'media_id',
         'variant',
         'disk',

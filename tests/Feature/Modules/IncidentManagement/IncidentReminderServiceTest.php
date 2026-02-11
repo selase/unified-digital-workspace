@@ -41,6 +41,7 @@ it('generates due and SLA reminders with priority thresholds', function (): void
     expect(IncidentReminder::count())->toBe(3);
 
     $reminders = IncidentReminder::orderBy('reminder_type')->get();
+    expect($reminders->pluck('tenant_id')->unique()->all())->toBe([$this->tenant->id]);
 
     $dueSoon = $reminders->firstWhere('reminder_type', 'due_soon');
     $response = $reminders->firstWhere('reminder_type', 'sla_response_due');
@@ -72,4 +73,5 @@ it('does not duplicate reminders when generation is re-run', function (): void {
     expect($firstRun)->toBe(3);
     expect($secondRun)->toBe(0);
     expect(IncidentReminder::count())->toBe(3);
+    expect(IncidentReminder::query()->distinct()->pluck('tenant_id')->all())->toBe([$this->tenant->id]);
 });

@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace App\Modules\CmsCore\Models;
 
-use App\Traits\UsesTenantConnection;
+use App\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @property int $id
+ * @property string $tenant_id
  * @property int $post_id
  * @property string $key
  * @property array<string, mixed>|string $value
@@ -18,11 +19,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 final class PostMeta extends Model
 {
-    use UsesTenantConnection;
+    use BelongsToTenant;
 
     protected $table = 'post_meta';
 
     protected $fillable = [
+        'tenant_id',
         'post_id',
         'key',
         'value',

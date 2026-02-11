@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace App\Modules\CmsCore\Models;
 
-use App\Traits\UsesTenantConnection;
+use App\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property int $id
+ * @property string $tenant_id
  * @property int $menu_id
  * @property string $label
  * @property string|null $url
@@ -22,11 +23,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 final class MenuItem extends Model
 {
-    use UsesTenantConnection;
+    use BelongsToTenant;
 
     protected $table = 'menu_items';
 
     protected $fillable = [
+        'tenant_id',
         'menu_id',
         'label',
         'url',

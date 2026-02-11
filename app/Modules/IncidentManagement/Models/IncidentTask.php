@@ -5,12 +5,13 @@ declare(strict_types=1);
 namespace App\Modules\IncidentManagement\Models;
 
 use App\Models\User;
-use App\Traits\UsesTenantConnection;
+use App\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @property int $id
+ * @property string $tenant_id
  * @property string $incident_id
  * @property string|null $assigned_to_id
  * @property string $title
@@ -24,11 +25,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 final class IncidentTask extends Model
 {
-    use UsesTenantConnection;
+    use BelongsToTenant;
 
     protected $table = 'incident_tasks';
 
     protected $fillable = [
+        'tenant_id',
         'incident_id',
         'assigned_to_id',
         'title',

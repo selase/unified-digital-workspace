@@ -46,6 +46,7 @@ final class IncidentReminderService
         }
 
         IncidentReminder::create([
+            'tenant_id' => $incident->tenant_id,
             'incident_id' => $incident->id,
             'reminder_type' => 'due_soon',
             'scheduled_for' => $scheduledFor,
@@ -77,6 +78,7 @@ final class IncidentReminderService
         }
 
         IncidentReminder::create([
+            'tenant_id' => $incident->tenant_id,
             'incident_id' => $incident->id,
             'reminder_type' => 'sla_response_due',
             'scheduled_for' => $scheduledFor,
@@ -108,6 +110,7 @@ final class IncidentReminderService
         }
 
         IncidentReminder::create([
+            'tenant_id' => $incident->tenant_id,
             'incident_id' => $incident->id,
             'reminder_type' => 'sla_resolution_due',
             'scheduled_for' => $scheduledFor,

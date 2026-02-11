@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace App\Modules\IncidentManagement\Models;
 
-use App\Traits\UsesTenantConnection;
+use App\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @property int $id
+ * @property string $tenant_id
  * @property string $incident_id
  * @property string $reminder_type
  * @property \Illuminate\Support\Carbon $scheduled_for
@@ -21,11 +22,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 final class IncidentReminder extends Model
 {
-    use UsesTenantConnection;
+    use BelongsToTenant;
 
     protected $table = 'incident_reminders';
 
     protected $fillable = [
+        'tenant_id',
         'incident_id',
         'reminder_type',
         'scheduled_for',

@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace App\Modules\IncidentManagement\Models;
 
-use App\Traits\UsesTenantConnection;
+use App\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @property int $id
+ * @property string $tenant_id
  * @property string $incident_id
  * @property \Illuminate\Support\Carbon|null $response_due_at
  * @property \Illuminate\Support\Carbon|null $resolution_due_at
@@ -22,11 +23,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 final class IncidentSla extends Model
 {
-    use UsesTenantConnection;
+    use BelongsToTenant;
 
     protected $table = 'incident_slas';
 
     protected $fillable = [
+        'tenant_id',
         'incident_id',
         'response_due_at',
         'resolution_due_at',

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\HrmsCore\Models\Employees;
 
 use App\Modules\HrmsCore\Models\Concerns\HasHrmsUuid;
-use App\Traits\UsesTenantConnection;
+use App\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * EmergencyContact model - Employee emergency contact information.
  *
  * @property int $id
+ * @property string $tenant_id
  * @property string $uuid
  * @property int $employee_id
  * @property string $name
@@ -26,12 +27,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 final class EmergencyContact extends Model
 {
+    use BelongsToTenant;
     use HasHrmsUuid;
-    use UsesTenantConnection;
 
     protected $table = 'hrms_emergency_contacts';
 
     protected $fillable = [
+        'tenant_id',
         'employee_id',
         'name',
         'relationship',

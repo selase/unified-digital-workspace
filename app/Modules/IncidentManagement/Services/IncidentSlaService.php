@@ -28,6 +28,7 @@ final class IncidentSlaService
         return IncidentSla::updateOrCreate(
             ['incident_id' => $incident->id],
             [
+                'tenant_id' => $incident->tenant_id,
                 'response_due_at' => $responseDueAt,
                 'resolution_due_at' => $resolutionDueAt,
             ]

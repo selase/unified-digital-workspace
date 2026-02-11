@@ -5,12 +5,13 @@ declare(strict_types=1);
 namespace App\Modules\IncidentManagement\Models;
 
 use App\Models\User;
-use App\Traits\UsesTenantConnection;
+use App\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @property int $id
+ * @property string $tenant_id
  * @property string $incident_id
  * @property int|null $from_priority_id
  * @property int|null $to_priority_id
@@ -22,11 +23,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 final class IncidentEscalation extends Model
 {
-    use UsesTenantConnection;
+    use BelongsToTenant;
 
     protected $table = 'incident_escalations';
 
     protected $fillable = [
+        'tenant_id',
         'incident_id',
         'from_priority_id',
         'to_priority_id',

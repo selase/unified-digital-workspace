@@ -5,12 +5,13 @@ declare(strict_types=1);
 namespace App\Modules\IncidentManagement\Models;
 
 use App\Models\User;
-use App\Traits\UsesTenantConnection;
+use App\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @property int $id
+ * @property string $tenant_id
  * @property string $incident_id
  * @property int|null $comment_id
  * @property int|null $progress_report_id
@@ -25,11 +26,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 final class IncidentAttachment extends Model
 {
-    use UsesTenantConnection;
+    use BelongsToTenant;
 
     protected $table = 'incident_attachments';
 
     protected $fillable = [
+        'tenant_id',
         'incident_id',
         'comment_id',
         'progress_report_id',
