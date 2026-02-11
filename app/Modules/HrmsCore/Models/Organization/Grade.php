@@ -46,8 +46,6 @@ final class Grade extends Model
     /**
      * The connection name for the model.
      */
-    protected $connection = 'landlord';
-
     protected $fillable = [
         'tenant_id',
         'name',

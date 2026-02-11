@@ -33,8 +33,6 @@ final class AppraisalCriterion extends Model
 
     protected $table = 'hrms_appraisal_criteria';
 
-    protected $connection = 'landlord';
-
     protected $fillable = [
         'tenant_id',
         'section_id',
@@ -57,19 +55,6 @@ final class AppraisalCriterion extends Model
         'sort_order' => 0,
         'is_active' => true,
     ];
-
-    /**
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'weight' => 'decimal:2',
-            'is_required' => 'boolean',
-            'sort_order' => 'integer',
-            'is_active' => 'boolean',
-        ];
-    }
 
     /**
      * Get the section this criterion belongs to.
@@ -141,5 +126,18 @@ final class AppraisalCriterion extends Model
     public function scopeForSection($query, int $sectionId)
     {
         return $query->where('section_id', $sectionId);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'weight' => 'decimal:2',
+            'is_required' => 'boolean',
+            'sort_order' => 'integer',
+            'is_active' => 'boolean',
+        ];
     }
 }

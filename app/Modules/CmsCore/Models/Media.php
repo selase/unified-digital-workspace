@@ -61,8 +61,6 @@ final class Media extends Model
 
     protected $table = 'media';
 
-    protected $connection = 'landlord';
-
     protected $fillable = [
         'uuid',
         'tenant_id',

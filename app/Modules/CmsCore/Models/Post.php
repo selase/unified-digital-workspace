@@ -53,8 +53,6 @@ final class Post extends Model
 
     protected $table = 'posts';
 
-    protected $connection = 'landlord';
-
     protected $fillable = [
         'uuid',
         'tenant_id',

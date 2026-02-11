@@ -53,8 +53,6 @@ final class JobOffer extends Model
 
     protected $table = 'hrms_job_offers';
 
-    protected $connection = 'landlord';
-
     protected $fillable = [
         'tenant_id',
         'application_id',
@@ -85,23 +83,6 @@ final class JobOffer extends Model
         'status' => 'draft',
         'employment_type' => 'full_time',
     ];
-
-    /**
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'status' => OfferStatus::class,
-            'offered_salary' => 'decimal:2',
-            'benefits' => 'array',
-            'start_date' => 'date',
-            'offer_valid_until' => 'date',
-            'approved_at' => 'datetime',
-            'sent_at' => 'datetime',
-            'responded_at' => 'datetime',
-        ];
-    }
 
     /**
      * @return BelongsTo<CandidateApplication, $this>
@@ -267,5 +248,22 @@ final class JobOffer extends Model
     public function scopeAccepted($query)
     {
         return $query->where('status', OfferStatus::Accepted);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'status' => OfferStatus::class,
+            'offered_salary' => 'decimal:2',
+            'benefits' => 'array',
+            'start_date' => 'date',
+            'offer_valid_until' => 'date',
+            'approved_at' => 'datetime',
+            'sent_at' => 'datetime',
+            'responded_at' => 'datetime',
+        ];
     }
 }

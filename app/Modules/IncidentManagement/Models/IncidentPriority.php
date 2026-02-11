@@ -31,14 +31,13 @@ use Illuminate\Support\Str;
 final class IncidentPriority extends Model
 {
     use BelongsToTenant;
+
     /** @use HasFactory<IncidentPriorityFactory> */
     use HasFactory;
 
     use HasIncidentUuid;
 
     protected $table = 'incident_priorities';
-
-    protected $connection = 'landlord';
 
     protected $fillable = [
         'uuid',

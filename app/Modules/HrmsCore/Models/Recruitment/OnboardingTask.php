@@ -36,10 +36,6 @@ final class OnboardingTask extends Model
     use BelongsToTenant;
     use HasHrmsUuid;
 
-    protected $table = 'hrms_onboarding_tasks';
-
-    protected $connection = 'landlord';
-
     public const CATEGORY_DOCUMENTATION = 'documentation';
 
     public const CATEGORY_TRAINING = 'training';
@@ -49,6 +45,8 @@ final class OnboardingTask extends Model
     public const CATEGORY_ACCESS = 'access';
 
     public const CATEGORY_ORIENTATION = 'orientation';
+
+    protected $table = 'hrms_onboarding_tasks';
 
     protected $fillable = [
         'tenant_id',
@@ -77,12 +75,14 @@ final class OnboardingTask extends Model
     /**
      * @return array<string, string>
      */
-    protected function casts(): array
+    public static function categories(): array
     {
         return [
-            'sequence' => 'integer',
-            'due_date' => 'date',
-            'completed_at' => 'datetime',
+            self::CATEGORY_DOCUMENTATION => 'Documentation',
+            self::CATEGORY_TRAINING => 'Training',
+            self::CATEGORY_EQUIPMENT => 'Equipment',
+            self::CATEGORY_ACCESS => 'Access',
+            self::CATEGORY_ORIENTATION => 'Orientation',
         ];
     }
 
@@ -166,20 +166,6 @@ final class OnboardingTask extends Model
     }
 
     /**
-     * @return array<string, string>
-     */
-    public static function categories(): array
-    {
-        return [
-            self::CATEGORY_DOCUMENTATION => 'Documentation',
-            self::CATEGORY_TRAINING => 'Training',
-            self::CATEGORY_EQUIPMENT => 'Equipment',
-            self::CATEGORY_ACCESS => 'Access',
-            self::CATEGORY_ORIENTATION => 'Orientation',
-        ];
-    }
-
-    /**
      * @param  \Illuminate\Database\Eloquent\Builder<static>  $query
      * @return \Illuminate\Database\Eloquent\Builder<static>
      */
@@ -232,5 +218,17 @@ final class OnboardingTask extends Model
     public function scopeOrdered($query)
     {
         return $query->orderBy('sequence');
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'sequence' => 'integer',
+            'due_date' => 'date',
+            'completed_at' => 'datetime',
+        ];
     }
 }

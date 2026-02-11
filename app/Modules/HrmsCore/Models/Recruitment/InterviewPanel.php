@@ -30,15 +30,13 @@ final class InterviewPanel extends Model
     use BelongsToTenant;
     use HasHrmsUuid;
 
-    protected $table = 'hrms_interview_panels';
-
-    protected $connection = 'landlord';
-
     public const ROLE_LEAD = 'lead';
 
     public const ROLE_INTERVIEWER = 'interviewer';
 
     public const ROLE_OBSERVER = 'observer';
+
+    protected $table = 'hrms_interview_panels';
 
     protected $fillable = [
         'tenant_id',
@@ -62,11 +60,12 @@ final class InterviewPanel extends Model
     /**
      * @return array<string, string>
      */
-    protected function casts(): array
+    public static function roles(): array
     {
         return [
-            'is_mandatory' => 'boolean',
-            'confirmed_at' => 'datetime',
+            self::ROLE_LEAD => 'Lead Interviewer',
+            self::ROLE_INTERVIEWER => 'Interviewer',
+            self::ROLE_OBSERVER => 'Observer',
         ];
     }
 
@@ -118,12 +117,11 @@ final class InterviewPanel extends Model
     /**
      * @return array<string, string>
      */
-    public static function roles(): array
+    protected function casts(): array
     {
         return [
-            self::ROLE_LEAD => 'Lead Interviewer',
-            self::ROLE_INTERVIEWER => 'Interviewer',
-            self::ROLE_OBSERVER => 'Observer',
+            'is_mandatory' => 'boolean',
+            'confirmed_at' => 'datetime',
         ];
     }
 }

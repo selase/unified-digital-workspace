@@ -40,8 +40,6 @@ final class AppraisalGoal extends Model
 
     protected $table = 'hrms_appraisal_goals';
 
-    protected $connection = 'landlord';
-
     protected $fillable = [
         'tenant_id',
         'appraisal_id',
@@ -70,21 +68,6 @@ final class AppraisalGoal extends Model
         'weight' => 0,
         'sort_order' => 0,
     ];
-
-    /**
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'status' => GoalStatus::class,
-            'weight' => 'decimal:2',
-            'self_rating' => 'integer',
-            'supervisor_rating' => 'integer',
-            'due_date' => 'date',
-            'sort_order' => 'integer',
-        ];
-    }
 
     /**
      * Get the appraisal this goal belongs to.
@@ -203,5 +186,20 @@ final class AppraisalGoal extends Model
     public function scopeOrdered($query)
     {
         return $query->orderBy('sort_order');
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'status' => GoalStatus::class,
+            'weight' => 'decimal:2',
+            'self_rating' => 'integer',
+            'supervisor_rating' => 'integer',
+            'due_date' => 'date',
+            'sort_order' => 'integer',
+        ];
     }
 }

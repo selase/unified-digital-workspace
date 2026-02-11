@@ -35,8 +35,6 @@ final class Tag extends Model
 
     protected $table = 'tags';
 
-    protected $connection = 'landlord';
-
     protected $fillable = [
         'uuid',
         'tenant_id',

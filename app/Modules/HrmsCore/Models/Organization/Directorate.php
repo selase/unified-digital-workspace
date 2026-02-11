@@ -29,8 +29,6 @@ final class Directorate extends Model
 
     protected $table = 'hrms_directorates';
 
-    protected $connection = 'landlord';
-
     protected $fillable = [
         'tenant_id',
         'name',

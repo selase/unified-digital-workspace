@@ -15,8 +15,6 @@ final class TaskAssignment extends Model
     use BelongsToTenant;
     use HasFactory;
 
-    protected $connection = 'landlord';
-
     protected $fillable = [
         'task_id',
         'user_id',

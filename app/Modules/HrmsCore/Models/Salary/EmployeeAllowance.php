@@ -33,8 +33,6 @@ final class EmployeeAllowance extends Model
 
     protected $table = 'hrms_employee_allowances';
 
-    protected $connection = 'landlord';
-
     protected $fillable = [
         'tenant_id',
         'employee_id',
@@ -54,19 +52,6 @@ final class EmployeeAllowance extends Model
     protected $attributes = [
         'is_active' => true,
     ];
-
-    /**
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'amount' => 'decimal:2',
-            'effective_from' => 'date',
-            'effective_to' => 'date',
-            'is_active' => 'boolean',
-        ];
-    }
 
     /**
      * Get the employee.
@@ -183,5 +168,18 @@ final class EmployeeAllowance extends Model
     public function scopeForAllowance($query, int $allowanceId)
     {
         return $query->where('allowance_id', $allowanceId);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'amount' => 'decimal:2',
+            'effective_from' => 'date',
+            'effective_to' => 'date',
+            'is_active' => 'boolean',
+        ];
     }
 }

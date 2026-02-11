@@ -32,8 +32,6 @@ final class AllowanceType extends Model
 
     protected $table = 'hrms_allowance_types';
 
-    protected $connection = 'landlord';
-
     protected $fillable = [
         'tenant_id',
         'name',
@@ -54,32 +52,6 @@ final class AllowanceType extends Model
         'is_active' => true,
         'sort_order' => 0,
     ];
-
-    /**
-     * Boot the model.
-     */
-    protected static function boot(): void
-    {
-        parent::boot();
-
-        self::creating(function (AllowanceType $type): void {
-            if (empty($type->slug)) {
-                $type->slug = Str::slug($type->name);
-            }
-        });
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'is_taxable' => 'boolean',
-            'is_active' => 'boolean',
-            'sort_order' => 'integer',
-        ];
-    }
 
     /**
      * Get the allowances of this type.
@@ -122,5 +94,31 @@ final class AllowanceType extends Model
     public function scopeOrdered($query)
     {
         return $query->orderBy('sort_order')->orderBy('name');
+    }
+
+    /**
+     * Boot the model.
+     */
+    protected static function boot(): void
+    {
+        parent::boot();
+
+        self::creating(function (AllowanceType $type): void {
+            if (empty($type->slug)) {
+                $type->slug = Str::slug($type->name);
+            }
+        });
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'is_taxable' => 'boolean',
+            'is_active' => 'boolean',
+            'sort_order' => 'integer',
+        ];
     }
 }

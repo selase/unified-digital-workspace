@@ -47,15 +47,13 @@ final class Interview extends Model
     use HasHrmsUuid;
     use SoftDeletes;
 
-    protected $table = 'hrms_interviews';
-
-    protected $connection = 'landlord';
-
     public const TYPE_IN_PERSON = 'in_person';
 
     public const TYPE_PHONE = 'phone';
 
     public const TYPE_VIDEO = 'video';
+
+    protected $table = 'hrms_interviews';
 
     protected $fillable = [
         'tenant_id',
@@ -86,21 +84,6 @@ final class Interview extends Model
         'type' => 'in_person',
         'status' => 'scheduled',
     ];
-
-    /**
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'interview_date' => 'date',
-            'status' => InterviewStatus::class,
-            'is_recommended' => 'boolean',
-            'confirmed_at' => 'datetime',
-            'completed_at' => 'datetime',
-            'cancelled_at' => 'datetime',
-        ];
-    }
 
     /**
      * @return BelongsTo<CandidateApplication, $this>
@@ -232,5 +215,20 @@ final class Interview extends Model
     public function scopeForDate($query, string $date)
     {
         return $query->whereDate('interview_date', $date);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'interview_date' => 'date',
+            'status' => InterviewStatus::class,
+            'is_recommended' => 'boolean',
+            'confirmed_at' => 'datetime',
+            'completed_at' => 'datetime',
+            'cancelled_at' => 'datetime',
+        ];
     }
 }

@@ -52,8 +52,6 @@ final class JobRequisition extends Model
 
     protected $table = 'hrms_job_requisitions';
 
-    protected $connection = 'landlord';
-
     protected $fillable = [
         'tenant_id',
         'title',
@@ -86,23 +84,6 @@ final class JobRequisition extends Model
         'vacancies' => 1,
         'is_remote' => false,
     ];
-
-    /**
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'status' => RequisitionStatus::class,
-            'vacancies' => 'integer',
-            'min_salary' => 'decimal:2',
-            'max_salary' => 'decimal:2',
-            'is_remote' => 'boolean',
-            'target_start_date' => 'date',
-            'application_deadline' => 'date',
-            'approved_at' => 'datetime',
-        ];
-    }
 
     /**
      * @return BelongsTo<Department, $this>
@@ -210,5 +191,22 @@ final class JobRequisition extends Model
     public function scopeOpen($query)
     {
         return $query->where('status', RequisitionStatus::Open);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'status' => RequisitionStatus::class,
+            'vacancies' => 'integer',
+            'min_salary' => 'decimal:2',
+            'max_salary' => 'decimal:2',
+            'is_remote' => 'boolean',
+            'target_start_date' => 'date',
+            'application_deadline' => 'date',
+            'approved_at' => 'datetime',
+        ];
     }
 }

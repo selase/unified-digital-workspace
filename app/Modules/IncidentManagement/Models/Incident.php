@@ -56,8 +56,6 @@ final class Incident extends Model
 
     protected $table = 'incidents';
 
-    protected $connection = 'landlord';
-
     protected $keyType = 'string';
 
     protected $fillable = [

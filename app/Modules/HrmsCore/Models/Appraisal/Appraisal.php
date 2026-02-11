@@ -46,8 +46,6 @@ final class Appraisal extends Model
 
     protected $table = 'hrms_appraisals';
 
-    protected $connection = 'landlord';
-
     protected $fillable = [
         'tenant_id',
         'employee_id',
@@ -75,24 +73,6 @@ final class Appraisal extends Model
     protected $attributes = [
         'status' => 'draft',
     ];
-
-    /**
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'status' => AppraisalStatus::class,
-            'self_assessment_submitted_at' => 'datetime',
-            'supervisor_reviewed_at' => 'datetime',
-            'hod_reviewed_at' => 'datetime',
-            'hr_reviewed_at' => 'datetime',
-            'completed_at' => 'datetime',
-            'self_overall_score' => 'decimal:2',
-            'supervisor_overall_score' => 'decimal:2',
-            'final_overall_score' => 'decimal:2',
-        ];
-    }
 
     /**
      * Get the employee being appraised.
@@ -524,5 +504,23 @@ final class Appraisal extends Model
                     ->where('hr_reviewer_id', $employeeId);
             });
         });
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'status' => AppraisalStatus::class,
+            'self_assessment_submitted_at' => 'datetime',
+            'supervisor_reviewed_at' => 'datetime',
+            'hod_reviewed_at' => 'datetime',
+            'hr_reviewed_at' => 'datetime',
+            'completed_at' => 'datetime',
+            'self_overall_score' => 'decimal:2',
+            'supervisor_overall_score' => 'decimal:2',
+            'final_overall_score' => 'decimal:2',
+        ];
     }
 }

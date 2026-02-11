@@ -55,8 +55,6 @@ final class StaffPromotion extends Model
 
     protected $table = 'hrms_staff_promotions';
 
-    protected $connection = 'landlord';
-
     protected $fillable = [
         'tenant_id',
         'employee_id',
@@ -92,25 +90,6 @@ final class StaffPromotion extends Model
         'category' => 'promotion',
         'status' => 'pending',
     ];
-
-    /**
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'category' => PromotionCategory::class,
-            'status' => PromotionStatus::class,
-            'effective_date' => 'date',
-            'requested_date' => 'date',
-            'supporting_documents' => 'array',
-            'supervisor_approved' => 'boolean',
-            'supervisor_reviewed_at' => 'datetime',
-            'hr_approved' => 'boolean',
-            'hr_reviewed_at' => 'datetime',
-            'completed_at' => 'datetime',
-        ];
-    }
 
     // ==================== Relationships ====================
 
@@ -483,5 +462,24 @@ final class StaffPromotion extends Model
     public function scopeEffectiveBetween($query, string $startDate, string $endDate)
     {
         return $query->whereBetween('effective_date', [$startDate, $endDate]);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'category' => PromotionCategory::class,
+            'status' => PromotionStatus::class,
+            'effective_date' => 'date',
+            'requested_date' => 'date',
+            'supporting_documents' => 'array',
+            'supervisor_approved' => 'boolean',
+            'supervisor_reviewed_at' => 'datetime',
+            'hr_approved' => 'boolean',
+            'hr_reviewed_at' => 'datetime',
+            'completed_at' => 'datetime',
+        ];
     }
 }

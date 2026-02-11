@@ -31,8 +31,6 @@ final class DepartmentType extends Model
 
     protected $table = 'hrms_department_types';
 
-    protected $connection = 'landlord';
-
     protected $fillable = [
         'tenant_id',
         'department_id',

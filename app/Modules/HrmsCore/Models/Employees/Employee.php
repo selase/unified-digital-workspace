@@ -8,13 +8,13 @@ use App\Models\User;
 use App\Modules\HrmsCore\Database\Factories\EmployeeFactory;
 use App\Modules\HrmsCore\Enums\Gender;
 use App\Modules\HrmsCore\Enums\MaritalStatus;
+use App\Modules\HrmsCore\Models\Appraisal\Appraisal;
 use App\Modules\HrmsCore\Models\Concerns\HasHrmsUuid;
 use App\Modules\HrmsCore\Models\Organization\Center;
 use App\Modules\HrmsCore\Models\Organization\Department;
 use App\Modules\HrmsCore\Models\Organization\DepartmentType;
 use App\Modules\HrmsCore\Models\Organization\Directorate;
 use App\Modules\HrmsCore\Models\Organization\Grade;
-use App\Modules\HrmsCore\Models\Appraisal\Appraisal;
 use App\Modules\HrmsCore\Models\Organization\Unit;
 use App\Modules\HrmsCore\Models\Promotion\StaffPromotion;
 use App\Modules\HrmsCore\Models\Salary\EmployeeAllowance;
@@ -89,8 +89,6 @@ final class Employee extends Model
     use SoftDeletes;
 
     protected $table = 'hrms_employees';
-
-    protected $connection = 'landlord';
 
     /**
      * The model's default values for attributes.

@@ -42,8 +42,6 @@ final class CandidateReference extends Model
 
     protected $table = 'hrms_candidate_references';
 
-    protected $connection = 'landlord';
-
     protected $fillable = [
         'tenant_id',
         'candidate_id',
@@ -70,19 +68,6 @@ final class CandidateReference extends Model
     protected $attributes = [
         'status' => 'pending',
     ];
-
-    /**
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'rating' => 'integer',
-            'is_recommended' => 'boolean',
-            'contacted_at' => 'datetime',
-            'completed_at' => 'datetime',
-        ];
-    }
 
     /**
      * @return BelongsTo<Candidate, $this>
@@ -171,5 +156,18 @@ final class CandidateReference extends Model
     public function scopeRecommended($query)
     {
         return $query->where('is_recommended', true);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'rating' => 'integer',
+            'is_recommended' => 'boolean',
+            'contacted_at' => 'datetime',
+            'completed_at' => 'datetime',
+        ];
     }
 }

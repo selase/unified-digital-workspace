@@ -25,8 +25,6 @@ final class Setting extends Model
 
     protected $table = 'settings';
 
-    protected $connection = 'landlord';
-
     protected $fillable = [
         'uuid',
         'tenant_id',

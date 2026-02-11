@@ -26,8 +26,6 @@ final class Menu extends Model
 
     protected $table = 'menus';
 
-    protected $connection = 'landlord';
-
     protected $fillable = [
         'uuid',
         'tenant_id',

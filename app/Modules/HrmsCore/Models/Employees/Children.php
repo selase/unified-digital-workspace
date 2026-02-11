@@ -6,6 +6,7 @@ namespace App\Modules\HrmsCore\Models\Employees;
 
 use App\Modules\HrmsCore\Enums\Gender;
 use App\Modules\HrmsCore\Models\Concerns\HasHrmsUuid;
+use App\Traits\UsesTenantConnection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -24,10 +25,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 final class Children extends Model
 {
     use HasHrmsUuid;
+    use UsesTenantConnection;
 
     protected $table = 'hrms_children';
-
-    protected $connection = 'landlord';
 
     protected $fillable = [
         'employee_id',

@@ -33,10 +33,6 @@ final class AppraisalReview extends Model
     use BelongsToTenant;
     use HasHrmsUuid;
 
-    protected $table = 'hrms_appraisal_reviews';
-
-    protected $connection = 'landlord';
-
     public const TYPE_SUPERVISOR = 'supervisor';
 
     public const TYPE_HOD = 'hod';
@@ -48,6 +44,8 @@ final class AppraisalReview extends Model
     public const DECISION_REVISION_REQUESTED = 'revision_requested';
 
     public const DECISION_REJECTED = 'rejected';
+
+    protected $table = 'hrms_appraisal_reviews';
 
     protected $fillable = [
         'tenant_id',
@@ -63,13 +61,30 @@ final class AppraisalReview extends Model
     ];
 
     /**
+     * Get available reviewer types.
+     *
      * @return array<string, string>
      */
-    protected function casts(): array
+    public static function reviewerTypes(): array
     {
         return [
-            'overall_rating' => 'decimal:2',
-            'reviewed_at' => 'datetime',
+            self::TYPE_SUPERVISOR => 'Supervisor',
+            self::TYPE_HOD => 'Head of Department',
+            self::TYPE_HR => 'Human Resources',
+        ];
+    }
+
+    /**
+     * Get available decisions.
+     *
+     * @return array<string, string>
+     */
+    public static function decisions(): array
+    {
+        return [
+            self::DECISION_APPROVED => 'Approved',
+            self::DECISION_REVISION_REQUESTED => 'Revision Requested',
+            self::DECISION_REJECTED => 'Rejected',
         ];
     }
 
@@ -151,34 +166,6 @@ final class AppraisalReview extends Model
     }
 
     /**
-     * Get available reviewer types.
-     *
-     * @return array<string, string>
-     */
-    public static function reviewerTypes(): array
-    {
-        return [
-            self::TYPE_SUPERVISOR => 'Supervisor',
-            self::TYPE_HOD => 'Head of Department',
-            self::TYPE_HR => 'Human Resources',
-        ];
-    }
-
-    /**
-     * Get available decisions.
-     *
-     * @return array<string, string>
-     */
-    public static function decisions(): array
-    {
-        return [
-            self::DECISION_APPROVED => 'Approved',
-            self::DECISION_REVISION_REQUESTED => 'Revision Requested',
-            self::DECISION_REJECTED => 'Rejected',
-        ];
-    }
-
-    /**
      * Scope to filter by appraisal.
      *
      * @param  \Illuminate\Database\Eloquent\Builder<static>  $query
@@ -220,5 +207,16 @@ final class AppraisalReview extends Model
     public function scopePending($query)
     {
         return $query->whereNull('reviewed_at');
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'overall_rating' => 'decimal:2',
+            'reviewed_at' => 'datetime',
+        ];
     }
 }

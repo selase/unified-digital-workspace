@@ -42,8 +42,6 @@ final class JobPosting extends Model
 
     protected $table = 'hrms_job_postings';
 
-    protected $connection = 'landlord';
-
     protected $fillable = [
         'tenant_id',
         'requisition_id',
@@ -71,22 +69,6 @@ final class JobPosting extends Model
         'views_count' => 0,
         'applications_count' => 0,
     ];
-
-    /**
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'is_internal' => 'boolean',
-            'is_external' => 'boolean',
-            'is_active' => 'boolean',
-            'posted_date' => 'date',
-            'closing_date' => 'date',
-            'views_count' => 'integer',
-            'applications_count' => 'integer',
-        ];
-    }
 
     /**
      * @return BelongsTo<JobRequisition, $this>
@@ -153,5 +135,21 @@ final class JobPosting extends Model
     public function scopeExternal($query)
     {
         return $query->where('is_external', true);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'is_internal' => 'boolean',
+            'is_external' => 'boolean',
+            'is_active' => 'boolean',
+            'posted_date' => 'date',
+            'closing_date' => 'date',
+            'views_count' => 'integer',
+            'applications_count' => 'integer',
+        ];
     }
 }

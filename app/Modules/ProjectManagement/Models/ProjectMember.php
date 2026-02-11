@@ -15,8 +15,6 @@ final class ProjectMember extends Model
     use BelongsToTenant;
     use HasFactory;
 
-    protected $connection = 'landlord';
-
     protected $fillable = [
         'project_id',
         'user_id',

@@ -33,8 +33,6 @@ final class AppraisalResponse extends Model
 
     protected $table = 'hrms_appraisal_responses';
 
-    protected $connection = 'landlord';
-
     protected $fillable = [
         'tenant_id',
         'appraisal_id',
@@ -46,18 +44,6 @@ final class AppraisalResponse extends Model
         'final_rating',
         'final_comments',
     ];
-
-    /**
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'self_rating' => 'integer',
-            'supervisor_rating' => 'integer',
-            'final_rating' => 'integer',
-        ];
-    }
 
     /**
      * Get the appraisal this response belongs to.
@@ -165,5 +151,17 @@ final class AppraisalResponse extends Model
     public function scopeWithSupervisorAssessment($query)
     {
         return $query->whereNotNull('supervisor_rating');
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'self_rating' => 'integer',
+            'supervisor_rating' => 'integer',
+            'final_rating' => 'integer',
+        ];
     }
 }

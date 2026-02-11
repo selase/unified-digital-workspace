@@ -29,8 +29,6 @@ final class Unit extends Model
 
     protected $table = 'hrms_units';
 
-    protected $connection = 'landlord';
-
     protected $fillable = [
         'tenant_id',
         'name',

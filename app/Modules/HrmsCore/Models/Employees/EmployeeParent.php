@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\HrmsCore\Models\Employees;
 
 use App\Modules\HrmsCore\Models\Concerns\HasHrmsUuid;
+use App\Traits\UsesTenantConnection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -26,10 +27,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 final class EmployeeParent extends Model
 {
     use HasHrmsUuid;
+    use UsesTenantConnection;
 
     protected $table = 'hrms_employee_parents';
-
-    protected $connection = 'landlord';
 
     protected $fillable = [
         'employee_id',

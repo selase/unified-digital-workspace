@@ -12,6 +12,7 @@ use Illuminate\Support\Carbon;
 
 beforeEach(function (): void {
     Carbon::setTestNow(Carbon::parse('2026-02-07 10:00:00'));
+    [$this->tenant] = setupIncidentTenantConnection();
 });
 
 afterEach(function (): void {
@@ -19,14 +20,14 @@ afterEach(function (): void {
 });
 
 it('generates due and SLA reminders with priority thresholds', function (): void {
-    $priority = IncidentPriorityFactory::new()->create([
+    $priority = IncidentPriorityFactory::new()->forTenant($this->tenant->id)->create([
         'response_time_minutes' => 60,
         'resolution_time_minutes' => 240,
     ]);
 
     $assignee = User::factory()->create();
 
-    $incident = Incident::factory()->create([
+    $incident = Incident::factory()->forTenant($this->tenant->id)->create([
         'priority_id' => $priority->id,
         'due_at' => now()->addDays(2),
         'assigned_to_id' => $assignee->id,
@@ -51,12 +52,12 @@ it('generates due and SLA reminders with priority thresholds', function (): void
 });
 
 it('does not duplicate reminders when generation is re-run', function (): void {
-    $priority = IncidentPriorityFactory::new()->create([
+    $priority = IncidentPriorityFactory::new()->forTenant($this->tenant->id)->create([
         'response_time_minutes' => 30,
         'resolution_time_minutes' => 120,
     ]);
 
-    $incident = Incident::factory()->create([
+    $incident = Incident::factory()->forTenant($this->tenant->id)->create([
         'priority_id' => $priority->id,
         'due_at' => now()->addDays(2),
     ]);

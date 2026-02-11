@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\IncidentManagement\Http\Requests;
 
+use App\Modules\IncidentManagement\Models\IncidentPriority;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -20,7 +21,7 @@ final class IncidentEscalateRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'to_priority_id' => ['required', 'integer', Rule::exists('incident_priorities', 'id')],
+            'to_priority_id' => ['required', 'integer', Rule::exists(IncidentPriority::class, 'id')],
             'reason' => ['nullable', 'string'],
         ];
     }

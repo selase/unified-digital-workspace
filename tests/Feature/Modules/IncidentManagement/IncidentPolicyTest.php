@@ -5,6 +5,10 @@ declare(strict_types=1);
 use App\Modules\IncidentManagement\Models\Incident;
 use App\Policies\IncidentPolicy;
 
+beforeEach(function (): void {
+    setupIncidentTenantConnection();
+});
+
 it('allows viewAny when user has incidents.view permission', function (): void {
     [$user] = createIncidentApiContext();
 

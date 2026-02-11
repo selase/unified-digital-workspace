@@ -30,8 +30,6 @@ final class InterviewStage extends Model
 
     protected $table = 'hrms_interview_stages';
 
-    protected $connection = 'landlord';
-
     protected $fillable = [
         'tenant_id',
         'name',
@@ -49,18 +47,6 @@ final class InterviewStage extends Model
         'is_mandatory' => true,
         'is_active' => true,
     ];
-
-    /**
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'sequence' => 'integer',
-            'is_mandatory' => 'boolean',
-            'is_active' => 'boolean',
-        ];
-    }
 
     /**
      * @return HasMany<Interview, $this>
@@ -95,5 +81,17 @@ final class InterviewStage extends Model
     public function scopeMandatory($query)
     {
         return $query->where('is_mandatory', true);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'sequence' => 'integer',
+            'is_mandatory' => 'boolean',
+            'is_active' => 'boolean',
+        ];
     }
 }

@@ -38,8 +38,6 @@ final class OfferNegotiation extends Model
 
     protected $table = 'hrms_offer_negotiations';
 
-    protected $connection = 'landlord';
-
     protected $fillable = [
         'tenant_id',
         'offer_id',

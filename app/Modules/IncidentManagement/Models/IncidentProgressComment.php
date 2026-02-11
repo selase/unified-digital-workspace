@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\IncidentManagement\Models;
 
 use App\Models\User;
+use App\Traits\UsesTenantConnection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -18,9 +19,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 final class IncidentProgressComment extends Model
 {
-    protected $table = 'incident_progress_comments';
+    use UsesTenantConnection;
 
-    protected $connection = 'landlord';
+    protected $table = 'incident_progress_comments';
 
     protected $fillable = [
         'progress_report_id',

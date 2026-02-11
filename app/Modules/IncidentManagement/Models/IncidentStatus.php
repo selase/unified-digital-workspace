@@ -30,14 +30,13 @@ use Illuminate\Support\Str;
 final class IncidentStatus extends Model
 {
     use BelongsToTenant;
+
     /** @use HasFactory<IncidentStatusFactory> */
     use HasFactory;
 
     use HasIncidentUuid;
 
     protected $table = 'incident_statuses';
-
-    protected $connection = 'landlord';
 
     protected $fillable = [
         'uuid',

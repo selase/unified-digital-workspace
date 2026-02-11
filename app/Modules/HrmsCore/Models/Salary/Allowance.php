@@ -34,15 +34,13 @@ final class Allowance extends Model
     use BelongsToTenant;
     use HasHrmsUuid;
 
-    protected $table = 'hrms_allowances';
-
-    protected $connection = 'landlord';
-
     public const FREQUENCY_MONTHLY = 'monthly';
 
     public const FREQUENCY_ANNUAL = 'annual';
 
     public const FREQUENCY_ONE_TIME = 'one-time';
+
+    protected $table = 'hrms_allowances';
 
     protected $fillable = [
         'tenant_id',
@@ -68,27 +66,16 @@ final class Allowance extends Model
     ];
 
     /**
-     * Boot the model.
-     */
-    protected static function boot(): void
-    {
-        parent::boot();
-
-        self::creating(function (Allowance $allowance): void {
-            if (empty($allowance->slug)) {
-                $allowance->slug = Str::slug($allowance->name);
-            }
-        });
-    }
-
-    /**
+     * Get available frequency options.
+     *
      * @return array<string, string>
      */
-    protected function casts(): array
+    public static function frequencyOptions(): array
     {
         return [
-            'amount' => 'decimal:2',
-            'is_active' => 'boolean',
+            self::FREQUENCY_MONTHLY => 'Monthly',
+            self::FREQUENCY_ANNUAL => 'Annual',
+            self::FREQUENCY_ONE_TIME => 'One-time',
         ];
     }
 
@@ -120,20 +107,6 @@ final class Allowance extends Model
     public function employeeAllowances(): HasMany
     {
         return $this->hasMany(EmployeeAllowance::class);
-    }
-
-    /**
-     * Get available frequency options.
-     *
-     * @return array<string, string>
-     */
-    public static function frequencyOptions(): array
-    {
-        return [
-            self::FREQUENCY_MONTHLY => 'Monthly',
-            self::FREQUENCY_ANNUAL => 'Annual',
-            self::FREQUENCY_ONE_TIME => 'One-time',
-        ];
     }
 
     /**
@@ -202,5 +175,30 @@ final class Allowance extends Model
     public function scopeWithFrequency($query, string $frequency)
     {
         return $query->where('frequency', $frequency);
+    }
+
+    /**
+     * Boot the model.
+     */
+    protected static function boot(): void
+    {
+        parent::boot();
+
+        self::creating(function (Allowance $allowance): void {
+            if (empty($allowance->slug)) {
+                $allowance->slug = Str::slug($allowance->name);
+            }
+        });
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'amount' => 'decimal:2',
+            'is_active' => 'boolean',
+        ];
     }
 }

@@ -32,8 +32,6 @@ final class AppraisalSection extends Model
 
     protected $table = 'hrms_appraisal_sections';
 
-    protected $connection = 'landlord';
-
     protected $fillable = [
         'tenant_id',
         'template_id',
@@ -54,18 +52,6 @@ final class AppraisalSection extends Model
         'sort_order' => 0,
         'is_active' => true,
     ];
-
-    /**
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'weight' => 'decimal:2',
-            'sort_order' => 'integer',
-            'is_active' => 'boolean',
-        ];
-    }
 
     /**
      * Get the template this section belongs to.
@@ -144,5 +130,17 @@ final class AppraisalSection extends Model
     public function scopeForTemplate($query, int $templateId)
     {
         return $query->where('template_id', $templateId);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'weight' => 'decimal:2',
+            'sort_order' => 'integer',
+            'is_active' => 'boolean',
+        ];
     }
 }

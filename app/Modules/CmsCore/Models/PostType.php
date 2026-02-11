@@ -38,8 +38,6 @@ final class PostType extends Model
 
     protected $table = 'post_types';
 
-    protected $connection = 'landlord';
-
     protected $fillable = [
         'uuid',
         'tenant_id',

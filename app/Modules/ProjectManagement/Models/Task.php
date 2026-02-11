@@ -21,8 +21,6 @@ final class Task extends Model
 
     public const PRIORITIES = ['low', 'medium', 'high', 'critical'];
 
-    protected $connection = 'landlord';
-
     protected $fillable = [
         'uuid',
         'project_id',

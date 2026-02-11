@@ -34,8 +34,6 @@ final class LeaveBalance extends Model
 
     protected $table = 'hrms_leave_balances';
 
-    protected $connection = 'landlord';
-
     protected $fillable = [
         'tenant_id',
         'employee_id',
@@ -60,18 +58,30 @@ final class LeaveBalance extends Model
     ];
 
     /**
-     * @return array<string, string>
+     * Get or create a balance for an employee, category, and year.
      */
-    protected function casts(): array
-    {
-        return [
-            'year' => 'integer',
-            'entitled_days' => 'integer',
-            'carried_forward_days' => 'integer',
-            'used_days' => 'integer',
-            'pending_days' => 'integer',
-            'remaining_days' => 'integer',
-        ];
+    public static function getOrCreateForEmployee(
+        int $employeeId,
+        int $leaveCategoryId,
+        ?int $year = null
+    ): self {
+        $year ??= (int) date('Y');
+        $category = LeaveCategory::find($leaveCategoryId);
+        $defaultDays = $category !== null ? $category->default_days : 0;
+
+        return self::firstOrCreate(
+            [
+                'employee_id' => $employeeId,
+                'leave_category_id' => $leaveCategoryId,
+                'year' => $year,
+            ],
+            [
+                'entitled_days' => $defaultDays,
+                'carried_forward_days' => 0,
+                'used_days' => 0,
+                'pending_days' => 0,
+            ]
+        );
     }
 
     /**
@@ -200,29 +210,17 @@ final class LeaveBalance extends Model
     }
 
     /**
-     * Get or create a balance for an employee, category, and year.
+     * @return array<string, string>
      */
-    public static function getOrCreateForEmployee(
-        int $employeeId,
-        int $leaveCategoryId,
-        ?int $year = null
-    ): self {
-        $year ??= (int) date('Y');
-        $category = LeaveCategory::find($leaveCategoryId);
-        $defaultDays = $category !== null ? $category->default_days : 0;
-
-        return self::firstOrCreate(
-            [
-                'employee_id' => $employeeId,
-                'leave_category_id' => $leaveCategoryId,
-                'year' => $year,
-            ],
-            [
-                'entitled_days' => $defaultDays,
-                'carried_forward_days' => 0,
-                'used_days' => 0,
-                'pending_days' => 0,
-            ]
-        );
+    protected function casts(): array
+    {
+        return [
+            'year' => 'integer',
+            'entitled_days' => 'integer',
+            'carried_forward_days' => 'integer',
+            'used_days' => 'integer',
+            'pending_days' => 'integer',
+            'remaining_days' => 'integer',
+        ];
     }
 }

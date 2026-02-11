@@ -53,8 +53,6 @@ final class CandidateAssessment extends Model
 
     protected $table = 'hrms_candidate_assessments';
 
-    protected $connection = 'landlord';
-
     protected $fillable = [
         'tenant_id',
         'application_id',

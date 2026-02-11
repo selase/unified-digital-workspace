@@ -40,19 +40,7 @@ final class LeaveCategory extends Model
 
     use HasHrmsUuid;
 
-    /**
-     * Create a new factory instance for the model.
-     *
-     * @return \Illuminate\Database\Eloquent\Factories\Factory<static>
-     */
-    protected static function newFactory(): \Illuminate\Database\Eloquent\Factories\Factory
-    {
-        return LeaveCategoryFactory::new();
-    }
-
     protected $table = 'hrms_leave_categories';
-
-    protected $connection = 'landlord';
 
     protected $fillable = [
         'tenant_id',
@@ -77,34 +65,6 @@ final class LeaveCategory extends Model
         'is_active' => true,
         'sort_order' => 0,
     ];
-
-    /**
-     * Boot the model.
-     */
-    protected static function boot(): void
-    {
-        parent::boot();
-
-        self::creating(function (LeaveCategory $category): void {
-            if (empty($category->slug)) {
-                $category->slug = Str::slug($category->name);
-            }
-        });
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'default_days' => 'integer',
-            'is_paid' => 'boolean',
-            'requires_documentation' => 'boolean',
-            'is_active' => 'boolean',
-            'sort_order' => 'integer',
-        ];
-    }
 
     /**
      * Get the leave requests for this category.
@@ -146,5 +106,43 @@ final class LeaveCategory extends Model
     public function scopeOrdered($query)
     {
         return $query->orderBy('sort_order')->orderBy('name');
+    }
+
+    /**
+     * Create a new factory instance for the model.
+     *
+     * @return \Illuminate\Database\Eloquent\Factories\Factory<static>
+     */
+    protected static function newFactory(): \Illuminate\Database\Eloquent\Factories\Factory
+    {
+        return LeaveCategoryFactory::new();
+    }
+
+    /**
+     * Boot the model.
+     */
+    protected static function boot(): void
+    {
+        parent::boot();
+
+        self::creating(function (LeaveCategory $category): void {
+            if (empty($category->slug)) {
+                $category->slug = Str::slug($category->name);
+            }
+        });
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'default_days' => 'integer',
+            'is_paid' => 'boolean',
+            'requires_documentation' => 'boolean',
+            'is_active' => 'boolean',
+            'sort_order' => 'integer',
+        ];
     }
 }

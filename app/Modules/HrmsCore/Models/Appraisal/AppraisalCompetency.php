@@ -36,8 +36,6 @@ final class AppraisalCompetency extends Model
 
     protected $table = 'hrms_appraisal_competencies';
 
-    protected $connection = 'landlord';
-
     protected $fillable = [
         'tenant_id',
         'appraisal_id',
@@ -62,20 +60,6 @@ final class AppraisalCompetency extends Model
         'weight' => 0,
         'sort_order' => 0,
     ];
-
-    /**
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'self_rating' => 'integer',
-            'supervisor_rating' => 'integer',
-            'final_rating' => 'integer',
-            'weight' => 'decimal:2',
-            'sort_order' => 'integer',
-        ];
-    }
 
     /**
      * Get the appraisal this competency belongs to.
@@ -170,5 +154,19 @@ final class AppraisalCompetency extends Model
         return $query->whereNotNull('self_rating')
             ->whereNotNull('supervisor_rating')
             ->whereRaw('ABS(supervisor_rating - self_rating) >= ?', [$threshold]);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'self_rating' => 'integer',
+            'supervisor_rating' => 'integer',
+            'final_rating' => 'integer',
+            'weight' => 'decimal:2',
+            'sort_order' => 'integer',
+        ];
     }
 }

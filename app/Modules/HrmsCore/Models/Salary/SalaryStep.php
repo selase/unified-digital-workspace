@@ -37,8 +37,6 @@ final class SalaryStep extends Model
 
     protected $table = 'hrms_salary_steps';
 
-    protected $connection = 'landlord';
-
     protected $fillable = [
         'tenant_id',
         'name',
@@ -61,32 +59,6 @@ final class SalaryStep extends Model
         'step_number' => 1,
         'is_active' => true,
     ];
-
-    /**
-     * Boot the model.
-     */
-    protected static function boot(): void
-    {
-        parent::boot();
-
-        self::creating(function (SalaryStep $step): void {
-            if (empty($step->slug)) {
-                $step->slug = Str::slug($step->name);
-            }
-        });
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'step_increment' => 'decimal:2',
-            'step_number' => 'integer',
-            'is_active' => 'boolean',
-        ];
-    }
 
     /**
      * Get the grade this salary step belongs to.
@@ -174,5 +146,31 @@ final class SalaryStep extends Model
     public function scopeForLevel($query, int $levelId)
     {
         return $query->where('salary_level_id', $levelId);
+    }
+
+    /**
+     * Boot the model.
+     */
+    protected static function boot(): void
+    {
+        parent::boot();
+
+        self::creating(function (SalaryStep $step): void {
+            if (empty($step->slug)) {
+                $step->slug = Str::slug($step->name);
+            }
+        });
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'step_increment' => 'decimal:2',
+            'step_number' => 'integer',
+            'is_active' => 'boolean',
+        ];
     }
 }

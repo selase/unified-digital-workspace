@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\IncidentManagement\Models;
 
+use App\Traits\UsesTenantConnection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -21,9 +22,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 final class IncidentSla extends Model
 {
-    protected $table = 'incident_slas';
+    use UsesTenantConnection;
 
-    protected $connection = 'landlord';
+    protected $table = 'incident_slas';
 
     protected $fillable = [
         'incident_id',

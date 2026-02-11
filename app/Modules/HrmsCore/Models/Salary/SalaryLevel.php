@@ -36,8 +36,6 @@ final class SalaryLevel extends Model
 
     protected $table = 'hrms_salary_levels';
 
-    protected $connection = 'landlord';
-
     protected $fillable = [
         'tenant_id',
         'name',
@@ -59,32 +57,6 @@ final class SalaryLevel extends Model
         'is_active' => true,
         'sort_order' => 0,
     ];
-
-    /**
-     * Boot the model.
-     */
-    protected static function boot(): void
-    {
-        parent::boot();
-
-        self::creating(function (SalaryLevel $level): void {
-            if (empty($level->slug)) {
-                $level->slug = Str::slug($level->name);
-            }
-        });
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'base_salary' => 'decimal:2',
-            'is_active' => 'boolean',
-            'sort_order' => 'integer',
-        ];
-    }
 
     /**
      * Get the grade this salary level belongs to.
@@ -147,5 +119,31 @@ final class SalaryLevel extends Model
     public function scopeForGrade($query, int $gradeId)
     {
         return $query->where('grade_id', $gradeId);
+    }
+
+    /**
+     * Boot the model.
+     */
+    protected static function boot(): void
+    {
+        parent::boot();
+
+        self::creating(function (SalaryLevel $level): void {
+            if (empty($level->slug)) {
+                $level->slug = Str::slug($level->name);
+            }
+        });
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'base_salary' => 'decimal:2',
+            'is_active' => 'boolean',
+            'sort_order' => 'integer',
+        ];
     }
 }

@@ -15,6 +15,7 @@ use App\Modules\IncidentManagement\Models\IncidentCategory;
 use App\Modules\IncidentManagement\Models\IncidentPriority;
 use App\Modules\IncidentManagement\Models\IncidentReminder;
 use App\Services\ModuleManager;
+use App\Services\Tenancy\TenantContext;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
@@ -30,7 +31,13 @@ use function Pest\Laravel\postJson;
 function createIncidentApiContext(): array
 {
     $user = User::factory()->create();
-    $tenant = setActiveTenantForTest($user);
+    $tenant = app(TenantContext::class)->getTenant();
+
+    if (! $tenant) {
+        [$tenant] = setupIncidentTenantConnection($user);
+    } else {
+        $tenant->users()->syncWithoutDetaching($user->id);
+    }
 
     $permissions = [
         'incidents.view',

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\CmsCore\Models;
 
 use App\Models\User;
+use App\Traits\UsesTenantConnection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -20,11 +21,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 final class PostRevision extends Model
 {
+    use UsesTenantConnection;
+
     public $timestamps = false;
 
     protected $table = 'post_revisions';
-
-    protected $connection = 'landlord';
 
     protected $fillable = [
         'post_id',

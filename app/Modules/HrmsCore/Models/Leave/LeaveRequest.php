@@ -71,19 +71,7 @@ final class LeaveRequest extends Model
     use HasHrmsUuid;
     use SoftDeletes;
 
-    /**
-     * Create a new factory instance for the model.
-     *
-     * @return \Illuminate\Database\Eloquent\Factories\Factory<static>
-     */
-    protected static function newFactory(): \Illuminate\Database\Eloquent\Factories\Factory
-    {
-        return LeaveRequestFactory::new();
-    }
-
     protected $table = 'hrms_leave_requests';
-
-    protected $connection = 'landlord';
 
     protected $fillable = [
         'tenant_id',
@@ -135,37 +123,6 @@ final class LeaveRequest extends Model
         'no_of_weekends_in_period' => 0,
         'is_recalled' => false,
     ];
-
-    /**
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'proposed_start_date' => 'date',
-            'proposed_end_date' => 'date',
-            'no_requested_days' => 'integer',
-            'no_recommended_days' => 'integer',
-            'recommended_start_date' => 'date',
-            'recommended_end_date' => 'date',
-            'supervisor_verified_at' => 'datetime',
-            'hr_verified_at' => 'datetime',
-            'status' => LeaveStatus::class,
-            'no_of_days_approved' => 'integer',
-            'approved_start_date' => 'date',
-            'approved_end_date' => 'date',
-            'hod_decision_at' => 'datetime',
-            'resumption_date' => 'date',
-            'no_of_holidays_in_period' => 'integer',
-            'no_of_weekends_in_period' => 'integer',
-            'is_recalled' => 'boolean',
-            'recall_date' => 'date',
-            'no_of_days_recalled' => 'integer',
-            'recalled_at' => 'datetime',
-            'balance_at_request' => 'integer',
-            'carry_forward_at_request' => 'integer',
-        ];
-    }
 
     /**
      * Get the employee who made the request.
@@ -381,5 +338,46 @@ final class LeaveRequest extends Model
     {
         return $query->where('status', LeaveStatus::Verified)
             ->whereNull('hod_decision_at');
+    }
+
+    /**
+     * Create a new factory instance for the model.
+     *
+     * @return \Illuminate\Database\Eloquent\Factories\Factory<static>
+     */
+    protected static function newFactory(): \Illuminate\Database\Eloquent\Factories\Factory
+    {
+        return LeaveRequestFactory::new();
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'proposed_start_date' => 'date',
+            'proposed_end_date' => 'date',
+            'no_requested_days' => 'integer',
+            'no_recommended_days' => 'integer',
+            'recommended_start_date' => 'date',
+            'recommended_end_date' => 'date',
+            'supervisor_verified_at' => 'datetime',
+            'hr_verified_at' => 'datetime',
+            'status' => LeaveStatus::class,
+            'no_of_days_approved' => 'integer',
+            'approved_start_date' => 'date',
+            'approved_end_date' => 'date',
+            'hod_decision_at' => 'datetime',
+            'resumption_date' => 'date',
+            'no_of_holidays_in_period' => 'integer',
+            'no_of_weekends_in_period' => 'integer',
+            'is_recalled' => 'boolean',
+            'recall_date' => 'date',
+            'no_of_days_recalled' => 'integer',
+            'recalled_at' => 'datetime',
+            'balance_at_request' => 'integer',
+            'carry_forward_at_request' => 'integer',
+        ];
     }
 }

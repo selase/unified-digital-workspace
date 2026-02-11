@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\CmsCore\Models;
 
+use App\Traits\UsesTenantConnection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -17,9 +18,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 final class PostMeta extends Model
 {
-    protected $table = 'post_meta';
+    use UsesTenantConnection;
 
-    protected $connection = 'landlord';
+    protected $table = 'post_meta';
 
     protected $fillable = [
         'post_id',

@@ -30,8 +30,6 @@ final class AppraisalRatingScale extends Model
 
     protected $table = 'hrms_appraisal_rating_scales';
 
-    protected $connection = 'landlord';
-
     protected $fillable = [
         'tenant_id',
         'period_id',
@@ -42,13 +40,29 @@ final class AppraisalRatingScale extends Model
     ];
 
     /**
-     * @return array<string, string>
+     * Create default rating scales for a period.
+     *
+     * @return \Illuminate\Database\Eloquent\Collection<int, self>
      */
-    protected function casts(): array
+    public static function createDefaultScales(?int $periodId = null): \Illuminate\Database\Eloquent\Collection
     {
-        return [
-            'value' => 'integer',
+        $defaults = [
+            ['value' => 1, 'label' => 'Unsatisfactory', 'description' => 'Performance consistently fails to meet minimum job requirements.'],
+            ['value' => 2, 'label' => 'Below Expectations', 'description' => 'Performance does not fully meet job requirements in some areas.'],
+            ['value' => 3, 'label' => 'Meets Expectations', 'description' => 'Performance consistently meets job requirements and expectations.'],
+            ['value' => 4, 'label' => 'Exceeds Expectations', 'description' => 'Performance frequently exceeds job requirements.'],
+            ['value' => 5, 'label' => 'Outstanding', 'description' => 'Performance consistently exceeds all job requirements with exceptional results.'],
         ];
+
+        $scales = new \Illuminate\Database\Eloquent\Collection();
+        foreach ($defaults as $default) {
+            $scales->push(self::create([
+                'period_id' => $periodId,
+                ...$default,
+            ]));
+        }
+
+        return $scales;
     }
 
     /**
@@ -78,32 +92,6 @@ final class AppraisalRatingScale extends Model
             5 => 'bg-green-100 text-green-800',
             default => 'bg-gray-100 text-gray-800',
         };
-    }
-
-    /**
-     * Create default rating scales for a period.
-     *
-     * @return \Illuminate\Database\Eloquent\Collection<int, self>
-     */
-    public static function createDefaultScales(?int $periodId = null): \Illuminate\Database\Eloquent\Collection
-    {
-        $defaults = [
-            ['value' => 1, 'label' => 'Unsatisfactory', 'description' => 'Performance consistently fails to meet minimum job requirements.'],
-            ['value' => 2, 'label' => 'Below Expectations', 'description' => 'Performance does not fully meet job requirements in some areas.'],
-            ['value' => 3, 'label' => 'Meets Expectations', 'description' => 'Performance consistently meets job requirements and expectations.'],
-            ['value' => 4, 'label' => 'Exceeds Expectations', 'description' => 'Performance frequently exceeds job requirements.'],
-            ['value' => 5, 'label' => 'Outstanding', 'description' => 'Performance consistently exceeds all job requirements with exceptional results.'],
-        ];
-
-        $scales = new \Illuminate\Database\Eloquent\Collection();
-        foreach ($defaults as $default) {
-            $scales->push(self::create([
-                'period_id' => $periodId,
-                ...$default,
-            ]));
-        }
-
-        return $scales;
     }
 
     /**
@@ -137,5 +125,15 @@ final class AppraisalRatingScale extends Model
     public function scopeGlobal($query)
     {
         return $query->whereNull('period_id');
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'value' => 'integer',
+        ];
     }
 }

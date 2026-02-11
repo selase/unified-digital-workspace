@@ -37,8 +37,6 @@ final class InterviewEvaluation extends Model
 
     protected $table = 'hrms_interview_evaluations';
 
-    protected $connection = 'landlord';
-
     protected $fillable = [
         'tenant_id',
         'interview_id',
@@ -53,19 +51,6 @@ final class InterviewEvaluation extends Model
         'recommendation_notes',
         'submitted_at',
     ];
-
-    /**
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'criteria_scores' => 'array',
-            'overall_score' => 'integer',
-            'is_recommended' => 'boolean',
-            'submitted_at' => 'datetime',
-        ];
-    }
 
     /**
      * @return BelongsTo<Interview, $this>
@@ -120,5 +105,18 @@ final class InterviewEvaluation extends Model
     public function scopeRecommended($query)
     {
         return $query->where('is_recommended', true);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'criteria_scores' => 'array',
+            'overall_score' => 'integer',
+            'is_recommended' => 'boolean',
+            'submitted_at' => 'datetime',
+        ];
     }
 }

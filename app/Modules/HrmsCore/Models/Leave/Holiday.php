@@ -16,12 +16,12 @@ use Illuminate\Support\Carbon;
  * @property string $uuid
  * @property string $tenant_id
  * @property string $name
- * @property \Illuminate\Support\Carbon $date
+ * @property Carbon $date
  * @property string|null $description
  * @property bool $is_recurring
  * @property bool $is_active
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  */
 final class Holiday extends Model
 {
@@ -29,8 +29,6 @@ final class Holiday extends Model
     use HasHrmsUuid;
 
     protected $table = 'hrms_holidays';
-
-    protected $connection = 'landlord';
 
     protected $fillable = [
         'tenant_id',
@@ -52,15 +50,51 @@ final class Holiday extends Model
     ];
 
     /**
-     * @return array<string, string>
+     * Count holidays between two dates.
      */
-    protected function casts(): array
+    public static function countBetweenDates(Carbon $startDate, Carbon $endDate): int
     {
-        return [
-            'date' => 'date',
-            'is_recurring' => 'boolean',
-            'is_active' => 'boolean',
-        ];
+        $count = 0;
+        $holidays = self::active()->get();
+
+        $current = $startDate->copy();
+        while ($current->lte($endDate)) {
+            foreach ($holidays as $holiday) {
+                if ($holiday->isOnDate($current)) {
+                    $count++;
+
+                    break; // Only count once per day even if multiple holidays
+                }
+            }
+            $current->addDay();
+        }
+
+        return $count;
+    }
+
+    /**
+     * Get holiday dates between two dates as an array.
+     *
+     * @return array<Carbon>
+     */
+    public static function getDatesBetween(Carbon $startDate, Carbon $endDate): array
+    {
+        $dates = [];
+        $holidays = self::active()->get();
+
+        $current = $startDate->copy();
+        while ($current->lte($endDate)) {
+            foreach ($holidays as $holiday) {
+                if ($holiday->isOnDate($current)) {
+                    $dates[] = $current->copy();
+
+                    break;
+                }
+            }
+            $current->addDay();
+        }
+
+        return $dates;
     }
 
     /**
@@ -107,7 +141,7 @@ final class Holiday extends Model
                     // This is a simplified approach - for production,
                     // you might want to calculate specific dates
                     $innerQ->whereRaw(
-                        "EXTRACT(MONTH FROM date) * 100 + EXTRACT(DAY FROM date) BETWEEN ? AND ?",
+                        'EXTRACT(MONTH FROM date) * 100 + EXTRACT(DAY FROM date) BETWEEN ? AND ?',
                         [
                             $startDate->month * 100 + $startDate->day,
                             $endDate->month * 100 + $endDate->day,
@@ -135,50 +169,14 @@ final class Holiday extends Model
     }
 
     /**
-     * Count holidays between two dates.
+     * @return array<string, string>
      */
-    public static function countBetweenDates(Carbon $startDate, Carbon $endDate): int
+    protected function casts(): array
     {
-        $count = 0;
-        $holidays = self::active()->get();
-
-        $current = $startDate->copy();
-        while ($current->lte($endDate)) {
-            foreach ($holidays as $holiday) {
-                if ($holiday->isOnDate($current)) {
-                    $count++;
-
-                    break; // Only count once per day even if multiple holidays
-                }
-            }
-            $current->addDay();
-        }
-
-        return $count;
-    }
-
-    /**
-     * Get holiday dates between two dates as an array.
-     *
-     * @return array<\Illuminate\Support\Carbon>
-     */
-    public static function getDatesBetween(Carbon $startDate, Carbon $endDate): array
-    {
-        $dates = [];
-        $holidays = self::active()->get();
-
-        $current = $startDate->copy();
-        while ($current->lte($endDate)) {
-            foreach ($holidays as $holiday) {
-                if ($holiday->isOnDate($current)) {
-                    $dates[] = $current->copy();
-
-                    break;
-                }
-            }
-            $current->addDay();
-        }
-
-        return $dates;
+        return [
+            'date' => 'date',
+            'is_recurring' => 'boolean',
+            'is_active' => 'boolean',
+        ];
     }
 }

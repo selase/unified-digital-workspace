@@ -49,8 +49,6 @@ final class CandidateApplication extends Model
 
     protected $table = 'hrms_candidate_applications';
 
-    protected $connection = 'landlord';
-
     protected $fillable = [
         'tenant_id',
         'candidate_id',
@@ -79,22 +77,6 @@ final class CandidateApplication extends Model
         'status' => 'submitted',
         'stage' => 'application',
     ];
-
-    /**
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'status' => ApplicationStatus::class,
-            'offered_salary' => 'decimal:2',
-            'proposed_start_date' => 'date',
-            'screened_at' => 'datetime',
-            'is_recommended' => 'boolean',
-            'rejected_at' => 'datetime',
-            'hired_at' => 'datetime',
-        ];
-    }
 
     /**
      * @return BelongsTo<Candidate, $this>
@@ -228,5 +210,21 @@ final class CandidateApplication extends Model
     public function scopeForPosting($query, int $postingId)
     {
         return $query->where('posting_id', $postingId);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'status' => ApplicationStatus::class,
+            'offered_salary' => 'decimal:2',
+            'proposed_start_date' => 'date',
+            'screened_at' => 'datetime',
+            'is_recommended' => 'boolean',
+            'rejected_at' => 'datetime',
+            'hired_at' => 'datetime',
+        ];
     }
 }

@@ -24,8 +24,6 @@ final class Project extends Model
 
     public const PRIORITIES = ['low', 'medium', 'high', 'critical'];
 
-    protected $connection = 'landlord';
-
     protected $fillable = [
         'uuid',
         'tenant_id',

@@ -38,8 +38,6 @@ final class Center extends Model
 
     protected $table = 'hrms_centers';
 
-    protected $connection = 'landlord';
-
     protected $fillable = [
         'tenant_id',
         'name',

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\CmsCore\Models;
 
+use App\Traits\UsesTenantConnection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -21,9 +22,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 final class MenuItem extends Model
 {
-    protected $table = 'menu_items';
+    use UsesTenantConnection;
 
-    protected $connection = 'landlord';
+    protected $table = 'menu_items';
 
     protected $fillable = [
         'menu_id',

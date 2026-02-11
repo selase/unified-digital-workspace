@@ -31,8 +31,6 @@ final class AppraisalScore extends Model
 
     protected $table = 'hrms_appraisal_scores';
 
-    protected $connection = 'landlord';
-
     protected $fillable = [
         'tenant_id',
         'appraisal_id',
@@ -42,19 +40,6 @@ final class AppraisalScore extends Model
         'final_score',
         'weighted_score',
     ];
-
-    /**
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'self_score' => 'decimal:2',
-            'supervisor_score' => 'decimal:2',
-            'final_score' => 'decimal:2',
-            'weighted_score' => 'decimal:2',
-        ];
-    }
 
     /**
      * Get the appraisal this score belongs to.
@@ -182,5 +167,18 @@ final class AppraisalScore extends Model
     public function scopeSections($query)
     {
         return $query->whereNotNull('section_id');
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'self_score' => 'decimal:2',
+            'supervisor_score' => 'decimal:2',
+            'final_score' => 'decimal:2',
+            'weighted_score' => 'decimal:2',
+        ];
     }
 }

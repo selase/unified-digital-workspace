@@ -6,6 +6,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
 use Tests\TestCase;
 
@@ -107,4 +108,49 @@ function refreshTenantDatabases(): void
         '--path' => $tenantPath,
         '--realpath' => true,
     ]);
+}
+
+function migrateIncidentManagementModule(): void
+{
+    Artisan::call('migrate', [
+        '--database' => 'tenant',
+        '--path' => app_path('Modules/IncidentManagement/Database/Migrations'),
+        '--realpath' => true,
+        '--force' => true,
+    ]);
+}
+
+/**
+ * @return array{0: Tenant, 1: string}
+ */
+function setupIncidentTenantConnection(?User $user = null): array
+{
+    $tenantDb = database_path('tenant_incident_testing.sqlite');
+    if (file_exists($tenantDb)) {
+        unlink($tenantDb);
+    }
+    touch($tenantDb);
+
+    Config::set('database.connections.tenant', [
+        'driver' => 'sqlite',
+        'database' => $tenantDb,
+        'prefix' => '',
+        'foreign_key_constraints' => true,
+    ]);
+    Config::set('database.default_tenant_connection', 'tenant');
+
+    DB::purge('tenant');
+    DB::reconnect('tenant');
+
+    $tenant = setActiveTenantForTest($user, [
+        'isolation_mode' => 'db_per_tenant',
+        'db_driver' => 'sqlite',
+        'meta' => [
+            'database' => $tenantDb,
+        ],
+    ]);
+
+    migrateIncidentManagementModule();
+
+    return [$tenant, $tenantDb];
 }

@@ -34,10 +34,6 @@ final class AppraisalRecommendation extends Model
     use BelongsToTenant;
     use HasHrmsUuid;
 
-    protected $table = 'hrms_appraisal_recommendations';
-
-    protected $connection = 'landlord';
-
     public const STATUS_PENDING = 'pending';
 
     public const STATUS_APPROVED = 'approved';
@@ -45,6 +41,8 @@ final class AppraisalRecommendation extends Model
     public const STATUS_REJECTED = 'rejected';
 
     public const STATUS_IMPLEMENTED = 'implemented';
+
+    protected $table = 'hrms_appraisal_recommendations';
 
     protected $fillable = [
         'tenant_id',
@@ -69,14 +67,17 @@ final class AppraisalRecommendation extends Model
     ];
 
     /**
+     * Get available statuses.
+     *
      * @return array<string, string>
      */
-    protected function casts(): array
+    public static function statuses(): array
     {
         return [
-            'type' => RecommendationType::class,
-            'target_date' => 'date',
-            'approved_at' => 'datetime',
+            self::STATUS_PENDING => 'Pending',
+            self::STATUS_APPROVED => 'Approved',
+            self::STATUS_REJECTED => 'Rejected',
+            self::STATUS_IMPLEMENTED => 'Implemented',
         ];
     }
 
@@ -188,21 +189,6 @@ final class AppraisalRecommendation extends Model
     }
 
     /**
-     * Get available statuses.
-     *
-     * @return array<string, string>
-     */
-    public static function statuses(): array
-    {
-        return [
-            self::STATUS_PENDING => 'Pending',
-            self::STATUS_APPROVED => 'Approved',
-            self::STATUS_REJECTED => 'Rejected',
-            self::STATUS_IMPLEMENTED => 'Implemented',
-        ];
-    }
-
-    /**
      * Scope to filter by appraisal.
      *
      * @param  \Illuminate\Database\Eloquent\Builder<static>  $query
@@ -284,5 +270,17 @@ final class AppraisalRecommendation extends Model
             RecommendationType::PerformanceImprovement,
             RecommendationType::Termination,
         ]);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'type' => RecommendationType::class,
+            'target_date' => 'date',
+            'approved_at' => 'datetime',
+        ];
     }
 }

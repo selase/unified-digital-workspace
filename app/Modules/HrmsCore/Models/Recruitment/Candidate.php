@@ -56,8 +56,6 @@ final class Candidate extends Model
 
     protected $table = 'hrms_candidates';
 
-    protected $connection = 'landlord';
-
     protected $fillable = [
         'tenant_id',
         'first_name',
@@ -96,21 +94,6 @@ final class Candidate extends Model
     protected $attributes = [
         'status' => 'active',
     ];
-
-    /**
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'date_of_birth' => 'date',
-            'current_salary' => 'decimal:2',
-            'expected_salary' => 'decimal:2',
-            'years_of_experience' => 'integer',
-            'skills' => 'array',
-            'languages' => 'array',
-        ];
-    }
 
     /**
      * @return HasMany<CandidateApplication, $this>
@@ -184,5 +167,20 @@ final class Candidate extends Model
     public function scopeWithSkill($query, string $skill)
     {
         return $query->whereJsonContains('skills', $skill);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'date_of_birth' => 'date',
+            'current_salary' => 'decimal:2',
+            'expected_salary' => 'decimal:2',
+            'years_of_experience' => 'integer',
+            'skills' => 'array',
+            'languages' => 'array',
+        ];
     }
 }

@@ -32,10 +32,6 @@ final class CandidateDocument extends Model
     use BelongsToTenant;
     use HasHrmsUuid;
 
-    protected $table = 'hrms_candidate_documents';
-
-    protected $connection = 'landlord';
-
     public const TYPE_RESUME = 'resume';
 
     public const TYPE_COVER_LETTER = 'cover_letter';
@@ -45,6 +41,8 @@ final class CandidateDocument extends Model
     public const TYPE_ID_CARD = 'id_card';
 
     public const TYPE_OTHER = 'other';
+
+    protected $table = 'hrms_candidate_documents';
 
     protected $fillable = [
         'tenant_id',
@@ -69,11 +67,14 @@ final class CandidateDocument extends Model
     /**
      * @return array<string, string>
      */
-    protected function casts(): array
+    public static function types(): array
     {
         return [
-            'file_size' => 'integer',
-            'is_primary' => 'boolean',
+            self::TYPE_RESUME => 'Resume',
+            self::TYPE_COVER_LETTER => 'Cover Letter',
+            self::TYPE_CERTIFICATE => 'Certificate',
+            self::TYPE_ID_CARD => 'ID Card',
+            self::TYPE_OTHER => 'Other',
         ];
     }
 
@@ -104,20 +105,6 @@ final class CandidateDocument extends Model
     }
 
     /**
-     * @return array<string, string>
-     */
-    public static function types(): array
-    {
-        return [
-            self::TYPE_RESUME => 'Resume',
-            self::TYPE_COVER_LETTER => 'Cover Letter',
-            self::TYPE_CERTIFICATE => 'Certificate',
-            self::TYPE_ID_CARD => 'ID Card',
-            self::TYPE_OTHER => 'Other',
-        ];
-    }
-
-    /**
      * @param  \Illuminate\Database\Eloquent\Builder<static>  $query
      * @return \Illuminate\Database\Eloquent\Builder<static>
      */
@@ -133,5 +120,16 @@ final class CandidateDocument extends Model
     public function scopePrimary($query)
     {
         return $query->where('is_primary', true);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'file_size' => 'integer',
+            'is_primary' => 'boolean',
+        ];
     }
 }

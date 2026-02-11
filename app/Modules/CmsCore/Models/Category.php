@@ -40,8 +40,6 @@ final class Category extends Model
 
     protected $table = 'categories';
 
-    protected $connection = 'landlord';
-
     protected $fillable = [
         'uuid',
         'tenant_id',

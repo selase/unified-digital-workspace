@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace App\Modules\IncidentManagement\Http\Requests;
 
 use App\Modules\IncidentManagement\Models\Incident;
+use App\Modules\IncidentManagement\Models\IncidentCategory;
+use App\Modules\IncidentManagement\Models\IncidentPriority;
+use App\Modules\IncidentManagement\Models\IncidentStatus;
 use App\Services\Tenancy\TenantContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -31,17 +34,17 @@ final class IncidentUpdateRequest extends FormRequest
             'category_id' => [
                 'nullable',
                 'integer',
-                Rule::exists('incident_categories', 'id')->where('tenant_id', $tenantId),
+                Rule::exists(IncidentCategory::class, 'id')->where('tenant_id', $tenantId),
             ],
             'priority_id' => [
                 'nullable',
                 'integer',
-                Rule::exists('incident_priorities', 'id')->where('tenant_id', $tenantId),
+                Rule::exists(IncidentPriority::class, 'id')->where('tenant_id', $tenantId),
             ],
             'status_id' => [
                 'nullable',
                 'integer',
-                Rule::exists('incident_statuses', 'id')->where('tenant_id', $tenantId),
+                Rule::exists(IncidentStatus::class, 'id')->where('tenant_id', $tenantId),
             ],
             'assigned_to_id' => ['nullable', 'string'],
             'due_at' => ['nullable', 'date'],

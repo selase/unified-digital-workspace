@@ -14,8 +14,6 @@ final class TaskDependency extends Model
     use BelongsToTenant;
     use HasFactory;
 
-    protected $connection = 'landlord';
-
     protected $fillable = [
         'task_id',
         'depends_on_task_id',

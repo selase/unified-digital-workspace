@@ -34,8 +34,6 @@ final class AppraisalPeriod extends Model
 
     protected $table = 'hrms_appraisal_periods';
 
-    protected $connection = 'landlord';
-
     protected $fillable = [
         'tenant_id',
         'name',
@@ -55,33 +53,6 @@ final class AppraisalPeriod extends Model
     protected $attributes = [
         'is_active' => true,
     ];
-
-    /**
-     * Boot the model.
-     */
-    protected static function boot(): void
-    {
-        parent::boot();
-
-        self::creating(function (AppraisalPeriod $period): void {
-            if (empty($period->slug)) {
-                $period->slug = Str::slug($period->name);
-            }
-        });
-    }
-
-    /**
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'cycle' => AppraisalCycle::class,
-            'start_date' => 'date',
-            'end_date' => 'date',
-            'is_active' => 'boolean',
-        ];
-    }
 
     /**
      * Get the templates for this period.
@@ -178,5 +149,32 @@ final class AppraisalPeriod extends Model
     public function scopeForCycle($query, AppraisalCycle $cycle)
     {
         return $query->where('cycle', $cycle);
+    }
+
+    /**
+     * Boot the model.
+     */
+    protected static function boot(): void
+    {
+        parent::boot();
+
+        self::creating(function (AppraisalPeriod $period): void {
+            if (empty($period->slug)) {
+                $period->slug = Str::slug($period->name);
+            }
+        });
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'cycle' => AppraisalCycle::class,
+            'start_date' => 'date',
+            'end_date' => 'date',
+            'is_active' => 'boolean',
+        ];
     }
 }

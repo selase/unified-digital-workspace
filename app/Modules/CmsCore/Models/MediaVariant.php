@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\CmsCore\Models;
 
+use App\Traits\UsesTenantConnection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -22,9 +23,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 final class MediaVariant extends Model
 {
-    protected $table = 'media_variants';
+    use UsesTenantConnection;
 
-    protected $connection = 'landlord';
+    protected $table = 'media_variants';
 
     protected $fillable = [
         'media_id',

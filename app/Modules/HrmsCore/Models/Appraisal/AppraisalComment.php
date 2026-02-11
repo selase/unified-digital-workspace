@@ -29,15 +29,13 @@ final class AppraisalComment extends Model
     use BelongsToTenant;
     use HasHrmsUuid;
 
-    protected $table = 'hrms_appraisal_comments';
-
-    protected $connection = 'landlord';
-
     public const TYPE_GENERAL = 'general';
 
     public const TYPE_FEEDBACK = 'feedback';
 
     public const TYPE_ACTION_ITEM = 'action_item';
+
+    protected $table = 'hrms_appraisal_comments';
 
     protected $fillable = [
         'tenant_id',
@@ -59,12 +57,16 @@ final class AppraisalComment extends Model
     ];
 
     /**
+     * Get available comment types.
+     *
      * @return array<string, string>
      */
-    protected function casts(): array
+    public static function types(): array
     {
         return [
-            'is_private' => 'boolean',
+            self::TYPE_GENERAL => 'General',
+            self::TYPE_FEEDBACK => 'Feedback',
+            self::TYPE_ACTION_ITEM => 'Action Item',
         ];
     }
 
@@ -118,20 +120,6 @@ final class AppraisalComment extends Model
     public function isVisibleToEmployee(): bool
     {
         return ! $this->is_private;
-    }
-
-    /**
-     * Get available comment types.
-     *
-     * @return array<string, string>
-     */
-    public static function types(): array
-    {
-        return [
-            self::TYPE_GENERAL => 'General',
-            self::TYPE_FEEDBACK => 'Feedback',
-            self::TYPE_ACTION_ITEM => 'Action Item',
-        ];
     }
 
     /**
@@ -198,5 +186,15 @@ final class AppraisalComment extends Model
     public function scopeLatest($query)
     {
         return $query->orderByDesc('created_at');
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'is_private' => 'boolean',
+        ];
     }
 }
