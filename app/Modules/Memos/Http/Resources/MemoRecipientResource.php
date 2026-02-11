@@ -22,6 +22,7 @@ final class MemoRecipientResource extends JsonResource
             'recipient_type' => $this->recipient_type,
             'recipient_id' => $this->recipient_id,
             'role' => $this->role,
+            'recipient' => $this->recipientSummary(),
             'requires_ack' => $this->requires_ack,
             'acknowledged_at' => $this->acknowledged_at,
             'acknowledged_by_id' => $this->acknowledged_by_id,

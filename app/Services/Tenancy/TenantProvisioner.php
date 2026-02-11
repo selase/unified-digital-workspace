@@ -5,13 +5,21 @@ declare(strict_types=1);
 namespace App\Services\Tenancy;
 
 use App\Models\Tenant;
+use App\Services\ModuleManager;
 use Exception;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use RuntimeException;
 
-class TenantProvisioner
+final class TenantProvisioner
 {
+    public function __construct(
+        private readonly TenantDatabaseManager $dbManager,
+        private readonly TenantMigrator $migrator,
+        private readonly ModuleManager $moduleManager,
+    ) {}
+
     /**
      * Provision a tenant's infrastructure and run migrations.
      */
@@ -28,6 +36,8 @@ class TenantProvisioner
         if ($tenant->package_id) {
             $tenant->syncFeaturesFromPackage();
         }
+
+        $this->migrateEnabledModules($tenant);
     }
 
     /**
@@ -90,5 +100,35 @@ class TenantProvisioner
         ]);
 
         Log::info(Artisan::output());
+    }
+
+    private function migrateEnabledModules(Tenant $tenant): void
+    {
+        $modules = $this->moduleManager->getEnabledForTenant($tenant);
+
+        if ($modules->isEmpty()) {
+            return;
+        }
+
+        if ($tenant->requiresDedicatedDb()) {
+            $this->dbManager->configure($tenant);
+        } else {
+            $this->dbManager->configureShared();
+        }
+
+        foreach ($modules as $module) {
+            $migrationPath = $module['path'].'/Database/Migrations';
+
+            if (! is_dir($migrationPath)) {
+                continue;
+            }
+
+            $relativePath = str_replace(base_path().'/', '', $migrationPath);
+            $result = $this->migrator->migrate('tenant', $relativePath, true);
+
+            if ($result['exitCode'] !== 0) {
+                throw new RuntimeException("Module [{$module['slug']}] migration failed with exit code {$result['exitCode']}.");
+            }
+        }
     }
 }

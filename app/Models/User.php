@@ -25,7 +25,6 @@ final class User extends Authenticatable
     use HasUuid;
     use Notifiable;
     use SpatieActivityLogs;
-    // use BelongsToTenant;
 
     public const string STATUS_ACTIVE = 'active';
 
@@ -35,6 +34,9 @@ final class User extends Authenticatable
         self::STATUS_ACTIVE,
         self::STATUS_INACTIVE,
     ];
+    // use BelongsToTenant;
+
+    protected $connection = 'landlord';
 
     /**
      * The attributes that are mass assignable.

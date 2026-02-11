@@ -41,7 +41,7 @@ final class MemoController extends Controller
         $scope = $this->resolveOrgScope($userId);
 
         $query = Memo::query()
-            ->with(['recipients', 'minutes', 'actions']);
+            ->with($this->memoRelations());
 
         $query->where(function ($memoQuery) use ($userId, $scope): void {
             $memoQuery->where('sender_id', $userId)
@@ -96,7 +96,7 @@ final class MemoController extends Controller
 
         $this->syncRecipients($memo, $data['recipients']);
 
-        return (new MemoResource($memo->load(['recipients'])))
+        return (new MemoResource($memo->load($this->memoRelations())))
             ->response()
             ->setStatusCode(201);
     }
@@ -106,7 +106,7 @@ final class MemoController extends Controller
         abort_if(! $request->user()?->can('memos.view'), 403);
         $this->ensureVisible($memo, (string) $request->user()?->id);
 
-        return new MemoResource($memo->load(['recipients', 'minutes', 'actions']));
+        return new MemoResource($memo->load($this->memoRelations()));
     }
 
     public function update(MemoUpdateRequest $request, Memo $memo): MemoResource
@@ -117,7 +117,7 @@ final class MemoController extends Controller
         $memo->fill($request->validated());
         $memo->save();
 
-        return new MemoResource($memo->load(['recipients', 'minutes', 'actions']));
+        return new MemoResource($memo->load($this->memoRelations()));
     }
 
     public function destroy(Request $request, Memo $memo): JsonResponse
@@ -161,7 +161,7 @@ final class MemoController extends Controller
 
         $memo->save();
 
-        return new MemoResource($memo->load(['recipients', 'minutes', 'actions']));
+        return new MemoResource($memo->load($this->memoRelations()));
     }
 
     public function sendVerificationCode(MemoSendCodeRequest $request, Memo $memo, SmsManager $smsManager): JsonResponse
@@ -214,7 +214,7 @@ final class MemoController extends Controller
         $this->ensureSender($memo, (string) $request->user()?->id);
 
         if ($memo->status !== Memo::STATUS_PENDING) {
-            return (new MemoResource($memo->load(['recipients', 'minutes', 'actions'])));
+            return new MemoResource($memo->load($this->memoRelations()));
         }
 
         if (! $memo->verification_code_hash || ! $memo->verification_expires_at) {
@@ -245,7 +245,7 @@ final class MemoController extends Controller
         ]);
         $memo->save();
 
-        return new MemoResource($memo->load(['recipients', 'minutes', 'actions']));
+        return new MemoResource($memo->load($this->memoRelations()));
     }
 
     public function acknowledge(MemoAcknowledgeRequest $request, Memo $memo): JsonResponse|MemoResource
@@ -274,7 +274,7 @@ final class MemoController extends Controller
             $memo->save();
         }
 
-        return new MemoResource($memo->load(['recipients', 'minutes', 'actions']));
+        return new MemoResource($memo->load($this->memoRelations()));
     }
 
     public function storeMinute(MemoMinuteStoreRequest $request, Memo $memo): JsonResponse
@@ -301,7 +301,7 @@ final class MemoController extends Controller
 
         $this->syncRecipients($memo, $request->validated()['recipients'], $userId);
 
-        return new MemoResource($memo->load(['recipients', 'minutes', 'actions']));
+        return new MemoResource($memo->load($this->memoRelations()));
     }
 
     public function storeAction(MemoActionStoreRequest $request, Memo $memo): JsonResponse
@@ -349,8 +349,8 @@ final class MemoController extends Controller
         foreach ($recipients as $recipient) {
             $type = $recipient['type'];
             $role = $recipient['role'] ?? MemoRecipient::ROLE_TO;
-            $recipientId = $type === 'tenant' ? null : ($recipient['id'] ?? null);
-            $requiresAck = $role === MemoRecipient::ROLE_TO && $type === 'user';
+            $recipientId = $type === MemoRecipient::TYPE_TENANT ? null : ($recipient['id'] ?? null);
+            $requiresAck = $role === MemoRecipient::ROLE_TO && $type === MemoRecipient::TYPE_USER;
 
             MemoRecipient::query()->updateOrCreate([
                 'memo_id' => $memo->id,
@@ -459,5 +459,33 @@ final class MemoController extends Controller
             'directorates' => $directorates,
             'units' => $units,
         ];
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function memoRelations(): array
+    {
+        $relations = [
+            'recipients.user',
+            'minutes',
+            'actions',
+        ];
+
+        $tenantConnection = config('database.default_tenant_connection', 'tenant');
+
+        if (Schema::connection($tenantConnection)->hasTable('hrms_units')) {
+            $relations[] = 'recipients.unit';
+        }
+
+        if (Schema::connection($tenantConnection)->hasTable('hrms_departments')) {
+            $relations[] = 'recipients.department';
+        }
+
+        if (Schema::connection($tenantConnection)->hasTable('hrms_directorates')) {
+            $relations[] = 'recipients.directorate';
+        }
+
+        return $relations;
     }
 }
