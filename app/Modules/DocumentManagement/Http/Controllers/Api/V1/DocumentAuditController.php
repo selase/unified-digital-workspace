@@ -16,14 +16,14 @@ final class DocumentAuditController extends Controller
     {
         abort_if(! request()->user()?->can('documents.audit.view'), 403);
 
-        $this->ensureVisible($document, (string) request()->user()?->id);
+        $this->ensureVisible($document, (string) request()->user()?->uuid);
 
         $audits = $document->audits()->latest('created_at')->paginate(request()->integer('per_page', 15));
 
         return DocumentAuditResource::collection($audits)->response();
     }
 
-    private function ensureVisible(Document $document, string $userId): void
+    private function ensureVisible(Document $document, int|string $userId): void
     {
         $visible = Document::query()
             ->visibleTo($userId)

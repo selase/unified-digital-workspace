@@ -126,9 +126,9 @@ it('allows sharing documents with specific users', function (): void {
     $doc = Document::create([
         'title' => 'Shared Doc',
         'slug' => 'shared-doc',
-        'owner_id' => $owner->id,
+        'owner_id' => (string) $owner->uuid,
         'visibility' => [
-            'users' => [$otherUser->id],
+            'users' => [(string) $otherUser->uuid],
         ],
     ]);
 
@@ -139,7 +139,7 @@ it('allows sharing documents with specific users', function (): void {
     ]);
 });
 
-it('shows documents for department/directorate visibility', function (): void {
+it('shows documents for team visibility', function (): void {
     [$owner, $tenant] = createDocumentApiContext();
     /** @var User $viewer */
     $viewer = User::factory()->create();
@@ -152,9 +152,9 @@ it('shows documents for department/directorate visibility', function (): void {
     $doc = Document::create([
         'title' => 'Dept Doc',
         'slug' => 'dept-doc',
-        'owner_id' => $owner->id,
+        'owner_id' => (string) $owner->uuid,
         'visibility' => [
-            'departments' => [$tenant->id],
+            'teams' => [$tenant->id],
         ],
     ]);
 
@@ -175,7 +175,7 @@ it('enforces visibility when viewing documents', function (): void {
     $doc = Document::create([
         'title' => 'Private Doc',
         'slug' => 'private-doc',
-        'owner_id' => $owner->id,
+        'owner_id' => (string) $owner->uuid,
         'visibility' => [
             'is_private' => true,
         ],
@@ -194,7 +194,7 @@ it('uploads versions and downloads', function (): void {
     $doc = Document::create([
         'title' => 'Versioned Doc',
         'slug' => 'versioned-doc',
-        'owner_id' => $user->id,
+        'owner_id' => (string) $user->uuid,
     ]);
 
     $upload = actingAs($user, 'sanctum')->postJson("/api/document-management/v1/documents/{$doc->id}/versions", [
@@ -214,7 +214,7 @@ it('publishes documents and sets published_at', function (): void {
     $doc = Document::create([
         'title' => 'Publishable Doc',
         'slug' => 'publishable-doc',
-        'owner_id' => $user->id,
+        'owner_id' => (string) $user->uuid,
         'status' => 'draft',
     ]);
 
@@ -231,14 +231,14 @@ it('filters documents by search query', function (): void {
     Document::create([
         'title' => 'Policy Alpha',
         'slug' => 'policy-alpha',
-        'owner_id' => $user->id,
+        'owner_id' => (string) $user->uuid,
         'description' => 'Alpha description',
     ]);
 
     Document::create([
         'title' => 'Other Doc',
         'slug' => 'other-doc',
-        'owner_id' => $user->id,
+        'owner_id' => (string) $user->uuid,
         'description' => 'Beta',
     ]);
 
@@ -255,7 +255,7 @@ it('creates quizzes and attempts', function (): void {
     $doc = Document::create([
         'title' => 'Quiz Doc',
         'slug' => 'quiz-doc',
-        'owner_id' => $user->id,
+        'owner_id' => (string) $user->uuid,
     ]);
 
     $quizResponse = actingAs($user, 'sanctum')->postJson("/api/document-management/v1/documents/{$doc->id}/quizzes", [

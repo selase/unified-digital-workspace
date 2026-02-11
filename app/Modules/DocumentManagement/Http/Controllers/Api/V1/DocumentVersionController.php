@@ -20,6 +20,7 @@ final class DocumentVersionController extends Controller
     public function index(Document $document): JsonResponse
     {
         abort_if(! request()->user()?->can('documents.view'), 403);
+        $this->ensureVisible($document, (string) request()->user()?->uuid);
 
         return DocumentVersionResource::collection($document->versions()->latest('version_number')->get())
             ->response();
@@ -28,7 +29,7 @@ final class DocumentVersionController extends Controller
     public function store(DocumentVersionStoreRequest $request, Document $document): JsonResponse
     {
         abort_if(! $request->user()?->can('documents.manage_versions'), 403);
-        $this->ensureVisible($document, (string) $request->user()?->id);
+        $this->ensureVisible($document, (string) $request->user()?->uuid);
 
         $file = $request->file('file');
         $nextVersion = ($document->versions()->max('version_number') ?? 0) + 1;
@@ -50,7 +51,7 @@ final class DocumentVersionController extends Controller
             'mime_type' => $file?->getClientMimeType(),
             'size_bytes' => $file?->getSize() ?? 0,
             'checksum_sha256' => $file ? hash_file('sha256', $file->getRealPath()) : null,
-            'uploaded_by_id' => $request->user()?->id,
+            'uploaded_by_id' => (string) $request->user()?->uuid,
             'notes' => $request->input('notes'),
         ]);
 
@@ -60,7 +61,7 @@ final class DocumentVersionController extends Controller
         DocumentAudit::create([
             'tenant_id' => $document->tenant_id,
             'document_id' => $document->id,
-            'user_id' => $request->user()?->id,
+            'user_id' => (string) $request->user()?->uuid,
             'event' => 'version_uploaded',
             'metadata' => [
                 'version_number' => $nextVersion,
@@ -76,7 +77,7 @@ final class DocumentVersionController extends Controller
     {
         abort_if(! request()->user()?->can('documents.view'), 403);
 
-        $this->ensureVisible($document, (string) request()->user()?->id);
+        $this->ensureVisible($document, (string) request()->user()?->uuid);
 
         $versionModel = $version
             ? $document->versions()->where('version_number', $version)->firstOrFail()
@@ -89,7 +90,7 @@ final class DocumentVersionController extends Controller
         DocumentAudit::create([
             'tenant_id' => $document->tenant_id,
             'document_id' => $document->id,
-            'user_id' => request()->user()?->id,
+            'user_id' => (string) request()->user()?->uuid,
             'event' => 'download',
             'metadata' => [
                 'version_number' => $versionModel->version_number,
@@ -102,8 +103,13 @@ final class DocumentVersionController extends Controller
         return Storage::disk($versionModel->disk)->download($versionModel->path, $filename);
     }
 
-    private function ensureVisible(Document $document, string $userId): void
+    private function ensureVisible(Document $document, int|string $userId): void
     {
-        // Visibility enforcement relaxed for testing; implement as needed.
+        $visible = Document::query()
+            ->visibleTo($userId)
+            ->where('id', $document->id)
+            ->exists();
+
+        abort_if(! $visible, 403);
     }
 }

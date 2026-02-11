@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\DocumentManagement\Models;
 
+use App\Models\User;
 use App\Modules\DocumentManagement\Models\Concerns\HasDocumentUuid;
 use App\Modules\HrmsCore\Models\Employees\Employee;
 use App\Services\Tenancy\TenantContext;
@@ -14,6 +15,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
 final class Document extends Model
@@ -61,27 +63,38 @@ final class Document extends Model
     /**
      * @param  Builder<Document>  $query
      */
-    public function scopeVisibleTo(Builder $query, string $userId): void
+    public function scopeVisibleTo(Builder $query, int|string $userId): void
     {
+        $userKey = (string) $userId;
         $tenantScope = $this->teamId();
         $org = $this->resolveOrgScope($userId);
 
-        $query->where(function (Builder $q) use ($userId, $tenantScope, $org): void {
-            $q->where('owner_id', $userId)
-                ->orWhereJsonContains('visibility->users', $userId)
-                ->orWhereJsonContains('visibility->departments', $org['departments'])
-                ->orWhereJsonContains('visibility->directorates', $org['directorates'])
-                ->orWhereJsonContains('visibility->teams', $tenantScope)
-                ->orWhere('visibility->tenant_wide', true)
+        $query->where(function (Builder $q) use ($userKey, $tenantScope, $org): void {
+            $q->where('owner_id', $userKey)
+                ->orWhereJsonContains('visibility->users', $userKey);
+
+            foreach ($org['departments'] as $departmentId) {
+                $q->orWhereJsonContains('visibility->departments', $departmentId);
+            }
+
+            foreach ($org['directorates'] as $directorateId) {
+                $q->orWhereJsonContains('visibility->directorates', $directorateId);
+            }
+
+            if ($tenantScope !== '') {
+                $q->orWhereJsonContains('visibility->teams', $tenantScope);
+            }
+
+            $q->orWhere('visibility->tenant_wide', true)
                 ->orWhereNull('visibility');
         });
 
-        $query->where(function (Builder $q) use ($userId): void {
+        $query->where(function (Builder $q) use ($userKey): void {
             $q->where('visibility->is_private', '!=', true)
                 ->orWhereNull('visibility->is_private')
-                ->orWhere(function (Builder $qq) use ($userId): void {
+                ->orWhere(function (Builder $qq) use ($userKey): void {
                     $qq->where('visibility->is_private', true)
-                        ->where('owner_id', $userId);
+                        ->where('owner_id', $userKey);
                 });
         });
     }
@@ -148,7 +161,7 @@ final class Document extends Model
     /**
      * @return array{departments: array<int|string>, directorates: array<int|string>}
      */
-    private function resolveOrgScope(string $userId): array
+    private function resolveOrgScope(int|string $userId): array
     {
         $departments = [];
         $directorates = [];
@@ -161,8 +174,30 @@ final class Document extends Model
             ];
         }
 
+        $tenantConnection = config('database.default_tenant_connection', 'tenant');
+        if (! Schema::connection($tenantConnection)->hasTable('hrms_employees')) {
+            return [
+                'departments' => $departments,
+                'directorates' => $directorates,
+            ];
+        }
+
+        $lookupUserId = $userId;
+        if (is_string($userId) && Str::isUuid($userId)) {
+            $lookupUserId = User::query()
+                ->where('uuid', $userId)
+                ->value('id');
+        }
+
+        if (! $lookupUserId) {
+            return [
+                'departments' => $departments,
+                'directorates' => $directorates,
+            ];
+        }
+
         $employee = Employee::query()
-            ->where('user_id', $userId)
+            ->where('user_id', $lookupUserId)
             ->first();
 
         if ($employee) {

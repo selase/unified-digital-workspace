@@ -17,6 +17,7 @@ final class DocumentQuizAttemptController extends Controller
     public function store(DocumentQuizAttemptStoreRequest $request, DocumentQuiz $quiz): JsonResponse
     {
         $document = Document::findOrFail($quiz->document_id);
+        $this->ensureVisible($document, (string) $request->user()?->uuid);
 
         $score = 0;
         $responses = $request->input('responses', []);
@@ -38,7 +39,7 @@ final class DocumentQuizAttemptController extends Controller
         $attempt = DocumentQuizAttempt::create([
             'tenant_id' => $quiz->tenant_id,
             'quiz_id' => $quiz->id,
-            'user_id' => $request->user()?->id,
+            'user_id' => (string) $request->user()?->uuid,
             'responses' => $responses,
             'score' => $score,
             'started_at' => now(),
@@ -47,7 +48,7 @@ final class DocumentQuizAttemptController extends Controller
 
         $document->audits()->create([
             'tenant_id' => $document->tenant_id,
-            'user_id' => $request->user()?->id,
+            'user_id' => (string) $request->user()?->uuid,
             'event' => 'quiz_attempt',
             'metadata' => [
                 'quiz_id' => $quiz->id,
@@ -57,5 +58,15 @@ final class DocumentQuizAttemptController extends Controller
         ]);
 
         return (new DocumentQuizAttemptResource($attempt))->response()->setStatusCode(201);
+    }
+
+    private function ensureVisible(Document $document, int|string $userId): void
+    {
+        $visible = Document::query()
+            ->visibleTo($userId)
+            ->where('id', $document->id)
+            ->exists();
+
+        abort_if(! $visible, 403);
     }
 }

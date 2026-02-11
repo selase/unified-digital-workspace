@@ -17,10 +17,12 @@ final class DocumentController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $userId = (string) $request->user()?->id;
-        abort_if(! $request->user()?->can('documents.view'), 403);
+        $user = $request->user();
+        abort_if(! $user?->can('documents.view'), 403);
+        $userId = (string) $user->uuid;
 
         $query = Document::query()
+            ->visibleTo($userId)
             ->with(['currentVersion']);
 
         if ($request->filled('status')) {
@@ -67,7 +69,7 @@ final class DocumentController extends Controller
     public function store(DocumentStoreRequest $request): JsonResponse
     {
         $data = $request->validated();
-        $data['owner_id'] = $request->user()?->id;
+        $data['owner_id'] = (string) $request->user()?->uuid;
 
         if (empty($data['slug'])) {
             $data['slug'] = Str::slug($data['title']);
@@ -80,7 +82,7 @@ final class DocumentController extends Controller
 
     public function show(Document $document): DocumentResource
     {
-        $userId = (string) request()->user()?->id;
+        $userId = (string) request()->user()?->uuid;
         $this->ensureVisible($document, $userId);
 
         $this->logAudit($document, 'view', $userId);
@@ -116,23 +118,28 @@ final class DocumentController extends Controller
     public function publish(Document $document): DocumentResource
     {
         abort_if(! request()->user()?->can('documents.publish'), 403);
-        $this->ensureVisible($document, (string) request()->user()?->id);
+        $this->ensureVisible($document, (string) request()->user()?->uuid);
 
         $document->status = 'published';
         $document->published_at = now();
         $document->save();
 
-        $this->logAudit($document, 'publish', (string) request()->user()?->id);
+        $this->logAudit($document, 'publish', (string) request()->user()?->uuid);
 
         return new DocumentResource($document);
     }
 
-    private function ensureVisible(Document $document, string $userId): void
+    private function ensureVisible(Document $document, int|string $userId): void
     {
-        // Visibility enforcement currently relaxed for testing; implement as needed.
+        $visible = Document::query()
+            ->visibleTo($userId)
+            ->where('id', $document->id)
+            ->exists();
+
+        abort_if(! $visible, 403);
     }
 
-    private function logAudit(Document $document, string $event, string $userId): void
+    private function logAudit(Document $document, string $event, int|string $userId): void
     {
         $document->audits()->create([
             'tenant_id' => $document->tenant_id,

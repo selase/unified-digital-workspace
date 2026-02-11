@@ -17,6 +17,7 @@ final class DocumentQuizController extends Controller
     public function store(DocumentQuizStoreRequest $request, Document $document): JsonResponse
     {
         $data = $request->validated();
+        $this->ensureVisible($document, (string) $request->user()?->uuid);
 
         $quiz = DocumentQuiz::create([
             'tenant_id' => $document->tenant_id,
@@ -43,10 +44,22 @@ final class DocumentQuizController extends Controller
 
     public function show(Document $document, DocumentQuiz $quiz): DocumentQuizResource
     {
+        $this->ensureVisible($document, (string) request()->user()?->uuid);
+
         if ($quiz->document_id !== $document->id) {
             abort(404);
         }
 
         return new DocumentQuizResource($quiz->load('questions'));
+    }
+
+    private function ensureVisible(Document $document, int|string $userId): void
+    {
+        $visible = Document::query()
+            ->visibleTo($userId)
+            ->where('id', $document->id)
+            ->exists();
+
+        abort_if(! $visible, 403);
     }
 }
