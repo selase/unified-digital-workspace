@@ -39,6 +39,24 @@ return [
         'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
     ],
 
+    'sms' => [
+        'default' => env('SMS_DRIVER', 'mnotify'),
+        'from' => env('SMS_FROM'),
+    ],
+
+    'mnotify' => [
+        'key' => env('MNOTIFY_KEY'),
+        'sender_id' => env('MNOTIFY_SENDER_ID'),
+        'endpoint' => env('MNOTIFY_ENDPOINT', 'https://apps.mnotify.net/smsapi'),
+    ],
+
+    'twilio' => [
+        'sid' => env('TWILIO_ACCOUNT_SID'),
+        'token' => env('TWILIO_AUTH_TOKEN'),
+        'from' => env('TWILIO_FROM'),
+        'endpoint' => env('TWILIO_ENDPOINT', 'https://api.twilio.com/2010-04-01'),
+    ],
+
     'paystack' => [
         'public_key' => env('PAYSTACK_PUBLIC_KEY'),
         'secret_key' => env('PAYSTACK_SECRET_KEY'),
