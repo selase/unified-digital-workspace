@@ -96,7 +96,7 @@ final class IncidentController extends Controller
         $this->authorize('incidents.create');
 
         $data = $request->validated();
-        $data['reported_by_id'] = $request->user()?->id;
+        $data['reported_by_id'] = (string) $request->user()?->uuid;
         $data['reported_via'] = 'internal';
 
         if (empty($data['status_id'])) {
@@ -107,7 +107,7 @@ final class IncidentController extends Controller
 
         app(IncidentSlaService::class)->createOrUpdate($incident);
 
-        $this->logIncidentActivity($incident, 'created', $request->user()?->id, [
+        $this->logIncidentActivity($incident, 'created', (string) $request->user()?->uuid, [
             'title' => $incident->title,
             'priority_id' => $incident->priority_id,
             'status_id' => $incident->status_id,
@@ -127,7 +127,7 @@ final class IncidentController extends Controller
         $incident->fill($data);
         $incident->save();
 
-        $this->logIncidentActivity($incident, 'updated', $request->user()?->id, [
+        $this->logIncidentActivity($incident, 'updated', (string) $request->user()?->uuid, [
             'changes' => array_keys($data),
         ]);
 
@@ -152,7 +152,7 @@ final class IncidentController extends Controller
         IncidentAssignment::create([
             'incident_id' => $incident->id,
             'assigned_to_id' => $data['assigned_to_id'],
-            'assigned_by_id' => $request->user()?->id,
+            'assigned_by_id' => (string) $request->user()?->uuid,
             'assigned_at' => now(),
             'is_active' => true,
             'note' => $data['note'] ?? null,
@@ -163,7 +163,7 @@ final class IncidentController extends Controller
 
         $this->notifyAssignedUser($incident, $data['assigned_to_id']);
 
-        $this->logIncidentActivity($incident, 'assigned', $request->user()?->id, [
+        $this->logIncidentActivity($incident, 'assigned', (string) $request->user()?->uuid, [
             'assigned_to_id' => $data['assigned_to_id'],
             'note' => $data['note'] ?? null,
         ]);
@@ -180,7 +180,7 @@ final class IncidentController extends Controller
         IncidentAssignment::create([
             'incident_id' => $incident->id,
             'assigned_to_id' => $data['assigned_to_id'],
-            'assigned_by_id' => $request->user()?->id,
+            'assigned_by_id' => (string) $request->user()?->uuid,
             'delegated_from_id' => $incident->assigned_to_id,
             'assigned_at' => now(),
             'is_active' => true,
@@ -192,7 +192,7 @@ final class IncidentController extends Controller
 
         $this->notifyAssignedUser($incident, $data['assigned_to_id']);
 
-        $this->logIncidentActivity($incident, 'delegated', $request->user()?->id, [
+        $this->logIncidentActivity($incident, 'delegated', (string) $request->user()?->uuid, [
             'assigned_to_id' => $data['assigned_to_id'],
             'delegated_from_id' => $incident->assigned_to_id,
             'note' => $data['note'] ?? null,
@@ -211,7 +211,7 @@ final class IncidentController extends Controller
             'incident_id' => $incident->id,
             'from_priority_id' => $incident->priority_id,
             'to_priority_id' => $data['to_priority_id'],
-            'escalated_by_id' => $request->user()?->id,
+            'escalated_by_id' => (string) $request->user()?->uuid,
             'reason' => $data['reason'] ?? null,
             'escalated_at' => now(),
         ]);
@@ -222,14 +222,16 @@ final class IncidentController extends Controller
         app(IncidentSlaService::class)->createOrUpdate($incident);
 
         if ($incident->assigned_to_id) {
-            $assignee = User::query()->find($incident->assigned_to_id);
+            $assignee = User::query()
+                ->where('uuid', $incident->assigned_to_id)
+                ->first();
 
             if ($assignee && $assignee->email) {
                 Mail::to($assignee->email)->queue(new IncidentEscalated($incident));
             }
         }
 
-        $this->logIncidentActivity($incident, 'escalated', $request->user()?->id, [
+        $this->logIncidentActivity($incident, 'escalated', (string) $request->user()?->uuid, [
             'from_priority_id' => $incident->getOriginal('priority_id'),
             'to_priority_id' => $data['to_priority_id'],
             'reason' => $data['reason'] ?? null,
@@ -253,7 +255,7 @@ final class IncidentController extends Controller
 
         app(IncidentSlaService::class)->markResolved($incident);
 
-        $this->logIncidentActivity($incident, 'resolved', $request->user()?->id, [
+        $this->logIncidentActivity($incident, 'resolved', (string) $request->user()?->uuid, [
             'status_id' => $incident->status_id,
             'resolved_at' => $incident->resolved_at,
         ]);
@@ -274,7 +276,7 @@ final class IncidentController extends Controller
         $incident->closed_at = $data['closed_at'] ?? now();
         $incident->save();
 
-        $this->logIncidentActivity($incident, 'closed', $request->user()?->id, [
+        $this->logIncidentActivity($incident, 'closed', (string) $request->user()?->uuid, [
             'status_id' => $incident->status_id,
             'closed_at' => $incident->closed_at,
         ]);
@@ -366,7 +368,7 @@ final class IncidentController extends Controller
     {
         activity()
             ->performedOn($incident)
-            ->causedBy($userId ? User::query()->find($userId) : null)
+            ->causedBy($userId ? User::query()->where('uuid', $userId)->first() : null)
             ->withProperties($properties)
             ->event($event)
             ->log($description ?? $event);
@@ -381,7 +383,9 @@ final class IncidentController extends Controller
 
     private function notifyAssignedUser(Incident $incident, string $assigneeId): void
     {
-        $assignee = User::query()->find($assigneeId);
+        $assignee = User::query()
+            ->where('uuid', $assigneeId)
+            ->first();
 
         if ($assignee && $assignee->email) {
             Mail::to($assignee->email)->queue(new IncidentAssigned($incident));

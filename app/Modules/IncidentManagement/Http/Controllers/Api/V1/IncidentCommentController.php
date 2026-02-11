@@ -19,7 +19,7 @@ final class IncidentCommentController extends Controller
 
         $data = $request->validated();
         $data['incident_id'] = $incident->id;
-        $data['user_id'] = $request->user()?->id;
+        $data['user_id'] = (string) $request->user()?->uuid;
 
         $comment = IncidentComment::create($data);
 

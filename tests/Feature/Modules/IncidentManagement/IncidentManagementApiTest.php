@@ -188,18 +188,18 @@ it('assigns, delegates, escalates, resolves, and closes incidents', function () 
     $incident = Incident::factory()->forTenant($tenant->id)->create([
         'status_id' => $status->id,
         'priority_id' => $priority->id,
-        'reported_by_id' => $user->id,
+        'reported_by_id' => (string) $user->uuid,
     ]);
 
     $assignee = User::factory()->create();
 
     actingAs($user, 'sanctum')
         ->postJson("/api/incident-management/v1/incidents/{$incident->id}/assign", [
-            'assigned_to_id' => $assignee->id,
+            'assigned_to_id' => (string) $assignee->uuid,
         ])
         ->assertSuccessful()
         ->assertJsonFragment([
-            'assigned_to_id' => $assignee->id,
+            'assigned_to_id' => (string) $assignee->uuid,
         ]);
 
     expect(Activity::where('subject_id', $incident->id)->where('event', 'assigned')->exists())->toBeTrue();
@@ -210,11 +210,11 @@ it('assigns, delegates, escalates, resolves, and closes incidents', function () 
 
     actingAs($user, 'sanctum')
         ->postJson("/api/incident-management/v1/incidents/{$incident->id}/delegate", [
-            'assigned_to_id' => $delegate->id,
+            'assigned_to_id' => (string) $delegate->uuid,
         ])
         ->assertSuccessful()
         ->assertJsonFragment([
-            'assigned_to_id' => $delegate->id,
+            'assigned_to_id' => (string) $delegate->uuid,
         ]);
 
     $priorityEscalated = IncidentPriorityFactory::new()->forTenant($tenant->id)->create();
@@ -249,7 +249,7 @@ it('creates tasks and comments for incidents', function () {
     $status = IncidentStatusFactory::new()->forTenant($tenant->id)->create(['is_default' => true]);
     $incident = Incident::factory()->forTenant($tenant->id)->create([
         'status_id' => $status->id,
-        'reported_by_id' => $user->id,
+        'reported_by_id' => (string) $user->uuid,
     ]);
 
     actingAs($user, 'sanctum')
@@ -300,7 +300,7 @@ it('dispatches incident reminders by email', function () {
     Mail::fake();
 
     $incident = Incident::factory()->forTenant($tenant->id)->create([
-        'assigned_to_id' => $user->id,
+        'assigned_to_id' => (string) $user->uuid,
     ]);
 
     $reminder = IncidentReminder::create([
@@ -309,7 +309,7 @@ it('dispatches incident reminders by email', function () {
         'scheduled_for' => now()->subMinute(),
         'channel' => 'email',
         'metadata' => [
-            'user_id' => $user->id,
+            'user_id' => (string) $user->uuid,
         ],
     ]);
 

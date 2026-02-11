@@ -30,7 +30,7 @@ final class IncidentFactory extends Factory
             'category_id' => IncidentCategory::factory(),
             'priority_id' => IncidentPriority::factory(),
             'status_id' => IncidentStatus::factory(),
-            'reported_by_id' => User::factory(),
+            'reported_by_id' => fn () => (string) User::factory()->create()->uuid,
             'reporter_id' => null,
             'reported_via' => 'internal',
             'assigned_to_id' => null,
@@ -51,7 +51,7 @@ final class IncidentFactory extends Factory
             'category_id' => IncidentCategory::factory()->state(['tenant_id' => $tenantId]),
             'priority_id' => IncidentPriority::factory()->state(['tenant_id' => $tenantId]),
             'status_id' => IncidentStatus::factory()->state(['tenant_id' => $tenantId]),
-            'reported_by_id' => User::factory()->state(['tenant_id' => $tenantId]),
+            'reported_by_id' => fn () => (string) User::factory()->state(['tenant_id' => $tenantId])->create()->uuid,
         ]);
     }
 }

@@ -19,7 +19,7 @@ final class IncidentProgressCommentController extends Controller
 
         $comment = IncidentProgressComment::create([
             'progress_report_id' => $progressReport->id,
-            'user_id' => $request->user()?->id,
+            'user_id' => (string) $request->user()?->uuid,
             'body' => $request->string('body'),
         ]);
 

@@ -116,7 +116,7 @@ final class Incident extends Model
      */
     public function reporterUser(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'reported_by_id');
+        return $this->belongsTo(User::class, 'reported_by_id', 'uuid');
     }
 
     /**
@@ -201,14 +201,16 @@ final class Incident extends Model
             return $query;
         }
 
-        return $query->where(function (Builder $subQuery) use ($user): void {
-            $subQuery->where('reported_by_id', $user->id)
-                ->orWhere('assigned_to_id', $user->id)
-                ->orWhereHas('assignments', function (Builder $assignmentQuery) use ($user): void {
-                    $assignmentQuery->where('assigned_to_id', $user->id);
+        $userUuid = (string) $user->uuid;
+
+        return $query->where(function (Builder $subQuery) use ($userUuid): void {
+            $subQuery->where('reported_by_id', $userUuid)
+                ->orWhere('assigned_to_id', $userUuid)
+                ->orWhereHas('assignments', function (Builder $assignmentQuery) use ($userUuid): void {
+                    $assignmentQuery->where('assigned_to_id', $userUuid);
                 })
-                ->orWhereHas('comments', function (Builder $commentQuery) use ($user): void {
-                    $commentQuery->where('user_id', $user->id);
+                ->orWhereHas('comments', function (Builder $commentQuery) use ($userUuid): void {
+                    $commentQuery->where('user_id', $userUuid);
                 });
         });
     }

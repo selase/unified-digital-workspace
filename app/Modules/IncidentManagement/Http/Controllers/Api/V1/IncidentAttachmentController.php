@@ -49,7 +49,7 @@ final class IncidentAttachmentController extends Controller
             'filename' => $file?->getClientOriginalName(),
             'mime_type' => $file?->getClientMimeType() ?? 'application/octet-stream',
             'size_bytes' => $file?->getSize() ?? 0,
-            'uploaded_by_id' => $request->user()?->id,
+            'uploaded_by_id' => (string) $request->user()?->uuid,
         ]);
 
         return (new IncidentAttachmentResource($attachment))->response()->setStatusCode(201);

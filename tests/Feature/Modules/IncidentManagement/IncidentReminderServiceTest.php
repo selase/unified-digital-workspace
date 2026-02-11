@@ -30,7 +30,7 @@ it('generates due and SLA reminders with priority thresholds', function (): void
     $incident = Incident::factory()->forTenant($this->tenant->id)->create([
         'priority_id' => $priority->id,
         'due_at' => now()->addDays(2),
-        'assigned_to_id' => $assignee->id,
+        'assigned_to_id' => (string) $assignee->uuid,
     ]);
 
     app(IncidentSlaService::class)->createOrUpdate($incident);

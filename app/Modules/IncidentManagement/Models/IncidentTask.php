@@ -54,7 +54,7 @@ final class IncidentTask extends Model
      */
     public function assignedTo(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'assigned_to_id');
+        return $this->belongsTo(User::class, 'assigned_to_id', 'uuid');
     }
 
     protected function casts(): array

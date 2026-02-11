@@ -54,7 +54,7 @@ final class IncidentAssignment extends Model
      */
     public function assignedTo(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'assigned_to_id');
+        return $this->belongsTo(User::class, 'assigned_to_id', 'uuid');
     }
 
     /**
@@ -62,7 +62,7 @@ final class IncidentAssignment extends Model
      */
     public function assignedBy(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'assigned_by_id');
+        return $this->belongsTo(User::class, 'assigned_by_id', 'uuid');
     }
 
     /**
@@ -70,7 +70,7 @@ final class IncidentAssignment extends Model
      */
     public function delegatedFrom(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'delegated_from_id');
+        return $this->belongsTo(User::class, 'delegated_from_id', 'uuid');
     }
 
     protected function casts(): array

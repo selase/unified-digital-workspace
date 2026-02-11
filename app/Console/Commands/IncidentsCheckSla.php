@@ -75,7 +75,9 @@ final class IncidentsCheckSla extends Command
                 $incident = $sla->incident;
 
                 if ($incident && $incident->assigned_to_id) {
-                    $assignee = User::query()->find($incident->assigned_to_id);
+                    $assignee = User::query()
+                        ->where('uuid', $incident->assigned_to_id)
+                        ->first();
 
                     if ($assignee && $assignee->email) {
                         Mail::to($assignee->email)->queue(new IncidentSlaBreached($incident));

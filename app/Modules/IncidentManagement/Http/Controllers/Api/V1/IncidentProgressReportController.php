@@ -19,7 +19,7 @@ final class IncidentProgressReportController extends Controller
 
         $report = IncidentProgressReport::create([
             'incident_id' => $incident->id,
-            'user_id' => $request->user()?->id,
+            'user_id' => (string) $request->user()?->uuid,
             'body' => $request->string('body'),
             'is_internal' => $request->boolean('is_internal', false),
         ]);

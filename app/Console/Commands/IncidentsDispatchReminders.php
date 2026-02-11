@@ -69,7 +69,9 @@ final class IncidentsDispatchReminders extends Command
                     $userId = Arr::get($reminder->metadata ?? [], 'user_id') ?: $incident->assigned_to_id;
 
                     if ($userId) {
-                        $user = User::query()->find($userId);
+                        $user = User::query()
+                            ->where('uuid', $userId)
+                            ->first();
 
                         if ($user && $user->email) {
                             Mail::to($user->email)->queue(new IncidentReminderMail($incident, $reminder));

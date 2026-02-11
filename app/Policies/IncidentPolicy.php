@@ -20,17 +20,21 @@ final class IncidentPolicy
             return true;
         }
 
-        return $incident->reported_by_id === $user->id
-            || $incident->assigned_to_id === $user->id
-            || $incident->assignments()->where('assigned_to_id', $user->id)->exists()
-            || $incident->comments()->where('user_id', $user->id)->exists();
+        $userUuid = (string) $user->uuid;
+
+        return $incident->reported_by_id === $userUuid
+            || $incident->assigned_to_id === $userUuid
+            || $incident->assignments()->where('assigned_to_id', $userUuid)->exists()
+            || $incident->comments()->where('user_id', $userUuid)->exists();
     }
 
     public function update(User $user, Incident $incident): bool
     {
+        $userUuid = (string) $user->uuid;
+
         return $user->can('incidents.update')
-            || $incident->reported_by_id === $user->id
-            || $incident->assigned_to_id === $user->id;
+            || $incident->reported_by_id === $userUuid
+            || $incident->assigned_to_id === $userUuid;
     }
 
     public function delete(User $user, Incident $incident): bool

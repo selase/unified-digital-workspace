@@ -22,13 +22,13 @@ it('allows viewing incidents when reporter or assignee', function (): void {
     $policy = app(IncidentPolicy::class);
 
     $incident = Incident::factory()->forTenant($tenant->id)->create([
-        'reported_by_id' => $reporter->id,
+        'reported_by_id' => (string) $reporter->uuid,
     ]);
 
     expect($policy->view($reporter, $incident))->toBeTrue();
 
     $assignee = createIncidentApiContext()[0];
-    $incident->assigned_to_id = $assignee->id;
+    $incident->assigned_to_id = (string) $assignee->uuid;
     $incident->save();
 
     expect($policy->view($assignee, $incident))->toBeTrue();
@@ -48,13 +48,13 @@ it('allows updates for users with permission or ownership', function (): void {
     $policy = app(IncidentPolicy::class);
 
     $incident = Incident::factory()->forTenant($tenant->id)->create([
-        'reported_by_id' => $user->id,
+        'reported_by_id' => (string) $user->uuid,
     ]);
 
     expect($policy->update($user, $incident))->toBeTrue();
 
     $assignee = App\Models\User::factory()->create();
-    $incident->assigned_to_id = $assignee->id;
+    $incident->assigned_to_id = (string) $assignee->uuid;
     $incident->save();
 
     expect($policy->update($assignee, $incident))->toBeTrue();

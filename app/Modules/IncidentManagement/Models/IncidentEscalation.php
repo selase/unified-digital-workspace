@@ -66,7 +66,7 @@ final class IncidentEscalation extends Model
      */
     public function escalatedBy(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'escalated_by_id');
+        return $this->belongsTo(User::class, 'escalated_by_id', 'uuid');
     }
 
     protected function casts(): array
