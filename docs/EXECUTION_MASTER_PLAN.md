@@ -20,6 +20,7 @@ This is the master execution plan for building the **Unified Digital Workspace (
 - Porting HRMS as the first module (Track 04)
 - Building additional modules (Tracks 05-11)
 - Deployment and operations (Track 12)
+- UI theme makeover with Metronic (Track 14)
 
 ## Project Structure
 
@@ -344,6 +345,22 @@ unified-digital-workspace/
 
 ---
 
+### Track 14: UI Theme Makeover (Metronic)
+**Duration:** 3-4 weeks
+**Status:** 🔲 Planned (Later phase)
+**Link:** [TRACK_14_METRONIC_UI.md](tracks/TRACK_14_METRONIC_UI.md) *(to be authored)*
+
+**Key Deliverables:**
+- [ ] Map Metronic demos to UDW modules (page inventory)
+- [ ] Define UI style tokens and layout primitives
+- [ ] Replace starterkit layouts with Metronic templates
+- [ ] Component library extraction (buttons, tables, forms, modals)
+- [ ] Responsive review for key flows (HRMS, Docs, Memos, Incidents)
+
+**Dependencies:** Tracks 03-11 (stable module flows)
+
+---
+
 ## Track Dependencies (Visual)
 
 ```
@@ -363,6 +380,7 @@ Track 08
 (Quality)
               ↓
        Track 12 (Deployment)
+       Track 14 (Metronic UI)
 ```
 
 ---
@@ -468,6 +486,7 @@ feature/TRACK-XX-description
 2. ⏳ Configure starterkit for UDW (Track 00 tasks)
 3. ⏳ Build module system (Track 03)
 4. ⏳ Port HRMS as first module (Track 04)
+5. ⏳ Plan Metronic UI makeover (Track 14)
 
 ---
 

@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 use App\Models\Tenant;
 use App\Models\User;
+use App\Modules\HrmsCore\Models\Organization\Department;
+use App\Modules\HrmsCore\Models\Organization\Directorate;
+use App\Modules\HrmsCore\Models\Organization\Unit;
 use App\Modules\Memos\Models\Memo;
 use App\Modules\Memos\Models\MemoRecipient;
 use App\Services\ModuleManager;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -191,4 +195,78 @@ it('acknowledges required recipients and marks memo acknowledged', function (): 
     $memo->refresh();
 
     expect($memo->status)->toBe(Memo::STATUS_ACKNOWLEDGED);
+});
+
+it('returns recipient summaries for hrms recipients when tables exist', function (): void {
+    [$user] = createMemoApiContext();
+
+    Artisan::call('migrate', [
+        '--database' => 'tenant',
+        '--path' => app_path('Modules/HrmsCore/Database/Migrations'),
+        '--realpath' => true,
+        '--force' => true,
+    ]);
+
+    $unit = Unit::create([
+        'name' => 'Operations Unit',
+        'is_active' => true,
+    ]);
+
+    $department = Department::create([
+        'name' => 'Finance Department',
+        'is_active' => true,
+    ]);
+
+    $directorate = Directorate::create([
+        'name' => 'Strategy Directorate',
+        'is_active' => true,
+    ]);
+
+    $create = actingAs($user, 'sanctum')->postJson('/api/memos/v1/memos', [
+        'subject' => 'Org Update',
+        'body' => 'Please review the organization update.',
+        'recipients' => [
+            [
+                'type' => MemoRecipient::TYPE_UNIT,
+                'id' => (string) $unit->id,
+                'role' => MemoRecipient::ROLE_TO,
+            ],
+            [
+                'type' => MemoRecipient::TYPE_DEPARTMENT,
+                'id' => (string) $department->id,
+                'role' => MemoRecipient::ROLE_CC,
+            ],
+            [
+                'type' => MemoRecipient::TYPE_DIRECTORATE,
+                'id' => (string) $directorate->id,
+                'role' => MemoRecipient::ROLE_CC,
+            ],
+        ],
+    ]);
+
+    $create->assertCreated()
+        ->assertJsonFragment([
+            'recipient_type' => MemoRecipient::TYPE_UNIT,
+            'recipient' => [
+                'type' => MemoRecipient::TYPE_UNIT,
+                'id' => $unit->id,
+                'name' => $unit->name,
+            ],
+        ])
+        ->assertJsonFragment([
+            'recipient_type' => MemoRecipient::TYPE_DEPARTMENT,
+            'recipient' => [
+                'type' => MemoRecipient::TYPE_DEPARTMENT,
+                'id' => $department->id,
+                'name' => $department->name,
+            ],
+        ])
+        ->assertJsonFragment([
+            'recipient_type' => MemoRecipient::TYPE_DIRECTORATE,
+            'recipient' => [
+                'type' => MemoRecipient::TYPE_DIRECTORATE,
+                'id' => $directorate->id,
+                'name' => $directorate->name,
+            ],
+        ]);
 });
