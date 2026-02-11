@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Console\Commands;
 
 use App\Models\Tenant;
+use App\Services\ModuleManager;
 use App\Services\Tenancy\TenantContext;
 use App\Services\Tenancy\TenantDatabaseManager;
 use App\Services\Tenancy\TenantMigrator;
@@ -31,7 +32,7 @@ final class TenantsMigrate extends Command
     /**
      * Execute the console command.
      */
-    public function handle(TenantContext $context, TenantDatabaseManager $dbManager, TenantMigrator $migrator): int
+    public function handle(TenantContext $context, TenantDatabaseManager $dbManager, TenantMigrator $migrator, ModuleManager $moduleManager): int
     {
         $tenantId = (string) $this->option('tenant');
 
@@ -76,8 +77,15 @@ final class TenantsMigrate extends Command
                 if ($exitCode !== 0) {
                     $status = 'failed';
                     $exception = "Exit code: $exitCode";
-                }
+                } else {
+                    $moduleResult = $this->migrateEnabledModules($moduleManager, $tenant, $migrator);
+                    $output .= $moduleResult['output'];
 
+                    if ($moduleResult['exitCode'] !== 0) {
+                        $status = 'failed';
+                        $exception = "Module exit code: {$moduleResult['exitCode']}";
+                    }
+                }
             } catch (Exception $e) {
                 $status = 'failed';
                 $exception = $e->getMessage();
@@ -90,6 +98,41 @@ final class TenantsMigrate extends Command
         }
 
         return Command::SUCCESS;
+    }
+
+    /**
+     * @return array{exitCode: int, output: string}
+     */
+    private function migrateEnabledModules(ModuleManager $moduleManager, Tenant $tenant, TenantMigrator $migrator): array
+    {
+        $output = '';
+        $exitCode = 0;
+
+        $modules = $moduleManager->getEnabledForTenant($tenant);
+
+        foreach ($modules as $module) {
+            $migrationPath = $module['path'].'/Database/Migrations';
+
+            if (! is_dir($migrationPath)) {
+                continue;
+            }
+
+            $this->info("Migrating module: {$module['slug']} for tenant {$tenant->name}");
+
+            $relativePath = str_replace(base_path().'/', '', $migrationPath);
+            $result = $migrator->migrate('tenant', $relativePath, true);
+
+            $output .= $result['output'];
+
+            if ($result['exitCode'] !== 0) {
+                $exitCode = $result['exitCode'];
+            }
+        }
+
+        return [
+            'exitCode' => $exitCode,
+            'output' => $output,
+        ];
     }
 
     private function logRun(string $tenantId, string $status, ?string $output, ?string $exception, \Carbon\CarbonInterface $start, \Carbon\CarbonInterface $finish): void

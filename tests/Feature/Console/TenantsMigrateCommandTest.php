@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Models\Tenant;
+use App\Models\TenantModule;
 use App\Services\Tenancy\TenantMigrator;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Config;
@@ -127,4 +128,30 @@ test('it continues after failure', function () {
 
     $this->assertDatabaseHas('tenant_migration_runs', ['tenant_id' => $tenant1->id, 'status' => 'failed'], 'landlord');
     $this->assertDatabaseHas('tenant_migration_runs', ['tenant_id' => $tenant2->id, 'status' => 'success'], 'landlord');
+});
+
+test('it runs module migrations for enabled modules', function () {
+    $tenant = Tenant::create(['name' => 'Module Tenant', 'slug' => 'module-tenant', 'isolation_mode' => 'shared']);
+
+    TenantModule::create([
+        'tenant_id' => $tenant->id,
+        'module_slug' => 'quality-monitoring',
+        'is_enabled' => true,
+    ]);
+
+    $modulePath = str_replace(base_path().'/', '', app_path('Modules/QualityMonitoring/Database/Migrations'));
+
+    $this->mock(TenantMigrator::class, function ($mock) use ($modulePath) {
+        $mock->shouldReceive('migrate')
+            ->once()
+            ->with('tenant', 'database/migrations/tenant', true)
+            ->andReturn(['exitCode' => 0, 'output' => 'Base']);
+
+        $mock->shouldReceive('migrate')
+            ->once()
+            ->with('tenant', $modulePath, true)
+            ->andReturn(['exitCode' => 0, 'output' => 'Module']);
+    });
+
+    $this->artisan('tenants:migrate')->assertExitCode(0);
 });

@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Models\Tenant;
 use App\Models\TenantModule;
 use App\Services\Tenancy\TenantContext;
+use App\Services\Tenancy\TenantMigrator;
 
 beforeEach(function () {
     $this->tenant = Tenant::create([
@@ -74,6 +75,22 @@ test('module:enable command can enable for all tenants', function () {
     expect(TenantModule::where('module_slug', 'core')->where('is_enabled', true)->count())->toBe(2);
 });
 
+test('module:enable command runs migrations for tenant modules', function () {
+    $modulePath = str_replace(base_path().'/', '', app_path('Modules/QualityMonitoring/Database/Migrations'));
+
+    $this->mock(TenantMigrator::class, function ($mock) use ($modulePath) {
+        $mock->shouldReceive('migrate')
+            ->once()
+            ->with('tenant', $modulePath, true)
+            ->andReturn(['exitCode' => 0, 'output' => 'Module']);
+    });
+
+    $this->artisan('module:enable', [
+        'slug' => 'quality-monitoring',
+        '--tenant' => $this->tenant->id,
+    ])->assertSuccessful();
+});
+
 test('module:disable command requires tenant or all-tenants option', function () {
     $this->artisan('module:disable', ['slug' => 'core'])
         ->assertFailed()
@@ -103,6 +120,13 @@ test('module:migrate command runs without errors', function () {
 test('module:migrate command runs for all modules when no slug provided', function () {
     $this->artisan('module:migrate')
         ->assertSuccessful();
+});
+
+test('module:migrate command runs for a tenant when tenant option provided', function () {
+    $this->artisan('module:migrate', [
+        'slug' => 'core',
+        '--tenant' => $this->tenant->id,
+    ])->assertSuccessful();
 });
 
 test('module:migrate command fails for non-existent module', function () {

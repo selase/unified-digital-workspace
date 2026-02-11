@@ -7,11 +7,14 @@ namespace App\Services;
 use App\Exceptions\ModuleConflictException;
 use App\Exceptions\ModuleDependencyException;
 use App\Exceptions\ModuleNotFoundException;
+use App\Models\Permission;
 use App\Models\Tenant;
 use App\Models\TenantModule;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Str;
+use Spatie\Permission\PermissionRegistrar;
 
 final class ModuleManager
 {
@@ -124,17 +127,7 @@ final class ModuleManager
      */
     public function enableForTenant(string $slug, Tenant $tenant): TenantModule
     {
-        $module = $this->find($slug);
-
-        if (! $module) {
-            throw new ModuleNotFoundException("Module '{$slug}' not found");
-        }
-
-        // Check dependencies
-        $this->checkDependencies($module, $tenant);
-
-        // Check conflicts
-        $this->checkConflicts($module, $tenant);
+        $module = $this->assertCanEnable($slug, $tenant);
 
         // Enable the module
         $tenantModule = TenantModule::updateOrCreate(
@@ -152,6 +145,7 @@ final class ModuleManager
 
         // Sync module features to tenant
         $this->syncModuleFeatures($slug, $tenant);
+        $this->syncModulePermissions($module);
 
         return $tenantModule;
     }
@@ -291,6 +285,29 @@ final class ModuleManager
     }
 
     /**
+     * Ensure a module can be enabled for a tenant and return its manifest.
+     *
+     * @return array<string, mixed>
+     *
+     * @throws ModuleNotFoundException
+     * @throws ModuleDependencyException
+     * @throws ModuleConflictException
+     */
+    public function assertCanEnable(string $slug, Tenant $tenant): array
+    {
+        $module = $this->find($slug);
+
+        if (! $module) {
+            throw new ModuleNotFoundException("Module '{$slug}' not found");
+        }
+
+        $this->checkDependencies($module, $tenant);
+        $this->checkConflicts($module, $tenant);
+
+        return $module;
+    }
+
+    /**
      * Check if all dependencies are enabled.
      *
      * @param  array<string, mixed>  $module
@@ -359,5 +376,32 @@ final class ModuleManager
     {
         Cache::forget("tenant.{$tenant->id}.module.{$slug}");
         Cache::forget("tenant.{$tenant->id}.enabled_modules");
+    }
+
+    /**
+     * Sync module permissions to the global permissions table.
+     *
+     * @param  array<string, mixed>  $module
+     */
+    private function syncModulePermissions(array $module): void
+    {
+        $permissions = $module['permissions'] ?? [];
+
+        if (empty($permissions)) {
+            return;
+        }
+
+        app()->make(PermissionRegistrar::class)->forgetCachedPermissions();
+
+        $category = $module['permission_category'] ?? $module['slug'] ?? 'module';
+
+        foreach ($permissions as $permission) {
+            Permission::query()->updateOrCreate([
+                'name' => $permission,
+            ], [
+                'uuid' => (string) Str::uuid(),
+                'category' => $category,
+            ]);
+        }
     }
 }

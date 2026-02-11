@@ -4,6 +4,12 @@ declare(strict_types=1);
 
 use App\Models\Tenant;
 use App\Models\User;
+use App\Modules\QualityMonitoring\Models\Activity;
+use App\Modules\QualityMonitoring\Models\Alert;
+use App\Modules\QualityMonitoring\Models\Kpi;
+use App\Modules\QualityMonitoring\Models\KpiUpdate;
+use App\Modules\QualityMonitoring\Models\Objective;
+use App\Modules\QualityMonitoring\Models\Variance;
 use App\Modules\QualityMonitoring\Models\Workplan;
 use App\Services\ModuleManager;
 use Illuminate\Support\Facades\Artisan;
@@ -149,34 +155,34 @@ it('returns workplan dashboard stats', function (): void {
         'status' => 'draft',
     ]);
 
-    $objective = App\Modules\QualityMonitoring\Models\Objective::create([
+    $objective = Objective::create([
         'workplan_id' => $workplan->id,
         'title' => 'Objective',
     ]);
 
-    $activity = App\Modules\QualityMonitoring\Models\Activity::create([
+    $activity = Activity::create([
         'objective_id' => $objective->id,
         'title' => 'Activity',
     ]);
 
-    $kpi = App\Modules\QualityMonitoring\Models\Kpi::create([
+    $kpi = Kpi::create([
         'activity_id' => $activity->id,
         'name' => 'KPI',
     ]);
 
-    App\Modules\QualityMonitoring\Models\KpiUpdate::create([
+    KpiUpdate::create([
         'kpi_id' => $kpi->id,
         'value' => 10,
     ]);
 
-    App\Modules\QualityMonitoring\Models\Variance::create([
+    Variance::create([
         'workplan_id' => $workplan->id,
         'activity_id' => $activity->id,
         'category' => 'delay',
         'narrative' => 'Delay reason',
     ]);
 
-    App\Modules\QualityMonitoring\Models\Alert::create([
+    Alert::create([
         'workplan_id' => $workplan->id,
         'type' => 'overdue',
         'status' => 'open',
@@ -195,6 +201,64 @@ it('returns workplan dashboard stats', function (): void {
     ]);
 });
 
+it('returns workplan report summary and exports alerts', function (): void {
+    [$user] = createQualityApiContext();
+
+    $workplan = Workplan::create([
+        'title' => 'Reporting Plan',
+        'period_start' => now()->toDateString(),
+        'period_end' => now()->addMonths(3)->toDateString(),
+        'status' => 'draft',
+        'owner_id' => $user->id,
+    ]);
+
+    $objective = Objective::create([
+        'workplan_id' => $workplan->id,
+        'title' => 'Objective',
+    ]);
+
+    $activity = Activity::create([
+        'objective_id' => $objective->id,
+        'title' => 'Activity',
+        'status' => 'in-progress',
+    ]);
+
+    $kpi = Kpi::create([
+        'activity_id' => $activity->id,
+        'name' => 'KPI',
+    ]);
+
+    KpiUpdate::create([
+        'kpi_id' => $kpi->id,
+        'value' => 12,
+    ]);
+
+    Variance::create([
+        'workplan_id' => $workplan->id,
+        'activity_id' => $activity->id,
+        'category' => 'delay',
+        'narrative' => 'Reason',
+    ]);
+
+    Alert::create([
+        'workplan_id' => $workplan->id,
+        'type' => 'overdue',
+        'status' => 'open',
+        'escalation_level' => 1,
+    ]);
+
+    $summary = actingAs($user, 'sanctum')->getJson("/api/quality-monitoring/v1/workplans/{$workplan->id}/reports/summary");
+
+    $summary->assertSuccessful()->assertJsonPath('workplan_id', $workplan->id);
+    $summary->assertJsonPath('alerts.escalated', 1);
+    $summary->assertJsonPath('activity_status.in-progress', 1);
+
+    $export = actingAs($user, 'sanctum')->get("/api/quality-monitoring/v1/workplans/{$workplan->id}/exports/alerts?format=csv");
+
+    $export->assertSuccessful();
+    $export->assertHeader('content-disposition', "attachment; filename=workplan-alerts-{$workplan->id}.csv");
+});
+
 it('stores variance and acknowledges alerts', function (): void {
     [$user] = createQualityApiContext();
 
@@ -205,12 +269,12 @@ it('stores variance and acknowledges alerts', function (): void {
         'status' => 'approved',
     ]);
 
-    $objective = App\Modules\QualityMonitoring\Models\Objective::create([
+    $objective = Objective::create([
         'workplan_id' => $workplan->id,
         'title' => 'Objective',
     ]);
 
-    $activity = App\Modules\QualityMonitoring\Models\Activity::create([
+    $activity = Activity::create([
         'objective_id' => $objective->id,
         'title' => 'Activity',
     ]);
@@ -222,7 +286,7 @@ it('stores variance and acknowledges alerts', function (): void {
 
     $variance->assertCreated();
 
-    $alert = App\Modules\QualityMonitoring\Models\Alert::create([
+    $alert = Alert::create([
         'workplan_id' => $workplan->id,
         'type' => 'overdue',
         'status' => 'open',

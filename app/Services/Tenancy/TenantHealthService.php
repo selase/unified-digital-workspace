@@ -44,14 +44,13 @@ class TenantHealthService
             $connection = DB::connection('tenant');
             $connection->getPdo(); // Triggers connection
 
-            // 3. Check for users table as a proxy for successful migration
-            $hasUsersTable = Schema::connection('tenant')->hasTable('users');
+            $hasSchema = Schema::connection('tenant')->hasTable('migrations');
 
             return [
                 'status' => 'ok',
                 'message' => 'Connection successful.',
                 'database_name' => $connection->getDatabaseName(),
-                'has_schema' => $hasUsersTable,
+                'has_schema' => $hasSchema,
             ];
         } catch (Throwable $e) {
             return [

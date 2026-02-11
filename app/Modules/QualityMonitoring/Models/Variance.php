@@ -42,6 +42,22 @@ final class Variance extends Model
         return $this->belongsTo(Workplan::class);
     }
 
+    /**
+     * @return BelongsTo<Activity, $this>
+     */
+    public function activity(): BelongsTo
+    {
+        return $this->belongsTo(Activity::class);
+    }
+
+    /**
+     * @return BelongsTo<Kpi, $this>
+     */
+    public function kpi(): BelongsTo
+    {
+        return $this->belongsTo(Kpi::class);
+    }
+
     protected function casts(): array
     {
         return [

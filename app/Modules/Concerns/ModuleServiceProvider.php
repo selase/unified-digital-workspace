@@ -47,9 +47,6 @@ abstract class ModuleServiceProvider extends ServiceProvider
      */
     final public function boot(): void
     {
-        // Always register migrations for artisan commands
-        $this->registerMigrations();
-
         // Register routes for all modules; middleware enforces enablement
         $this->registerRoutes();
 
@@ -100,18 +97,6 @@ abstract class ModuleServiceProvider extends ServiceProvider
     protected function registerBindings(): void
     {
         // Override in child classes to register module-specific bindings
-    }
-
-    /**
-     * Register module migrations.
-     */
-    protected function registerMigrations(): void
-    {
-        $migrationsPath = $this->getModulePath().'/Database/Migrations';
-
-        if (is_dir($migrationsPath)) {
-            $this->loadMigrationsFrom($migrationsPath);
-        }
     }
 
     /**

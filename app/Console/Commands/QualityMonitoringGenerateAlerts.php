@@ -95,11 +95,7 @@ final class QualityMonitoringGenerateAlerts extends Command
 
             if ($activity->responsible_id) {
                 $user = User::query()->find($activity->responsible_id);
-                if ($user) {
-                    if (Schema::connection('tenant')->hasTable('notifications')) {
-                        $user->notify(new QualityAlertNotification($alert));
-                    }
-                }
+                $this->sendAlertNotification($user, $alert);
             }
         }
     }
@@ -131,7 +127,7 @@ final class QualityMonitoringGenerateAlerts extends Command
                 continue;
             }
 
-            Alert::create([
+            $alert = Alert::create([
                 'workplan_id' => $kpi->activity?->objective?->workplan_id,
                 'kpi_id' => $kpi->id,
                 'type' => 'kpi_overdue',
@@ -142,6 +138,12 @@ final class QualityMonitoringGenerateAlerts extends Command
                     'last_update' => $lastDate?->toDateString(),
                 ],
             ]);
+
+            $userId = $kpi->activity?->responsible_id;
+            if ($userId) {
+                $user = User::query()->find($userId);
+                $this->sendAlertNotification($user, $alert);
+            }
         }
     }
 
@@ -154,5 +156,21 @@ final class QualityMonitoringGenerateAlerts extends Command
             'annual' => 365,
             default => null,
         };
+    }
+
+    private function sendAlertNotification(?User $user, Alert $alert): void
+    {
+        if (! $user) {
+            return;
+        }
+
+        $connection = $user->getConnectionName() ?? config('database.default');
+        if (! $connection || ! Schema::connection($connection)->hasTable('notifications')) {
+            return;
+        }
+
+        $user->notify(new QualityAlertNotification($alert));
+        $alert->sent_at = now();
+        $alert->save();
     }
 }

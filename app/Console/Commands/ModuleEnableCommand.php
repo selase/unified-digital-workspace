@@ -9,7 +9,10 @@ use App\Exceptions\ModuleDependencyException;
 use App\Exceptions\ModuleNotFoundException;
 use App\Models\Tenant;
 use App\Services\ModuleManager;
+use App\Services\Tenancy\TenantDatabaseManager;
+use App\Services\Tenancy\TenantMigrator;
 use Illuminate\Console\Command;
+use RuntimeException;
 
 final class ModuleEnableCommand extends Command
 {
@@ -33,7 +36,7 @@ final class ModuleEnableCommand extends Command
     /**
      * Execute the console command.
      */
-    public function handle(ModuleManager $moduleManager): int
+    public function handle(ModuleManager $moduleManager, TenantDatabaseManager $dbManager, TenantMigrator $migrator): int
     {
         $slug = $this->argument('slug');
         $tenantId = $this->option('tenant');
@@ -66,6 +69,8 @@ final class ModuleEnableCommand extends Command
 
         foreach ($tenants as $tenant) {
             try {
+                $module = $moduleManager->assertCanEnable($slug, $tenant);
+                $this->migrateModuleForTenant($tenant, $module, $dbManager, $migrator);
                 $moduleManager->enableForTenant($slug, $tenant);
                 $this->info("Module '{$slug}' enabled for tenant: {$tenant->name}");
                 $successCount++;
@@ -78,6 +83,9 @@ final class ModuleEnableCommand extends Command
             } catch (ModuleConflictException $e) {
                 $this->error("Conflict error for {$tenant->name}: {$e->getMessage()}");
                 $failCount++;
+            } catch (RuntimeException $e) {
+                $this->error("Migration error for {$tenant->name}: {$e->getMessage()}");
+                $failCount++;
             }
         }
 
@@ -86,5 +94,30 @@ final class ModuleEnableCommand extends Command
         }
 
         return $failCount > 0 ? self::FAILURE : self::SUCCESS;
+    }
+
+    /**
+     * @param  array<string, mixed>  $module
+     */
+    private function migrateModuleForTenant(Tenant $tenant, array $module, TenantDatabaseManager $dbManager, TenantMigrator $migrator): void
+    {
+        $migrationPath = $module['path'].'/Database/Migrations';
+
+        if (! is_dir($migrationPath)) {
+            return;
+        }
+
+        if ($tenant->requiresDedicatedDb()) {
+            $dbManager->configure($tenant);
+        } else {
+            $dbManager->configureShared();
+        }
+
+        $relativePath = str_replace(base_path().'/', '', $migrationPath);
+        $result = $migrator->migrate('tenant', $relativePath, true);
+
+        if ($result['exitCode'] !== 0) {
+            throw new RuntimeException("Module [{$module['slug']}] migration failed with exit code {$result['exitCode']}.");
+        }
     }
 }

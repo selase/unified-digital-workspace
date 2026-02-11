@@ -39,6 +39,7 @@ final class Kernel extends ConsoleKernel
 
         // Quality Monitoring
         $schedule->command('quality:generate-alerts')->dailyAt('08:00');
+        $schedule->command('quality:escalate-alerts')->dailyAt('08:30');
     }
 
     /**

@@ -24,6 +24,8 @@ final class Alert extends Model
         'status',
         'metadata',
         'sent_at',
+        'escalation_level',
+        'escalated_at',
     ];
 
     /**
@@ -47,6 +49,8 @@ final class Alert extends Model
         return [
             'metadata' => 'array',
             'sent_at' => 'datetime',
+            'escalated_at' => 'datetime',
+            'escalation_level' => 'integer',
         ];
     }
 }

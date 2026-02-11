@@ -11,6 +11,7 @@ use App\Modules\QualityMonitoring\Http\Controllers\Api\V1\KpiUpdateController;
 use App\Modules\QualityMonitoring\Http\Controllers\Api\V1\ObjectiveController;
 use App\Modules\QualityMonitoring\Http\Controllers\Api\V1\VarianceController;
 use App\Modules\QualityMonitoring\Http\Controllers\Api\V1\WorkplanController;
+use App\Modules\QualityMonitoring\Http\Controllers\Api\V1\WorkplanReportController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -31,6 +32,15 @@ Route::prefix('v1')->name('v1.')->group(function (): void {
     Route::post('workplans/{workplan}/approve', [WorkplanController::class, 'approve'])->name('workplans.approve');
     Route::post('workplans/{workplan}/reject', [WorkplanController::class, 'reject'])->name('workplans.reject');
     Route::get('workplans/{workplan}/dashboard', [WorkplanController::class, 'dashboard'])->name('workplans.dashboard');
+
+    Route::get('workplans/{workplan}/reports/summary', [WorkplanReportController::class, 'summary'])->name('workplans.reports.summary');
+    Route::get('workplans/{workplan}/reports/variances', [WorkplanReportController::class, 'variances'])->name('workplans.reports.variances');
+    Route::get('workplans/{workplan}/reports/alerts', [WorkplanReportController::class, 'alerts'])->name('workplans.reports.alerts');
+    Route::get('workplans/{workplan}/reports/kpi-updates', [WorkplanReportController::class, 'kpiUpdates'])->name('workplans.reports.kpi-updates');
+
+    Route::get('workplans/{workplan}/exports/variances', [WorkplanReportController::class, 'exportVariances'])->name('workplans.exports.variances');
+    Route::get('workplans/{workplan}/exports/alerts', [WorkplanReportController::class, 'exportAlerts'])->name('workplans.exports.alerts');
+    Route::get('workplans/{workplan}/exports/kpi-updates', [WorkplanReportController::class, 'exportKpiUpdates'])->name('workplans.exports.kpi-updates');
 
     Route::post('workplans/{workplan}/objectives', [ObjectiveController::class, 'store'])->name('objectives.store');
     Route::put('workplans/{workplan}/objectives/{objective}', [ObjectiveController::class, 'update'])->name('objectives.update');

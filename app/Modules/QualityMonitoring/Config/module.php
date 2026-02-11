@@ -14,6 +14,8 @@ return [
     'tier' => 'standard',
     'is_billable' => true,
 
+    'alert_escalation_days' => 3,
+
     'depends_on' => ['core'],
     'conflicts_with' => [],
 
