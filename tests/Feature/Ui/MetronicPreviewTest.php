@@ -15,5 +15,5 @@ it('renders the metronic preview for authenticated users', function (): void {
         ->get('/metronic-preview')
         ->assertSuccessful()
         ->assertSee('Metronic UI Preview')
-        ->assertSee('metronic-assets/css/styles.css');
+        ->assertSee('assets/metronic/css/styles.css');
 });

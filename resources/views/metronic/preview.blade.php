@@ -18,8 +18,8 @@
                     </p>
                 </div>
                 <div class="flex gap-2">
-                    <a class="kt-btn kt-btn-outline" href="{{ route('metronic.assets', ['path' => 'css/styles.css']) }}">Stylesheet</a>
-                    <a class="kt-btn kt-btn-primary" href="{{ route('metronic.assets', ['path' => 'js/core.bundle.js']) }}">Core JS</a>
+                    <a class="kt-btn kt-btn-outline" href="{{ asset('assets/metronic/css/styles.css') }}">Stylesheet</a>
+                    <a class="kt-btn kt-btn-primary" href="{{ asset('assets/metronic/js/core.bundle.js') }}">Core JS</a>
                 </div>
             </div>
         </div>

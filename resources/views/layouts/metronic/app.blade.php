@@ -1,16 +1,25 @@
 <!DOCTYPE html>
 <html class="h-full" data-kt-theme="true" data-kt-theme-mode="light" dir="ltr" lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
-    <title>@yield('title', config('app.name'))</title>
+    <title>{{ config('app.name') }} | @yield('title')</title>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1, shrink-to-fit=no" name="viewport"/>
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <link href="{{ route('metronic.assets', ['path' => 'media/app/favicon.ico']) }}" rel="shortcut icon"/>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
-    <link href="{{ route('metronic.assets', ['path' => 'vendors/apexcharts/apexcharts.css']) }}" rel="stylesheet"/>
-    <link href="{{ route('metronic.assets', ['path' => 'vendors/keenicons/styles.bundle.css']) }}" rel="stylesheet"/>
-    <link href="{{ route('metronic.assets', ['path' => 'css/styles.css']) }}" rel="stylesheet"/>
+    <link rel="shortcut icon" href="{{ asset('assets/metronic/media/app/favicon.ico') }}"/>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"/>
+    <link href="{{ asset('assets/plugins/custom/fullcalendar/fullcalendar.bundle.css') }}" rel="stylesheet" type="text/css"/>
+    <link href="{{ asset('assets/plugins/custom/datatables/datatables.bundle.css') }}" rel="stylesheet" type="text/css"/>
+    <link href="{{ asset('assets/plugins/global/plugins.bundle.css') }}" rel="stylesheet" type="text/css"/>
+    <link href="{{ asset('assets/css/style.bundle.css') }}" rel="stylesheet" type="text/css"/>
+    <link href="{{ asset('assets/metronic/vendors/apexcharts/apexcharts.css') }}" rel="stylesheet"/>
+    <link href="{{ asset('assets/metronic/vendors/keenicons/styles.bundle.css') }}" rel="stylesheet"/>
+    <link href="{{ asset('assets/metronic/css/styles.css') }}" rel="stylesheet"/>
+    @stack('custom-styles')
     @stack('styles')
+
+    @include('layouts.admin.partials.custom-styles')
+
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="antialiased flex min-h-full text-base text-foreground bg-background [--header-height:64px] [--sidebar-width:270px] bg-mono">
 <script>
@@ -67,10 +76,8 @@
                                 $routeInstance = \Illuminate\Support\Facades\Route::getRoutes()->getByName($routeName);
                                 $parameterNames = $routeInstance?->parameterNames() ?? [];
                                 $routeParams = [];
-                                if (in_array('subdomain', $parameterNames, true)) {
-                                    if ($subdomain) {
-                                        $routeParams['subdomain'] = $subdomain;
-                                    }
+                                if (in_array('subdomain', $parameterNames, true) && $subdomain) {
+                                    $routeParams['subdomain'] = $subdomain;
                                 }
 
                                 if (empty(array_diff($parameterNames, array_keys($routeParams)))) {
@@ -105,7 +112,105 @@
     </div>
 </div>
 
-<script src="{{ route('metronic.assets', ['path' => 'js/core.bundle.js']) }}"></script>
+<script src="{{ asset('assets/plugins/global/plugins.bundle.js') }}"></script>
+<script src="{{ asset('assets/js/scripts.bundle.js') }}"></script>
+<script src="{{ asset('assets/plugins/custom/fullcalendar/fullcalendar.bundle.js') }}"></script>
+<script src="{{ asset('assets/plugins/custom/datatables/datatables.bundle.js') }}"></script>
+<script src="{{ asset('assets/js/widgets.bundle.js') }}"></script>
+<script src="{{ asset('assets/js/custom/widgets.js') }}"></script>
+<script src="{{ asset('assets/js/custom/apps/chat/chat.js') }}"></script>
+<script src="{{ asset('assets/js/custom/utilities/modals/upgrade-plan.js') }}"></script>
+<script src="{{ asset('assets/js/custom/utilities/modals/create-app.js') }}"></script>
+<script src="{{ asset('assets/js/custom/utilities/modals/users-search.js') }}"></script>
+<script src="{{ asset('assets/metronic/js/core.bundle.js') }}"></script>
+
+@stack('vendor-scripts')
+
+@if(session()->has('message'))
+    <script>
+        if (typeof toastr !== 'undefined') {
+            let type = "{{ Session::get('status', 'success') }}";
+            switch (type) {
+                case 'info':
+                    toastr.options = {
+                        "closeButton": true,
+                        "debug": false,
+                        "newestOnTop": true,
+                        "progressBar": true,
+                        "positionClass": "toastr-top-right",
+                        "preventDuplicates": false,
+                        "showDuration": "300",
+                        "hideDuration": "1000",
+                        "timeOut": "5000",
+                        "extendedTimeOut": "1000",
+                        "showEasing": "swing",
+                        "hideEasing": "linear",
+                        "showMethod": "fadeIn",
+                        "hideMethod": "fadeOut"
+                    };
+                    toastr.info("{{ Session::get('message') }}", "Information");
+                    break;
+                case 'warning':
+                    toastr.options = {
+                        "debug": false,
+                        "closeButton": true,
+                        "newestOnTop": true,
+                        "progressBar": true,
+                        "positionClass": "toastr-top-right",
+                        "preventDuplicates": false,
+                        "showDuration": "300",
+                        "hideDuration": "1000",
+                        "timeOut": "5000",
+                        "extendedTimeOut": "1000",
+                        "showEasing": "swing",
+                        "hideEasing": "linear",
+                        "showMethod": "fadeIn",
+                    };
+                    toastr.warning("{{ Session::get('message') }}", "Warning!!!");
+                    break;
+                case 'success':
+                    toastr.options = {
+                        "debug": false,
+                        "closeButton": true,
+                        "newestOnTop": true,
+                        "progressBar": true,
+                        "positionClass": "toastr-top-right",
+                        "preventDuplicates": false,
+                        "showDuration": "300",
+                        "hideDuration": "1000",
+                        "timeOut": "5000",
+                        "extendedTimeOut": "1000",
+                        "showEasing": "swing",
+                        "hideEasing": "linear",
+                        "showMethod": "fadeIn",
+                    };
+                    toastr.success("{{ Session::get('message') }}", "Success");
+                    break;
+                case 'error':
+                    toastr.options = {
+                        "debug": false,
+                        "closeButton": true,
+                        "newestOnTop": true,
+                        "progressBar": true,
+                        "positionClass": "toastr-top-right",
+                        "preventDuplicates": false,
+                        "showDuration": "300",
+                        "hideDuration": "1000",
+                        "timeOut": "5000",
+                        "extendedTimeOut": "1000",
+                        "showEasing": "swing",
+                        "hideEasing": "linear",
+                        "showMethod": "fadeIn",
+                    };
+                    toastr.error("{{ Session::get('message') }}", "Error");
+                    break;
+            }
+        }
+    </script>
+@endif
+
+@stack('modals')
+@stack('custom-scripts')
 @stack('scripts')
 </body>
 </html>

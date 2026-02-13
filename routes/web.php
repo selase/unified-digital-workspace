@@ -11,7 +11,6 @@ use App\Http\Controllers\Admin\TeamController;
 use App\Http\Controllers\Admin\TenantController;
 use App\Http\Controllers\Admin\TenantHealthController;
 use App\Http\Controllers\Admin\UsersController;
-use App\Http\Controllers\Ui\MetronicAssetController;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Route;
@@ -28,9 +27,6 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/', fn (): Factory|View => view('welcome'));
-Route::get('/metronic-assets/{path}', MetronicAssetController::class)
-    ->where('path', '.*')
-    ->name('metronic.assets');
 Route::get('/sample-product', fn (): Factory|View => view('sample-product-page'));
 Route::get('/product-template', fn (): Factory|View => view('product.landing'))->name('product.template');
 Route::get('/product-enterprise', fn (): Factory|View => view('product.enterprise'))->name('product.enterprise');
