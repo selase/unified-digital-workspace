@@ -190,4 +190,41 @@ final class ForumThreadController extends Controller
 
         return ForumModerationLogResource::collection($logs)->response();
     }
+
+    public function moderationOverview(Request $request): JsonResponse
+    {
+        abort_if(! $request->user()?->can('forums.moderate'), 403);
+
+        $latestLogs = ForumModerationLog::query()
+            ->latest('created_at')
+            ->limit(8)
+            ->get();
+
+        return response()->json([
+            'counts' => [
+                'flagged_threads' => ForumThread::query()->where('status', ForumThread::STATUS_FLAGGED)->count(),
+                'locked_threads' => ForumThread::query()->whereNotNull('locked_at')->count(),
+                'pinned_threads' => ForumThread::query()->whereNotNull('pinned_at')->count(),
+                'actions_last_24h' => ForumModerationLog::query()
+                    ->where('created_at', '>=', now()->subDay())
+                    ->count(),
+            ],
+            'latest_logs' => ForumModerationLogResource::collection($latestLogs),
+        ]);
+    }
+
+    public function moderationActionOptions(Request $request): JsonResponse
+    {
+        abort_if(! $request->user()?->can('forums.moderate'), 403);
+
+        return response()->json([
+            'actions' => ['pin', 'unpin', 'lock', 'unlock', 'flag', 'delete'],
+            'reason_templates' => [
+                'pin' => ['Important update', 'Critical announcement'],
+                'lock' => ['Thread resolved', 'Policy violation under review'],
+                'flag' => ['Needs moderator review', 'Potential policy violation'],
+                'delete' => ['Spam content', 'Duplicate discussion', 'Abusive language'],
+            ],
+        ]);
+    }
 }

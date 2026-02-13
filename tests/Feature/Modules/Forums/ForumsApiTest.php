@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Models\Tenant;
 use App\Models\User;
+use App\Modules\Forums\Models\ForumMessage;
 use App\Modules\Forums\Models\ForumPost;
 use App\Notifications\Forums\ForumMentionedNotification;
 use App\Services\ModuleManager;
@@ -308,6 +309,49 @@ test('it exposes moderation flags queue and logs to moderators only', function (
         ->assertJsonFragment(['reason' => 'Needs investigation']);
 });
 
+test('it provides moderation overview and action options for moderators only', function (): void {
+    [$moderator, $tenant, $recipient] = createForumsApiContext();
+
+    switchToForumsTenantContext($tenant);
+
+    $channelUuid = (string) actingAs($moderator, 'sanctum')->postJson('/api/forums/v1/channels', [
+        'name' => 'Governance',
+        'slug' => 'governance',
+    ])->json('data.uuid');
+
+    $threadUuid = (string) actingAs($moderator, 'sanctum')->postJson("/api/forums/v1/channels/{$channelUuid}/threads", [
+        'title' => 'Policy update',
+        'slug' => 'policy-update',
+        'body' => 'Pending moderation',
+    ])->json('data.uuid');
+
+    actingAs($moderator, 'sanctum')->postJson("/api/forums/v1/threads/{$threadUuid}/moderate", [
+        'action' => 'flag',
+        'reason' => 'Needs legal review',
+    ])->assertSuccessful();
+
+    actingAs($moderator, 'sanctum')->postJson("/api/forums/v1/threads/{$threadUuid}/moderate", [
+        'action' => 'lock',
+        'reason' => 'Pause discussion',
+    ])->assertSuccessful();
+
+    switchToForumsTenantContext($tenant);
+    actingAs($recipient, 'sanctum')->getJson('/api/forums/v1/moderation/overview')
+        ->assertForbidden();
+
+    switchToForumsTenantContext($tenant);
+    actingAs($moderator, 'sanctum')->getJson('/api/forums/v1/moderation/overview')
+        ->assertSuccessful()
+        ->assertJsonPath('counts.flagged_threads', 0)
+        ->assertJsonPath('counts.locked_threads', 1)
+        ->assertJsonPath('counts.actions_last_24h', 2);
+
+    switchToForumsTenantContext($tenant);
+    actingAs($moderator, 'sanctum')->getJson('/api/forums/v1/moderation/actions')
+        ->assertSuccessful()
+        ->assertJsonFragment(['actions' => ['pin', 'unpin', 'lock', 'unlock', 'flag', 'delete']]);
+});
+
 test('it handles messaging delivery and read receipts', function (): void {
     [$moderator, $tenant, $recipient] = createForumsApiContext();
 
@@ -346,6 +390,73 @@ test('it handles messaging delivery and read receipts', function (): void {
     expect($readAt)->not->toBeNull();
 });
 
+test('it filters messages by box, search query, visibility scope, and unread state', function (): void {
+    [$moderator, $tenant, $recipient] = createForumsApiContext();
+
+    $sender = User::factory()->create();
+    $tenant->users()->syncWithoutDetaching([$sender->id]);
+    $sender->givePermissionTo(['forums.view', 'forums.messages.send']);
+    $moderator->givePermissionTo(['forums.messages.send']);
+
+    switchToForumsTenantContext($tenant);
+    $messageOne = actingAs($moderator, 'sanctum')->postJson('/api/forums/v1/messages', [
+        'subject' => 'Budget Memo',
+        'body' => 'Draft budget notes',
+        'recipient_user_ids' => [(string) $recipient->uuid],
+        'visibility' => ['scope' => 'direct'],
+    ])->assertCreated();
+
+    switchToForumsTenantContext($tenant);
+    $messageTwo = actingAs($moderator, 'sanctum')->postJson('/api/forums/v1/messages', [
+        'subject' => 'Townhall Invite',
+        'body' => 'Organization-wide update',
+        'recipient_user_ids' => [(string) $recipient->uuid],
+        'visibility' => ['scope' => 'organization'],
+    ])->assertCreated();
+
+    switchToForumsTenantContext($tenant);
+    actingAs($sender, 'sanctum')->postJson('/api/forums/v1/messages', [
+        'subject' => 'Support Request',
+        'body' => 'Need help with dashboard',
+        'recipient_user_ids' => [(string) $recipient->uuid],
+        'visibility' => ['scope' => 'department'],
+    ])->assertCreated();
+
+    switchToForumsTenantContext($tenant);
+    actingAs($recipient, 'sanctum')
+        ->postJson('/api/forums/v1/messages/'.$messageOne->json('data.uuid').'/read')
+        ->assertSuccessful();
+
+    switchToForumsTenantContext($tenant);
+    actingAs($recipient, 'sanctum')->getJson('/api/forums/v1/messages?box=inbox&q=Townhall')
+        ->assertSuccessful()
+        ->assertJsonFragment(['subject' => 'Townhall Invite'])
+        ->assertJsonMissing(['subject' => 'Budget Memo']);
+
+    switchToForumsTenantContext($tenant);
+    actingAs($recipient, 'sanctum')->getJson('/api/forums/v1/messages?scope=organization')
+        ->assertSuccessful()
+        ->assertJsonFragment(['subject' => 'Townhall Invite'])
+        ->assertJsonMissing(['subject' => 'Budget Memo']);
+
+    switchToForumsTenantContext($tenant);
+    actingAs($recipient, 'sanctum')->getJson('/api/forums/v1/messages?unread=1')
+        ->assertSuccessful()
+        ->assertJsonMissing(['subject' => 'Budget Memo']);
+
+    switchToForumsTenantContext($tenant);
+    actingAs($moderator, 'sanctum')->getJson('/api/forums/v1/messages?box=sent')
+        ->assertSuccessful()
+        ->assertJsonFragment(['subject' => 'Budget Memo'])
+        ->assertJsonFragment(['subject' => 'Townhall Invite']);
+
+    $organizationMessage = ForumMessage::query()
+        ->where('subject', 'Townhall Invite')
+        ->firstOrFail();
+
+    expect($organizationMessage->visibility['scope'] ?? null)->toBe('organization');
+});
+
 test('it writes mention notifications for mentioned tenant users', function (): void {
     [$moderator, $tenant, $recipient] = createForumsApiContext();
 
@@ -374,4 +485,34 @@ test('it writes mention notifications for mentioned tenant users', function (): 
         'module' => 'forums',
         'type' => 'forum_mention',
     ]);
+});
+
+test('it rejects messages when recipients are outside tenant membership', function (): void {
+    [$moderator, $tenant] = createForumsApiContext();
+
+    $externalUser = User::factory()->create();
+    $moderator->givePermissionTo(['forums.messages.send']);
+
+    switchToForumsTenantContext($tenant);
+    actingAs($moderator, 'sanctum')->postJson('/api/forums/v1/messages', [
+        'subject' => 'Confidential',
+        'body' => 'Do not share externally',
+        'recipient_user_ids' => [(string) $externalUser->uuid],
+    ])->assertUnprocessable();
+});
+
+test('it rejects mixed recipients when one is outside tenant membership', function (): void {
+    [$moderator, $tenant, $recipient] = createForumsApiContext();
+
+    $externalUser = User::factory()->create();
+    $moderator->givePermissionTo(['forums.messages.send']);
+
+    switchToForumsTenantContext($tenant);
+    actingAs($moderator, 'sanctum')->postJson('/api/forums/v1/messages', [
+        'subject' => 'Tenant-only delivery',
+        'body' => 'Mixed recipient payload should fail.',
+        'recipient_user_ids' => [(string) $recipient->uuid, (string) $externalUser->uuid],
+    ])->assertUnprocessable();
+
+    expect(ForumMessage::query()->count())->toBe(0);
 });

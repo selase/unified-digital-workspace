@@ -17,6 +17,8 @@ Route::get('/', function () {
 })->name('index');
 
 Route::prefix('v1')->name('v1.')->group(function (): void {
+    Route::get('moderation/overview', [ForumThreadController::class, 'moderationOverview'])->name('moderation.overview');
+    Route::get('moderation/actions', [ForumThreadController::class, 'moderationActionOptions'])->name('moderation.actions');
     Route::get('moderation/flags', [ForumThreadController::class, 'flaggedQueue'])->name('moderation.flags');
     Route::get('moderation/logs', [ForumThreadController::class, 'moderationLogs'])->name('moderation.logs');
 

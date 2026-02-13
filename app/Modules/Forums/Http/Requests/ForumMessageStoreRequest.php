@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Forums\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 final class ForumMessageStoreRequest extends FormRequest
 {
@@ -24,6 +25,7 @@ final class ForumMessageStoreRequest extends FormRequest
             'recipient_user_ids' => ['required', 'array', 'min:1'],
             'recipient_user_ids.*' => ['required', 'string'],
             'visibility' => ['nullable', 'array'],
+            'visibility.scope' => ['nullable', 'string', Rule::in(['direct', 'unit', 'department', 'directorate', 'organization'])],
             'metadata' => ['nullable', 'array'],
         ];
     }
