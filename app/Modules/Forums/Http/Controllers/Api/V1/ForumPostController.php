@@ -11,12 +11,13 @@ use App\Modules\Forums\Http\Resources\ForumPostResource;
 use App\Modules\Forums\Http\Resources\ForumReactionResource;
 use App\Modules\Forums\Models\ForumPost;
 use App\Modules\Forums\Models\ForumThread;
+use App\Modules\Forums\Services\ForumMentionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 final class ForumPostController extends Controller
 {
-    public function store(ForumPostStoreRequest $request, ForumThread $thread): JsonResponse
+    public function store(ForumPostStoreRequest $request, ForumThread $thread, ForumMentionService $mentionService): JsonResponse
     {
         if ($thread->locked_at) {
             return response()->json([
@@ -29,12 +30,19 @@ final class ForumPostController extends Controller
             'body' => (string) $request->validated('body'),
         ]);
 
+        $mentionService->notifyFromBody(
+            body: (string) $request->validated('body'),
+            thread: $thread,
+            actorUuid: (string) $request->user()?->uuid,
+            postId: $post->id,
+        );
+
         return (new ForumPostResource($post))
             ->response()
             ->setStatusCode(201);
     }
 
-    public function reply(ForumPostStoreRequest $request, ForumPost $post): JsonResponse
+    public function reply(ForumPostStoreRequest $request, ForumPost $post, ForumMentionService $mentionService): JsonResponse
     {
         $thread = $post->thread;
 
@@ -49,6 +57,13 @@ final class ForumPostController extends Controller
             'parent_id' => $post->id,
             'body' => (string) $request->validated('body'),
         ]);
+
+        $mentionService->notifyFromBody(
+            body: (string) $request->validated('body'),
+            thread: $thread,
+            actorUuid: (string) $request->user()?->uuid,
+            postId: $reply->id,
+        );
 
         return (new ForumPostResource($reply))
             ->response()

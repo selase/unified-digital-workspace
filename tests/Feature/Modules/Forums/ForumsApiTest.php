@@ -5,8 +5,10 @@ declare(strict_types=1);
 use App\Models\Tenant;
 use App\Models\User;
 use App\Modules\Forums\Models\ForumPost;
+use App\Notifications\Forums\ForumMentionedNotification;
 use App\Services\ModuleManager;
 use App\Services\Tenancy\TenantContext;
+use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
@@ -221,6 +223,45 @@ test('it enforces moderation permission and writes moderation logs', function ()
     ], 'tenant');
 });
 
+test('it exposes moderation flags queue and logs to moderators only', function (): void {
+    [$moderator, $tenant, $recipient] = createForumsApiContext();
+
+    switchToForumsTenantContext($tenant);
+
+    $channelUuid = (string) actingAs($moderator, 'sanctum')->postJson('/api/forums/v1/channels', [
+        'name' => 'Security',
+        'slug' => 'security',
+    ])->json('data.uuid');
+
+    $threadUuid = (string) actingAs($moderator, 'sanctum')->postJson("/api/forums/v1/channels/{$channelUuid}/threads", [
+        'title' => 'Suspicious activity',
+        'slug' => 'suspicious-activity',
+        'body' => 'Review this anomaly.',
+    ])->json('data.uuid');
+
+    switchToForumsTenantContext($tenant);
+    actingAs($moderator, 'sanctum')->postJson("/api/forums/v1/threads/{$threadUuid}/moderate", [
+        'action' => 'flag',
+        'reason' => 'Needs investigation',
+    ])->assertSuccessful();
+
+    switchToForumsTenantContext($tenant);
+    actingAs($recipient, 'sanctum')->getJson('/api/forums/v1/moderation/flags')
+        ->assertForbidden();
+
+    switchToForumsTenantContext($tenant);
+    actingAs($moderator, 'sanctum')->getJson('/api/forums/v1/moderation/flags')
+        ->assertSuccessful()
+        ->assertJsonFragment(['uuid' => $threadUuid])
+        ->assertJsonFragment(['status' => 'flagged']);
+
+    switchToForumsTenantContext($tenant);
+    actingAs($moderator, 'sanctum')->getJson('/api/forums/v1/moderation/logs?action=flag')
+        ->assertSuccessful()
+        ->assertJsonFragment(['action' => 'flag'])
+        ->assertJsonFragment(['reason' => 'Needs investigation']);
+});
+
 test('it handles messaging delivery and read receipts', function (): void {
     [$moderator, $tenant, $recipient] = createForumsApiContext();
 
@@ -257,4 +298,34 @@ test('it handles messaging delivery and read receipts', function (): void {
         ->value('read_at');
 
     expect($readAt)->not->toBeNull();
+});
+
+test('it writes mention notifications for mentioned tenant users', function (): void {
+    [$moderator, $tenant, $recipient] = createForumsApiContext();
+
+    switchToForumsTenantContext($tenant);
+
+    $channelUuid = (string) actingAs($moderator, 'sanctum')->postJson('/api/forums/v1/channels', [
+        'name' => 'Announcements',
+        'slug' => 'announcements',
+    ])->json('data.uuid');
+
+    actingAs($moderator, 'sanctum')->postJson("/api/forums/v1/channels/{$channelUuid}/threads", [
+        'title' => 'Rollout',
+        'slug' => 'rollout',
+        'body' => 'Please check this @'.(string) $recipient->uuid,
+    ])->assertCreated();
+
+    $notification = DatabaseNotification::query()
+        ->where('type', ForumMentionedNotification::class)
+        ->where('notifiable_type', User::class)
+        ->where('notifiable_id', (string) $recipient->id)
+        ->latest()
+        ->first();
+
+    expect($notification)->not->toBeNull();
+    expect((array) $notification?->data)->toMatchArray([
+        'module' => 'forums',
+        'type' => 'forum_mention',
+    ]);
 });

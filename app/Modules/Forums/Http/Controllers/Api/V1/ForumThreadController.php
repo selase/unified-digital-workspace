@@ -12,13 +12,14 @@ use App\Modules\Forums\Http\Resources\ForumThreadResource;
 use App\Modules\Forums\Models\ForumChannel;
 use App\Modules\Forums\Models\ForumModerationLog;
 use App\Modules\Forums\Models\ForumThread;
+use App\Modules\Forums\Services\ForumMentionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
 final class ForumThreadController extends Controller
 {
-    public function store(ForumThreadStoreRequest $request, ForumChannel $channel): JsonResponse
+    public function store(ForumThreadStoreRequest $request, ForumChannel $channel, ForumMentionService $mentionService): JsonResponse
     {
         $payload = $request->validated();
         $slug = Str::lower((string) ($payload['slug'] ?? Str::slug((string) $payload['title'])));
@@ -46,10 +47,17 @@ final class ForumThreadController extends Controller
             'slug' => $slug,
         ]);
 
-        $thread->posts()->create([
+        $openingPost = $thread->posts()->create([
             'user_id' => (string) $request->user()?->uuid,
             'body' => (string) $payload['body'],
         ]);
+
+        $mentionService->notifyFromBody(
+            body: (string) $payload['body'],
+            thread: $thread,
+            actorUuid: (string) $request->user()?->uuid,
+            postId: $openingPost->id,
+        );
 
         return (new ForumThreadResource($thread->load('posts.reactions')))
             ->response()
@@ -116,5 +124,34 @@ final class ForumThreadController extends Controller
             'thread' => new ForumThreadResource($thread),
             'moderation_log' => new ForumModerationLogResource($log),
         ]);
+    }
+
+    public function flaggedQueue(Request $request): JsonResponse
+    {
+        abort_if(! $request->user()?->can('forums.moderate'), 403);
+
+        $threads = ForumThread::query()
+            ->where('status', ForumThread::STATUS_FLAGGED)
+            ->with('channel')
+            ->withCount('posts')
+            ->latest('updated_at')
+            ->paginate($request->integer('per_page', 15));
+
+        return ForumThreadResource::collection($threads)->response();
+    }
+
+    public function moderationLogs(Request $request): JsonResponse
+    {
+        abort_if(! $request->user()?->can('forums.moderate'), 403);
+
+        $query = ForumModerationLog::query()->latest('created_at');
+
+        if ($request->filled('action')) {
+            $query->where('action', (string) $request->query('action'));
+        }
+
+        $logs = $query->paginate($request->integer('per_page', 20));
+
+        return ForumModerationLogResource::collection($logs)->response();
     }
 }

@@ -17,6 +17,9 @@ Route::get('/', function () {
 })->name('index');
 
 Route::prefix('v1')->name('v1.')->group(function (): void {
+    Route::get('moderation/flags', [ForumThreadController::class, 'flaggedQueue'])->name('moderation.flags');
+    Route::get('moderation/logs', [ForumThreadController::class, 'moderationLogs'])->name('moderation.logs');
+
     Route::get('channels', [ForumChannelController::class, 'index'])->name('channels.index');
     Route::post('channels', [ForumChannelController::class, 'store'])->name('channels.store');
     Route::put('channels/{channel}', [ForumChannelController::class, 'update'])->name('channels.update');
