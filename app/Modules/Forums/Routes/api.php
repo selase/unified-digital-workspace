@@ -26,6 +26,7 @@ Route::prefix('v1')->name('v1.')->group(function (): void {
     Route::delete('channels/{channel}', [ForumChannelController::class, 'destroy'])->name('channels.destroy');
 
     Route::post('channels/{channel}/threads', [ForumThreadController::class, 'store'])->name('threads.store');
+    Route::get('threads', [ForumThreadController::class, 'index'])->name('threads.index');
     Route::get('threads/{thread}', [ForumThreadController::class, 'show'])->name('threads.show');
     Route::post('threads/{thread}/posts', [ForumPostController::class, 'store'])->name('posts.store');
     Route::post('threads/{thread}/moderate', [ForumThreadController::class, 'moderate'])->name('threads.moderate');

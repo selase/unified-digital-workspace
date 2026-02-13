@@ -50,11 +50,10 @@ abstract class ModuleServiceProvider extends ServiceProvider
         // Register routes for all modules; middleware enforces enablement
         $this->registerRoutes();
 
-        // Only load views/translations if module is enabled for the request
-        if ($this->shouldBootForRequest()) {
-            $this->registerViews();
-            $this->registerTranslations();
-        }
+        // Views/translations must always be registered so namespaced rendering works.
+        // Route middleware still enforces per-tenant module enablement.
+        $this->registerViews();
+        $this->registerTranslations();
 
         // Register commands regardless of tenant context
         if ($this->app->runningInConsole()) {

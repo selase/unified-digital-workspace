@@ -161,6 +161,52 @@ test('it supports thread posts, replies and best answer marking', function (): v
         ->assertJsonFragment(['is_best_answer' => true]);
 });
 
+test('it filters threads by channel, tag, and author', function (): void {
+    [$moderator, $tenant, $recipient] = createForumsApiContext();
+
+    switchToForumsTenantContext($tenant);
+    $recipient->givePermissionTo(['forums.post']);
+
+    $generalChannelUuid = (string) actingAs($moderator, 'sanctum')->postJson('/api/forums/v1/channels', [
+        'name' => 'General',
+        'slug' => 'general',
+    ])->json('data.uuid');
+
+    $supportChannelUuid = (string) actingAs($moderator, 'sanctum')->postJson('/api/forums/v1/channels', [
+        'name' => 'Support',
+        'slug' => 'support',
+    ])->json('data.uuid');
+
+    actingAs($moderator, 'sanctum')->postJson("/api/forums/v1/channels/{$generalChannelUuid}/threads", [
+        'title' => 'General update',
+        'slug' => 'general-update',
+        'tags' => ['announcements'],
+        'body' => 'General thread body',
+    ])->assertCreated();
+
+    actingAs($recipient, 'sanctum')->postJson("/api/forums/v1/channels/{$supportChannelUuid}/threads", [
+        'title' => 'Need help',
+        'slug' => 'need-help',
+        'tags' => ['support'],
+        'body' => 'Support thread body',
+    ])->assertCreated();
+
+    actingAs($moderator, 'sanctum')->getJson("/api/forums/v1/threads?channel={$supportChannelUuid}")
+        ->assertSuccessful()
+        ->assertJsonFragment(['slug' => 'need-help'])
+        ->assertJsonMissing(['slug' => 'general-update']);
+
+    actingAs($moderator, 'sanctum')->getJson('/api/forums/v1/threads?tag=announcements')
+        ->assertSuccessful()
+        ->assertJsonFragment(['slug' => 'general-update'])
+        ->assertJsonMissing(['slug' => 'need-help']);
+
+    actingAs($moderator, 'sanctum')->getJson('/api/forums/v1/threads?user='.(string) $recipient->uuid)
+        ->assertSuccessful()
+        ->assertJsonFragment(['slug' => 'need-help'])
+        ->assertJsonMissing(['slug' => 'general-update']);
+});
+
 test('it enforces unique reactions per post and user', function (): void {
     [$moderator, $tenant] = createForumsApiContext();
 

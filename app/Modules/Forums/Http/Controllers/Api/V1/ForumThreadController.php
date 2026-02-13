@@ -19,6 +19,42 @@ use Illuminate\Support\Str;
 
 final class ForumThreadController extends Controller
 {
+    public function index(Request $request): JsonResponse
+    {
+        abort_if(! $request->user()?->can('forums.view'), 403);
+
+        $threads = ForumThread::query()
+            ->with('channel')
+            ->withCount('posts');
+
+        if ($request->filled('channel')) {
+            $channel = (string) $request->query('channel');
+
+            $threads->whereHas('channel', function ($query) use ($channel): void {
+                $query->where('uuid', $channel)
+                    ->orWhere('slug', $channel);
+            });
+        }
+
+        if ($request->filled('tag')) {
+            $threads->whereJsonContains('tags', (string) $request->query('tag'));
+        }
+
+        if ($request->filled('user')) {
+            $threads->where('user_id', (string) $request->query('user'));
+        }
+
+        if ($request->filled('status')) {
+            $threads->where('status', (string) $request->query('status'));
+        }
+
+        $result = $threads
+            ->latest('updated_at')
+            ->paginate($request->integer('per_page', 15));
+
+        return ForumThreadResource::collection($result)->response();
+    }
+
     public function store(ForumThreadStoreRequest $request, ForumChannel $channel, ForumMentionService $mentionService): JsonResponse
     {
         $payload = $request->validated();
