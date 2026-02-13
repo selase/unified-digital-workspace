@@ -31,6 +31,7 @@ Route::prefix('v1')->name('v1.')->group(function (): void {
 
     Route::post('documents/{document}/quizzes', [DocumentQuizController::class, 'store'])->name('documents.quizzes.store');
     Route::get('documents/{document}/quizzes/{quiz}', [DocumentQuizController::class, 'show'])->name('documents.quizzes.show');
+    Route::get('documents/{document}/quizzes/{quiz}/analytics', [DocumentQuizController::class, 'analytics'])->name('documents.quizzes.analytics');
     Route::post('quizzes/{quiz}/attempts', [DocumentQuizAttemptController::class, 'store'])->name('quizzes.attempts.store');
 
     Route::get('documents/{document}/audits', [DocumentAuditController::class, 'index'])->name('documents.audits.index');

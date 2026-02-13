@@ -284,3 +284,86 @@ it('creates quizzes and attempts', function (): void {
         'score' => 1,
     ]);
 });
+
+it('returns quiz analytics', function (): void {
+    [$user, $tenant] = createDocumentApiContext();
+
+    $otherUser = User::factory()->create();
+    $otherUser->givePermissionTo(['documents.view']);
+    $tenant->users()->attach($otherUser->id);
+
+    $doc = Document::create([
+        'title' => 'Analytics Doc',
+        'slug' => 'analytics-doc',
+        'owner_id' => (string) $user->uuid,
+    ]);
+
+    $quizResponse = actingAs($user, 'sanctum')->postJson("/api/document-management/v1/documents/{$doc->id}/quizzes", [
+        'title' => 'Analytics Quiz',
+        'settings' => [
+            'pass_percentage' => 50,
+        ],
+        'questions' => [
+            [
+                'body' => 'Q1',
+                'options' => ['A', 'B', 'C'],
+                'correct_option' => 'A',
+                'points' => 1,
+            ],
+            [
+                'body' => 'Q2',
+                'options' => ['A', 'B', 'C'],
+                'correct_option' => 'B',
+                'points' => 1,
+            ],
+        ],
+    ]);
+
+    $quizResponse->assertCreated();
+
+    $quizId = $quizResponse->json('data.id');
+    $questionOneId = $quizResponse->json('data.questions.0.id');
+    $questionTwoId = $quizResponse->json('data.questions.1.id');
+
+    actingAs($user, 'sanctum')->postJson("/api/document-management/v1/quizzes/{$quizId}/attempts", [
+        'responses' => [
+            ['question_id' => $questionOneId, 'answer' => 'A'],
+            ['question_id' => $questionTwoId, 'answer' => 'B'],
+        ],
+    ])->assertCreated();
+
+    actingAs($otherUser, 'sanctum')->postJson("/api/document-management/v1/quizzes/{$quizId}/attempts", [
+        'responses' => [
+            ['question_id' => $questionOneId, 'answer' => 'A'],
+            ['question_id' => $questionTwoId, 'answer' => 'C'],
+        ],
+    ])->assertCreated();
+
+    $analytics = actingAs($user, 'sanctum')
+        ->getJson("/api/document-management/v1/documents/{$doc->id}/quizzes/{$quizId}/analytics");
+
+    $analytics->assertSuccessful()
+        ->assertJsonPath('data.attempts.total', 2)
+        ->assertJsonPath('data.attempts.unique_users', 2)
+        ->assertJsonPath('data.attempts.average_score', 1.5)
+        ->assertJsonPath('data.attempts.min_score', 1)
+        ->assertJsonPath('data.attempts.max_score', 2)
+        ->assertJsonPath('data.attempts.pass_score', 1)
+        ->assertJsonPath('data.attempts.pass_count', 2)
+        ->assertJsonPath('data.attempts.pass_rate', 100);
+
+    $questionStats = collect($analytics->json('data.questions'));
+
+    $questionOne = $questionStats->firstWhere('id', $questionOneId);
+    $questionTwo = $questionStats->firstWhere('id', $questionTwoId);
+
+    expect($questionOne)->not->toBeNull()
+        ->and($questionOne['correct_count'])->toBe(2)
+        ->and($questionOne['incorrect_count'])->toBe(0)
+        ->and($questionOne['correct_rate'])->toBe(100);
+
+    expect($questionTwo)->not->toBeNull()
+        ->and($questionTwo['correct_count'])->toBe(1)
+        ->and($questionTwo['incorrect_count'])->toBe(1)
+        ->and($questionTwo['correct_rate'])->toBe(50);
+});
