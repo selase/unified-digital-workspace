@@ -36,13 +36,18 @@ final class TenantsMigrate extends Command
     {
         $tenantId = (string) $this->option('tenant');
 
-        $query = Tenant::where('status', 'active');
-        if ($tenantId) {
-            $query->where('id', $tenantId);
-        }
+        $query = $tenantId
+            ? Tenant::query()->where('id', $tenantId)
+            : Tenant::query()->where('status', 'active');
 
         /** @var \Illuminate\Database\Eloquent\Collection<int, Tenant> $tenants */
         $tenants = $query->get();
+
+        if ($tenants->isEmpty()) {
+            $this->error($tenantId ? "Tenant '{$tenantId}' not found." : 'No active tenants found.');
+
+            return Command::FAILURE;
+        }
 
         foreach ($tenants as $tenant) {
             $this->info("Migrating tenant: {$tenant->name} ({$tenant->id})");

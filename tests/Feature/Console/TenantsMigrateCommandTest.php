@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Enum\TenantStatusEnum;
 use App\Models\Tenant;
 use App\Models\TenantModule;
 use App\Services\Tenancy\TenantMigrator;
@@ -35,6 +36,31 @@ test('it runs migrations for active tenants', function () {
         'tenant_id' => $tenant->id,
         'status' => 'success',
     ], 'landlord');
+});
+
+test('it can migrate a specific tenant even when tenant is not active', function () {
+    $tenant = Tenant::create([
+        'name' => 'Pending Tenant',
+        'slug' => 'pending-tenant',
+        'status' => TenantStatusEnum::DEACTIVATED,
+        'isolation_mode' => 'shared',
+    ]);
+
+    $this->mock(TenantMigrator::class, function ($mock): void {
+        $mock->shouldReceive('migrate')
+            ->once()
+            ->andReturn(['exitCode' => 0, 'output' => 'Success']);
+    });
+
+    $this->artisan('tenants:migrate', ['--tenant' => $tenant->id])
+        ->expectsOutput("Migrating tenant: {$tenant->name} ({$tenant->id})")
+        ->assertExitCode(0);
+});
+
+test('it fails when tenant option references unknown tenant', function () {
+    $this->artisan('tenants:migrate', ['--tenant' => 'missing-tenant-id'])
+        ->expectsOutput("Tenant 'missing-tenant-id' not found.")
+        ->assertExitCode(1);
 });
 
 test('it logs exception on failure', function () {

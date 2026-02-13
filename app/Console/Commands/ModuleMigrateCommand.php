@@ -47,6 +47,12 @@ final class ModuleMigrateCommand extends Command
             return self::FAILURE;
         }
 
+        if (! $tenantId && ! $allTenants) {
+            $this->error('You must specify either --tenant=<UUID> or --all-tenants.');
+
+            return self::FAILURE;
+        }
+
         $modules = $slug
             ? collect([$moduleManager->find($slug)])->filter()
             : $moduleManager->all();
@@ -57,58 +63,7 @@ final class ModuleMigrateCommand extends Command
             return self::FAILURE;
         }
 
-        if ($tenantId || $allTenants) {
-            return $this->runForTenants($modules, $dbManager, $tenantId, $allTenants);
-        }
-
-        foreach ($modules as $module) {
-            $migrationPath = $module['path'].'/Database/Migrations';
-
-            if (! is_dir($migrationPath)) {
-                $this->warn("No migrations found for module: {$module['slug']}");
-
-                continue;
-            }
-
-            $this->info("Running migrations for module: {$module['slug']}");
-
-            $relativePath = str_replace(base_path().'/', '', $migrationPath);
-
-            if ($this->option('fresh')) {
-                $this->warn("Fresh migration requested. This will drop all tables for module: {$module['slug']}");
-
-                Artisan::call('migrate:fresh', [
-                    '--path' => $relativePath,
-                    '--force' => true,
-                ], $this->output);
-            } elseif ($this->option('rollback')) {
-                Artisan::call('migrate:rollback', [
-                    '--path' => $relativePath,
-                    '--force' => true,
-                ], $this->output);
-            } else {
-                Artisan::call('migrate', [
-                    '--path' => $relativePath,
-                    '--force' => true,
-                ], $this->output);
-            }
-
-            if ($this->option('seed')) {
-                $seederClass = $module['namespace'].'\\Database\\Seeders\\DatabaseSeeder';
-
-                if (class_exists($seederClass)) {
-                    $this->info("Running seeder for module: {$module['slug']}");
-                    Artisan::call('db:seed', [
-                        '--class' => $seederClass,
-                        '--force' => true,
-                    ], $this->output);
-                }
-            }
-        }
-
-        $this->info('Module migrations completed.');
-
-        return self::SUCCESS;
+        return $this->runForTenants($modules, $dbManager, $tenantId, $allTenants);
     }
 
     /**

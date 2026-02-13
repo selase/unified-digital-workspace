@@ -6,21 +6,20 @@ namespace Tests\Feature\Tenant;
 
 use App\Models\Feature;
 use App\Models\Permission;
+use App\Models\Role;
 use App\Models\Tenant;
 use App\Models\TenantFeature;
 use App\Models\User;
-use App\Models\Role;
 use App\Services\Tenancy\TenantContext;
-use Illuminate\Support\Facades\Gate;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Gate;
 
 uses(RefreshDatabase::class);
-
 
 test('gate blocks permission when feature is not entitled', function () {
     $tenant = Tenant::factory()->create(['slug' => 'test-tenant']);
     $user = User::factory()->create(['tenant_id' => $tenant->id]);
-    
+
     // Create a feature and a permission
     $feature = Feature::create([
         'name' => 'Advanced Analytics',
@@ -28,29 +27,29 @@ test('gate blocks permission when feature is not entitled', function () {
         'type' => 'boolean',
         'uuid' => (string) str()->uuid(),
     ]);
-    
-    $permName = 'perm-' . uniqid();
-    
+
+    $permName = 'perm-'.uniqid();
+
     $permission = Permission::create([
         'name' => $permName,
         'guard_name' => 'web',
         'category' => 'analytics',
         'uuid' => (string) str()->uuid(),
     ]);
-    
+
     // Link permission to feature
     $feature->permissions()->attach($permission->id);
-    
+
     // Verify relationship
     expect($feature->fresh()->permissions->pluck('name')->toArray())->toContain($permName);
-    
+
     // Give user the permission
     setPermissionsTeamId($tenant->id);
     $user->givePermissionTo($permission);
-    
+
     // Set context
     app(TenantContext::class)->setTenant($tenant);
-    
+
     // Act as user
     $this->actingAs($user);
 
@@ -61,7 +60,7 @@ test('gate blocks permission when feature is not entitled', function () {
 test('gate allows permission when feature is entitled', function () {
     $tenant = Tenant::factory()->create(['slug' => 'test-tenant-pro']);
     $user = User::factory()->create(['tenant_id' => $tenant->id]);
-    
+
     // Create a feature and a permission
     $feature = Feature::create([
         'name' => 'Advanced Analytics Pro',
@@ -69,48 +68,48 @@ test('gate allows permission when feature is entitled', function () {
         'type' => 'boolean',
         'uuid' => (string) str()->uuid(),
     ]);
-    
+
     $permission = Permission::create([
         'name' => 'view-advanced-analytics-pro',
         'guard_name' => 'web',
         'category' => 'analytics',
         'uuid' => (string) str()->uuid(),
     ]);
-    
+
     // Link permission to feature
     $feature->permissions()->attach($permission->id);
-    
+
     // Enable feature for tenant
     TenantFeature::create([
         'tenant_id' => $tenant->id,
         'feature_key' => 'advanced-analytics-pro',
         'enabled' => true,
     ]);
-    
+
     // Give user the permission
     setPermissionsTeamId($tenant->id);
     $user->givePermissionTo($permission);
-    
+
     // Set context
     app(TenantContext::class)->setTenant($tenant);
-    
+
     // Act as user
     $this->actingAs($user);
-    
+
     // Gate::allows should return true
     expect(Gate::allows('view-advanced-analytics-pro'))->toBeTrue();
 });
 
 test('superadmin bypasses entitlement checks', function () {
     $role = Role::create(['name' => 'Superadmin', 'guard_name' => 'web', 'uuid' => (string) str()->uuid()]);
-    
+
     $superadmin = User::factory()->create();
     // Superadmin role assignment is usually on landlord context (tenant_id = null)
     setPermissionsTeamId(null);
     $superadmin->assignRole($role);
-    
+
     $tenant = Tenant::factory()->create(['slug' => 'test-tenant-bypass']);
-    
+
     // Create a feature and a permission
     $feature = Feature::create([
         'name' => 'Extreme Power',
@@ -118,25 +117,69 @@ test('superadmin bypasses entitlement checks', function () {
         'type' => 'boolean',
         'uuid' => (string) str()->uuid(),
     ]);
-    
+
     $permission = Permission::create([
         'name' => 'use-extreme-power',
         'guard_name' => 'web',
         'category' => 'admin',
         'uuid' => (string) str()->uuid(),
     ]);
-    
+
     // Link permission to feature
     $feature->permissions()->attach($permission->id);
-    
+
     // Tenant does NOT have feature
-    
+
     // Set context
     app(TenantContext::class)->setTenant($tenant);
-    
+
     // Act as superadmin
     $this->actingAs($superadmin);
-    
+
     // Superadmin should have access even if tenant is not entitled
     expect(Gate::allows('use-extreme-power'))->toBeTrue();
+});
+
+test('entitlements are isolated per tenant for the same permission', function () {
+    $feature = Feature::create([
+        'name' => 'Forums Access',
+        'slug' => 'forums.access',
+        'type' => 'boolean',
+        'uuid' => (string) str()->uuid(),
+    ]);
+
+    $permissionName = 'forums.view';
+
+    $permission = Permission::query()->firstOrCreate(
+        ['name' => $permissionName, 'guard_name' => 'web'],
+        ['category' => 'forums', 'uuid' => (string) str()->uuid()],
+    );
+
+    $feature->permissions()->syncWithoutDetaching([$permission->id]);
+
+    $tenantWithAccess = Tenant::factory()->create(['slug' => 'tenant-with-access']);
+    $tenantWithoutAccess = Tenant::factory()->create(['slug' => 'tenant-without-access']);
+
+    TenantFeature::create([
+        'tenant_id' => $tenantWithAccess->id,
+        'feature_key' => 'forums.access',
+        'enabled' => true,
+    ]);
+
+    $userWithAccess = User::factory()->create(['tenant_id' => $tenantWithAccess->id]);
+    $userWithoutAccess = User::factory()->create(['tenant_id' => $tenantWithoutAccess->id]);
+
+    setPermissionsTeamId($tenantWithAccess->id);
+    $userWithAccess->givePermissionTo($permission);
+
+    setPermissionsTeamId($tenantWithoutAccess->id);
+    $userWithoutAccess->givePermissionTo($permission);
+
+    app(TenantContext::class)->setTenant($tenantWithAccess);
+    setPermissionsTeamId($tenantWithAccess->id);
+    expect(Gate::forUser($userWithAccess)->allows($permissionName))->toBeTrue();
+
+    app(TenantContext::class)->setTenant($tenantWithoutAccess);
+    setPermissionsTeamId($tenantWithoutAccess->id);
+    expect(Gate::forUser($userWithoutAccess)->allows($permissionName))->toBeFalse();
 });

@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Models\Tenant;
 use App\Models\TenantModule;
 use App\Services\Tenancy\TenantContext;
+use App\Services\Tenancy\TenantDatabaseManager;
 use App\Services\Tenancy\TenantMigrator;
 
 beforeEach(function () {
@@ -112,14 +113,43 @@ test('module:disable command fails for non-existent module', function () {
     ])->assertFailed();
 });
 
-test('module:migrate command runs without errors', function () {
+test('module:migrate command requires tenant scope', function () {
     $this->artisan('module:migrate', ['slug' => 'core'])
-        ->assertSuccessful();
+        ->assertFailed()
+        ->expectsOutputToContain('must specify either --tenant');
 });
 
-test('module:migrate command runs for all modules when no slug provided', function () {
-    $this->artisan('module:migrate')
-        ->assertSuccessful();
+test('module:migrate command uses shared database configuration for shared tenants', function () {
+    $this->mock(TenantDatabaseManager::class, function ($mock): void {
+        $mock->shouldReceive('configureShared')->once();
+        $mock->shouldReceive('configure')->never();
+    });
+
+    $this->artisan('module:migrate', [
+        'slug' => 'core',
+        '--tenant' => $this->tenant->id,
+    ])->assertSuccessful();
+});
+
+test('module:migrate command uses dedicated database configuration for dedicated tenants', function () {
+    $dedicatedTenant = Tenant::create([
+        'name' => 'Dedicated Tenant',
+        'slug' => 'dedicated-tenant',
+        'isolation_mode' => 'db_per_tenant',
+        'db_driver' => 'sqlite',
+    ]);
+
+    $this->mock(TenantDatabaseManager::class, function ($mock) use ($dedicatedTenant): void {
+        $mock->shouldReceive('configure')->once()->withArgs(
+            fn (Tenant $tenant): bool => $tenant->id === $dedicatedTenant->id
+        );
+        $mock->shouldReceive('configureShared')->never();
+    });
+
+    $this->artisan('module:migrate', [
+        'slug' => 'core',
+        '--tenant' => $dedicatedTenant->id,
+    ])->assertSuccessful();
 });
 
 test('module:migrate command runs for a tenant when tenant option provided', function () {
@@ -130,6 +160,9 @@ test('module:migrate command runs for a tenant when tenant option provided', fun
 });
 
 test('module:migrate command fails for non-existent module', function () {
-    $this->artisan('module:migrate', ['slug' => 'non-existent-module'])
+    $this->artisan('module:migrate', [
+        'slug' => 'non-existent-module',
+        '--tenant' => $this->tenant->id,
+    ])
         ->assertFailed();
 });
