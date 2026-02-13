@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\TeamController;
 use App\Http\Controllers\Admin\TenantController;
 use App\Http\Controllers\Admin\TenantHealthController;
 use App\Http\Controllers\Admin\UsersController;
+use App\Http\Controllers\Ui\MetronicAssetController;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Route;
@@ -27,6 +28,9 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/', fn (): Factory|View => view('welcome'));
+Route::get('/metronic-assets/{path}', MetronicAssetController::class)
+    ->where('path', '.*')
+    ->name('metronic.assets');
 Route::get('/sample-product', fn (): Factory|View => view('sample-product-page'));
 Route::get('/product-template', fn (): Factory|View => view('product.landing'))->name('product.template');
 Route::get('/product-enterprise', fn (): Factory|View => view('product.enterprise'))->name('product.enterprise');
@@ -38,6 +42,9 @@ Route::get('/product-docs/{section?}', function (?string $section = 'start-guide
 Route::group(['middleware' => ['auth', '2fa_challenge', 'onboarding']], function (): void {
     Route::get('/dashboard', DashboardController::class)
         ->name('dashboard');
+
+    Route::get('/metronic-preview', fn (): Factory|View => view('metronic.preview'))
+        ->name('metronic.preview');
 
     // user management routes
     Route::group(['prefix' => 'user-management'], function (): void {
@@ -146,7 +153,7 @@ Route::group(['middleware' => ['auth', '2fa_challenge', 'onboarding']], function
             ->name('subscriptions.index');
         Route::get('analytics', [App\Http\Controllers\Admin\AnalyticsController::class, 'index'])
             ->name('analytics.usage');
-        
+
         Route::get('rate-cards', [App\Http\Controllers\Admin\RateCardController::class, 'index'])
             ->name('rate-cards.index');
         Route::post('rate-cards/prices', [App\Http\Controllers\Admin\RateCardController::class, 'updatePrices'])
