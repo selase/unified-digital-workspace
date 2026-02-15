@@ -347,15 +347,25 @@ unified-digital-workspace/
 
 ### Track 14: UI Theme Makeover (Metronic)
 **Duration:** 3-4 weeks
-**Status:** 🔲 Planned (Later phase)
+**Status:** 🟨 In Progress
 **Link:** [TRACK_14_METRONIC_UI.md](tracks/TRACK_14_METRONIC_UI.md) *(to be authored)*
 
-**Key Deliverables:**
-- [ ] Map Metronic demos to UDW modules (page inventory)
-- [ ] Define UI style tokens and layout primitives
-- [ ] Replace starterkit layouts with Metronic templates
-- [ ] Component library extraction (buttons, tables, forms, modals)
-- [ ] Responsive review for key flows (HRMS, Docs, Memos, Incidents)
+**Execution TODO (Systematic Order):**
+- [x] Baseline Metronic demo1 shell integrated (sidebar + top nav + drawers + dropdown runtime)
+- [x] Main auth screens moved to Metronic auth layout
+- [x] Core superadmin and tenant routes switched to `layouts.metronic.app`
+- [x] Runtime hardening for stale overlays/backdrops and KTUI modal/image-input compatibility
+- [ ] Superadmin Batch A (high-traffic data pages): invoices/show, rate cards, API keys, health tenants
+- [x] Superadmin Batch B (tenants + subscriptions): create/edit/show, subscription index/show/invoice preview/team create
+- [x] Superadmin Batch C (users/roles/forms): user show/index modal polish, roles/forms parity with demo1 patterns
+- [x] Superadmin Batch D (analytics/profile/audit): global usage, profile panels, audit trail chart and table consistency
+- [ ] Tenant Batch A (settings + finance): tenant settings, payments, billing dashboard table/actions
+- [ ] Tenant Batch B (roles + dashboard): roles CRUD pages and dashboard cards/empty states consistency
+- [x] Shared UI cleanup: legacy bootstrap utility classes (`btn`, `form-control`, `badge`, `table`) replaced with Metronic/Tailwind primitives on active Metronic routes
+- [x] Browser QA sweep per batch (desktop + mobile): menus, drawers, dropdowns, modals, datatables, forms *(automated smoke + interactive hook assertions)*
+- [x] Regression gate for each batch: `pint`, targeted Pest feature tests, final cross-route browser smoke test
+
+Note: `resources/views/layouts/admin/*` remains in-repo for legacy fallback only and is no longer used by active Metronic-routed pages.
 
 **Dependencies:** Tracks 03-11 (stable module flows)
 
@@ -486,7 +496,7 @@ feature/TRACK-XX-description
 2. ⏳ Configure starterkit for UDW (Track 00 tasks)
 3. ⏳ Build module system (Track 03)
 4. ⏳ Port HRMS as first module (Track 04)
-5. ⏳ Plan Metronic UI makeover (Track 14)
+5. 🟨 Execute Metronic conversion batches (Track 14)
 
 ---
 

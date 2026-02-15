@@ -1,106 +1,89 @@
-@extends('layouts.admin.master')
+@extends('layouts.metronic.app')
 
 @section('title', 'Forums Hub')
 
 @section('content')
-    <div class="post d-flex flex-column-fluid" id="kt_post">
-        <div id="kt_content_container" class="container-xxl">
-            <div class="card mb-7">
-                <div class="card-body d-flex flex-stack flex-wrap gap-4">
-                    <div>
-                        <h2 class="fw-bolder mb-1">Forums Hub</h2>
-                        <div class="text-muted">Channels, live discussions, and moderation overview.</div>
-                    </div>
-                    <a href="{{ route('api.forums.v1.channels.index') }}" class="btn btn-light-primary">Open Channels API</a>
+    <section class="grid gap-6">
+        <div class="rounded-xl border border-border bg-background p-6 lg:p-8">
+            <div class="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                    <p class="text-xs uppercase tracking-wide text-muted-foreground">Forums</p>
+                    <h1 class="mt-2 text-2xl font-semibold text-foreground">Forums Hub</h1>
+                    <p class="mt-2 text-sm text-muted-foreground">Channels, live discussions, and moderation overview.</p>
+                </div>
+                <a href="{{ route('api.forums.v1.channels.index') }}" class="kt-btn kt-btn-outline">Open Channels API</a>
+            </div>
+        </div>
+
+        <div class="grid gap-6 xl:grid-cols-12">
+            <div class="rounded-xl border border-border bg-background p-6 xl:col-span-4">
+                <h2 class="text-lg font-semibold text-foreground">Top Channels</h2>
+                <div class="mt-4 space-y-3">
+                    @forelse($channels as $channel)
+                        <div class="flex items-center justify-between gap-3 rounded-lg border border-border p-3">
+                            <div>
+                                <p class="font-medium text-foreground">{{ $channel->name }}</p>
+                                <p class="text-xs text-muted-foreground">{{ $channel->slug }}</p>
+                            </div>
+                            <span class="kt-badge kt-badge-primary">{{ $channel->threads_count }} threads</span>
+                        </div>
+                    @empty
+                        <div class="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">No channels yet.</div>
+                    @endforelse
                 </div>
             </div>
 
-            <div class="row g-5 g-xl-8 mb-7">
-                <div class="col-xl-4">
-                    <div class="card h-100">
-                        <div class="card-header border-0">
-                            <h3 class="card-title fw-bold">Top Channels</h3>
+            <div class="rounded-xl border border-border bg-background p-6 xl:col-span-8">
+                <h2 class="text-lg font-semibold text-foreground">Latest Threads</h2>
+                <div class="mt-4 space-y-3">
+                    @forelse($latestThreads as $thread)
+                        <div class="rounded-lg border border-border p-3">
+                            <div class="flex items-center justify-between gap-3">
+                                <p class="font-medium text-foreground">{{ $thread->title }}</p>
+                                <span class="kt-badge kt-badge-outline">{{ $thread->status }}</span>
+                            </div>
+                            <p class="mt-1 text-xs text-muted-foreground">
+                                Channel: {{ $thread->channel?->name ?? 'N/A' }} · Updated {{ $thread->updated_at?->diffForHumans() }}
+                            </p>
                         </div>
-                        <div class="card-body pt-0">
-                            @forelse($channels as $channel)
-                                <div class="d-flex justify-content-between align-items-center py-3 border-bottom border-gray-100">
-                                    <div>
-                                        <div class="fw-semibold">{{ $channel->name }}</div>
-                                        <div class="text-muted fs-7">{{ $channel->slug }}</div>
-                                    </div>
-                                    <span class="badge badge-light-primary">{{ $channel->threads_count }} threads</span>
-                                </div>
-                            @empty
-                                <div class="text-muted">No channels yet.</div>
-                            @endforelse
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-xl-8">
-                    <div class="card h-100">
-                        <div class="card-header border-0">
-                            <h3 class="card-title fw-bold">Latest Threads</h3>
-                        </div>
-                        <div class="card-body pt-0">
-                            @forelse($latestThreads as $thread)
-                                <div class="py-3 border-bottom border-gray-100">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <div class="fw-semibold">{{ $thread->title }}</div>
-                                        <span class="badge badge-light">{{ $thread->status }}</span>
-                                    </div>
-                                    <div class="text-muted fs-7">
-                                        Channel: {{ $thread->channel?->name ?? 'N/A' }} - Updated {{ $thread->updated_at?->diffForHumans() }}
-                                    </div>
-                                </div>
-                            @empty
-                                <div class="text-muted">No threads yet.</div>
-                            @endforelse
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="row g-5 g-xl-8">
-                <div class="col-xl-6">
-                    <div class="card h-100">
-                        <div class="card-header border-0">
-                            <h3 class="card-title fw-bold">Flagged Threads</h3>
-                        </div>
-                        <div class="card-body pt-0">
-                            @forelse($flaggedThreads as $thread)
-                                <div class="d-flex justify-content-between align-items-center py-3 border-bottom border-gray-100">
-                                    <span class="fw-semibold">{{ $thread->title }}</span>
-                                    <span class="badge badge-light-danger">flagged</span>
-                                </div>
-                            @empty
-                                <div class="text-muted">No flagged threads.</div>
-                            @endforelse
-                        </div>
-                    </div>
-                </div>
-
-                <div class="col-xl-6">
-                    <div class="card h-100">
-                        <div class="card-header border-0">
-                            <h3 class="card-title fw-bold">Moderation Activity</h3>
-                        </div>
-                        <div class="card-body pt-0">
-                            @forelse($latestModerationLogs as $log)
-                                <div class="py-3 border-bottom border-gray-100">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <span class="fw-semibold text-capitalize">{{ $log->action }}</span>
-                                        <span class="text-muted fs-7">{{ $log->created_at?->diffForHumans() }}</span>
-                                    </div>
-                                    <div class="text-muted fs-7">{{ $log->reason ?: 'No reason provided.' }}</div>
-                                </div>
-                            @empty
-                                <div class="text-muted">No moderation logs yet.</div>
-                            @endforelse
-                        </div>
-                    </div>
+                    @empty
+                        <div class="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">No threads yet.</div>
+                    @endforelse
                 </div>
             </div>
         </div>
-    </div>
+
+        <div class="grid gap-6 xl:grid-cols-2">
+            <div class="rounded-xl border border-border bg-background p-6">
+                <h2 class="text-lg font-semibold text-foreground">Flagged Threads</h2>
+                <div class="mt-4 space-y-3">
+                    @forelse($flaggedThreads as $thread)
+                        <div class="flex items-center justify-between gap-3 rounded-lg border border-border p-3">
+                            <span class="font-medium text-foreground">{{ $thread->title }}</span>
+                            <span class="kt-badge kt-badge-destructive">Flagged</span>
+                        </div>
+                    @empty
+                        <div class="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">No flagged threads.</div>
+                    @endforelse
+                </div>
+            </div>
+
+            <div class="rounded-xl border border-border bg-background p-6">
+                <h2 class="text-lg font-semibold text-foreground">Moderation Activity</h2>
+                <div class="mt-4 space-y-3">
+                    @forelse($latestModerationLogs as $log)
+                        <div class="rounded-lg border border-border p-3">
+                            <div class="flex items-center justify-between gap-3">
+                                <span class="font-medium capitalize text-foreground">{{ $log->action }}</span>
+                                <span class="text-xs text-muted-foreground">{{ $log->created_at?->diffForHumans() }}</span>
+                            </div>
+                            <p class="mt-1 text-xs text-muted-foreground">{{ $log->reason ?: 'No reason provided.' }}</p>
+                        </div>
+                    @empty
+                        <div class="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">No moderation logs yet.</div>
+                    @endforelse
+                </div>
+            </div>
+        </div>
+    </section>
 @endsection

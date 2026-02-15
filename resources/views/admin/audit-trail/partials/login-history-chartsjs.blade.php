@@ -1,196 +1,103 @@
-    <script>
-        var browserSession = document.getElementById('browser-session');
-            var browserSessionChart = echarts.init(browserSession);
-            var option;
+<script>
+    const chartConfigs = [
+        {
+            elementId: 'browser-session',
+            seriesName: 'Browser',
+            data: [
+                @foreach ($loggedInBrowserChartForCurrentMonth as $key => $value)
+                    { value: {{ (int) $value }}, name: @json($key) },
+                @endforeach
+            ],
+        },
+        {
+            elementId: 'location-session',
+            seriesName: 'Locations',
+            data: [
+                @foreach ($loggedInLocationChartForCurrentMonth as $key => $value)
+                    { value: {{ (int) $value }}, name: @json($key) },
+                @endforeach
+            ],
+        },
+        {
+            elementId: 'platform-session',
+            seriesName: 'Platform/OS',
+            data: [
+                @foreach ($loggedInPlatformChartForCurrentMonth as $key => $value)
+                    { value: {{ (int) $value }}, name: @json($key) },
+                @endforeach
+            ],
+        },
+        {
+            elementId: 'client-device-session',
+            seriesName: 'Devices',
+            data: [
+                @foreach ($loggedInClientDeviceChartForCurrentMonth as $key => $value)
+                    { value: {{ (int) $value }}, name: @json(strtoupper($key)) },
+                @endforeach
+            ],
+        },
+    ];
 
-            option = {
-                tooltip: {
-                    trigger: 'item'
-                },
-                legend: {
-                    top: '5%',
-                    left: 'center'
-                },
-                series: [
-                    {
-                    name: 'Browser',
+    const chartInstances = [];
+
+    const createDonutChart = (elementId, seriesName, data) => {
+        const chartElement = document.getElementById(elementId);
+        if (!chartElement) {
+            return null;
+        }
+
+        const chart = echarts.init(chartElement);
+        chart.setOption({
+            tooltip: {
+                trigger: 'item',
+            },
+            legend: {
+                top: '5%',
+                left: 'center',
+            },
+            series: [
+                {
+                    name: seriesName,
                     type: 'pie',
                     radius: ['40%', '70%'],
                     avoidLabelOverlap: false,
                     itemStyle: {
                         borderRadius: 10,
                         borderColor: '#fff',
-                        borderWidth: 2
+                        borderWidth: 2,
                     },
                     label: {
                         show: false,
-                        position: 'center'
+                        position: 'center',
                     },
                     emphasis: {
                         label: {
-                        show: true,
-                        fontSize: '40',
-                        fontWeight: 'bold'
-                        }
+                            show: true,
+                            fontSize: 32,
+                            fontWeight: 'bold',
+                        },
                     },
                     labelLine: {
-                        show: false
-                    },
-                    data: [
-                        @foreach ($loggedInBrowserChartForCurrentMonth as $key => $value)
-                            { value: '{{ $value }}', name: '{{ $key }}' },
-                        @endforeach
-                    ]
-                    }
-                ]
-            };
-
-            option && browserSessionChart.setOption(option);
-
-
-            var locationSession = document.getElementById('location-session');
-            var locationSessionChart = echarts.init(locationSession);
-            var option;
-
-            option = {
-                tooltip: {
-                    trigger: 'item'
-                },
-                legend: {
-                    top: '5%',
-                    left: 'center'
-                },
-                series: [
-                    {
-                    name: 'Locations',
-                    type: 'pie',
-                    radius: ['40%', '70%'],
-                    avoidLabelOverlap: false,
-                    itemStyle: {
-                        borderRadius: 10,
-                        borderColor: '#fff',
-                        borderWidth: 2
-                    },
-                    label: {
                         show: false,
-                        position: 'center'
                     },
-                    emphasis: {
-                        label: {
-                        show: true,
-                        fontSize: '40',
-                        fontWeight: 'bold'
-                        }
-                    },
-                    labelLine: {
-                        show: false
-                    },
-                    data: [
-                        @foreach ($loggedInLocationChartForCurrentMonth as $key => $value)
-                            { value: '{{ $value }}', name: '{{ $key }}' },
-                        @endforeach
-                    ]
-                    }
-                ]
-            };
-
-            option && locationSessionChart.setOption(option);
-
-
-            var platformSession = document.getElementById('platform-session');
-            var platformSessionChart = echarts.init(platformSession);
-            var option;
-
-            option = {
-                tooltip: {
-                    trigger: 'item'
+                    data,
                 },
-                legend: {
-                    top: '5%',
-                    left: 'center'
-                },
-                series: [
-                    {
-                    name: 'Platform/OS',
-                    type: 'pie',
-                    radius: ['40%', '70%'],
-                    avoidLabelOverlap: false,
-                    itemStyle: {
-                        borderRadius: 10,
-                        borderColor: '#fff',
-                        borderWidth: 2
-                    },
-                    label: {
-                        show: false,
-                        position: 'center'
-                    },
-                    emphasis: {
-                        label: {
-                        show: true,
-                        fontSize: '40',
-                        fontWeight: 'bold'
-                        }
-                    },
-                    labelLine: {
-                        show: false
-                    },
-                    data: [
-                        @foreach ($loggedInPlatformChartForCurrentMonth as $key => $value)
-                            { value: '{{ $value }}', name: '{{ $key }}' },
-                        @endforeach
-                    ]
-                    }
-                ]
-            };
+            ],
+        });
 
-            option && platformSessionChart.setOption(option);
+        return chart;
+    };
 
+    chartConfigs.forEach(({ elementId, seriesName, data }) => {
+        const chart = createDonutChart(elementId, seriesName, data);
+        if (chart) {
+            chartInstances.push(chart);
+        }
+    });
 
-            var clientDeviceSession = document.getElementById('client-device-session');
-            var clientDeviceChart = echarts.init(clientDeviceSession);
-            var option;
-
-            option = {
-                tooltip: {
-                    trigger: 'item'
-                },
-                legend: {
-                    top: '5%',
-                    left: 'center'
-                },
-                series: [
-                    {
-                    name: 'Devices',
-                    type: 'pie',
-                    radius: ['40%', '70%'],
-                    avoidLabelOverlap: false,
-                    itemStyle: {
-                        borderRadius: 10,
-                        borderColor: '#fff',
-                        borderWidth: 2
-                    },
-                    label: {
-                        show: false,
-                        position: 'center'
-                    },
-                    emphasis: {
-                        label: {
-                        show: true,
-                        fontSize: '40',
-                        fontWeight: 'bold'
-                        }
-                    },
-                    labelLine: {
-                        show: false
-                    },
-                    data: [
-                        @foreach ($loggedInClientDeviceChartForCurrentMonth as $key => $value)
-                            { value: '{{ $value }}', name: '{{ strtoupper($key) }}' },
-                        @endforeach
-                    ]
-                    }
-                ]
-            };
-
-        option && clientDeviceChart.setOption(option);
-    </script>
+    window.addEventListener('resize', () => {
+        chartInstances.forEach((chart) => {
+            chart.resize();
+        });
+    });
+</script>

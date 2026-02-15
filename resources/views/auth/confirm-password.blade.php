@@ -1,24 +1,23 @@
-@extends('layouts.admin.auth')
+@extends('layouts.metronic.auth')
 
 @section('title', 'Confirm Password')
 
 @section('content')
-    <form class="form w-100" novalidate="novalidate" id="confirmPasswordForm" method="POST"
+    <form class="w-full space-y-6" novalidate="novalidate" id="confirmPasswordForm" method="POST"
         action="{{ route('password.confirm') }}">
         @csrf
-        <div class="text-center mb-10">
-            <h1 class="text-dark mb-3">Security Check</h1>
-            <div class="text-gray-400 fw-bold fs-4">
+        <div class="space-y-2">
+            <h1 class="text-2xl font-semibold text-foreground">Security Check</h1>
+            <p class="text-sm text-muted-foreground">
                 {{ __('This is a secure area of the application. Please confirm your password before continuing.') }}
-            </div>
+            </p>
 
             @if ($errors->any())
-                <div class="mt-7 text-start">
-                    <div class="font-medium text-danger">
+                <div class="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2">
+                    <div class="text-sm font-medium text-destructive">
                         {{ __('Whoops! Something went wrong.') }}
                     </div>
-
-                    <ul class="mt-3 list-disc list-inside text-sm text-danger">
+                    <ul class="mt-2 list-disc list-inside text-sm text-destructive">
                         @foreach ($errors->all() as $error)
                             <li>{{ $error }}</li>
                         @endforeach
@@ -27,17 +26,16 @@
             @endif
         </div>
 
-        <div class="fv-row mb-10">
-            <label class="form-label fs-6 fw-bolder text-dark">Password</label>
-            <input class="form-control form-control-lg form-control-solid" type="password" name="password" required
-                autocomplete="current-password" />
+        <div class="kt-form-item">
+            <label class="kt-form-label">Password</label>
+            <div class="kt-form-control">
+                <input class="kt-input" type="password" name="password" required autocomplete="current-password" />
+            </div>
         </div>
 
-        <div class="text-center">
-            <button type="submit" id="confirmButton" class="btn btn-lg btn-primary w-100 mb-5">
-                <span class="indicator-label">Confirm</span>
-                <span class="indicator-progress">Please wait...
-                    <span class="spinner-border spinner-border-sm align-middle ms-2"></span></span>
+        <div>
+            <button type="submit" id="confirmButton" class="kt-btn kt-btn-primary w-full">
+                Confirm
             </button>
         </div>
     </form>

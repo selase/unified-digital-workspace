@@ -170,7 +170,41 @@ function infoToastAlert(message, title = 'Information!!') {
 }
 
 function showModal(modal_id) {
-  $(modal_id).modal('show');
+  const modalElement = document.querySelector(modal_id);
+  if (!modalElement) {
+    return;
+  }
+
+  if (modalElement.classList.contains("kt-modal") && typeof KTModal !== "undefined") {
+    const ktModal = KTModal.getOrCreateInstance(modalElement);
+    if (ktModal && typeof ktModal.show === "function") {
+      ktModal.show();
+      return;
+    }
+  }
+
+  if (typeof $ !== "undefined" && typeof $(modal_id).modal === "function") {
+    $(modal_id).modal("show");
+  }
+}
+
+function hideModal(modal_id) {
+  const modalElement = document.querySelector(modal_id);
+  if (!modalElement) {
+    return;
+  }
+
+  if (modalElement.classList.contains("kt-modal") && typeof KTModal !== "undefined") {
+    const ktModal = KTModal.getOrCreateInstance(modalElement);
+    if (ktModal && typeof ktModal.hide === "function") {
+      ktModal.hide();
+      return;
+    }
+  }
+
+  if (typeof $ !== "undefined" && typeof $(modal_id).modal === "function") {
+    $(modal_id).modal("hide");
+  }
 }
 
 // toggle drawer elements

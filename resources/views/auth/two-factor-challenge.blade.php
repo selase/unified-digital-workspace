@@ -1,19 +1,19 @@
-@extends('layouts.admin.auth')
+@extends('layouts.metronic.auth')
 
 @section('title', '2FA Challenge')
 
 @section('content')
-    <form class="form w-100" method="POST" action="{{ route('two-factor.challenge.store') }}">
+    <form class="w-full space-y-6" method="POST" action="{{ route('two-factor.challenge.store') }}">
         @csrf
-        <div class="text-center mb-10">
-            <h1 class="text-dark mb-3">Two-Factor Authentication</h1>
-            <div class="text-gray-400 fw-bold fs-4">
+        <div class="space-y-2">
+            <h1 class="text-2xl font-semibold text-foreground">Two-Factor Authentication</h1>
+            <p class="text-sm text-muted-foreground">
                 Please enter the 6-digit code from your authenticator app to complete the login process.
-            </div>
+            </p>
             
             @if ($errors->any())
-                <div class="mt-7">
-                    <ul class="list-none text-sm text-danger">
+                <div class="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2">
+                    <ul class="text-sm text-destructive">
                         @foreach ($errors->all() as $error)
                             <li>{{ $error }}</li>
                         @endforeach
@@ -22,9 +22,10 @@
             @endif
         </div>
 
-        <div class="fv-row mb-10">
-            <label class="form-label fs-6 fw-bolder text-dark">Authentication Code</label>
-            <input class="form-control form-control-lg form-control-solid text-center" 
+        <div class="kt-form-item">
+            <label class="kt-form-label">Authentication Code</label>
+            <div class="kt-form-control">
+                <input class="kt-input text-center tracking-[0.35em]" 
                 type="text" 
                 name="one_time_password" 
                 inputmode="numeric" 
@@ -32,15 +33,16 @@
                 autocomplete="one-time-code" 
                 placeholder="000000" 
                 autofocus />
+            </div>
         </div>
 
-        <div class="text-center">
-            <button type="submit" class="btn btn-lg btn-primary w-100 mb-5">
+        <div class="space-y-3">
+            <button type="submit" class="kt-btn kt-btn-primary w-full">
                 Verify Code
             </button>
             <a href="{{ route('logout') }}" 
                onclick="event.preventDefault(); document.getElementById('logout-form').submit();"
-               class="link-primary fs-6 fw-bolder">Cancel and Sign Out</a>
+               class="inline-flex text-sm font-medium text-primary hover:underline">Cancel and Sign Out</a>
         </div>
     </form>
 

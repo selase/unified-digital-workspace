@@ -1,82 +1,72 @@
-@extends('layouts.admin.master')
+@extends('layouts.metronic.app')
 
 @section('title', __('locale.menu.roles_and_permissions'))
 
 @section('content')
-    <div class="post d-flex flex-column-fluid" id="kt_post">
-        <!--begin::Container-->
-        <div id="kt_content_container" class="container-xxl">
-            <!--begin::Card-->
-            <div class="card">
-                <!--begin::Card header-->
-                <div class="card-header border-0 pt-6">
-                    <!--begin::Card title-->
-                    <div class="card-title">
-                        <h3 class="card-label">Roles & Permissions</h3>
-                    </div>
-                    <!--end::Card title-->
-                    <!--begin::Card toolbar-->
-                    <div class="d-flex justify-content-end" data-kt-user-table-toolbar="base">
-                        <!--begin::Tenant Filter-->
-                        <div class="me-3">
-                            <select id="tenant_filter" class="form-select form-select-solid w-250px" data-control="select2"
-                                data-placeholder="Filter by Tenant">
-                                <option value=""></option>
-                                <option value="all">All (Global + Tenants)</option>
-                                <option value="global">Global Only</option>
-                                @foreach($tenants as $tenant)
-                                    <option value="{{ $tenant->id }}">{{ $tenant->name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <!--end::Tenant Filter-->
-
-                        <a href="{{ route('roles.create') }}" class="btn btn-primary">
-                            <span class="svg-icon svg-icon-2">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                                    fill="none">
-                                    <rect opacity="0.5" x="11.364" y="20.364" width="16" height="2" rx="1"
-                                        transform="rotate(-90 11.364 20.364)" fill="currentColor" />
-                                    <rect x="4.36396" y="11.364" width="16" height="2" rx="1" fill="currentColor" />
-                                </svg>
-                            </span>
-                            Add New Role
-                        </a>
-                    </div>
-                    <!--end::Card toolbar-->
+    <section class="grid gap-6">
+        <div class="rounded-xl border border-border bg-background p-6 lg:p-8">
+            <div class="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                    <p class="text-xs uppercase tracking-wide text-muted-foreground">Access Control</p>
+                    <h1 class="mt-2 text-2xl font-semibold text-foreground">Roles & Permissions</h1>
+                    <p class="mt-2 text-sm text-muted-foreground">Create roles and assign guard scopes.</p>
                 </div>
-                <!--end::Card header-->
-                <!--begin::Card body-->
-                <div class="card-body py-4">
-                    <div class="table-responsive">
-                        <table class="table align-middle table-row-dashed fs-6 gy-5" id="roles-table">
-                            <thead>
-                                <tr class="text-start text-muted fw-bolder fs-7 text-uppercase gs-0">
-                                    <th class="w-10px pe-2">
-                                        <div class="form-check form-check-sm form-check-custom form-check-solid me-3">
-                                            <input class="form-check-input" type="checkbox" data-kt-check="true"
-                                                data-kt-check-target="#roles-table .form-check-input" value="1" />
-                                        </div>
-                                    </th>
-                                    <th class="min-w-125px">Role Name</th>
-                                    <th class="min-w-125px">Guard</th>
-                                    <th class="min-w-125px">Created At</th>
-                                    <th class="text-end min-w-100px">Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody class="text-gray-600 fw-bold">
-                                {{-- Content will be loaded via AJAX Datatable --}}
-                            </tbody>
-                        </table>
+                <div class="flex flex-wrap items-center gap-3">
+                    <div>
+                        <select id="tenant_filter" class="kt-select w-64" data-placeholder="Filter by Tenant">
+                            <option value=""></option>
+                            <option value="all">All (Global + Tenants)</option>
+                            <option value="global">Global Only</option>
+                            @foreach($tenants as $tenant)
+                                <option value="{{ $tenant->id }}">{{ $tenant->name }}</option>
+                            @endforeach
+                        </select>
                     </div>
+                    <a href="{{ route('roles.create') }}" class="kt-btn kt-btn-primary">
+                        <i class="ki-filled ki-plus text-base"></i>
+                        Add New Role
+                    </a>
                 </div>
-                <!--end::Card body-->
             </div>
-            <!--end::Card-->
         </div>
-        <!--end::Container-->
-    </div>
+
+        <div class="rounded-xl border border-border bg-background p-6">
+            <div class="flex items-center justify-between gap-3 mb-4">
+                <h2 class="text-lg font-semibold text-foreground">All Roles</h2>
+                <span class="text-xs text-muted-foreground">Filter by tenant or global scope.</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-sm" id="roles-table">
+                    <thead class="text-xs uppercase text-muted-foreground border-b border-border">
+                        <tr class="text-left">
+                            <th class="w-10">
+                                <input class="kt-checkbox" type="checkbox" data-kt-check="true"
+                                    data-kt-check-target="#roles-table .row-check" value="1" />
+                            </th>
+                            <th class="py-3">Role Name</th>
+                            <th class="py-3">Guard</th>
+                            <th class="py-3">Created At</th>
+                            <th class="py-3 text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{-- Content loaded via AJAX --}}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
 @endsection
+
+@push('styles')
+    <link href="{{ asset('assets/plugins/global/plugins.bundle.css') }}" rel="stylesheet" type="text/css" />
+    <link href="{{ asset('assets/plugins/custom/datatables/datatables.bundle.css') }}" rel="stylesheet" type="text/css" />
+@endpush
+
+@push('vendor-scripts')
+    <script src="{{ asset('assets/plugins/global/plugins.bundle.js') }}"></script>
+    <script src="{{ asset('assets/plugins/custom/datatables/datatables.bundle.js') }}"></script>
+@endpush
 
 @push('custom-scripts')
     <script>
@@ -105,13 +95,15 @@
                     orderable: false,
                     render: function (data) {
                         return `
-                                <div class="form-check form-check-sm form-check-custom form-check-solid">
-                                    <input class="form-check-input" type="checkbox" value="${data}" />
-                                </div>`;
+                                <input class="kt-checkbox row-check" type="checkbox" value="${data}" />`;
                     }
                 }
             ],
             "order": [[3, 'desc']],
+            "dom":
+                "<'flex flex-wrap items-center justify-between gap-4 mb-4'lf>" +
+                "<'table-responsive'tr>" +
+                "<'flex flex-wrap items-center justify-between gap-4 mt-4'ip>",
         });
 
         $('#tenant_filter').on('change', function() {

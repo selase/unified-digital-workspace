@@ -1,73 +1,67 @@
-@extends('layouts.admin.master')
+@extends('layouts.metronic.app')
 
 @section('title', 'View Lead - ' . $lead->name)
 
 @section('content')
-<div class="post d-flex flex-column-fluid" id="kt_post">
-    <div id="kt_content_container" class="container-xxl">
-        <div class="card mb-5 mb-xl-10">
-            <div class="card-header border-0">
-                <div class="card-title m-0">
-                    <h3 class="fw-bolder m-0">Lead Details</h3>
+    <section class="grid gap-6">
+        <div class="rounded-xl border border-border bg-background p-6 lg:p-8">
+            <div class="flex flex-wrap items-center justify-between gap-4">
+                <div>
+                    <p class="text-xs uppercase tracking-wide text-muted-foreground">Growth</p>
+                    <h1 class="mt-2 text-2xl font-semibold text-foreground">Lead Details</h1>
+                    <p class="mt-2 text-sm text-muted-foreground">Review and manage enterprise lead submissions.</p>
                 </div>
-                <div class="card-toolbar">
-                    <a href="{{ route('admin.leads.index') }}" class="btn btn-light-primary btn-sm">Back to List</a>
-                </div>
+                <a href="{{ route('admin.leads.index') }}" class="kt-btn kt-btn-outline">
+                    Back to List
+                </a>
             </div>
-            <div class="card-body border-top p-9">
-                <div class="row mb-7">
-                    <label class="col-lg-4 fw-bold text-muted">Full Name</label>
-                    <div class="col-lg-8">
-                        <span class="fw-bolder fs-6 text-gray-800">{{ $lead->name }}</span>
-                    </div>
+        </div>
+
+        <div class="rounded-xl border border-border bg-background p-6">
+            <dl class="grid gap-5 md:grid-cols-2">
+                <div>
+                    <dt class="text-xs uppercase text-muted-foreground">Full Name</dt>
+                    <dd class="mt-1 text-sm font-medium text-foreground">{{ $lead->name }}</dd>
                 </div>
-                <div class="row mb-7">
-                    <label class="col-lg-4 fw-bold text-muted">Email Address</label>
-                    <div class="col-lg-8">
-                        <span class="fw-bolder fs-6 text-gray-800">{{ $lead->email }}</span>
-                    </div>
+                <div>
+                    <dt class="text-xs uppercase text-muted-foreground">Email Address</dt>
+                    <dd class="mt-1 text-sm font-medium text-foreground">{{ $lead->email }}</dd>
                 </div>
-                <div class="row mb-7">
-                    <label class="col-lg-4 fw-bold text-muted">Company</label>
-                    <div class="col-lg-8">
-                        <span class="fw-bolder fs-6 text-gray-800">{{ $lead->company ?? 'N/A' }}</span>
-                    </div>
+                <div>
+                    <dt class="text-xs uppercase text-muted-foreground">Company</dt>
+                    <dd class="mt-1 text-sm font-medium text-foreground">{{ $lead->company ?? 'N/A' }}</dd>
                 </div>
-                <div class="row mb-7">
-                    <label class="col-lg-4 fw-bold text-muted">IP Address</label>
-                    <div class="col-lg-8">
-                        <span class="fw-bolder fs-6 text-gray-800">{{ $lead->ip_address }}</span>
-                    </div>
+                <div>
+                    <dt class="text-xs uppercase text-muted-foreground">IP Address</dt>
+                    <dd class="mt-1 text-sm font-medium text-foreground">{{ $lead->ip_address }}</dd>
                 </div>
-                <div class="row mb-7">
-                    <label class="col-lg-4 fw-bold text-muted">Status</label>
-                    <div class="col-lg-8">
-                        <span class="badge badge-light-primary">{{ strtoupper($lead->status) }}</span>
-                    </div>
+                <div>
+                    <dt class="text-xs uppercase text-muted-foreground">Status</dt>
+                    <dd class="mt-1">
+                        <span class="kt-badge kt-badge-outline kt-badge-primary">{{ strtoupper($lead->status) }}</span>
+                    </dd>
                 </div>
-                 <div class="row mb-7">
-                    <label class="col-lg-4 fw-bold text-muted">Created At</label>
-                    <div class="col-lg-8">
-                        <span class="fw-bolder fs-6 text-gray-800">{{ $lead->created_at->format('M d, Y H:i:s') }} ({{ $lead->created_at->diffForHumans() }})</span>
-                    </div>
+                <div>
+                    <dt class="text-xs uppercase text-muted-foreground">Created At</dt>
+                    <dd class="mt-1 text-sm font-medium text-foreground">
+                        {{ $lead->created_at->format('M d, Y H:i:s') }} ({{ $lead->created_at->diffForHumans() }})
+                    </dd>
                 </div>
-                <div class="row mb-7">
-                    <label class="col-lg-4 fw-bold text-muted">Message</label>
-                    <div class="col-lg-8">
-                        <div class="p-5 bg-light rounded text-gray-800 fs-6">
-                            {{ $lead->message }}
-                        </div>
-                    </div>
+                <div class="md:col-span-2">
+                    <dt class="text-xs uppercase text-muted-foreground">Message</dt>
+                    <dd class="mt-2 rounded-lg border border-border bg-muted/40 p-4 text-sm text-foreground">{{ $lead->message }}</dd>
                 </div>
-            </div>
-            <div class="card-footer d-flex justify-content-end py-6 px-9">
+            </dl>
+
+            <div class="mt-6 flex justify-end">
                 <form action="{{ route('admin.leads.destroy', $lead->id) }}" method="POST">
                     @csrf
                     @method('DELETE')
-                    <button type="submit" class="btn btn-light-danger btn-sm" onclick="return confirm('Are you sure you want to delete this lead?')">Delete Lead</button>
+                    <button type="submit" class="kt-btn kt-btn-sm kt-btn-danger" onclick="return confirm('Are you sure you want to delete this lead?')">
+                        Delete Lead
+                    </button>
                 </form>
             </div>
         </div>
-    </div>
-</div>
+    </section>
 @endsection

@@ -1,73 +1,76 @@
 <div>
     @if (session()->has('success'))
-        <div class="alert alert-success mb-5">
+        <div class="mb-5 rounded-lg border border-success/40 bg-success/10 px-4 py-3 text-sm text-success">
             {{ session('success') }}
         </div>
     @endif
 
-    <div class="card pt-4 mb-6 mb-xl-9">
-        <div class="card-header border-0">
-            <div class="card-title flex-column">
-                <h2 class="mb-1">Two-Factor Authentication</h2>
-                <div class="fs-6 fw-bold text-muted">Extra security for your account using TOTP.</div>
-            </div>
+    <div class="rounded-xl border border-border bg-background p-6">
+        <div>
+            <h2 class="text-lg font-semibold text-foreground">Two-Factor Authentication</h2>
+            <p class="mt-1 text-sm text-muted-foreground">Extra security for your account using TOTP.</p>
         </div>
-        <div class="card-body pb-5">
+
+        <div class="mt-6">
             @if (!$user->two_factor_secret)
                 @if (!$showQrCode)
-                    <div class="d-flex flex-stack">
-                        <div class="d-flex flex-column">
-                            <span>Status</span>
-                            <span class="text-danger fs-6 fw-bolder">Disabled</span>
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                        <div class="space-y-1">
+                            <p class="text-xs uppercase text-muted-foreground">Status</p>
+                            <p class="text-sm font-semibold text-destructive">Disabled</p>
                         </div>
-                        <div class="d-flex justify-content-end">
-                            <button wire:click="enableTwoFactor" class="btn btn-primary btn-sm">Enable 2FA</button>
-                        </div>
+                        <button wire:click="enableTwoFactor" class="kt-btn kt-btn-primary kt-btn-sm">Enable 2FA</button>
                     </div>
                 @else
-                    <div class="text-center py-5">
-                        <h3 class="mb-5">Configure Authenticator App</h3>
-                        <div class="mb-5 d-flex justify-content-center">
+                    <div class="rounded-lg border border-border bg-muted/30 p-5 text-center">
+                        <h3 class="text-base font-semibold text-foreground">Configure Authenticator App</h3>
+                        <div class="my-5 flex justify-center">
                             {!! (new \PragmaRX\Google2FALaravel\Support\Authenticator(request()))->getQRCodeInline(
                                 config('app.name'),
                                 $user->email,
                                 $secret
                             ) !!}
                         </div>
-                        <p class="text-muted mb-5">
+                        <p class="mx-auto mb-5 max-w-xl text-sm text-muted-foreground">
                             Scan the QR code with your authenticator app (like Google Authenticator or Authy) and enter the 6-digit code below.
                         </p>
-                        <div class="mx-auto w-md-200px">
-                            <input type="text" wire:model="code" class="form-control form-control-solid text-center mb-3" placeholder="000000">
-                            @error('code') <span class="text-danger d-block mb-3">{{ $message }}</span> @enderror
-                            <button wire:click="confirmTwoFactor" class="btn btn-success w-100">Confirm & Enable</button>
-                            <button wire:click="$set('showQrCode', false)" class="btn btn-link btn-sm mt-2">Cancel</button>
+                        <div class="mx-auto max-w-56">
+                            <input type="text" wire:model="code" class="kt-input text-center" placeholder="000000">
+                            @error('code')
+                                <span class="mt-2 block text-xs text-destructive">{{ $message }}</span>
+                            @enderror
+                            <button wire:click="confirmTwoFactor" class="kt-btn kt-btn-primary mt-3 w-full">Confirm & Enable</button>
+                            <button wire:click="$set('showQrCode', false)" class="kt-btn kt-btn-outline kt-btn-sm mt-2">Cancel</button>
                         </div>
                     </div>
                 @endif
             @else
-                <div class="d-flex flex-stack mb-5">
-                    <div class="d-flex flex-column">
-                        <span>Status</span>
-                        <span class="text-success fs-6 fw-bolder">Enabled</span>
-                        <span class="text-muted fs-7">Activated on {{ $user->two_factor_confirmed_at?->format('M d, Y H:i') }}</span>
+                <div x-data="{ confirmDisable: false }">
+                    <div class="mb-5 flex flex-wrap items-center justify-between gap-3">
+                        <div class="space-y-1">
+                            <p class="text-xs uppercase text-muted-foreground">Status</p>
+                            <p class="text-sm font-semibold text-success">Enabled</p>
+                            <p class="text-xs text-muted-foreground">Activated on {{ $user->two_factor_confirmed_at?->format('M d, Y H:i') }}</p>
+                        </div>
+                        <button type="button" class="kt-btn kt-btn-outline kt-btn-sm" x-on:click="confirmDisable = !confirmDisable">
+                            Disable 2FA
+                        </button>
                     </div>
-                    <div class="d-flex justify-content-end">
-                        <button type="button" class="btn btn-light-danger btn-sm" data-bs-toggle="collapse" data-bs-target="#kt_2fa_disable_form">Disable 2FA</button>
-                    </div>
-                </div>
 
-                <div class="collapse mt-5" id="kt_2fa_disable_form" wire:ignore.self>
-                    <div class="rounded border border-dashed border-danger p-5">
-                        <h4 class="text-danger mb-3">Confirm Deactivation</h4>
-                        <p class="text-muted fs-7 mb-5">By disabling two-factor authentication, your account will only be protected by your password.</p>
-                        <div class="d-flex align-items-end gap-3">
-                            <div class="flex-grow-1">
-                                <label class="form-label fs-7 fw-bold">Enter Password to Confirm</label>
-                                <input type="password" wire:model="password" class="form-control form-control-solid form-control-sm">
-                                @error('password') <span class="text-danger fs-8 mt-1">{{ $message }}</span> @enderror
+                    <div class="mt-5" x-show="confirmDisable" x-cloak>
+                        <div class="rounded-lg border border-destructive/50 bg-destructive/5 p-5">
+                            <h4 class="text-sm font-semibold text-destructive">Confirm Deactivation</h4>
+                            <p class="mt-2 text-xs text-muted-foreground">By disabling two-factor authentication, your account will only be protected by your password.</p>
+                            <div class="mt-4 flex flex-wrap items-end gap-3">
+                                <div class="min-w-64 grow space-y-2">
+                                    <label class="kt-label text-xs font-semibold text-foreground">Enter Password to Confirm</label>
+                                    <input type="password" wire:model="password" class="kt-input">
+                                    @error('password')
+                                        <span class="block text-xs text-destructive">{{ $message }}</span>
+                                    @enderror
+                                </div>
+                                <button wire:click="disableTwoFactor" class="kt-btn kt-btn-danger kt-btn-sm">Confirm Disable</button>
                             </div>
-                            <button wire:click="disableTwoFactor" class="btn btn-danger btn-sm">Confirm Disable</button>
                         </div>
                     </div>
                 </div>

@@ -1,91 +1,130 @@
-@extends('layouts.admin.master')
+@extends('layouts.metronic.app')
 
 @section('title', __('locale.menu.subscription'))
 
 @section('content')
-    <div class="post d-flex flex-column-fluid" id="kt_post">
-        <div id="kt_content_container" class="container-xxl">
-            <div class="d-flex flex-column flex-lg-row">
-                <div class="flex-lg-row-fluid me-lg-15 order-2 order-lg-1 mb-10 mb-lg-0">
-                    <div class="card card-flush pt-3 mb-5 mb-xl-10">
-                        <div class="card-header">
-                            <div class="card-title">
-                                <h2>{{ __('locale.labels.tenant_subscriptions') }}</h2>
-                            </div>
-                            <div class="card-toolbar">
-                                {{--  <a href="#" class="btn btn-light-primary">{{ __('Add Credit') }}</a>  --}}
-                            </div>
-                        </div>
-                        <div class="card-body pt-2">
-                            <table id="customer_invoices" class="table align-middle table-row-dashed fs-6 fw-bolder gs-0 gy-4 p-0 m-0">
-                                <thead class="border-bottom border-gray-200 fs-7 text-uppercase fw-bolder">
-                                    <tr class="text-start text-gray-400">
-                                        <th class="min-w-100px">Tenant</th>
-                                        <th class="min-w-100px">Order ID</th>
-                                        <th class="min-w-100px">Amount</th>
-                                        <th class="min-w-100px">Status</th>
-                                        <th class="min-w-125px">Date</th>
-                                        <th class="w-100px">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="fs-6 fw-bold text-gray-600">
-                                    @foreach ($subscriptions as $subscription)
-                                        <tr>
-                                            <td class="d-flex align-items-center">
-                                                <div class="symbol symbol-circle symbol-50px overflow-hidden me-3">
-                                                    <a href="{{ route('tenants.show', $subscription->tenant->uuid) }}">
-                                                        <div class="symbol-label">
-                                                            <img src="{{ App\Libraries\Helper::generateRetroGravatar($subcription->tenant->email ?? 'hello-tenant@example.com') }}" alt="{{ $subscription->tenant->name }}" class="w-100" />
-                                                        </div>
-                                                    </a>
-                                                </div>
-                                                <div class="d-flex flex-column">
-                                                    <a href="{{ route('tenants.show', $subscription->tenant->uuid) }}" class="text-gray-800 text-hover-primary mb-1">{{ $subscription->tenant->name }}</a>
-                                                    <span>{{ $subscription->tenant->email }}</span>
-                                                </div>
-                                            </td>
-                                            <td>
-                                                <a href="#" class="text-gray-600 text-hover-primary">{{ $subscription->transaction_id }}</a>
-                                            </td>
-                                            <td class="text-success">{{ App\Libraries\Helper::formatAmountWithCurrencySymbol($subscription->amount) }}</td>
-                                            <td>{!! $subscription->getStatusLabel() !!}</td>
-                                            <td>{{ App\Libraries\Helper::getFormattedDateString($subscription->date) }}</td>
-                                            <td class="">
-                                                <a href="{{ route('tenants.subscriptions.show', $subscription->uuid) }}" class="btn btn-sm btn-light btn-active-light-primary">View</a>
-                                            </td>
-                                        </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+    @php
+        $subscriptionRows = $subscriptions ?? collect();
+    @endphp
+
+    <section class="grid gap-6">
+        <div class="rounded-xl border border-border bg-background p-6 lg:p-8">
+            <div class="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                    <p class="text-xs uppercase tracking-wide text-muted-foreground">Tenants</p>
+                    <h1 class="mt-2 text-2xl font-semibold text-foreground">Tenant Subscriptions</h1>
+                    <p class="mt-2 text-sm text-muted-foreground">Review subscription status and renewal timelines.</p>
                 </div>
             </div>
         </div>
-    </div>
+
+        <div class="rounded-xl border border-border bg-background p-6">
+            <div class="flex items-center justify-between gap-3 mb-4">
+                <h2 class="text-lg font-semibold text-foreground">Subscriptions</h2>
+                <span class="text-xs text-muted-foreground">All active and historical plans.</span>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="kt-table" id="tenant-subscriptions-table">
+                    <thead>
+                        <tr class="text-xs uppercase text-muted-foreground">
+                            <th>Tenant</th>
+                            <th>Plan</th>
+                            <th>Status</th>
+                            <th>Current Period End</th>
+                            <th>Created</th>
+                            <th class="text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-sm text-foreground">
+                        @forelse ($subscriptionRows as $subscription)
+                            @php
+                                $tenant = $subscription->tenant;
+                                $tenantLogo = $tenant?->logo_url ?: $tenant?->gravatar;
+                                $status = $subscription->provider_status ?? $subscription->status ?? 'unknown';
+                                $statusClass = match ($status) {
+                                    'active', 'paid', 'succeeded' => 'kt-badge-success',
+                                    'past_due', 'pending' => 'kt-badge-warning',
+                                    'cancelled', 'canceled' => 'kt-badge-secondary',
+                                    'failed' => 'kt-badge-destructive',
+                                    default => 'kt-badge-secondary',
+                                };
+                                $periodEnd = $subscription->current_period_end ?? $subscription->ends_at;
+                            @endphp
+                            <tr>
+                                <td>
+                                    <div class="flex items-center gap-3">
+                                        @if($tenantLogo)
+                                            <img src="{{ $tenantLogo }}" alt="{{ $tenant?->name ?? 'Tenant' }}" class="size-10 rounded-full object-cover" />
+                                        @else
+                                            <div class="size-10 rounded-full bg-muted flex items-center justify-center text-xs text-muted-foreground">NA</div>
+                                        @endif
+                                        <div class="flex flex-col">
+                                            @if($tenant)
+                                                <a href="{{ route('tenants.show', $tenant->uuid) }}" class="font-medium text-foreground hover:text-primary">
+                                                    {{ $tenant->name }}
+                                                </a>
+                                                <span class="text-xs text-muted-foreground">{{ $tenant->email }}</span>
+                                            @else
+                                                <span class="text-sm text-muted-foreground">Unknown Tenant</span>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>{{ $subscription->provider_plan ?? $subscription->name ?? 'N/A' }}</td>
+                                <td>
+                                    <span class="kt-badge {{ $statusClass }}">{{ strtoupper($status) }}</span>
+                                </td>
+                                <td>
+                                    <span class="text-xs text-muted-foreground">
+                                        {{ $periodEnd?->format('M d, Y') ?? 'Auto-renew' }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="text-xs text-muted-foreground">{{ $subscription->created_at?->format('M d, Y') }}</span>
+                                </td>
+                                <td class="text-right">
+                                    @if(Route::has('tenants.subscriptions.show'))
+                                        <a href="{{ route('tenants.subscriptions.show', $subscription->uuid ?? $subscription->id) }}" class="kt-btn kt-btn-sm kt-btn-outline">View</a>
+                                    @else
+                                        <span class="text-xs text-muted-foreground">Unavailable</span>
+                                    @endif
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="6" class="text-center text-sm text-muted-foreground">No subscriptions found.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
 @endsection
+
+@push('styles')
+    <link href="{{ asset('assets/plugins/global/plugins.bundle.css') }}" rel="stylesheet" type="text/css" />
+    <link href="{{ asset('assets/plugins/custom/datatables/datatables.bundle.css') }}" rel="stylesheet" type="text/css" />
+@endpush
+
+@push('vendor-scripts')
+    <script src="{{ asset('assets/plugins/global/plugins.bundle.js') }}"></script>
+    <script src="{{ asset('assets/plugins/custom/datatables/datatables.bundle.js') }}"></script>
+@endpush
 
 @push('custom-scripts')
     <script src="{{ asset('js/scripts.js') }}"></script>
     <script>
-        $("#customer_invoices").DataTable({
+        $('#tenant-subscriptions-table').DataTable({
             "language": {
-             "lengthMenu": "Show _MENU_",
+                "lengthMenu": "Show _MENU_",
             },
             "lengthMenu": [[25, 50, 100, 250, 500, 1000, -1], [25, 50, 100, 250, 500, 1000, "All"]],
             "responsive": true,
             "dom":
-             "<'row'" +
-             "<'col-sm-6 d-flex align-items-center justify-conten-start'l>" +
-             "<'col-sm-6 d-flex align-items-center justify-content-end'f>" +
-             ">" +
-
-             "<'table-responsive'tr>" +
-
-             "<'row'" +
-             "<'col-sm-12 col-md-5 d-flex align-items-center justify-content-center justify-content-md-start'i>" +
-             "<'col-sm-12 col-md-7 d-flex align-items-center justify-content-center justify-content-md-end'p>" +
-             ">",
-           });
+                "<'flex flex-wrap items-center justify-between gap-4 mb-4'lf>" +
+                "<'table-responsive'tr>" +
+                "<'flex flex-wrap items-center justify-between gap-4 mt-4'ip>",
+        });
     </script>
 @endpush

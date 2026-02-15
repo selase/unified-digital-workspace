@@ -1,101 +1,73 @@
-@extends('layouts.admin.master')
+@extends('layouts.metronic.app')
 
 @section('title', __('locale.menu.login_history'))
 
 @section('content')
-<div class="post d-flex flex-column-fluid" id="kt_post">
-    <div id="kt_content_container" class="container-xxl">
-        <div class="row mb-10">
-            <div class="col-md-6 mb-5">
-                <div class="card">
-                    <div class="card-header border-0 pt-6">
-                        <div class="card-titile">
-                            <h3>{{ strtoupper(__('locale.labels.browsers')) }}</h3>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <div id="browser-session" style="width: 100%;height:300px;"></div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-6 mb-5">
-                <div class="card">
-                    <div class="card-header border-0 pt-6">
-                        <div class="card-titile">
-                            <h3>{{ strtoupper(__('locale.labels.locations')) }}</h3>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <div id="location-session" style="width: 100%;height:300px;"></div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-6 mb-5">
-                <div class="card">
-                    <div class="card-header border-0 pt-6">
-                        <div class="card-titile">
-                            <h3>{{ strtoupper(__('locale.labels.platform_or_os')) }}</h3>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <div id="platform-session" style="width: 100%;height:300px;"></div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-6 mb-5">
-                <div class="card">
-                    <div class="card-header border-0 pt-6">
-                        <div class="card-titile">
-                            <h3>{{ strtoupper(__('locale.labels.devices')) }}</h3>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <div id="client-device-session" style="width: 100%;height:300px;"></div>
-                    </div>
-                </div>
+    <section class="grid gap-6">
+        <div class="rounded-xl border border-border bg-background p-6 lg:p-8">
+            <div>
+                <p class="text-xs uppercase tracking-wide text-muted-foreground">Audit Trail</p>
+                <h1 class="mt-2 text-2xl font-semibold text-foreground">{{ __('locale.menu.login_history') }}</h1>
+                <p class="mt-2 text-sm text-muted-foreground">Monitor login telemetry across browsers, devices, and locations.</p>
             </div>
         </div>
 
-
-        <div class="card">
-            <div class="card-header border-0 pt-6">
-                <div class="card-title">
-
-                </div>
-
-                <div class="card-toolbar">
-
-                </div>
+        <div class="grid gap-6 md:grid-cols-2">
+            <div class="rounded-xl border border-border bg-background p-6">
+                <h3 class="text-sm font-semibold uppercase text-foreground">{{ strtoupper(__('locale.labels.browsers')) }}</h3>
+                <div class="mt-4" id="browser-session" style="width: 100%; height: 300px;"></div>
             </div>
-            <div class="card-body py-4">
-                <div class="table-responsive">
-                    <table class="table align-middle table-row-dashed fs-6 gy-5" id="login-history-table">
-                        <thead>
-                            <tr class="text-start text-muted fw-bolder fs-7 text-uppercase gs-0">
-                                <th class="w-10px pe-2">{{ __('locale.labels.sl') }}</th>
-                                <th class="min-w-125px">{{ __('locale.labels.user') }}</th>
-                                <th class="min-w-125px">{{ __('locale.labels.location') }}</th>
-                                <th class="min-w-125px">{{ __('locale.labels.device') }}</th>
-                                <th class="min-w-125px">{{ __('locale.labels.platform') }}</th>
-                                <th class="min-w-125px">{{ __('locale.labels.ip_address') }}</th>
-                                <th class="min-w-125px">{{ __('locale.labels.last_login') }}</th>
-                                <th class="min-w-125px">{{ __('locale.labels.last_logout') }}</th>
-                            </tr>
-                        </thead>
-                    </table>
-                </div>
-
+            <div class="rounded-xl border border-border bg-background p-6">
+                <h3 class="text-sm font-semibold uppercase text-foreground">{{ strtoupper(__('locale.labels.locations')) }}</h3>
+                <div class="mt-4" id="location-session" style="width: 100%; height: 300px;"></div>
+            </div>
+            <div class="rounded-xl border border-border bg-background p-6">
+                <h3 class="text-sm font-semibold uppercase text-foreground">{{ strtoupper(__('locale.labels.platform_or_os')) }}</h3>
+                <div class="mt-4" id="platform-session" style="width: 100%; height: 300px;"></div>
+            </div>
+            <div class="rounded-xl border border-border bg-background p-6">
+                <h3 class="text-sm font-semibold uppercase text-foreground">{{ strtoupper(__('locale.labels.devices')) }}</h3>
+                <div class="mt-4" id="client-device-session" style="width: 100%; height: 300px;"></div>
             </div>
         </div>
-    </div>
-</div>
+
+        <div class="rounded-xl border border-border bg-background p-6">
+            <div class="overflow-x-auto">
+                <table class="kt-table" id="login-history-table">
+                    <thead>
+                        <tr class="text-xs uppercase text-muted-foreground">
+                            <th>{{ __('locale.labels.sl') }}</th>
+                            <th>{{ __('locale.labels.user') }}</th>
+                            <th>{{ __('locale.labels.location') }}</th>
+                            <th>{{ __('locale.labels.device') }}</th>
+                            <th>{{ __('locale.labels.platform') }}</th>
+                            <th>{{ __('locale.labels.ip_address') }}</th>
+                            <th>{{ __('locale.labels.last_login') }}</th>
+                            <th>{{ __('locale.labels.last_logout') }}</th>
+                        </tr>
+                    </thead>
+                </table>
+            </div>
+        </div>
+    </section>
 @endsection
+
+@push('styles')
+    <link href="{{ asset('assets/plugins/global/plugins.bundle.css') }}" rel="stylesheet" type="text/css" />
+    <link href="{{ asset('assets/plugins/custom/datatables/datatables.bundle.css') }}" rel="stylesheet" type="text/css" />
+@endpush
+
+@push('vendor-scripts')
+    <script src="{{ asset('assets/plugins/global/plugins.bundle.js') }}"></script>
+    <script src="{{ asset('assets/plugins/custom/datatables/datatables.bundle.js') }}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.3.3/dist/echarts.min.js"></script>
+@endpush
 
 @push('custom-scripts')
     <script src="{{ asset('js/scripts.js') }}"></script>
     <script>
         $("#login-history-table").DataTable({
-             "processing": true,
+            "processing": true,
             "serverSide": true,
             "searchDelay": 1500,
             "searching": true,
@@ -110,7 +82,7 @@
             ],
             "columns": [
                 {"data": 'id'},
-                {"data": "user", className: "d-flex align-items-center"},
+                {"data": "user", className: "align-middle"},
                 {"data": "location"},
                 {"data": "client_device"},
                 {"data": "platform"},
@@ -120,17 +92,9 @@
             ],
             "order": [6, 'desc'],
             "dom":
-             "<'row'" +
-             "<'col-sm-6 d-flex align-items-center justify-conten-start'l>" +
-             "<'col-sm-6 d-flex align-items-center justify-content-end'f>" +
-             ">" +
-
-             "<'table-responsive'tr>" +
-
-             "<'row'" +
-             "<'col-sm-12 col-md-5 d-flex align-items-center justify-content-center justify-content-md-start'i>" +
-             "<'col-sm-12 col-md-7 d-flex align-items-center justify-content-center justify-content-md-end'p>" +
-             ">",
+                "<'flex flex-wrap items-center justify-between gap-4 mb-4'lf>" +
+                "<'table-responsive'tr>" +
+                "<'flex flex-wrap items-center justify-between gap-4 mt-4'ip>",
         });
     </script>
 

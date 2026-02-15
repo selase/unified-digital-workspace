@@ -1,149 +1,120 @@
-@extends('layouts.admin.master')
+@extends('layouts.metronic.app')
 
 @section('title', 'Global LLM Usage Dashboard')
 
 @section('content')
-    <div class="post d-flex flex-column-fluid" id="kt_post">
-        <div id="kt_content_container" class="container-xxl">
-            <!-- Summary Cards -->
-            <div class="row g-5 g-xl-10 mb-5 mb-xl-10">
-                <div class="col-md-4">
-                    <div class="card card-flush h-md-100">
-                        <div class="card-header pt-5">
-                            <div class="card-title d-flex flex-column">
-                                <span
-                                    class="fs-2hx fw-bold text-gray-900 me-2 lh-1 ls-n2">{{ number_format($summary->total_tokens ?? 0) }}</span>
-                                <span class="text-gray-500 pt-1 fw-semibold fs-6">Total Tokens (All Time)</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card card-flush h-md-100">
-                        <div class="card-header pt-5">
-                            <div class="card-title d-flex flex-column">
-                                <span
-                                    class="fs-2hx fw-bold text-gray-900 me-2 lh-1 ls-n2">${{ number_format($summary->total_cost ?? 0, 2) }}</span>
-                                <span class="text-gray-500 pt-1 fw-semibold fs-6">Total Estimated Cost</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card card-flush h-md-100">
-                        <div class="card-header pt-5">
-                            <div class="card-title d-flex flex-column">
-                                <span
-                                    class="fs-2hx fw-bold text-gray-900 me-2 lh-1 ls-n2">{{ number_format($summary->total_requests ?? 0) }}</span>
-                                <span class="text-gray-500 pt-1 fw-semibold fs-6">Total Requests</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+    <section class="grid gap-6">
+        <div class="rounded-xl border border-border bg-background p-6 lg:p-8">
+            <p class="text-xs uppercase tracking-wide text-muted-foreground">AI Operations</p>
+            <h1 class="mt-2 text-2xl font-semibold text-foreground">Global LLM Usage Dashboard</h1>
+            <p class="mt-2 text-sm text-muted-foreground">Monitor usage, cost, and tenant model distribution across the platform.</p>
+        </div>
+
+        <div class="grid gap-5 lg:grid-cols-3">
+            <div class="rounded-xl border border-border bg-background p-6">
+                <p class="text-xs uppercase text-muted-foreground">Total Tokens</p>
+                <p class="mt-2 text-3xl font-semibold text-foreground">{{ number_format((float) ($summary->total_tokens ?? 0)) }}</p>
+                <p class="mt-1 text-xs text-muted-foreground">All time</p>
             </div>
-
-            <div class="row g-5 g-xl-10">
-                <!-- Top Tenants Table -->
-                <div class="col-xl-8">
-                    <div class="card card-flush h-xl-100">
-                        <div class="card-header pt-7">
-                            <h3 class="card-title align-items-start flex-column">
-                                <span class="card-label fw-bold text-gray-800">Top Tenants by Usage (Last 30 Days)</span>
-                            </h3>
-                        </div>
-                        <div class="card-body pt-2">
-                            <div class="table-responsive">
-                                <table class="table align-middle table-row-dashed fs-6 gy-3">
-                                    <thead>
-                                        <tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
-                                            <th>Tenant</th>
-                                            <th>Subdomain</th>
-                                            <th>Total Tokens</th>
-                                            <th class="text-end">Estimated Cost</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody class="text-gray-600 fw-semibold">
-                                        @forelse($topTenants as $usage)
-                                            <tr>
-                                                <td>{{ $usage->tenant_name }}</td>
-                                                <td><code>{{ $usage->tenant_slug }}</code></td>
-                                                <td>{{ number_format($usage->total_tokens) }}</td>
-                                                <td class="text-end">${{ number_format($usage->total_cost, 4) }}</td>
-                                            </tr>
-                                        @empty
-                                            <tr>
-                                                <td colspan="4" class="text-center">No data found.</td>
-                                            </tr>
-                                        @endforelse
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Top Models Table -->
-                <div class="col-xl-4">
-                    <div class="card card-flush h-xl-100">
-                        <div class="card-header pt-7">
-                            <h3 class="card-title align-items-start flex-column">
-                                <span class="card-label fw-bold text-gray-800">Model Distribution</span>
-                            </h3>
-                        </div>
-                        <div class="card-body pt-2">
-                            <div class="table-responsive">
-                                <table class="table align-middle table-row-dashed fs-6 gy-3">
-                                    <thead>
-                                        <tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
-                                            <th>Model</th>
-                                            <th class="text-end">Tokens</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody class="text-gray-600 fw-semibold">
-                                        @foreach($topModels as $usage)
-                                            <tr>
-                                                <td><code>{{ $usage->model }}</code></td>
-                                                <td class="text-end">{{ number_format($usage->total_tokens) }}</td>
-                                            </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <div class="rounded-xl border border-border bg-background p-6">
+                <p class="text-xs uppercase text-muted-foreground">Estimated Cost</p>
+                <p class="mt-2 text-3xl font-semibold text-foreground">${{ number_format((float) ($summary->total_cost ?? 0), 2) }}</p>
+                <p class="mt-1 text-xs text-muted-foreground">All time</p>
             </div>
+            <div class="rounded-xl border border-border bg-background p-6">
+                <p class="text-xs uppercase text-muted-foreground">Total Requests</p>
+                <p class="mt-2 text-3xl font-semibold text-foreground">{{ number_format((float) ($summary->total_requests ?? 0)) }}</p>
+                <p class="mt-1 text-xs text-muted-foreground">All time</p>
+            </div>
+        </div>
 
-            <!-- Daily Trend Placeholder (Chart logic can be added later) -->
-            <div class="card card-flush mt-5">
-                <div class="card-header pt-7">
-                    <h3 class="card-title align-items-start flex-column">
-                        <span class="card-label fw-bold text-gray-800">Daily Usage Trend (Last 30 Days)</span>
-                    </h3>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table align-middle table-row-dashed fs-6 gy-3">
-                            <thead>
-                                <tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
-                                    <th>Date</th>
-                                    <th>Total Tokens</th>
-                                    <th class="text-end">Estimated Cost</th>
+        <div class="grid gap-6 xl:grid-cols-12">
+            <div class="rounded-xl border border-border bg-background p-6 xl:col-span-8">
+                <h2 class="text-lg font-semibold text-foreground">Top Tenants by Usage (Last 30 Days)</h2>
+                <p class="mt-1 text-xs text-muted-foreground">Highest token consumers in the most recent 30-day window.</p>
+                <div class="mt-4 overflow-x-auto">
+                    <table class="kt-table">
+                        <thead>
+                            <tr class="text-xs uppercase text-muted-foreground">
+                                <th>Tenant</th>
+                                <th>Subdomain</th>
+                                <th>Total Tokens</th>
+                                <th class="text-right">Estimated Cost</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-sm text-foreground">
+                            @forelse($topTenants as $usage)
+                                <tr>
+                                    <td class="font-medium text-foreground">{{ $usage->tenant_name }}</td>
+                                    <td><code>{{ $usage->tenant_slug }}</code></td>
+                                    <td>{{ number_format((float) $usage->total_tokens) }}</td>
+                                    <td class="text-right">${{ number_format((float) $usage->total_cost, 4) }}</td>
                                 </tr>
-                            </thead>
-                            <tbody class="text-gray-600 fw-semibold">
-                                @foreach($dailyTrend as $trend)
-                                    <tr>
-                                        <td>{{ is_string($trend->day) ? $trend->day : $trend->day->format('Y-m-d') }}</td>
-                                        <td>{{ number_format((float) $trend->total_tokens) }}</td>
-                                        <td class="text-end">${{ number_format((float) $trend->total_cost, 4) }}</td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
+                            @empty
+                                <tr>
+                                    <td colspan="4" class="py-8 text-center text-muted-foreground">No data found.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="rounded-xl border border-border bg-background p-6 xl:col-span-4">
+                <h2 class="text-lg font-semibold text-foreground">Model Distribution</h2>
+                <p class="mt-1 text-xs text-muted-foreground">Usage split by model.</p>
+                <div class="mt-4 overflow-x-auto">
+                    <table class="kt-table">
+                        <thead>
+                            <tr class="text-xs uppercase text-muted-foreground">
+                                <th>Model</th>
+                                <th class="text-right">Tokens</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-sm text-foreground">
+                            @forelse($topModels as $usage)
+                                <tr>
+                                    <td><code>{{ $usage->model }}</code></td>
+                                    <td class="text-right">{{ number_format((float) $usage->total_tokens) }}</td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="2" class="py-8 text-center text-muted-foreground">No model usage data found.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
-    </div>
+
+        <div class="rounded-xl border border-border bg-background p-6">
+            <h2 class="text-lg font-semibold text-foreground">Daily Usage Trend (Last 30 Days)</h2>
+            <p class="mt-1 text-xs text-muted-foreground">Daily aggregate of token and cost usage.</p>
+            <div class="mt-4 overflow-x-auto">
+                <table class="kt-table">
+                    <thead>
+                        <tr class="text-xs uppercase text-muted-foreground">
+                            <th>Date</th>
+                            <th>Total Tokens</th>
+                            <th class="text-right">Estimated Cost</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-sm text-foreground">
+                        @forelse($dailyTrend as $trend)
+                            <tr>
+                                <td>{{ is_string($trend->day) ? $trend->day : $trend->day->format('Y-m-d') }}</td>
+                                <td>{{ number_format((float) $trend->total_tokens) }}</td>
+                                <td class="text-right">${{ number_format((float) $trend->total_cost, 4) }}</td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="3" class="py-8 text-center text-muted-foreground">No daily usage data found.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
 @endsection

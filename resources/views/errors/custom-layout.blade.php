@@ -1,38 +1,43 @@
 <!DOCTYPE html>
 <html lang="en">
-	<head><base href="../../">
-		<title>{{ config('app.name') }} | @yield('title')</title>
-		<meta charset="utf-8" />
-		<link rel="shortcut icon" href="{{ asset('assets/media/logos/favicon.ico') }}" />
-		<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Poppins:300,400,500,600,700" />
-		<link href="{{ asset('assets/plugins/global/plugins.bundle.css') }}" rel="stylesheet" type="text/css" />
-		<link href="{{ asset('assets/css/style.bundle.css') }}" rel="stylesheet" type="text/css" />
-	</head>
-	<body id="kt_body" class="auth-bg">
-		<div class="d-flex flex-column flex-root">
-			<div class="d-flex flex-column flex-column-fluid">
-				<div class="d-flex flex-column flex-column-fluid text-center p-10 py-lg-15">
-					<a href="/" class="mb-10 pt-lg-10">
-						<img alt="Logo" src="{{ asset('assets/media/logos/logo-1.svg') }}" class="h-40px mb-5" />
-					</a>
-					<div class="pt-lg-10 mb-10">
-						<h1 class="fw-bolder fs-2qx text-gray-800 mb-10">@yield('code') @yield('title')</h1>
-						<div class="fw-bold fs-5 text-muted mb-15">@yield('message')</div>
-						<div class="text-center">
-							<a href="javascript:history.go(-1)" class="btn btn-lg btn-primary fw-bolder">Go back</a>
-						</div>
-					</div>
-					@yield('image')
-				</div>
-				<div class="d-flex flex-center flex-column-auto p-10">
-					<div class="d-flex align-items-center fw-bold fs-6">
-						<a href="{{ config('app.system_setting.provider.url') }}" class="text-muted text-hover-primary px-2" target="_blank">Copyright &copy; {{ \App\Libraries\Helper::getCurrentYear() }}  {{ config('app.system_setting.provider.name') }}</a>
-					</div>
-				</div>
-			</div>
-		</div>
-		<script>var hostUrl = "assets/";</script>
-		<script src="{{ asset('assets/plugins/global/plugins.bundle.js') }}"></script>
-		<script src="{{ asset('assets/js/scripts.bundle.js') }}"></script>
-	</body>
+<head>
+    <title>{{ config('app.name') }} | @yield('title')</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="shortcut icon" href="{{ asset('assets/metronic/media/app/favicon.ico') }}" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
+    <link href="{{ asset('assets/metronic/vendors/keenicons/styles.bundle.css') }}" rel="stylesheet" />
+    <link href="{{ asset('assets/metronic/css/styles.css') }}" rel="stylesheet" />
+</head>
+<body class="min-h-screen antialiased bg-mono text-foreground">
+    <main class="mx-auto flex min-h-screen w-full max-w-5xl flex-col items-center justify-center px-6 py-12 text-center">
+        <a href="/" class="mb-8 inline-flex items-center gap-3">
+            <img alt="Logo" src="{{ asset('assets/metronic/media/app/default-logo.svg') }}" class="h-7 w-auto" />
+            <span class="text-sm font-semibold text-foreground">{{ config('app.name') }}</span>
+        </a>
+
+        <section class="w-full rounded-2xl border border-border bg-background px-8 py-10 shadow-sm">
+            <h1 class="text-3xl font-semibold tracking-tight text-foreground">
+                @yield('code') @yield('title')
+            </h1>
+            <p class="mx-auto mt-4 max-w-2xl text-sm text-muted-foreground">
+                @yield('message')
+            </p>
+
+            <div class="mt-8">
+                <a href="javascript:history.go(-1)" class="kt-btn kt-btn-primary">Go back</a>
+            </div>
+
+            <div class="mt-8">
+                @yield('image')
+            </div>
+        </section>
+
+        <footer class="mt-8 text-xs text-muted-foreground">
+            <a href="{{ config('app.system_setting.provider.url') }}" class="hover:text-primary" target="_blank" rel="noopener noreferrer">
+                Copyright &copy; {{ \App\Libraries\Helper::getCurrentYear() }} {{ config('app.system_setting.provider.name') }}
+            </a>
+        </footer>
+    </main>
+</body>
 </html>

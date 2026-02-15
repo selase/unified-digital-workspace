@@ -7,12 +7,17 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <link rel="shortcut icon" href="{{ asset('assets/metronic/media/app/favicon.ico') }}"/>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"/>
-    <link href="{{ asset('assets/plugins/global/plugins.bundle.css') }}" rel="stylesheet" type="text/css"/>
-    <link href="{{ asset('assets/css/style.bundle.css') }}" rel="stylesheet" type="text/css"/>
     <link href="{{ asset('assets/metronic/vendors/keenicons/styles.bundle.css') }}" rel="stylesheet"/>
     <link href="{{ asset('assets/metronic/css/styles.css') }}" rel="stylesheet"/>
     @stack('custom-styles')
     @stack('styles')
+    <style>
+        .phpdebugbar-openhandler-overlay {
+            display: none !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+        }
+    </style>
 
     @include('layouts.admin.partials.custom-styles')
 
@@ -56,9 +61,23 @@
     </section>
 </div>
 
-<script src="{{ asset('assets/plugins/global/plugins.bundle.js') }}"></script>
-<script src="{{ asset('assets/js/scripts.bundle.js') }}"></script>
 <script src="{{ asset('assets/metronic/js/core.bundle.js') }}"></script>
+<script>
+    const clearAuthStaleOverlays = () => {
+        document.querySelectorAll('[data-kt-modal-backdrop], [data-kt-drawer-backdrop], .kt-modal-backdrop, .kt-drawer-backdrop, .modal-backdrop, .offcanvas-backdrop, .kt-drawer-overlay, .phpdebugbar-openhandler-overlay, .driver-overlay, .driver-popover').forEach((element) => {
+            element.remove();
+        });
+
+        document.body.classList.remove('modal-open', 'offcanvas-open', 'driver-active');
+        document.body.style.removeProperty('overflow');
+        document.body.style.removeProperty('padding-right');
+    };
+
+    document.addEventListener('DOMContentLoaded', clearAuthStaleOverlays);
+    window.addEventListener('pageshow', clearAuthStaleOverlays);
+    window.setTimeout(clearAuthStaleOverlays, 300);
+    window.setTimeout(clearAuthStaleOverlays, 1200);
+</script>
 @stack('custom-scripts')
 @stack('scripts')
 </body>

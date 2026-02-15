@@ -1,3 +1,7 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@source "../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php";
+@source "../../storage/framework/views/*.php";
+@source "../views/**/*.blade.php";
+@source "../js/**/*.js";
+@source inline("sm:hidden sm:block sm:flex sm:grid md:hidden md:block md:flex md:grid lg:hidden lg:block lg:flex lg:grid lg:inline-flex xl:hidden xl:block xl:flex xl:grid 2xl:hidden 2xl:block 2xl:flex 2xl:grid");

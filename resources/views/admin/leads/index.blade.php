@@ -1,52 +1,58 @@
-@extends('layouts.admin.master')
+@extends('layouts.metronic.app')
 
 @section('title', 'Enterprise Leads')
 
 @section('content')
-<div class="post d-flex flex-column-fluid" id="kt_post">
-    <div id="kt_content_container" class="container-xxl">
-        <div class="card">
-            <div class="card-header border-0 pt-6">
-                <div class="card-title">
-                    Enterprise Leads
-                </div>
-            </div>
-            <div class="card-body py-4">
-                <div class="table-responsive">
-                    <table class="table align-middle table-row-dashed fs-6 gy-5">
-                        <thead>
-                            <tr class="text-start text-muted fw-bolder fs-7 text-uppercase gs-0">
-                                <th class="min-w-125px">Name</th>
-                                <th class="min-w-125px">Email</th>
-                                <th class="min-w-125px">Company</th>
-                                <th class="min-w-125px">Status</th>
-                                <th class="min-w-125px">Created At</th>
-                                <th class="text-end min-w-100px">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody class="text-gray-600 fw-bold">
-                            @foreach ($leads as $lead)
-                                <tr>
-                                    <td>{{ $lead->name }}</td>
-                                    <td>{{ $lead->email }}</td>
-                                    <td>{{ $lead->company ?? 'N/A' }}</td>
-                                    <td>
-                                        <span class="badge badge-light-primary">{{ strtoupper($lead->status) }}</span>
-                                    </td>
-                                    <td>{{ $lead->created_at->diffForHumans() }}</td>
-                                    <td class="text-end">
-                                        <a href="{{ route('admin.leads.show', $lead->id) }}" class="btn btn-light btn-active-light-primary btn-sm">View</a>
-                                    </td>
-                                </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
-                <div class="mt-4">
-                    {{ $leads->links() }}
+    <section class="grid gap-6">
+        <div class="rounded-xl border border-border bg-background p-6 lg:p-8">
+            <div class="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                    <p class="text-xs uppercase tracking-wide text-muted-foreground">Growth</p>
+                    <h1 class="mt-2 text-2xl font-semibold text-foreground">Enterprise Leads</h1>
+                    <p class="mt-2 text-sm text-muted-foreground">Review inbound enterprise requests and follow up.</p>
                 </div>
             </div>
         </div>
-    </div>
-</div>
+
+        <div class="rounded-xl border border-border bg-background p-6">
+            <div class="overflow-x-auto">
+                <table class="kt-table">
+                    <thead>
+                        <tr class="text-xs uppercase text-muted-foreground">
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Company</th>
+                            <th>Status</th>
+                            <th>Created</th>
+                            <th class="text-right">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-sm text-foreground">
+                        @forelse ($leads as $lead)
+                            <tr>
+                                <td class="font-medium text-foreground">{{ $lead->name }}</td>
+                                <td>{{ $lead->email }}</td>
+                                <td>{{ $lead->company ?? 'N/A' }}</td>
+                                <td>
+                                    <span class="kt-badge kt-badge-outline kt-badge-primary">{{ strtoupper($lead->status) }}</span>
+                                </td>
+                                <td>{{ $lead->created_at->diffForHumans() }}</td>
+                                <td class="text-right">
+                                    <a href="{{ route('admin.leads.show', $lead->id) }}" class="kt-btn kt-btn-sm kt-btn-outline">View</a>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="6" class="py-8 text-center text-muted-foreground">No leads found.</td>
+                            </tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="mt-5">
+                {{ $leads->links() }}
+            </div>
+        </div>
+    </section>
 @endsection

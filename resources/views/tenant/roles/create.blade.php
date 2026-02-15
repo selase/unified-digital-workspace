@@ -1,98 +1,100 @@
-@extends('layouts.admin.master')
+@extends('layouts.metronic.app')
 
 @section('title', 'Create Custom Role')
 
 @section('content')
-    <div class="post d-flex flex-column-fluid" id="kt_post">
-        <div id="kt_content_container" class="container-xxl">
-            <div class="card">
-                <div class="card-header border-0 pt-6">
-                    <div class="card-title">
-                        <h2>Create Custom Role</h2>
-                    </div>
+    <section class="grid gap-6">
+        <div class="rounded-xl border border-border bg-background p-6 lg:p-8">
+            <div class="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                    <p class="text-xs uppercase tracking-wide text-muted-foreground">Organization Roles</p>
+                    <h1 class="mt-2 text-2xl font-semibold text-foreground">Create Custom Role</h1>
+                    <p class="mt-2 text-sm text-muted-foreground">Define a new role for your organization and select permissions.</p>
                 </div>
-                <div class="card-body">
-                    <form action="{{ route('tenant.roles.store', ['subdomain' => request()->route('subdomain')]) }}"
-                        method="POST">
-                        @csrf
-                        <div class="fv-row mb-10">
-                            <label class="fs-5 fw-bold mb-2">Role Name</label>
-                            <input type="text" name="name" class="form-control form-control-solid border-0 fs-4" placeholder="e.g. Hospital Intern" value="{{ old('name') }}" required />
-                        </div>
-
-                        <div class="fv-row">
-                            <label class="fs-5 fw-bold mb-5">Role Permissions</label>
-                            <!--begin::Table wrapper-->
-                            <div class="table-responsive">
-                                <!--begin::Table-->
-                                <table class="table align-middle table-row-dashed fs-6 gy-5">
-                                    <tbody class="text-gray-600 fw-semibold">
-                                        <!--begin::Table row-->
-                                        <tr>
-                                            <td class="text-gray-800">Administrator Access 
-                                            <span class="ms-2" data-bs-toggle="tooltip" title="Allows a full access to the system">
-                                                <i class="fas fa-exclamation-circle fs-7"></i>
-                                            </span></td>
-                                            <td>
-                                                <!--begin::Checkbox-->
-                                                <label class="form-check form-check-custom form-check-solid me-9">
-                                                    <input class="form-check-input" type="checkbox" value="" id="kt_roles_select_all" />
-                                                    <span class="form-check-label" for="kt_roles_select_all">Select all</span>
-                                                </label>
-                                                <!--end::Checkbox-->
-                                            </td>
-                                        </tr>
-                                        <!--end::Table row-->
-
-                                        @foreach($permissions->groupBy('category') as $category => $perms)
-                                            <!--begin::Table row-->
-                                            <tr>
-                                                <td class="text-gray-800 text-capitalize">{{ str_replace('-', ' ', $category) }}</td>
-                                                <td>
-                                                    <!--begin::Wrapper-->
-                                                    <div class="d-flex flex-wrap gap-4">
-                                                        @foreach($perms as $permission)
-                                                            <!--begin::Checkbox-->
-                                                            <label class="form-check form-check-sm form-check-custom form-check-solid me-5 me-lg-20">
-                                                                <input class="form-check-input permission-checkbox" type="checkbox" value="{{ $permission->name }}" name="permissions[]" />
-                                                                <span class="form-check-label">{{ explode(' ', $permission->name)[0] }}</span>
-                                                            </label>
-                                                            <!--end::Checkbox-->
-                                                        @endforeach
-                                                    </div>
-                                                    <!--end::Wrapper-->
-                                                </td>
-                                            </tr>
-                                            <!--end::Table row-->
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                                <!--end::Table-->
-                            </div>
-                            <!--end::Table wrapper-->
-                        </div>
-
-                        <div class="text-center pt-15">
-                            <a href="{{ route('tenant.roles.index', ['subdomain' => request()->route('subdomain')]) }}" class="btn btn-light me-3">Discard</a>
-                            <button type="submit" class="btn btn-primary">
-                                <span class="indicator-label">Create Role</span>
-                                <span class="indicator-progress">Please wait... 
-                                <span class="spinner-border spinner-border-sm align-middle ms-2"></span></span>
-                            </button>
-                        </div>
-
-                        @push('custom-scripts')
-                        <script>
-                            document.getElementById('kt_roles_select_all').addEventListener('change', function(e) {
-                                document.querySelectorAll('.permission-checkbox').forEach(cb => {
-                                    cb.checked = e.target.checked;
-                                });
-                            });
-                        </script>
-                        @endpush
-                    </form>
-                </div>
+                <a href="{{ route('tenant.roles.index', ['subdomain' => request()->route('subdomain')]) }}" class="kt-btn kt-btn-outline">Back to Roles</a>
             </div>
         </div>
-    </div>
+
+        <div class="rounded-xl border border-border bg-background p-6">
+            <form class="kt-form" action="{{ route('tenant.roles.store', ['subdomain' => request()->route('subdomain')]) }}" method="POST">
+                @csrf
+                <div class="kt-form-item">
+                    <label class="kt-form-label">Role Name <span class="text-destructive">*</span></label>
+                    <div class="kt-form-control">
+                        <input type="text" name="name" class="kt-input @error('name') !border-destructive @enderror" placeholder="e.g. Hospital Intern" value="{{ old('name') }}" required />
+                        @error('name')
+                            <p class="mt-2 text-xs text-destructive">{{ $message }}</p>
+                        @enderror
+                    </div>
+                </div>
+
+                <div class="kt-form-item mt-6">
+                    <div class="flex flex-wrap items-center justify-between gap-3">
+                        <label class="kt-form-label">Role Permissions <span class="text-destructive">*</span></label>
+                        <label class="flex items-center gap-2 text-sm text-foreground">
+                            <input class="kt-checkbox" type="checkbox" value="" id="kt_roles_select_all" />
+                            <span>Select all</span>
+                        </label>
+                    </div>
+
+                    <div class="kt-table-wrapper mt-4">
+                        <table class="kt-table">
+                            <thead>
+                                <tr class="text-xs uppercase text-muted-foreground">
+                                    <th>Category</th>
+                                    <th>Permissions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-sm text-muted-foreground">
+                                @foreach($permissions->groupBy('category') as $category => $perms)
+                                    <tr>
+                                        <td class="text-foreground font-medium text-capitalize">{{ str_replace('-', ' ', $category) }}</td>
+                                        <td>
+                                            <div class="flex flex-wrap gap-3">
+                                                @foreach($perms as $permission)
+                                                    <label class="flex items-center gap-2 text-sm text-foreground">
+                                                        <input class="kt-checkbox permission-checkbox" type="checkbox" value="{{ $permission->name }}" name="permissions[]" />
+                                                        <span>{{ explode(' ', $permission->name)[0] }}</span>
+                                                    </label>
+                                                @endforeach
+                                            </div>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="kt-form-actions mt-8 flex items-center justify-end gap-3">
+                    <a href="{{ route('tenant.roles.index', ['subdomain' => request()->route('subdomain')]) }}" class="kt-btn kt-btn-outline">Discard</a>
+                    <button type="submit" class="kt-btn kt-btn-primary">
+                        <span class="indicator-label">Create Role</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </section>
 @endsection
+
+@push('custom-scripts')
+    <script>
+        const selectAll = document.getElementById('kt_roles_select_all');
+        const permissionBoxes = document.querySelectorAll('.permission-checkbox');
+
+        selectAll?.addEventListener('change', function (event) {
+            permissionBoxes.forEach((checkbox) => {
+                checkbox.checked = event.target.checked;
+            });
+        });
+
+        permissionBoxes.forEach((checkbox) => {
+            checkbox.addEventListener('change', () => {
+                const checkedCount = [...permissionBoxes].filter((input) => input.checked).length;
+                if (selectAll) {
+                    selectAll.checked = checkedCount === permissionBoxes.length;
+                }
+            });
+        });
+    </script>
+@endpush

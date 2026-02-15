@@ -1,178 +1,188 @@
-@extends('layouts.admin.master')
+@extends('layouts.metronic.app')
 
 @section('title', __('locale.labels.invoices'))
 
 @section('content')
-    <div class="post d-flex flex-column-fluid" id="kt_post">
-        <div id="kt_content_container" class="container-xxl">
-            <div class="d-flex flex-column flex-lg-row">
-                <div class="flex-lg-row-fluid me-lg-15 order-2 order-lg-1 mb-10 mb-lg-0">
-                    <div class="card card-flush pt-3 mb-5 mb-xl-10">
-                        <div class="card-header">
-                            <div class="card-title">
-                                <h2>{{ __('locale.labels.invoices') }}</h2>
-                            </div>
-                            <div class="card-toolbar">
-                                @can('update tenant')
-                                    <a href="javascript:void(0)" onclick="adminTopupTenantCredit({{ $subscription->tenant->id }})" class="btn btn-light-primary">{{ __('Add Credit') }}</a>
-                                @endcan
-                            </div>
-                        </div>
-                        <div class="card-body pt-2">
-                            <table id="customer_invoices" class="table align-middle table-row-dashed fs-6 fw-bolder gs-0 gy-4 p-0 m-0">
-                                <thead class="border-bottom border-gray-200 fs-7 text-uppercase fw-bolder">
-                                    <tr class="text-start text-gray-400">
-                                        <th class="min-w-100px">Order ID</th>
-                                        <th class="min-w-100px">Amount</th>
-                                        <th class="min-w-100px">Status</th>
-                                        <th class="min-w-125px">Date</th>
-                                        <th class="w-100px">Invoice</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="fs-6 fw-bold text-gray-600">
-                                    @foreach ($subscription_logs as $subscription_log)
-                                        <tr>
-                                            <td>
-                                                <a href="{{ route('tenants.subscriptions.invoice', $subscription_log->uuid) }}" class="text-gray-600 text-hover-primary">{{ $subscription_log->transaction_id }}</a>
-                                            </td>
-                                            <td class="text-success">{{ App\Libraries\Helper::formatAmountWithCurrencySymbol($subscription_log->amount) }}</td>
-                                            <td>{!! $subscription_log->getStatusLabel() !!}</td>
-                                            <td>{{ App\Libraries\Helper::getFormattedDateString($subscription_log->date) }}</td>
-                                            <td class="">
-                                                <button class="btn btn-sm btn-light btn-active-light-primary">Download</button>
-                                            </td>
-                                        </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        </div>
+    @php
+        $tenant = $subscription->tenant ?? null;
+        $tenantLogo = $tenant?->logo_url ?: $tenant?->gravatar;
+        $status = $subscription->provider_status ?? $subscription->status ?? 'unknown';
+        $statusClass = match ($status) {
+            'active', 'paid', 'succeeded' => 'kt-badge-success',
+            'past_due', 'pending' => 'kt-badge-warning',
+            'cancelled', 'canceled' => 'kt-badge-secondary',
+            'failed' => 'kt-badge-destructive',
+            default => 'kt-badge-secondary',
+        };
+        $subscriptionLogs = $subscription_logs ?? collect();
+        $subscriptionTransaction = $subscription_transaction ?? null;
+        $topupRoute = Route::has('tenants.subscriptions.admin-add-credit')
+            ? route('tenants.subscriptions.admin-add-credit', $subscription->uuid ?? $subscription->id)
+            : null;
+    @endphp
+
+    <section class="grid gap-6">
+        <div class="rounded-xl border border-border bg-background p-6 lg:p-8">
+            <div class="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                    <p class="text-xs uppercase tracking-wide text-muted-foreground">Tenant Subscription</p>
+                    <h1 class="mt-2 text-2xl font-semibold text-foreground">Subscription Overview</h1>
+                    <div class="mt-2 flex flex-wrap items-center gap-2">
+                        <span class="kt-badge {{ $statusClass }}">{{ strtoupper($status) }}</span>
+                        @if($tenant)
+                            <span class="text-xs text-muted-foreground">{{ $tenant->name }}</span>
+                        @endif
                     </div>
                 </div>
-
-
-                <div class="flex-column flex-lg-row-auto w-lg-250px w-xl-300px mb-10 order-1 order-lg-2">
-                    <div class="card card-flush mb-0" data-kt-sticky="true" data-kt-sticky-name="subscription-summary" data-kt-sticky-offset="{default: false, lg: '200px'}" data-kt-sticky-width="{lg: '250px', xl: '300px'}" data-kt-sticky-left="auto" data-kt-sticky-top="150px" data-kt-sticky-animation="false" data-kt-sticky-zindex="95">
-                        <div class="card-header">
-                            <div class="card-title">
-                                <h2>Active Subscription</h2>
-                            </div>
-                            <div class="card-toolbar">
-                                <a href="#" class="btn btn-sm btn-light btn-icon" data-kt-menu-trigger="click" data-kt-menu-placement="bottom-end">
-                                    <span class="svg-icon svg-icon-3">
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
-                                            <rect x="10" y="10" width="4" height="4" rx="2" fill="black" />
-                                            <rect x="17" y="10" width="4" height="4" rx="2" fill="black" />
-                                            <rect x="3" y="10" width="4" height="4" rx="2" fill="black" />
-                                        </svg>
-                                    </span>
-                                </a>
-                                <div class="menu menu-sub menu-sub-dropdown menu-column menu-rounded menu-gray-600 menu-state-bg-light-primary fw-bold fs-6 w-200px py-4 d-none" data-kt-menu="true">
-                                    <div class="menu-item px-3">
-                                        <a href="#" class="menu-link px-3">Pause Subscription</a>
-                                    </div>
-                                    <div class="menu-item px-3">
-                                        <a href="#" class="menu-link px-3" data-kt-subscriptions-view-action="delete">Edit Subscription</a>
-                                    </div>
-                                    <div class="menu-item px-3">
-                                        <a href="#" class="menu-link text-danger px-3" data-kt-subscriptions-view-action="edit">Cancel Subscription</a>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="card-body pt-0 fs-6">
-                            <div class="mb-7">
-                                <div class="d-flex align-items-center">
-                                    <div class="symbol symbol-60px symbol-circle me-3">
-                                        <img alt="Pic" src="{{ App\Libraries\Helper::generateRetroGravatar($subscription->tenant->email) }}" />
-                                    </div>
-                                    <div class="d-flex flex-column">
-                                        <a href="#" class="fs-4 fw-bolder text-gray-900 text-hover-primary me-2">{{ $subscription->tenant->name }}</a>
-                                        <a href="#" class="fw-bold text-gray-600 text-hover-primary">{{ $subscription->tenant->email }}</a>
-                                    </div>
-                                </div>
-                            </div>
-
-                            @if (!is_null($subscription))
-                                <div class="separator separator-dashed mb-7"></div>
-                                <div class="mb-10">
-                                    <h5 class="mb-4">Payment Method</h5>
-                                    <div class="mb-0">
-                                        <div class="fw-bold text-gray-600 d-flex align-items-center">
-                                            {{ ucfirst(str_replace('_', ' ', $subscription_transaction->payment_method ?? 'Cash')) }}
-                                        <img src="{{ asset('assets/media/svg/card-logos/mastercard.svg') }}" class="w-35px ms-2" alt="" /></div>
-                                    </div>
-                                </div>
-                                <div class="separator separator-dashed mb-7"></div>
-                                <div class="mb-10">
-                                    <h5 class="mb-4">Subscription Details</h5>
-                                    <table class="table fs-6 fw-bold gs-0 gy-2 gx-2">
-                                        <tr class="">
-                                            <td class="text-gray-400">Amount:</td>
-                                            <td class="text-gray-800">{{ App\Libraries\Helper::formatAmountWithCurrencySymbol($subscription->amount) }}</td>
-                                        </tr>
-                                        <tr class="">
-                                            <td class="text-gray-400">Currency:</td>
-                                            <td class="text-gray-800">{{ $subscription_transaction->currency }}</td>
-                                        </tr>
-                                        <tr class="">
-                                            <td class="text-gray-400">Subscription ID:</td>
-                                            <td class="text-gray-800">{{ $subscription->transaction_id }}</td>
-                                        </tr>
-                                        <tr class="">
-                                            <td class="text-gray-400">Started:</td>
-                                            <td class="text-gray-800">{{ App\Libraries\Helper::getFormattedDateString($subscription->date) }}</td>
-                                        </tr>
-                                        <tr class="">
-                                            <td class="text-gray-400">Status:</td>
-                                            <td>
-                                                <span class="badge badge-light-success">Active</span>
-                                            </td>
-                                        </tr>
-                                        <tr class="">
-                                            <td class="text-gray-400">Credit Balance</td>
-                                            <td class="text-gray-800">{{ $subscription->credit_balance }}</td>
-                                        </tr>
-                                    </table>
-                                </div>
-                            @endif
-                            <div class="mb-0 d-none">
-                                <a href="{{ route('subscription.topup') }}" class="btn btn-primary" id="kt_subscriptions_create_button">Top Up</a>
-                            </div>
-                        </div>
-                    </div>
-                    <!--end::Card-->
+                <div class="flex flex-wrap items-center gap-3">
+                    @can('update tenant')
+                        @if($topupRoute)
+                            <button type="button" class="kt-btn kt-btn-primary" data-kt-modal-toggle="#admin_topup_tenant_credit">
+                                <i class="ki-filled ki-plus text-base"></i>
+                                {{ __('Add Credit') }}
+                            </button>
+                        @else
+                            <span class="text-xs text-muted-foreground">Top up unavailable</span>
+                        @endif
+                    @endcan
                 </div>
-                <!--end::Sidebar-->
             </div>
-            <!--end::Layout-->
         </div>
-        <!--end::Container-->
 
-        @include('admin.tenants.subscription.modals.create')
-    </div>
+        <div class="grid gap-6 lg:grid-cols-3">
+            <div class="lg:col-span-2 rounded-xl border border-border bg-background p-6">
+                <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                    <h2 class="text-lg font-semibold text-foreground">Invoices & Payments</h2>
+                    <span class="text-xs text-muted-foreground">Recent activity for this subscription.</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="kt-table" id="tenant-subscription-invoices">
+                        <thead>
+                            <tr class="text-xs uppercase text-muted-foreground">
+                                <th>Transaction ID</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                                <th class="text-right">Invoice</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-sm text-foreground">
+                            @forelse ($subscriptionLogs as $log)
+                                @php
+                                    $logStatus = $log->status ?? $log->provider_status ?? 'unknown';
+                                    $logStatusClass = match ($logStatus) {
+                                        'active', 'paid', 'succeeded' => 'kt-badge-success',
+                                        'past_due', 'pending' => 'kt-badge-warning',
+                                        'cancelled', 'canceled' => 'kt-badge-secondary',
+                                        'failed' => 'kt-badge-destructive',
+                                        default => 'kt-badge-secondary',
+                                    };
+                                    $logDate = $log->date ?? $log->created_at;
+                                @endphp
+                                <tr>
+                                    <td>
+                                        @if(Route::has('tenants.subscriptions.invoice'))
+                                            <a href="{{ route('tenants.subscriptions.invoice', $log->uuid ?? $log->id) }}" class="text-foreground hover:text-primary">
+                                                {{ $log->transaction_id ?? $log->provider_transaction_id ?? $log->id }}
+                                            </a>
+                                        @else
+                                            <span>{{ $log->transaction_id ?? $log->provider_transaction_id ?? $log->id }}</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        @if(isset($log->amount))
+                                            {{ App\Libraries\Helper::formatAmountWithCurrencySymbol($log->amount, $log->currency ?? null, isset($log->amount) && is_int($log->amount)) }}
+                                        @else
+                                            <span class="text-xs text-muted-foreground">N/A</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        <span class="kt-badge {{ $logStatusClass }}">{{ strtoupper($logStatus) }}</span>
+                                    </td>
+                                    <td>
+                                        <span class="text-xs text-muted-foreground">{{ $logDate?->format('M d, Y') }}</span>
+                                    </td>
+                                    <td class="text-right">
+                                        <button type="button" class="kt-btn kt-btn-sm kt-btn-outline">Download</button>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="5" class="text-center text-sm text-muted-foreground">No invoices recorded yet.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="rounded-xl border border-border bg-background p-6">
+                <div class="flex items-center gap-3">
+                    @if($tenantLogo)
+                        <img src="{{ $tenantLogo }}" alt="{{ $tenant?->name ?? 'Tenant' }}" class="size-12 rounded-full object-cover" />
+                    @else
+                        <div class="size-12 rounded-full bg-muted flex items-center justify-center text-xs text-muted-foreground">NA</div>
+                    @endif
+                    <div>
+                        <div class="text-base font-semibold text-foreground">{{ $tenant?->name ?? 'Unknown Tenant' }}</div>
+                        <div class="text-xs text-muted-foreground">{{ $tenant?->email }}</div>
+                    </div>
+                </div>
+
+                <div class="mt-6 space-y-4 text-sm">
+                    <div>
+                        <div class="text-xs uppercase text-muted-foreground">Plan</div>
+                        <div class="text-sm text-foreground">{{ $subscription->provider_plan ?? $subscription->name ?? 'N/A' }}</div>
+                    </div>
+                    <div>
+                        <div class="text-xs uppercase text-muted-foreground">Subscription ID</div>
+                        <div class="text-sm text-foreground">{{ $subscription->provider_id ?? $subscription->transaction_id ?? $subscription->id }}</div>
+                    </div>
+                    <div>
+                        <div class="text-xs uppercase text-muted-foreground">Current Period End</div>
+                        <div class="text-sm text-foreground">{{ $subscription->current_period_end?->format('M d, Y') ?? $subscription->ends_at?->format('M d, Y') ?? 'Auto-renew' }}</div>
+                    </div>
+                    <div>
+                        <div class="text-xs uppercase text-muted-foreground">Payment Method</div>
+                        <div class="text-sm text-foreground">
+                            {{ ucfirst(str_replace('_', ' ', $subscriptionTransaction?->payment_method ?? 'N/A')) }}
+                        </div>
+                    </div>
+                    <div>
+                        <div class="text-xs uppercase text-muted-foreground">Status</div>
+                        <span class="kt-badge {{ $statusClass }}">{{ strtoupper($status) }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    @include('admin.tenants.subscription.modals.create')
 @endsection
+
+@push('styles')
+    <link href="{{ asset('assets/plugins/global/plugins.bundle.css') }}" rel="stylesheet" type="text/css" />
+    <link href="{{ asset('assets/plugins/custom/datatables/datatables.bundle.css') }}" rel="stylesheet" type="text/css" />
+@endpush
+
+@push('vendor-scripts')
+    <script src="{{ asset('assets/plugins/global/plugins.bundle.js') }}"></script>
+    <script src="{{ asset('assets/plugins/custom/datatables/datatables.bundle.js') }}"></script>
+@endpush
 
 @push('custom-scripts')
     <script src="{{ asset('js/scripts.js') }}"></script>
     <script>
-        $("#customer_invoices").DataTable({
+        $('#tenant-subscription-invoices').DataTable({
             "language": {
-             "lengthMenu": "Show _MENU_",
+                "lengthMenu": "Show _MENU_",
             },
             "lengthMenu": [[25, 50, 100, 250, 500, 1000, -1], [25, 50, 100, 250, 500, 1000, "All"]],
             "responsive": true,
             "dom":
-             "<'row'" +
-             "<'col-sm-6 d-flex align-items-center justify-conten-start'l>" +
-             "<'col-sm-6 d-flex align-items-center justify-content-end'f>" +
-             ">" +
-
-             "<'table-responsive'tr>" +
-
-             "<'row'" +
-             "<'col-sm-12 col-md-5 d-flex align-items-center justify-content-center justify-content-md-start'i>" +
-             "<'col-sm-12 col-md-7 d-flex align-items-center justify-content-center justify-content-md-end'p>" +
-             ">",
-           });
+                "<'flex flex-wrap items-center justify-between gap-4 mb-4'lf>" +
+                "<'table-responsive'tr>" +
+                "<'flex flex-wrap items-center justify-between gap-4 mt-4'ip>",
+        });
     </script>
 @endpush

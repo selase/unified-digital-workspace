@@ -8,7 +8,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Tax;
-use App\Models\User;
 use App\Notifications\InvoiceIssued;
 use App\Services\Tenancy\PdfInvoiceService;
 use Illuminate\Http\Request;
@@ -27,7 +26,7 @@ final class InvoiceController extends Controller
             $search = $request->input('search');
             $query->where(function ($q) use ($search) {
                 $q->where('number', 'like', "%{$search}%")
-                  ->orWhereHas('tenant', fn($q) => $q->where('name', 'like', "%{$search}%"));
+                    ->orWhereHas('tenant', fn ($q) => $q->where('name', 'like', "%{$search}%"));
             });
         }
 
@@ -65,7 +64,7 @@ final class InvoiceController extends Controller
     public function download(Invoice $invoice, PdfInvoiceService $pdfService)
     {
         $this->authorize('access-superadmin-dashboard');
-        
+
         return $pdfService->download($invoice);
     }
 
@@ -90,7 +89,7 @@ final class InvoiceController extends Controller
         $this->authorize('access-superadmin-dashboard');
 
         $ids = $request->input('ids', []);
-        
+
         $invoices = Invoice::whereIn('id', $ids)
             ->where('status', Invoice::STATUS_DRAFT)
             ->get();
@@ -101,7 +100,7 @@ final class InvoiceController extends Controller
             $this->notifyTenant($invoice);
         }
 
-        return back()->with('success', $invoices->count() . " invoices have been issued and notified.");
+        return back()->with('success', $invoices->count().' invoices have been issued and notified.');
     }
 
     public function resend(Invoice $invoice)
@@ -115,17 +114,6 @@ final class InvoiceController extends Controller
         $this->notifyTenant($invoice);
 
         return back()->with('success', "Invoice {$invoice->number} notification has been resent.");
-    }
-
-    private function notifyTenant(Invoice $invoice): void
-    {
-        // Find users in this tenant to notify. 
-        // We look for users with 'admin' role or just all users if it's a small tenant.
-        $users = $invoice->tenant->users()->get();
-        
-        if ($users->isNotEmpty()) {
-            Notification::send($users, new InvoiceIssued($invoice));
-        }
     }
 
     public function addAdjustment(Request $request, Invoice $invoice)
@@ -176,7 +164,7 @@ final class InvoiceController extends Controller
     {
         $this->authorize('access-superadmin-dashboard');
 
-        $tenants = \App\Models\Tenant::orderBy('name')->get(['id', 'name']);
+        $tenants = \App\Models\Tenant::orderBy('name')->get(['id', 'name', 'slug']);
 
         return view('admin.billing.invoices.create', [
             'tenants' => $tenants,
@@ -199,9 +187,9 @@ final class InvoiceController extends Controller
         ]);
 
         $tenant = \App\Models\Tenant::findOrFail($validated['tenant_id']);
-        
+
         // Generate Invoice Number
-        $number = 'INV-' . date('Ymd') . '-' . strtoupper(\Illuminate\Support\Str::random(4));
+        $number = 'INV-'.date('Ymd').'-'.mb_strtoupper(\Illuminate\Support\Str::random(4));
 
         $invoice = Invoice::create([
             'tenant_id' => $tenant->id,
@@ -222,10 +210,21 @@ final class InvoiceController extends Controller
             ->with('success', 'Draft invoice created. Please add line items.');
     }
 
+    private function notifyTenant(Invoice $invoice): void
+    {
+        // Find users in this tenant to notify.
+        // We look for users with 'admin' role or just all users if it's a small tenant.
+        $users = $invoice->tenant->users()->get();
+
+        if ($users->isNotEmpty()) {
+            Notification::send($users, new InvoiceIssued($invoice));
+        }
+    }
+
     private function recalculateTotals(Invoice $invoice): void
     {
         $subtotal = $invoice->items()->sum('subtotal');
-        $taxCalc = Tax::calculateFor((float)$subtotal);
+        $taxCalc = Tax::calculateFor((float) $subtotal);
 
         $invoice->update([
             'subtotal' => $subtotal,

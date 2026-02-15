@@ -33,6 +33,23 @@ final class Helper
         return Date::parse($date)->toFormattedDateString();
     }
 
+    public static function formatAmountWithCurrencySymbol(int|float|string|null $amount, ?string $currency = null, bool $isMinorUnit = false): string
+    {
+        $numericAmount = is_numeric($amount) ? (float) $amount : 0.0;
+
+        if ($isMinorUnit) {
+            $numericAmount /= 100;
+        }
+
+        $currencyCode = mb_strtoupper($currency ?? 'USD');
+        $symbol = match ($currencyCode) {
+            'USD' => '$',
+            default => $currencyCode.' ',
+        };
+
+        return $symbol.number_format($numericAmount, 2);
+    }
+
     public static function getInitials($str): ?string
     {
         if (preg_match_all('/\b(\w)/', mb_strtoupper((string) $str), $m)) {

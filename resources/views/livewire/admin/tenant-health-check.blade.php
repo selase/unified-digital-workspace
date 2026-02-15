@@ -1,96 +1,88 @@
 <div>
-    <div class="card card-flush mb-6">
-        <div class="card-header pt-7">
-            <h3 class="card-title align-items-start flex-column">
-                <span class="card-label fw-bolder text-dark">Infrastructure Health</span>
-                <span class="text-muted mt-1 fw-bold fs-7">Real-time status of tenant resources</span>
-            </h3>
-            <div class="card-toolbar">
-                <button wire:click="runCheck" class="btn btn-sm btn-light-primary" wire:loading.attr="disabled">
+    <div class="mb-6 rounded-xl border border-border bg-background p-6">
+        <div class="flex flex-wrap items-start justify-between gap-3">
+            <div>
+                <h3 class="text-lg font-semibold text-foreground">Infrastructure Health</h3>
+                <p class="mt-1 text-xs text-muted-foreground">Real-time status of tenant resources.</p>
+            </div>
+            <div>
+                <button wire:click="runCheck" class="kt-btn kt-btn-sm kt-btn-primary" wire:loading.attr="disabled">
                     <span wire:loading.remove>Run Full Health Check</span>
                     <span wire:loading>Checking...</span>
                 </button>
             </div>
         </div>
-        <div class="card-body">
+
+        <div class="mt-6">
             @if($results)
                 @if(isset($results['error']))
-                    <div class="alert alert-danger d-flex align-items-center p-5 mb-10">
-                        <span class="svg-icon svg-icon-2hx svg-icon-danger me-4">
-                            <i class="fas fa-exclamation-triangle fs-2"></i>
+                    <div class="mb-6 flex items-start gap-3 rounded-lg border border-destructive/40 bg-destructive/10 p-4">
+                        <span class="mt-0.5 text-destructive">
+                            <i class="fas fa-exclamation-triangle text-xl"></i>
                         </span>
-                        <div class="d-flex flex-column">
-                            <h4 class="mb-1 text-danger">System Error</h4>
-                            <span>{{ $results['error'] }}</span>
+                        <div class="space-y-1">
+                            <h4 class="text-sm font-semibold text-destructive">System Error</h4>
+                            <p class="text-sm text-destructive">{{ $results['error'] }}</p>
                         </div>
                     </div>
                 @else
-                    <div class="row g-6">
-                        {{-- Database Check --}}
-                        <div class="col-md-4">
-                            <div class="border border-dashed rounded py-3 px-4 mb-3 {{ $results['database']['status'] === 'ok' ? 'border-success' : 'border-danger' }}">
-                                <div class="d-flex align-items-center">
-                                    <div class="fs-2 fw-bolder text-gray-800 me-2">Database</div>
-                                    @if($results['database']['status'] === 'ok')
-                                        <span class="badge badge-light-success">Active</span>
-                                    @else
-                                        <span class="badge badge-light-danger">Error</span>
-                                    @endif
-                                </div>
-                                <div class="fw-bold fs-7 text-gray-500 mt-2">
-                                    {{ $results['database']['message'] }}
-                                    @if(isset($results['database']['database_name']))
-                                        <br><span class="text-muted">DB: {{ $results['database']['database_name'] }}</span>
-                                    @endif
-                                </div>
+                    <div class="grid gap-4 md:grid-cols-3">
+                        <div class="rounded-lg border border-dashed p-4 {{ $results['database']['status'] === 'ok' ? 'border-success/40 bg-success/5' : 'border-destructive/40 bg-destructive/5' }}">
+                            <div class="flex items-center justify-between gap-2">
+                                <p class="text-sm font-semibold text-foreground">Database</p>
+                                @if($results['database']['status'] === 'ok')
+                                    <span class="kt-badge kt-badge-success">Active</span>
+                                @else
+                                    <span class="kt-badge kt-badge-destructive">Error</span>
+                                @endif
                             </div>
+                            <p class="mt-2 text-xs text-muted-foreground">
+                                {{ $results['database']['message'] }}
+                                @if(isset($results['database']['database_name']))
+                                    <br><span class="text-muted-foreground">DB: {{ $results['database']['database_name'] }}</span>
+                                @endif
+                            </p>
                         </div>
 
-                        {{-- Storage Check --}}
-                        <div class="col-md-4">
-                            <div class="border border-dashed rounded py-3 px-4 mb-3 {{ $results['storage']['status'] === 'ok' ? 'border-success' : 'border-danger' }}">
-                                <div class="d-flex align-items-center">
-                                    <div class="fs-2 fw-bolder text-gray-800 me-2">Storage</div>
-                                    @if($results['storage']['status'] === 'ok')
-                                        <span class="badge badge-light-success">Active</span>
-                                    @else
-                                        <span class="badge badge-light-danger">Error</span>
-                                    @endif
-                                </div>
-                                <div class="fw-bold fs-7 text-gray-500 mt-2">
-                                    {{ $results['storage']['message'] }}
-                                    @if(isset($results['storage']['disk']))
-                                        <br><span class="text-muted">Driver: {{ $results['storage']['disk'] }}</span>
-                                    @endif
-                                </div>
+                        <div class="rounded-lg border border-dashed p-4 {{ $results['storage']['status'] === 'ok' ? 'border-success/40 bg-success/5' : 'border-destructive/40 bg-destructive/5' }}">
+                            <div class="flex items-center justify-between gap-2">
+                                <p class="text-sm font-semibold text-foreground">Storage</p>
+                                @if($results['storage']['status'] === 'ok')
+                                    <span class="kt-badge kt-badge-success">Active</span>
+                                @else
+                                    <span class="kt-badge kt-badge-destructive">Error</span>
+                                @endif
                             </div>
+                            <p class="mt-2 text-xs text-muted-foreground">
+                                {{ $results['storage']['message'] }}
+                                @if(isset($results['storage']['disk']))
+                                    <br><span class="text-muted-foreground">Driver: {{ $results['storage']['disk'] }}</span>
+                                @endif
+                            </p>
                         </div>
 
-                        {{-- Features Check --}}
-                        <div class="col-md-4">
-                            <div class="border border-dashed rounded py-3 px-4 mb-3 {{ $results['features']['status'] === 'ok' ? 'border-success' : 'border-warning' }}">
-                                <div class="d-flex align-items-center">
-                                    <div class="fs-2 fw-bolder text-gray-800 me-2">Features</div>
-                                    @if($results['features']['status'] === 'ok')
-                                        <span class="badge badge-light-success">Synced</span>
-                                    @else
-                                        <span class="badge badge-light-warning">Warning</span>
-                                    @endif
-                                </div>
-                                <div class="fw-bold fs-7 text-gray-500 mt-2">
-                                    {{ $results['features']['message'] }}
-                                </div>
+                        <div class="rounded-lg border border-dashed p-4 {{ $results['features']['status'] === 'ok' ? 'border-success/40 bg-success/5' : 'border-warning/50 bg-warning/10' }}">
+                            <div class="flex items-center justify-between gap-2">
+                                <p class="text-sm font-semibold text-foreground">Features</p>
+                                @if($results['features']['status'] === 'ok')
+                                    <span class="kt-badge kt-badge-success">Synced</span>
+                                @else
+                                    <span class="kt-badge kt-badge-warning">Warning</span>
+                                @endif
                             </div>
+                            <p class="mt-2 text-xs text-muted-foreground">
+                                {{ $results['features']['message'] }}
+                            </p>
                         </div>
                     </div>
 
-                    <div class="text-muted fs-8 mt-4">
+                    <p class="mt-4 text-xs text-muted-foreground">
                         Last checked: {{ \Carbon\Carbon::parse($results['last_checked_at'])->diffForHumans() }}
-                    </div>
+                    </p>
                 @endif
             @else
-                <div class="d-flex flex-center flex-column py-5">
-                    <span class="text-muted fw-bold">No health check data available. Click "Run Full Health Check" to begin.</span>
+                <div class="rounded-lg border border-dashed border-border p-5 text-center">
+                    <span class="text-sm text-muted-foreground">No health check data available. Click "Run Full Health Check" to begin.</span>
                 </div>
             @endif
         </div>

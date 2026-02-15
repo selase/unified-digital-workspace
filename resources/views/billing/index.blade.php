@@ -1,205 +1,204 @@
-@extends('layouts.admin.master')
+@extends('layouts.metronic.app')
 
 @section('title', 'Billing & Subscription')
 
 @section('content')
-<div class="post d-flex flex-column-fluid" id="kt_post">
-    <div id="kt_content_container" class="container-xxl">
-        
-        <div class="row g-5 g-xl-10 mb-5 mb-xl-10">
-            <!-- Subscription Summary -->
-            <div class="col-md-6 col-lg-6 col-xl-6 col-xxl-3">
-                <div class="card card-flush h-md-50 mb-5 mb-xl-10">
-                    <div class="card-header pt-5">
-                        <div class="card-title d-flex flex-column">
-                            <div class="d-flex align-items-center">
-                                <span class="fs-4 fw-bold text-gray-400 me-1">$</span>
-                                <span class="fs-2hx fw-bolder text-dark me-2 lh-1 ls-n2">{{ number_format((float)$tenant->package?->price ?? 0, 2) }}</span>
-                                <span class="badge badge-light-success fs-base">
-                                    {{ ucfirst($tenant->package?->interval ?? 'Free') }}
-                                </span>
-                            </div>
-                            <span class="text-gray-400 pt-1 fw-bold fs-6">Base Plan: {{ $tenant->package?->name ?? 'None' }}</span>
-                        </div>
-                    </div>
-                    <div class="card-body d-flex flex-column justify-content-end pe-0">
-                        <span class="fs-6 fw-bolder text-gray-800 d-block mb-2">Next Invoice: {{ $subscription?->current_period_end?->format('M d, Y') ?? 'N/A' }}</span>
-                        <div class="d-flex flex-stack flex-wrap">
-                            <div class="symbol-group symbol-hover flex-nowrap">
-                                <span class="badge badge-light-primary fw-bold px-4 py-2">
-                                    {{ ucfirst($subscription?->provider_status ?? $tenant->status->value ?? $tenant->status) }}
-                                </span>
-                            </div>
-                            <a href="{{ route('tenant.pricing') }}" class="btn btn-sm btn-primary">Upgrade Plan</a>
-                        </div>
-                    </div>
+    <section class="grid gap-6">
+        <div class="rounded-xl border border-border bg-background p-6 lg:p-8">
+            <div class="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                    <p class="text-xs uppercase tracking-wide text-muted-foreground">Billing</p>
+                    <h1 class="mt-2 text-2xl font-semibold text-foreground">Billing & Subscription</h1>
+                    <p class="mt-2 text-sm text-muted-foreground">Track invoices, plan status, and monthly usage charges.</p>
                 </div>
-
-                <!-- Projected Spend Card (Metered) -->
-                <div class="card card-flush h-md-50 mb-5 mb-xl-10">
-                    <div class="card-header pt-5">
-                        <div class="card-title d-flex flex-column">
-                            <span class="fs-2hx fw-bolder text-dark me-2 lh-1 ls-n2">Projected</span>
-                            <span class="text-gray-400 pt-1 fw-bold fs-6">Accrued Metered Charges</span>
-                        </div>
-                    </div>
-                    <div class="card-body d-flex align-items-end pt-0">
-                        <div class="d-flex align-items-center flex-column mt-3 w-100">
-                            <div class="d-flex justify-content-between w-100 mt-auto mb-2">
-                                <span class="fw-boldest fs-6 text-dark">${{ number_format((float)($accruedMetered ?? 0), 2) }}</span>
-                                <span class="fw-bolder fs-6 text-gray-400">Month to Date</span>
-                            </div>
-                            <div class="h-8px mx-3 w-100 bg-light-primary rounded">
-                                <div class="bg-primary rounded h-8px" role="progressbar" style="width: 65%;" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Spending Analytics Chart -->
-            <div class="col-md-6 col-lg-6 col-xl-6 col-xxl-9">
-                <div class="card card-flush h-md-100">
-                    <div class="card-header pt-5">
-                        <h3 class="card-title align-items-start flex-column">
-                            <span class="card-label fw-bolder text-dark">Spending Over Time</span>
-                            <span class="text-muted mt-1 fw-bold fs-7">Last 6 months revenue contribution</span>
-                        </h3>
-                        <div class="card-toolbar">
-                             <a href="{{ route('tenant.settings.billing') }}" class="btn btn-sm btn-light">Billing Settings</a>
-                        </div>
-                    </div>
-                    <div class="card-body pt-0 ps-4 pr-4">
-                         <div id="kt_billing_chart" style="height: 300px"></div>
-                    </div>
+                <div class="flex flex-wrap items-center gap-3">
+                    <a href="{{ route('tenant.pricing') }}" class="kt-btn kt-btn-primary">Upgrade Plan</a>
+                    <a href="{{ route('tenant.settings.billing') }}" class="kt-btn kt-btn-outline">Billing Settings</a>
                 </div>
             </div>
         </div>
 
-        <!-- Invoices & Transactions -->
-        <div class="row g-5 g-xl-10">
-            <div class="col-xl-8">
-                <div class="card card-flush shadow-sm">
-                    <div class="card-header pt-7">
-                        <h3 class="card-title align-items-start flex-column">
-                            <span class="card-label fw-bolder text-dark">Invoice History</span>
-                            <span class="text-muted mt-1 fw-bold fs-7">All officially issued invoices</span>
-                        </h3>
+        <div class="grid gap-6 xl:grid-cols-4">
+            <div class="rounded-xl border border-border bg-background p-6 xl:col-span-1">
+                <p class="text-xs uppercase tracking-wide text-muted-foreground">Current Plan</p>
+                <h2 class="mt-3 text-3xl font-semibold text-foreground">${{ number_format((float) ($tenant->package?->price ?? 0), 2) }}</h2>
+                <div class="mt-2 flex items-center gap-2">
+                    <span class="kt-badge kt-badge-primary">{{ ucfirst($tenant->package?->interval ?? 'free') }}</span>
+                    <span class="text-sm text-muted-foreground">{{ $tenant->package?->name ?? 'No package selected' }}</span>
+                </div>
+                <div class="mt-6 space-y-2 text-sm">
+                    <div class="flex items-center justify-between gap-3">
+                        <span class="text-muted-foreground">Next Invoice</span>
+                        <span class="font-medium text-foreground">{{ $subscription?->current_period_end?->format('M d, Y') ?? 'N/A' }}</span>
                     </div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-row-dashed table-row-gray-300 align-middle gs-0 gy-4">
-                                <thead>
-                                    <tr class="fw-bolder text-muted">
-                                        <th class="min-w-150px">Invoice Number</th>
-                                        <th class="min-w-100px">Period</th>
-                                        <th class="min-w-100px">Amount</th>
-                                        <th class="min-w-100px">Status</th>
-                                        <th class="min-w-100px text-end">Action</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @forelse($invoices as $invoice)
-                                        <tr>
-                                            <td><span class="fw-bolder text-gray-800">{{ $invoice->number }}</span></td>
-                                            <td>{{ $invoice->period_start->format('M Y') }}</td>
-                                            <td>${{ number_format((float)$invoice->total, 2) }}</td>
-                                            <td>
-                                                <span class="badge badge-light-{{ $invoice->status === 'paid' ? 'success' : 'primary' }}">
-                                                    {{ strtoupper($invoice->status) }}
-                                                </span>
-                                            </td>
-                                            <td class="text-end">
-                                                <a href="{{ route('billing.invoices.show', $invoice->id) }}" class="btn btn-sm btn-light-primary">View</a>
-                                            </td>
-                                        </tr>
-                                    @empty
-                                        <tr>
-                                            <td colspan="5" class="text-center text-muted">No invoices issued yet.</td>
-                                        </tr>
-                                    @endforelse
-                                </tbody>
-                            </table>
-                        </div>
+                    <div class="flex items-center justify-between gap-3">
+                        <span class="text-muted-foreground">Subscription</span>
+                        <span class="kt-badge kt-badge-success">{{ ucfirst($subscription?->provider_status ?? $tenant->status->value ?? (string) $tenant->status) }}</span>
                     </div>
                 </div>
             </div>
 
-            <div class="col-xl-4">
-                <div class="card card-flush shadow-sm">
-                    <div class="card-header pt-7">
-                        <h3 class="card-title align-items-start flex-column">
-                            <span class="card-label fw-bolder text-dark">Payment History</span>
-                        </h3>
+            <div class="rounded-xl border border-border bg-background p-6 xl:col-span-1">
+                <p class="text-xs uppercase tracking-wide text-muted-foreground">Projected</p>
+                <h2 class="mt-3 text-3xl font-semibold text-foreground">${{ number_format((float) ($accruedMetered ?? 0), 2) }}</h2>
+                <p class="mt-2 text-sm text-muted-foreground">Accrued metered charges this month.</p>
+                <div class="mt-6">
+                    <div class="h-2 rounded-full bg-accent">
+                        <div class="h-2 rounded-full bg-primary" style="width: 65%"></div>
                     </div>
-                    <div class="card-body">
-                        @forelse($transactions as $transaction)
-                            <div class="d-flex flex-stack mb-5">
-                                <div class="d-flex align-items-center me-3">
-                                    <div class="symbol symbol-35px me-3">
-                                        <span class="symbol-label bg-light-{{ $transaction->status === 'success' ? 'success' : 'warning' }}">
-                                            <i class="fas fa-receipt text-{{ $transaction->status === 'success' ? 'success' : 'warning' }}"></i>
+                    <p class="mt-2 text-xs text-muted-foreground">Month to date estimate</p>
+                </div>
+            </div>
+
+            <div class="rounded-xl border border-border bg-background p-6 xl:col-span-2">
+                <div class="flex items-center justify-between gap-4">
+                    <div>
+                        <h2 class="text-lg font-semibold text-foreground">Spending Analytics</h2>
+                        <p class="text-xs text-muted-foreground">Last six months revenue contribution.</p>
+                    </div>
+                </div>
+                <div class="mt-4 h-[300px]" id="kt_billing_chart"></div>
+            </div>
+        </div>
+
+        <div class="grid gap-6 xl:grid-cols-3">
+            <div class="rounded-xl border border-border bg-background p-6 xl:col-span-2">
+                <div class="mb-4">
+                    <h2 class="text-lg font-semibold text-foreground">Invoice History</h2>
+                    <p class="text-xs text-muted-foreground">All officially issued invoices.</p>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="kt-table">
+                        <thead>
+                            <tr class="text-xs uppercase text-muted-foreground">
+                                <th>Invoice Number</th>
+                                <th>Period</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                                <th class="text-end">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-sm text-foreground">
+                            @forelse($invoices as $invoice)
+                                <tr>
+                                    <td class="font-medium">{{ $invoice->number }}</td>
+                                    <td>{{ $invoice->period_start->format('M Y') }}</td>
+                                    <td>${{ number_format((float) $invoice->total, 2) }}</td>
+                                    <td>
+                                        <span class="kt-badge {{ $invoice->status === 'paid' ? 'kt-badge-success' : 'kt-badge-warning' }}">
+                                            {{ strtoupper($invoice->status) }}
                                         </span>
-                                    </div>
-                                    <div class="d-flex flex-column">
-                                        <span class="text-gray-800 fw-bolder fs-6">{{ $transaction->provider_transaction_id ?: 'Payment' }}</span>
-                                        <span class="text-muted fs-7">{{ $transaction->created_at->format('M d, Y') }}</span>
-                                    </div>
+                                    </td>
+                                    <td class="text-end">
+                                        <a href="{{ route('billing.invoices.show', $invoice->id) }}" class="kt-btn kt-btn-sm kt-btn-outline">View</a>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="5" class="py-6 text-center text-sm text-muted-foreground">No invoices issued yet.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="rounded-xl border border-border bg-background p-6">
+                <div class="mb-4">
+                    <h2 class="text-lg font-semibold text-foreground">Payment History</h2>
+                </div>
+
+                <div class="space-y-4">
+                    @forelse($transactions as $transaction)
+                        <div class="rounded-lg border border-border p-4">
+                            <div class="flex items-start justify-between gap-4">
+                                <div>
+                                    <p class="font-medium text-foreground">{{ $transaction->provider_transaction_id ?: 'Payment' }}</p>
+                                    <p class="text-xs text-muted-foreground">{{ $transaction->created_at->format('M d, Y') }}</p>
                                 </div>
                                 <div class="text-end">
-                                    <span class="text-gray-800 fw-boldest d-block">${{ number_format($transaction->amount / 100, 2) }}</span>
-                                    <div class="d-flex align-items-center justify-content-end gap-2">
-                                        <span class="badge badge-light-{{ $transaction->status === 'success' ? 'success' : 'warning' }} fs-8">{{ strtoupper($transaction->status) }}</span>
-                                        @if($transaction->status === 'success' || $transaction->status === 'succeeded')
-                                            <form action="{{ route('billing.refund', ['transaction' => $transaction->id, 'subdomain' => $tenant->slug]) }}" method="POST" onsubmit="return confirm('Issue refund?')">
-                                                @csrf
-                                                <button type="submit" class="btn btn-sm btn-light-danger py-1 px-2 fs-9" title="Refund">
-                                                    Refund
-                                                </button>
-                                            </form>
-                                        @endif
-                                    </div>
+                                    <p class="font-semibold text-foreground">${{ number_format($transaction->amount / 100, 2) }}</p>
+                                    <span class="kt-badge {{ in_array($transaction->status, ['success', 'succeeded'], true) ? 'kt-badge-success' : 'kt-badge-warning' }}">
+                                        {{ strtoupper($transaction->status) }}
+                                    </span>
                                 </div>
                             </div>
-                        @empty
-                            <div class="text-center text-muted py-10">No payments found.</div>
-                        @endforelse
-                    </div>
+
+                            @if(in_array($transaction->status, ['success', 'succeeded'], true))
+                                <form action="{{ route('billing.refund', ['transaction' => $transaction->id, 'subdomain' => $tenant->slug]) }}" method="POST" class="mt-3" onsubmit="return confirm('Issue refund?')">
+                                    @csrf
+                                    <button type="submit" class="kt-btn kt-btn-sm kt-btn-outline">Refund</button>
+                                </form>
+                            @endif
+                        </div>
+                    @empty
+                        <div class="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+                            No payments found.
+                        </div>
+                    @endforelse
+                </div>
+
+                <div class="mt-4">
+                    {{ $transactions->links() }}
                 </div>
             </div>
         </div>
-
-    </div>
-</div>
+    </section>
+@endsection
 
 @push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
-<script>
-    var options = {
-        series: [{
-            name: 'Spending',
-            data: @json(collect($monthlyStats)->pluck('amount')->map(fn($v) => $v / 100))
-        }],
-        chart: {
-            fontFamily: 'inherit',
-            type: 'bar',
-            height: 300,
-            toolbar: { show: false }
-        },
-        plotOptions: {
-            bar: {
-                borderRadius: 4,
-                columnWidth: '50%',
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            if (! window.ApexCharts) {
+                return;
             }
-        },
-        colors: ['#009EF7'],
-        xaxis: {
-            categories: @json(collect($monthlyStats)->pluck('label')),
-        }
-    };
 
-    var chart = new ApexCharts(document.querySelector("#kt_billing_chart"), options);
-    chart.render();
-</script>
+            const chartElement = document.querySelector('#kt_billing_chart');
+
+            if (! chartElement) {
+                return;
+            }
+
+            const options = {
+                series: [{
+                    name: 'Spending',
+                    data: @json(collect($monthlyStats)->pluck('amount')->map(fn ($value) => $value / 100)),
+                }],
+                chart: {
+                    fontFamily: 'Inter, sans-serif',
+                    type: 'bar',
+                    height: 300,
+                    toolbar: { show: false },
+                },
+                plotOptions: {
+                    bar: {
+                        borderRadius: 6,
+                        columnWidth: '50%',
+                    },
+                },
+                colors: ['#1b84ff'],
+                xaxis: {
+                    categories: @json(collect($monthlyStats)->pluck('label')),
+                    labels: {
+                        style: { colors: '#6b7280' },
+                    },
+                },
+                yaxis: {
+                    labels: {
+                        formatter: function (value) {
+                            return '$' + value.toFixed(0);
+                        },
+                    },
+                },
+                grid: {
+                    borderColor: '#e5e7eb',
+                },
+            };
+
+            const chart = new ApexCharts(chartElement, options);
+            chart.render();
+        });
+    </script>
 @endpush
-@endsection

@@ -1,30 +1,34 @@
-@extends('layouts.admin.master')
+@extends('layouts.metronic.app')
 
 @section('title', 'System Usage Analytics')
 
 @section('content')
-<div class="post d-flex flex-column-fluid" id="kt_post">
-    <div id="kt_content_container" class="container-xxl">
-        
-        <!-- Header Controls -->
-        <div class="d-flex flex-stack mb-5">
-            <h1 class="d-flex align-items-center text-dark fw-bolder fs-3 my-1">Usage Analytics</h1>
-            <div class="d-flex align-items-center gap-2">
-                <form action="{{ route('admin.billing.analytics.usage') }}" method="GET" class="d-flex align-items-center gap-3">
-                    <div class="w-200px">
-                        <select name="tenant_id" class="form-select form-select-sm form-select-solid" data-control="select2" data-placeholder="Filter by Tenant" onchange="this.form.submit()">
-                            <option value="" {{ !$selectedTenantId ? 'selected' : '' }}>Global / All System</option>
-                            @foreach($tenants as $tenant)
-                                <option value="{{ $tenant->id }}" {{ $selectedTenantId == $tenant->id ? 'selected' : '' }}>{{ $tenant->name }}</option>
-                            @endforeach
-                        </select>
+    <section class="grid gap-6">
+        @php
+            $usageMetrics = $usageMetrics ?? \App\Enum\UsageMetric::cases();
+        @endphp
+        <div class="rounded-xl border border-border bg-background p-6 lg:p-8">
+            <div class="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                    <p class="text-xs uppercase tracking-wide text-muted-foreground">Analytics</p>
+                    <h1 class="mt-2 text-2xl font-semibold text-foreground">Usage Analytics</h1>
+                    <p class="mt-2 text-sm text-muted-foreground">Monitor system throughput, storage, and database utilization.</p>
+                </div>
+                <form action="{{ route('admin.billing.analytics.usage') }}" method="GET"
+                    class="flex flex-wrap items-center gap-3">
+                    <select name="tenant_id" class="kt-select w-56" data-placeholder="Filter by Tenant"
+                        onchange="this.form.submit()">
+                        <option value="" {{ !$selectedTenantId ? 'selected' : '' }}>Global / All System</option>
+                        @foreach($tenants as $tenant)
+                            <option value="{{ $tenant->id }}" {{ $selectedTenantId == $tenant->id ? 'selected' : '' }}>{{ $tenant->name }}</option>
+                        @endforeach
+                    </select>
+                    <div class="flex items-center gap-2">
+                        <input type="date" name="start_date" class="kt-input" value="{{ $start_date }}" onchange="this.form.submit()">
+                        <span class="text-xs text-muted-foreground">to</span>
+                        <input type="date" name="end_date" class="kt-input" value="{{ $end_date }}" onchange="this.form.submit()">
                     </div>
-                    <div class="d-flex align-items-center gap-2">
-                        <input type="date" name="start_date" class="form-control form-control-sm form-control-solid" value="{{ $start_date }}" onchange="this.form.submit()">
-                        <span class="text-gray-500">to</span>
-                        <input type="date" name="end_date" class="form-control form-control-sm form-control-solid" value="{{ $end_date }}" onchange="this.form.submit()">
-                    </div>
-                    <select name="days" class="form-select form-select-sm form-select-solid w-125px" onchange="this.form.submit()">
+                    <select name="days" class="kt-select w-48" onchange="this.form.submit()">
                         <option value="1" {{ $days == 1 ? 'selected' : '' }}>Last 24 Hours</option>
                         <option value="7" {{ $days == 7 ? 'selected' : '' }}>Last 7 Days</option>
                         <option value="30" {{ $days == 30 ? 'selected' : '' }}>Last 30 Days</option>
@@ -34,195 +38,164 @@
             </div>
         </div>
 
-        <div class="row g-5 g-xl-10">
-            <!-- Global Throughput -->
-            <div class="col-xl-8">
-                <div class="card card-flush shadow-sm h-100">
-                    <div class="card-header pt-7">
-                        <h3 class="card-title align-items-start flex-column">
-                            <span class="card-label fw-bolder text-dark">Request Throughput</span>
-                            <span class="text-muted mt-1 fw-bold fs-7">Global system load over time</span>
-                        </h3>
-                    </div>
-                    <div class="card-body">
-                        <x-chart id="throughput-chart" type="line" :data="[
-                            'labels' => $requestTrend['labels'],
-                            'datasets' => [
-                                [
-                                    'label' => 'Requests',
-                                    'data' => $requestTrend['data'],
-                                    'borderColor' => '#009EF7',
-                                    'backgroundColor' => 'rgba(0, 158, 247, 0.1)',
-                                    'fill' => true,
-                                    'tension' => 0.4,
-                                    'pointRadius' => 0,
-                                ],
+        <div class="grid gap-6 xl:grid-cols-12">
+            <div class="rounded-xl border border-border bg-background p-6 xl:col-span-8">
+                <div>
+                    <h3 class="text-sm font-semibold uppercase text-foreground">Request Throughput</h3>
+                    <p class="text-xs text-muted-foreground">Global system load over time</p>
+                </div>
+                <div class="mt-4">
+                    <x-chart id="throughput-chart" type="line" :data="[
+                        'labels' => $requestTrend['labels'],
+                        'datasets' => [
+                            [
+                                'label' => 'Requests',
+                                'data' => $requestTrend['data'],
+                                'borderColor' => '#009EF7',
+                                'backgroundColor' => 'rgba(0, 158, 247, 0.1)',
+                                'fill' => true,
+                                'tension' => 0.4,
+                                'pointRadius' => 0,
                             ],
-                        ]" />
-                    </div>
+                        ],
+                    ]" />
                 </div>
             </div>
 
-            <!-- Error Distribution -->
-            <div class="col-xl-4">
-                <div class="card card-flush shadow-sm h-100">
-                    <div class="card-header pt-7">
-                        <h3 class="card-title align-items-start flex-column">
-                            <span class="card-label fw-bolder text-dark">Traffic Health</span>
-                            <span class="text-muted mt-1 fw-bold fs-7">Status code distribution</span>
-                        </h3>
-                    </div>
-                    <div class="card-body d-flex flex-column justify-content-center">
-                        <x-chart id="health-chart" type="doughnut" :data="[
-                            'labels' => $statusBreakdown['labels'],
-                            'datasets' => [
-                                [
-                                    'data' => $statusBreakdown['data'],
-                                    'backgroundColor' => ['#50CD89', '#F1416C', '#FFC700', '#009EF7'],
-                                ],
+            <div class="rounded-xl border border-border bg-background p-6 xl:col-span-4">
+                <div>
+                    <h3 class="text-sm font-semibold uppercase text-foreground">Traffic Health</h3>
+                    <p class="text-xs text-muted-foreground">Status code distribution</p>
+                </div>
+                <div class="mt-4">
+                    <x-chart id="health-chart" type="doughnut" :data="[
+                        'labels' => $statusBreakdown['labels'],
+                        'datasets' => [
+                            [
+                                'data' => $statusBreakdown['data'],
+                                'backgroundColor' => ['#50CD89', '#F1416C', '#FFC700', '#009EF7'],
                             ],
-                        ]" />
-                        <div class="mt-8">
-                            @foreach($statusBreakdown['labels'] as $index => $label)
-                                <div class="d-flex flex-stack mb-3">
-                                    <div class="d-flex align-items-center me-2">
-                                        <div class="symbol symbol-10px me-3">
-                                            <span class="symbol-label" style="background-color: {{ ['#50CD89', '#F1416C', '#FFC700', '#009EF7'][$index % 4] }}"></span>
-                                        </div>
-                                        <span class="text-gray-800 fw-bold">{{ $label }}</span>
-                                    </div>
-                                    <span class="text-gray-600 fw-bolder">{{ number_format($statusBreakdown['data'][$index]) }}</span>
-                                </div>
-                            @endforeach
+                        ],
+                    ]" />
+                </div>
+                <div class="mt-6 space-y-3">
+                    @foreach($statusBreakdown['labels'] as $index => $label)
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <span class="size-2 rounded-full" style="background-color: {{ ['#50CD89', '#F1416C', '#FFC700', '#009EF7'][$index % 4] }}"></span>
+                                <span class="text-sm text-foreground">{{ $label }}</span>
+                            </div>
+                            <span class="text-sm text-muted-foreground">{{ number_format($statusBreakdown['data'][$index]) }}</span>
                         </div>
-                    </div>
+                    @endforeach
                 </div>
             </div>
         </div>
 
-        <div class="row g-5 g-xl-10 mt-5">
-            <!-- Peak Hours Heatmap -->
-            <div class="col-xl-12">
-                <div class="card card-flush shadow-sm">
-                    <div class="card-header pt-7">
-                        <h3 class="card-title align-items-start flex-column">
-                            <span class="card-label fw-bolder text-dark">Engine Load Profile</span>
-                            <span class="text-muted mt-1 fw-bold fs-7">Aggregated hourly request volume (Peak Hours)</span>
-                        </h3>
+        <div class="rounded-xl border border-border bg-background p-6">
+            <div>
+                <h3 class="text-sm font-semibold uppercase text-foreground">Engine Load Profile</h3>
+                <p class="text-xs text-muted-foreground">Aggregated hourly request volume (Peak Hours)</p>
+            </div>
+            <div class="mt-4 flex flex-wrap gap-2">
+                @foreach($peakHours as $hour => $val)
+                    @php
+                        $max = max($peakHours) ?: 1;
+                        $opacity = 0.1 + (($val / $max) * 0.9);
+                        $color = $val > ($max * 0.8) ? '#F1416C' : '#009EF7';
+                    @endphp
+                    <div class="flex flex-col items-center grow min-w-24 rounded-lg border border-dashed border-border p-3"
+                        style="background-color: {{ $color }}{{ dechex(round($opacity * 255)) }};">
+                        <span class="text-xs text-muted-foreground mb-1">{{ sprintf('%02d:00', $hour) }}</span>
+                        <span class="text-sm font-semibold text-foreground">{{ number_format($val) }}</span>
                     </div>
-                    <div class="card-body">
-                        <div class="d-flex flex-wrap gap-2 justify-content-between">
-                            @foreach($peakHours as $hour => $val)
-                                @php
-                                    $max = max($peakHours) ?: 1;
-                                    $opacity = 0.1 + (($val / $max) * 0.9);
-                                    $color = $val > ($max * 0.8) ? '#F1416C' : '#009EF7';
-                                @endphp
-                                <div class="d-flex flex-column align-items-center flex-grow-1 min-w-50px p-3 rounded border border-dashed border-gray-300" 
-                                     style="background-color: {{ $color }}{{ dechex(round($opacity * 255)) }};">
-                                    <span class="fs-8 fw-bold text-gray-500 mb-1">{{ sprintf('%02d:00', $hour) }}</span>
-                                    <span class="fs-5 fw-bolder text-gray-800">{{ number_format($val) }}</span>
-                                </div>
-                            @endforeach
-                        </div>
-                    </div>
-                </div>
+                @endforeach
             </div>
         </div>
 
-        <div class="row g-5 g-xl-10 mt-5">
-            <!-- Infrastructure Resources -->
-            <div class="col-xl-6">
-                <div class="card card-flush shadow-sm h-100">
-                    <div class="card-header pt-7">
-                        <h3 class="card-title align-items-start flex-column">
-                            <span class="card-label fw-bolder text-dark">Cloud Storage</span>
-                            <span class="text-muted mt-1 fw-bold fs-7">S3/Object storage consumption (GB)</span>
-                        </h3>
-                    </div>
-                    <div class="card-body">
-                        <x-chart id="storage-resource-chart" type="line" :data="[
-                            'labels' => $storageTrend['labels'],
-                            'datasets' => [
-                                [
-                                    'label' => 'Total GB',
-                                    'data' => $storageTrend['data'],
-                                    'borderColor' => '#7239EA',
-                                    'backgroundColor' => 'rgba(114, 57, 234, 0.1)',
-                                    'fill' => true,
-                                ],
+        <div class="grid gap-6 lg:grid-cols-2">
+            <div class="rounded-xl border border-border bg-background p-6">
+                <div>
+                    <h3 class="text-sm font-semibold uppercase text-foreground">Cloud Storage</h3>
+                    <p class="text-xs text-muted-foreground">S3/Object storage consumption (GB)</p>
+                </div>
+                <div class="mt-4">
+                    <x-chart id="storage-resource-chart" type="line" :data="[
+                        'labels' => $storageTrend['labels'],
+                        'datasets' => [
+                            [
+                                'label' => 'Total GB',
+                                'data' => $storageTrend['data'],
+                                'borderColor' => '#7239EA',
+                                'backgroundColor' => 'rgba(114, 57, 234, 0.1)',
+                                'fill' => true,
                             ],
-                        ]" />
-                    </div>
+                        ],
+                    ]" />
                 </div>
             </div>
-            <div class="col-xl-6">
-                <div class="card card-flush shadow-sm h-100">
-                    <div class="card-header pt-7">
-                        <h3 class="card-title align-items-start flex-column">
-                            <span class="card-label fw-bolder text-dark">Database Footprint</span>
-                            <span class="text-muted mt-1 fw-bold fs-7">Aggregate DB size across tenants (MB)</span>
-                        </h3>
-                    </div>
-                    <div class="card-body">
-                        <x-chart id="db-resource-chart" type="line" :data="[
-                            'labels' => $dbTrend['labels'],
-                            'datasets' => [
-                                [
-                                    'label' => 'Total MB',
-                                    'data' => $dbTrend['data'],
-                                    'borderColor' => '#FFC700',
-                                    'backgroundColor' => 'rgba(255, 199, 0, 0.1)',
-                                    'fill' => true,
-                                ],
+            <div class="rounded-xl border border-border bg-background p-6">
+                <div>
+                    <h3 class="text-sm font-semibold uppercase text-foreground">Database Footprint</h3>
+                    <p class="text-xs text-muted-foreground">Aggregate DB size across tenants (MB)</p>
+                </div>
+                <div class="mt-4">
+                    <x-chart id="db-resource-chart" type="line" :data="[
+                        'labels' => $dbTrend['labels'],
+                        'datasets' => [
+                            [
+                                'label' => 'Total MB',
+                                'data' => $dbTrend['data'],
+                                'borderColor' => '#FFC700',
+                                'backgroundColor' => 'rgba(255, 199, 0, 0.1)',
+                                'fill' => true,
                             ],
-                        ]" />
-                    </div>
+                        ],
+                    ]" />
                 </div>
             </div>
         </div>
 
-        <!-- Metric Details Table -->
-        <div class="card card-flush shadow-sm mt-10">
-            <div class="card-header pt-7">
-                <h3 class="card-title align-items-start flex-column">
-                    <span class="card-label fw-bolder text-dark">Metric Catalog</span>
-                    <span class="text-muted mt-1 fw-bold fs-7">Definitions of active usage signals</span>
-                </h3>
+        <div class="rounded-xl border border-border bg-background p-6">
+            <div>
+                <h3 class="text-sm font-semibold uppercase text-foreground">Metric Catalog</h3>
+                <p class="text-xs text-muted-foreground">Definitions of active usage signals</p>
             </div>
-            <div class="card-body pt-0">
-                <table class="table align-middle table-row-dashed fs-6 gy-5">
+            <div class="kt-table-wrapper mt-4">
+                <table class="kt-table">
                     <thead>
-                        <tr class="text-start text-gray-400 fw-bolder fs-7 text-uppercase gs-0">
+                        <tr class="text-xs uppercase text-muted-foreground">
                             <th>Metric Name</th>
                             <th>Category</th>
                             <th>Unit</th>
                             <th>Attribution</th>
+                            <th>Default Rate</th>
+                            <th>Updated</th>
                         </tr>
                     </thead>
-                    <tbody class="text-gray-600 fw-bold">
-                        @foreach(App\Enum\UsageMetric::cases() as $metric)
+                    <tbody class="text-sm text-muted-foreground">
+                        @forelse($usageMetrics as $metric)
+                            @php
+                                $metricValue = $metric instanceof \App\Enum\UsageMetric ? $metric->value : (string) $metric;
+                                $metricCategory = str($metricValue)->before('.')->replace('_', ' ')->title();
+                                $metricUnit = $metric instanceof \App\Enum\UsageMetric ? $metric->unit() : 'n/a';
+                            @endphp
                             <tr>
-                                <td>
-                                    <div class="d-flex align-items-center">
-                                        <div class="symbol symbol-30px me-3">
-                                            <div class="symbol-label bg-light-primary">
-                                                <i class="fas fa-chart-line text-primary"></i>
-                                            </div>
-                                        </div>
-                                        {{ $metric->name }}
-                                    </div>
-                                </td>
-                                <td><span class="badge badge-light-info">{{ explode('.', $metric->value)[0] }}</span></td>
-                                <td><code>{{ $metric->unit() }}</code></td>
-                                <td>Tenant scoped</td>
+                                <td class="text-foreground font-medium">{{ str($metricValue)->replace('_', ' ')->title() }}</td>
+                                <td>{{ $metricCategory }}</td>
+                                <td>{{ $metricUnit }}</td>
+                                <td>System</td>
+                                <td>—</td>
+                                <td>{{ now()->format('M d, Y') }}</td>
                             </tr>
-                        @endforeach
+                        @empty
+                            <tr>
+                                <td colspan="6" class="py-6 text-center text-muted-foreground">No metrics configured yet.</td>
+                            </tr>
+                        @endforelse
                     </tbody>
                 </table>
             </div>
         </div>
-
-    </div>
-</div>
+    </section>
 @endsection
