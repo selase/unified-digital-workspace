@@ -114,6 +114,54 @@
     if ($user && \Illuminate\Support\Facades\Route::has('profile.index')) {
         $profileUrl = route('profile.index', $user);
     }
+
+    $isTenantContext = filled($subdomain);
+    $showSuperadminLinks = (bool) ($user?->can('access-superadmin-dashboard'));
+
+    $superadminNavLinks = [
+        ['label' => 'Tenants', 'url' => $buildRoute('tenants.index')],
+        ['label' => 'Users', 'url' => $buildRoute('users.index')],
+        ['label' => 'Roles', 'url' => $buildRoute('roles.index')],
+        ['label' => 'Features', 'url' => $buildRoute('features.index')],
+        ['label' => 'Packages', 'url' => $buildRoute('packages.index')],
+        ['label' => 'Leads', 'url' => $buildRoute('admin.leads.index')],
+        ['label' => 'Billing Transactions', 'url' => $buildRoute('admin.billing.transactions.index')],
+        ['label' => 'Billing Subscriptions', 'url' => $buildRoute('admin.billing.subscriptions.index')],
+        ['label' => 'Rate Cards', 'url' => $buildRoute('admin.billing.rate-cards.index')],
+        ['label' => 'Invoices', 'url' => $buildRoute('admin.billing.invoices.index')],
+        ['label' => 'Usage Analytics', 'url' => $buildRoute('admin.billing.analytics.usage')],
+        ['label' => 'Global LLM Usage', 'url' => $buildRoute('llm-usage.index')],
+        ['label' => 'Audit Activity', 'url' => $buildRoute('audit-trail.activity-logs.index')],
+        ['label' => 'Audit Login History', 'url' => $buildRoute('audit-trail.login-history.index')],
+        ['label' => 'Tenant Health', 'url' => $buildRoute('health.tenants')],
+        ['label' => 'Application Health', 'url' => $buildRoute('application.health')],
+        ['label' => 'Developer Tokens', 'url' => $buildRoute('settings.developer.tokens.index')],
+    ];
+
+    $tenantNavLinks = [
+        ['label' => 'Tenant Dashboard', 'url' => $buildRoute('tenant.dashboard')],
+        ['label' => 'Organization Settings', 'url' => $settingsUrl],
+        ['label' => 'Billing Settings', 'url' => $billingSettingsUrl],
+        ['label' => 'Payment Methods', 'url' => $paymentSettingsUrl],
+        ['label' => 'Users', 'url' => $buildRoute('tenant.users.index')],
+        ['label' => 'Roles', 'url' => $buildRoute('tenant.roles.index')],
+        ['label' => 'Finance', 'url' => $financeUrl],
+        ['label' => 'Tenant Billing', 'url' => $buildRoute('billing.index')],
+        ['label' => 'Pricing', 'url' => $buildRoute('tenant.pricing')],
+        ['label' => 'API Keys', 'url' => $apiKeysUrl],
+        ['label' => 'LLM Usage', 'url' => $llmUsageUrl],
+        ['label' => 'LLM Configuration', 'url' => $llmConfigUrl],
+        ['label' => 'My Tenants', 'url' => $buildRoute('tenant.my-tenants')],
+    ];
+
+    $moduleNavLinks = [
+        ['label' => 'Forums', 'url' => $buildRoute('forums.hub')],
+        ['label' => 'Incident Management', 'url' => $buildRoute('incident-management.index')],
+        ['label' => 'HRMS', 'url' => $buildRoute('hrms-core.index')],
+        ['label' => 'CMS', 'url' => $buildRoute('cms-core.index')],
+        ['label' => 'Project Management', 'url' => $buildRoute('project-management.')],
+        ['label' => 'Quality Monitoring', 'url' => $buildRoute('quality-monitoring.')],
+    ];
 @endphp
 
 <div class="flex grow">
@@ -185,6 +233,123 @@
            </span>
           </a>
          </div>
+        </div>
+       </div>
+       <div class="kt-menu-item pt-2.25 pb-px">
+        <span class="kt-menu-heading uppercase text-xs font-medium text-muted-foreground ps-[10px] pe-[10px]">
+         Workspace
+        </span>
+       </div>
+       @if ($showSuperadminLinks)
+        <div class="kt-menu-item" data-kt-menu-item-toggle="accordion" data-kt-menu-item-trigger="click">
+         <div class="kt-menu-link flex items-center grow cursor-pointer border border-transparent gap-[10px] ps-[10px] pe-[10px] py-[6px]" tabindex="0">
+          <span class="kt-menu-icon items-start text-muted-foreground w-[20px]">
+           <i class="ki-filled ki-shield-tick text-lg">
+           </i>
+          </span>
+          <span class="kt-menu-title text-sm font-medium text-foreground kt-menu-item-active:text-primary kt-menu-link-hover:!text-primary">
+           Superadmin
+          </span>
+          <span class="kt-menu-arrow text-muted-foreground w-[20px] shrink-0 justify-end ms-1 me-[-10px]">
+           <span class="inline-flex kt-menu-item-show:hidden">
+            <i class="ki-filled ki-plus text-[11px]">
+            </i>
+           </span>
+           <span class="hidden kt-menu-item-show:inline-flex">
+            <i class="ki-filled ki-minus text-[11px]">
+            </i>
+           </span>
+          </span>
+         </div>
+         <div class="kt-menu-accordion gap-1 ps-[10px] relative before:absolute before:start-[20px] before:top-0 before:bottom-0 before:border-s before:border-border">
+          @foreach ($superadminNavLinks as $navLink)
+           @if ($navLink['url'])
+            <div class="kt-menu-item">
+             <a class="kt-menu-link border border-transparent items-center grow kt-menu-item-active:bg-accent/60 dark:menu-item-active:border-border kt-menu-item-active:rounded-lg hover:bg-accent/60 hover:rounded-lg gap-[14px] ps-[10px] pe-[10px] py-[8px]" href="{{ $navLink['url'] }}" tabindex="0">
+              <span class="kt-menu-bullet flex w-[6px] -start-[3px] rtl:start-0 relative before:absolute before:top-0 before:size-[6px] before:rounded-full rtl:before:translate-x-1/2 before:-translate-y-1/2 kt-menu-item-active:before:bg-primary kt-menu-item-hover:before:bg-primary">
+              </span>
+              <span class="kt-menu-title text-2sm font-normal text-foreground kt-menu-item-active:text-primary kt-menu-item-active:font-semibold kt-menu-link-hover:!text-primary">
+               {{ $navLink['label'] }}
+              </span>
+             </a>
+            </div>
+           @endif
+          @endforeach
+         </div>
+        </div>
+       @endif
+       @if ($isTenantContext)
+        <div class="kt-menu-item" data-kt-menu-item-toggle="accordion" data-kt-menu-item-trigger="click">
+         <div class="kt-menu-link flex items-center grow cursor-pointer border border-transparent gap-[10px] ps-[10px] pe-[10px] py-[6px]" tabindex="0">
+          <span class="kt-menu-icon items-start text-muted-foreground w-[20px]">
+           <i class="ki-filled ki-abstract-26 text-lg">
+           </i>
+          </span>
+          <span class="kt-menu-title text-sm font-medium text-foreground kt-menu-item-active:text-primary kt-menu-link-hover:!text-primary">
+           Tenant
+          </span>
+          <span class="kt-menu-arrow text-muted-foreground w-[20px] shrink-0 justify-end ms-1 me-[-10px]">
+           <span class="inline-flex kt-menu-item-show:hidden">
+            <i class="ki-filled ki-plus text-[11px]">
+            </i>
+           </span>
+           <span class="hidden kt-menu-item-show:inline-flex">
+            <i class="ki-filled ki-minus text-[11px]">
+            </i>
+           </span>
+          </span>
+         </div>
+         <div class="kt-menu-accordion gap-1 ps-[10px] relative before:absolute before:start-[20px] before:top-0 before:bottom-0 before:border-s before:border-border">
+          @foreach ($tenantNavLinks as $navLink)
+           @if ($navLink['url'])
+            <div class="kt-menu-item">
+             <a class="kt-menu-link border border-transparent items-center grow kt-menu-item-active:bg-accent/60 dark:menu-item-active:border-border kt-menu-item-active:rounded-lg hover:bg-accent/60 hover:rounded-lg gap-[14px] ps-[10px] pe-[10px] py-[8px]" href="{{ $navLink['url'] }}" tabindex="0">
+              <span class="kt-menu-bullet flex w-[6px] -start-[3px] rtl:start-0 relative before:absolute before:top-0 before:size-[6px] before:rounded-full rtl:before:translate-x-1/2 before:-translate-y-1/2 kt-menu-item-active:before:bg-primary kt-menu-item-hover:before:bg-primary">
+              </span>
+              <span class="kt-menu-title text-2sm font-normal text-foreground kt-menu-item-active:text-primary kt-menu-item-active:font-semibold kt-menu-link-hover:!text-primary">
+               {{ $navLink['label'] }}
+              </span>
+             </a>
+            </div>
+           @endif
+          @endforeach
+         </div>
+        </div>
+       @endif
+       <div class="kt-menu-item" data-kt-menu-item-toggle="accordion" data-kt-menu-item-trigger="click">
+        <div class="kt-menu-link flex items-center grow cursor-pointer border border-transparent gap-[10px] ps-[10px] pe-[10px] py-[6px]" tabindex="0">
+         <span class="kt-menu-icon items-start text-muted-foreground w-[20px]">
+          <i class="ki-filled ki-grid text-lg">
+          </i>
+         </span>
+         <span class="kt-menu-title text-sm font-medium text-foreground kt-menu-item-active:text-primary kt-menu-link-hover:!text-primary">
+          Modules
+         </span>
+         <span class="kt-menu-arrow text-muted-foreground w-[20px] shrink-0 justify-end ms-1 me-[-10px]">
+          <span class="inline-flex kt-menu-item-show:hidden">
+           <i class="ki-filled ki-plus text-[11px]">
+           </i>
+          </span>
+          <span class="hidden kt-menu-item-show:inline-flex">
+           <i class="ki-filled ki-minus text-[11px]">
+           </i>
+          </span>
+         </span>
+        </div>
+        <div class="kt-menu-accordion gap-1 ps-[10px] relative before:absolute before:start-[20px] before:top-0 before:bottom-0 before:border-s before:border-border">
+         @foreach ($moduleNavLinks as $moduleLink)
+          @if ($moduleLink['url'])
+           <div class="kt-menu-item">
+            <a class="kt-menu-link border border-transparent items-center grow kt-menu-item-active:bg-accent/60 dark:menu-item-active:border-border kt-menu-item-active:rounded-lg hover:bg-accent/60 hover:rounded-lg gap-[14px] ps-[10px] pe-[10px] py-[8px]" href="{{ $moduleLink['url'] }}" tabindex="0">
+             <span class="kt-menu-bullet flex w-[6px] -start-[3px] rtl:start-0 relative before:absolute before:top-0 before:size-[6px] before:rounded-full rtl:before:translate-x-1/2 before:-translate-y-1/2 kt-menu-item-active:before:bg-primary kt-menu-item-hover:before:bg-primary">
+             </span>
+             <span class="kt-menu-title text-2sm font-normal text-foreground kt-menu-item-active:text-primary kt-menu-item-active:font-semibold kt-menu-link-hover:!text-primary">
+              {{ $moduleLink['label'] }}
+             </span>
+            </a>
+           </div>
+          @endif
+         @endforeach
         </div>
        </div>
        <div class="kt-menu-item pt-2.25 pb-px">
@@ -1679,6 +1844,83 @@
              Home
             </span>
            </a>
+          </div>
+          <!--End of Megamenu Item-->
+          <!--Megamenu Item-->
+          <div class="kt-menu-item" data-kt-menu-item-placement="bottom-start" data-kt-menu-item-placement-rtl="bottom-end" data-kt-menu-item-toggle="accordion|lg:dropdown" data-kt-menu-item-trigger="click|lg:hover">
+           <div class="kt-menu-link text-sm text-foreground kt-menu-link-hover:text-primary kt-menu-item-active:text-mono kt-menu-item-show:text-primary kt-menu-item-here:text-mono kt-menu-item-active:font-medium kt-menu-item-here:font-medium">
+            <span class="kt-menu-title text-nowrap">
+             Workspace
+            </span>
+            <span class="kt-menu-arrow flex lg:hidden">
+             <span class="kt-menu-item-show:hidden text-muted-foreground">
+              <i class="ki-filled ki-plus text-xs">
+              </i>
+             </span>
+             <span class="hidden kt-menu-item-show:inline-flex">
+              <i class="ki-filled ki-minus text-xs">
+              </i>
+             </span>
+            </span>
+           </div>
+           <div class="kt-menu-dropdown w-full gap-0 lg:max-w-[960px]">
+            <div class="pt-4 pb-2 lg:p-7.5">
+             <div class="grid lg:grid-cols-3 gap-5 lg:gap-7.5">
+              @if ($showSuperadminLinks)
+               <div class="kt-menu kt-menu-default kt-menu-fit flex-col">
+                <h3 class="text-sm text-foreground font-semibold leading-none ps-2.5 mb-2 lg:mb-5">
+                 Superadmin
+                </h3>
+                @foreach ($superadminNavLinks as $navLink)
+                 @if ($navLink['url'])
+                  <div class="kt-menu-item">
+                   <a class="kt-menu-link" href="{{ $navLink['url'] }}" tabindex="0">
+                    <span class="kt-menu-title grow-0">
+                     {{ $navLink['label'] }}
+                    </span>
+                   </a>
+                  </div>
+                 @endif
+                @endforeach
+               </div>
+              @endif
+              @if ($isTenantContext)
+               <div class="kt-menu kt-menu-default kt-menu-fit flex-col">
+                <h3 class="text-sm text-foreground font-semibold leading-none ps-2.5 mb-2 lg:mb-5">
+                 Tenant
+                </h3>
+                @foreach ($tenantNavLinks as $navLink)
+                 @if ($navLink['url'])
+                  <div class="kt-menu-item">
+                   <a class="kt-menu-link" href="{{ $navLink['url'] }}" tabindex="0">
+                    <span class="kt-menu-title grow-0">
+                     {{ $navLink['label'] }}
+                    </span>
+                   </a>
+                  </div>
+                 @endif
+                @endforeach
+               </div>
+              @endif
+              <div class="kt-menu kt-menu-default kt-menu-fit flex-col">
+               <h3 class="text-sm text-foreground font-semibold leading-none ps-2.5 mb-2 lg:mb-5">
+                Modules
+               </h3>
+               @foreach ($moduleNavLinks as $moduleLink)
+                @if ($moduleLink['url'])
+                 <div class="kt-menu-item">
+                  <a class="kt-menu-link" href="{{ $moduleLink['url'] }}" tabindex="0">
+                   <span class="kt-menu-title grow-0">
+                    {{ $moduleLink['label'] }}
+                   </span>
+                  </a>
+                 </div>
+                @endif
+               @endforeach
+              </div>
+             </div>
+            </div>
+           </div>
           </div>
           <!--End of Megamenu Item-->
           <!--Megamenu Item-->
