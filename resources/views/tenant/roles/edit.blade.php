@@ -39,7 +39,7 @@
                     </div>
 
                     <div class="kt-table-wrapper mt-4">
-                        <table class="kt-table">
+                        <table class="kt-table table-auto kt-table-border">
                             <thead>
                                 <tr class="text-xs uppercase text-muted-foreground">
                                     <th>Category</th>

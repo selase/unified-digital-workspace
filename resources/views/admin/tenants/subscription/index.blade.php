@@ -24,7 +24,7 @@
                 <span class="text-xs text-muted-foreground">All active and historical plans.</span>
             </div>
             <div class="overflow-x-auto">
-                <table class="kt-table" id="tenant-subscriptions-table">
+                <table class="kt-table table-auto kt-table-border" id="tenant-subscriptions-table">
                     <thead>
                         <tr class="text-xs uppercase text-muted-foreground">
                             <th>Tenant</th>

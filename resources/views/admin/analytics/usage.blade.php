@@ -162,7 +162,7 @@
                 <p class="text-xs text-muted-foreground">Definitions of active usage signals</p>
             </div>
             <div class="kt-table-wrapper mt-4">
-                <table class="kt-table">
+                <table class="kt-table table-auto kt-table-border">
                     <thead>
                         <tr class="text-xs uppercase text-muted-foreground">
                             <th>Metric Name</th>

@@ -56,7 +56,7 @@
                     <span class="text-xs text-muted-foreground">Recent activity for this subscription.</span>
                 </div>
                 <div class="overflow-x-auto">
-                    <table class="kt-table" id="tenant-subscription-invoices">
+                    <table class="kt-table table-auto kt-table-border" id="tenant-subscription-invoices">
                         <thead>
                             <tr class="text-xs uppercase text-muted-foreground">
                                 <th>Transaction ID</th>

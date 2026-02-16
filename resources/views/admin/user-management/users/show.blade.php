@@ -114,7 +114,7 @@
                         <button type="button" class="kt-btn kt-btn-outline">Sign out all</button>
                     </div>
                     <div class="mt-4 overflow-x-auto">
-                        <table class="kt-table">
+                        <table class="kt-table table-auto kt-table-border">
                             <thead>
                                 <tr class="text-xs uppercase text-muted-foreground">
                                     <th>Location</th>

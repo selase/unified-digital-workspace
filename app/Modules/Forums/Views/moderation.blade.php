@@ -38,7 +38,7 @@
             <div class="rounded-xl border border-border bg-background p-6 xl:col-span-8">
                 <h2 class="text-lg font-semibold text-foreground">Flagged Threads</h2>
                 <div class="mt-4 overflow-x-auto">
-                    <table class="kt-table">
+                    <table class="kt-table table-auto kt-table-border">
                         <thead>
                             <tr class="text-xs uppercase text-muted-foreground">
                                 <th>Thread</th>

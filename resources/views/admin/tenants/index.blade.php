@@ -20,27 +20,29 @@
             </div>
         </div>
 
-        <div class="rounded-xl border border-border bg-background p-6">
-            <div class="flex items-center justify-between gap-3 mb-4">
-                <h2 class="text-lg font-semibold text-foreground">All Tenants</h2>
-                <span class="text-xs text-muted-foreground">Search, sort, and manage tenant access.</span>
+        <div class="kt-card kt-card-grid min-w-full">
+            <div class="kt-card-header flex-wrap gap-2">
+                <h3 class="kt-card-title text-sm">Tenant Directory</h3>
+                <div class="flex items-center gap-2 text-xs text-muted-foreground">Search, sort, and manage tenant access.</div>
             </div>
-            <div class="overflow-x-auto">
-                <table class="kt-table" id="tenants-table">
-                    <thead>
-                        <tr class="text-xs uppercase text-muted-foreground">
-                            <th class="w-10">
-                                <input class="kt-checkbox" type="checkbox" data-kt-check="true" data-kt-check-target="#tenants-table .row-check" value="1" />
-                            </th>
-                            <th>{{ __('locale.labels.name') }}</th>
-                            <th>{{ __('locale.labels.phone_number') }}</th>
-                            <th>{{ __('locale.labels.subdomain') }}</th>
-                            <th>{{ __('locale.labels.status') }}</th>
-                            <th>{{ __('locale.labels.created_at') }}</th>
-                            <th class="text-right">{{ __('locale.labels.actions') }}</th>
-                        </tr>
-                    </thead>
-                </table>
+            <div class="kt-card-content">
+                <div class="kt-scrollable-x-auto">
+                    <table class="kt-table table-auto kt-table-border" id="tenants-table">
+                        <thead>
+                            <tr class="text-xs uppercase text-muted-foreground">
+                                <th class="w-10">
+                                    <input class="kt-checkbox" type="checkbox" data-kt-check="true" data-kt-check-target="#tenants-table .row-check" value="1" />
+                                </th>
+                                <th>{{ __('locale.labels.name') }}</th>
+                                <th>{{ __('locale.labels.phone_number') }}</th>
+                                <th>{{ __('locale.labels.subdomain') }}</th>
+                                <th>{{ __('locale.labels.status') }}</th>
+                                <th>{{ __('locale.labels.created_at') }}</th>
+                                <th class="text-right">{{ __('locale.labels.actions') }}</th>
+                            </tr>
+                        </thead>
+                    </table>
+                </div>
             </div>
         </div>
     </section>

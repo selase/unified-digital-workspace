@@ -264,7 +264,7 @@
                             <p class="mt-2 text-xs text-muted-foreground">Leave blank to use Package or Global defaults.</p>
 
                             <div class="mt-4 overflow-x-auto">
-                                <table class="kt-table">
+                                <table class="kt-table table-auto kt-table-border">
                                     <thead>
                                         <tr class="text-xs uppercase text-muted-foreground">
                                             <th>Metric</th>

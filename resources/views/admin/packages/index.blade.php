@@ -24,7 +24,7 @@
                 <span class="text-xs text-muted-foreground">Search, filter, and manage plan pricing.</span>
             </div>
             <div class="overflow-x-auto">
-                <table class="kt-table" id="packages-table">
+                <table class="kt-table table-auto kt-table-border" id="packages-table">
                     <thead>
                         <tr class="text-xs uppercase text-muted-foreground">
                             <th>Name</th>

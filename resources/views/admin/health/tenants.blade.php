@@ -51,7 +51,7 @@
 
         <div class="rounded-xl border border-border bg-background p-6">
             <div class="overflow-x-auto">
-                <table class="kt-table" id="kt_table_tenant_health">
+                <table class="kt-table table-auto kt-table-border" id="kt_table_tenant_health">
                     <thead>
                         <tr class="text-xs uppercase text-muted-foreground">
                             <th>Tenant</th>

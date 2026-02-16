@@ -30,29 +30,31 @@
             </div>
         </div>
 
-        <div class="rounded-xl border border-border bg-background p-6">
-            <div class="flex items-center justify-between gap-3 mb-4">
-                <h2 class="text-lg font-semibold text-foreground">All Roles</h2>
-                <span class="text-xs text-muted-foreground">Filter by tenant or global scope.</span>
+        <div class="kt-card kt-card-grid min-w-full">
+            <div class="kt-card-header flex-wrap gap-2">
+                <h3 class="kt-card-title text-sm">Roles Registry</h3>
+                <div class="flex items-center gap-2 text-xs text-muted-foreground">Filter by tenant or global scope.</div>
             </div>
-            <div class="overflow-x-auto">
-                <table class="min-w-full text-sm" id="roles-table">
-                    <thead class="text-xs uppercase text-muted-foreground border-b border-border">
-                        <tr class="text-left">
-                            <th class="w-10">
-                                <input class="kt-checkbox" type="checkbox" data-kt-check="true"
-                                    data-kt-check-target="#roles-table .row-check" value="1" />
-                            </th>
-                            <th class="py-3">Role Name</th>
-                            <th class="py-3">Guard</th>
-                            <th class="py-3">Created At</th>
-                            <th class="py-3 text-right">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {{-- Content loaded via AJAX --}}
-                    </tbody>
-                </table>
+            <div class="kt-card-content">
+                <div class="kt-scrollable-x-auto">
+                    <table class="kt-table table-auto kt-table-border" id="roles-table">
+                        <thead>
+                            <tr class="text-left">
+                                <th class="w-10">
+                                    <input class="kt-checkbox" type="checkbox" data-kt-check="true"
+                                        data-kt-check-target="#roles-table .row-check" value="1" />
+                                </th>
+                                <th class="py-3">Role Name</th>
+                                <th class="py-3">Guard</th>
+                                <th class="py-3">Created At</th>
+                                <th class="py-3 text-right">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {{-- Content loaded via AJAX --}}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     </section>

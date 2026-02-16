@@ -7,7 +7,7 @@
     </div>
 
     <div class="overflow-x-auto">
-        <table class="kt-table" id="activity-table">
+        <table class="kt-table table-auto kt-table-border" id="activity-table">
             <thead>
                 <tr class="text-xs uppercase text-muted-foreground">
                     <th>{{ __('locale.labels.log_id') }}</th>

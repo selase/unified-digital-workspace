@@ -41,7 +41,7 @@
                     </div>
 
                     <div class="kt-table-wrapper mt-4">
-                        <table class="kt-table">
+                        <table class="kt-table table-auto kt-table-border">
                             <tbody class="text-sm text-muted-foreground">
                                 @foreach ($permissions as $key => $category)
                                     <tr>

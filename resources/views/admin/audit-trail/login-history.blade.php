@@ -33,7 +33,7 @@
 
         <div class="rounded-xl border border-border bg-background p-6">
             <div class="overflow-x-auto">
-                <table class="kt-table" id="login-history-table">
+                <table class="kt-table table-auto kt-table-border" id="login-history-table">
                     <thead>
                         <tr class="text-xs uppercase text-muted-foreground">
                             <th>{{ __('locale.labels.sl') }}</th>

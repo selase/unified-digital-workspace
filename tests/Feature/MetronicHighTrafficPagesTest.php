@@ -69,7 +69,7 @@ it('renders the admin users index with the metronic layout', function (): void {
     $this->actingAs($user)
         ->get(route('users.index'))
         ->assertSuccessful()
-        ->assertSee('All Users')
+        ->assertSee('User Directory')
         ->assertSee('data-kt-modal="true"', false)
         ->assertSee('kt-checkbox row-check', false)
         ->assertDontSee('modal fade', false)

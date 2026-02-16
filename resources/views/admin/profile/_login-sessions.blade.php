@@ -7,7 +7,7 @@
     </div>
 
     <div class="overflow-x-auto">
-        <table class="kt-table" id="login-session-table">
+        <table class="kt-table table-auto kt-table-border" id="login-session-table">
             <thead>
                 <tr class="text-xs uppercase text-muted-foreground">
                     <th>Location</th>

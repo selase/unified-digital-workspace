@@ -70,7 +70,7 @@
             </div>
 
             <div class="overflow-x-auto">
-                <table class="kt-table">
+                <table class="kt-table table-auto kt-table-border">
                     <thead>
                         <tr class="text-xs uppercase text-muted-foreground">
                             <th>Transaction ID</th>

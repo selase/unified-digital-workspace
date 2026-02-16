@@ -50,7 +50,7 @@
                 </div>
             </div>
             <div class="overflow-x-auto">
-                <table class="kt-table" id="api-keys-table">
+                <table class="kt-table table-auto kt-table-border" id="api-keys-table">
                     <thead>
                         <tr class="text-xs uppercase text-muted-foreground">
                             <th>{{ __('Name') }}</th>

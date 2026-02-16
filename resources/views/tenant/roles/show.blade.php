@@ -73,7 +73,7 @@
                     <span class="text-xs text-muted-foreground">{{ $role->permissions->count() }} assigned</span>
                 </div>
                 <div class="kt-table-wrapper mt-4">
-                    <table class="kt-table">
+                    <table class="kt-table table-auto kt-table-border">
                         <thead>
                             <tr class="text-xs uppercase text-muted-foreground">
                                 <th>Resource</th>

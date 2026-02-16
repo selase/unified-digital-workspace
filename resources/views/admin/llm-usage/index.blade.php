@@ -33,7 +33,7 @@
                 <h2 class="text-lg font-semibold text-foreground">Top Tenants by Usage (Last 30 Days)</h2>
                 <p class="mt-1 text-xs text-muted-foreground">Highest token consumers in the most recent 30-day window.</p>
                 <div class="mt-4 overflow-x-auto">
-                    <table class="kt-table">
+                    <table class="kt-table table-auto kt-table-border">
                         <thead>
                             <tr class="text-xs uppercase text-muted-foreground">
                                 <th>Tenant</th>
@@ -64,7 +64,7 @@
                 <h2 class="text-lg font-semibold text-foreground">Model Distribution</h2>
                 <p class="mt-1 text-xs text-muted-foreground">Usage split by model.</p>
                 <div class="mt-4 overflow-x-auto">
-                    <table class="kt-table">
+                    <table class="kt-table table-auto kt-table-border">
                         <thead>
                             <tr class="text-xs uppercase text-muted-foreground">
                                 <th>Model</th>
@@ -92,7 +92,7 @@
             <h2 class="text-lg font-semibold text-foreground">Daily Usage Trend (Last 30 Days)</h2>
             <p class="mt-1 text-xs text-muted-foreground">Daily aggregate of token and cost usage.</p>
             <div class="mt-4 overflow-x-auto">
-                <table class="kt-table">
+                <table class="kt-table table-auto kt-table-border">
                     <thead>
                         <tr class="text-xs uppercase text-muted-foreground">
                             <th>Date</th>

@@ -38,7 +38,7 @@
             </div>
 
             <div class="overflow-x-auto">
-                <table class="kt-table" id="kt_table_transactions">
+                <table class="kt-table table-auto kt-table-border" id="kt_table_transactions">
                     <thead>
                         <tr class="text-xs uppercase text-muted-foreground">
                             <th>Transaction ID</th>

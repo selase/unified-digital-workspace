@@ -47,7 +47,7 @@
                 <form action="{{ route('admin.billing.rate-cards.prices.update') }}" method="POST" class="mt-4 space-y-4">
                     @csrf
                     <div class="overflow-x-auto">
-                        <table class="kt-table">
+                        <table class="kt-table table-auto kt-table-border">
                             <thead>
                                 <tr class="text-xs uppercase text-muted-foreground">
                                     <th>Metric</th>

@@ -24,7 +24,7 @@
                 <span class="text-xs text-muted-foreground">Search, filter, and manage system features.</span>
             </div>
             <div class="overflow-x-auto">
-                <table class="kt-table" id="features-table">
+                <table class="kt-table table-auto kt-table-border" id="features-table">
                     <thead>
                         <tr class="text-xs uppercase text-muted-foreground">
                             <th>Name</th>

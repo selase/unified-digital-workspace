@@ -44,7 +44,7 @@
             </div>
 
             <div class="mt-8 overflow-x-auto">
-                <table class="kt-table">
+                <table class="kt-table table-auto kt-table-border">
                     <thead>
                         <tr class="text-xs uppercase text-muted-foreground">
                             <th>Description</th>

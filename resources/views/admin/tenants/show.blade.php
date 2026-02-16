@@ -162,7 +162,7 @@
                     </div>
 
                     <div class="mt-4 overflow-x-auto">
-                        <table class="kt-table" id="team-members-table">
+                        <table class="kt-table table-auto kt-table-border" id="team-members-table">
                             <thead>
                                 <tr class="text-xs uppercase text-muted-foreground">
                                     <th class="w-10">

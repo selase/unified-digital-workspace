@@ -88,7 +88,7 @@
                     <h3 class="text-sm font-semibold uppercase text-foreground">Metered Pricing (Rate Card)</h3>
                     <p class="text-xs text-muted-foreground mt-2">Define unit prices for metered metrics. If left blank, global defaults or free tier apply.</p>
                     <div class="kt-table-wrapper mt-4">
-                        <table class="kt-table">
+                        <table class="kt-table table-auto kt-table-border">
                             <thead>
                                 <tr class="text-xs uppercase text-muted-foreground">
                                     <th>Metric</th>
@@ -127,7 +127,7 @@
                     <h3 class="text-sm font-semibold uppercase text-foreground">Feature Matrix</h3>
                     <p class="text-xs text-muted-foreground mt-2">Toggle feature access and set per-plan limits.</p>
                     <div class="kt-table-wrapper mt-4">
-                        <table class="kt-table">
+                        <table class="kt-table table-auto kt-table-border">
                             <thead>
                                 <tr class="text-xs uppercase text-muted-foreground">
                                     <th>Feature</th>
