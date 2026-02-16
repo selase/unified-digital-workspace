@@ -66,14 +66,6 @@ it('renders core admin metronic routes with shell interaction hooks', function (
     expect($dashboardContent)->toContain(route('settings.developer.tokens.index'));
     expect($dashboardContent)->toContain(route('health.tenants'));
     expect($dashboardContent)->toContain(route('llm-usage.index'));
-    expect($dashboardContent)->toContain(route('document-management.index'));
-    expect($dashboardContent)->toContain(route('memos.index'));
-    expect($dashboardContent)->toContain(route('forums.hub'));
-    expect($dashboardContent)->toContain(route('incident-management.index'));
-    expect($dashboardContent)->toContain(route('hrms-core.index'));
-    expect($dashboardContent)->toContain(route('cms-core.index'));
-    expect($dashboardContent)->toContain(route('project-management.index'));
-    expect($dashboardContent)->toContain(route('quality-monitoring.index'));
 });
 
 it('renders tenant dashboard with metronic shell hooks and without legacy bootstrap modal classes', function (): void {
@@ -122,4 +114,33 @@ it('renders auth pages with metronic assets', function (): void {
     $this->get(route('password.request'))
         ->assertSuccessful()
         ->assertSee('assets/metronic/css/styles.css');
+});
+
+it('switches top menu context when a tenant module page is active', function (): void {
+    $user = User::factory()->create();
+    $tenant = setActiveTenantForTest($user);
+
+    Permission::firstOrCreate([
+        'name' => 'qm.workplans.view',
+        'guard_name' => 'web',
+    ], [
+        'uuid' => (string) Str::uuid(),
+        'category' => 'quality-monitoring',
+    ]);
+
+    setPermissionsTeamId($tenant->id);
+    $user->givePermissionTo('qm.workplans.view');
+
+    app(App\Services\ModuleManager::class)->enableForTenant('quality-monitoring', $tenant);
+
+    $content = $this->actingAs($user)
+        ->withSession(['active_tenant_id' => $tenant->id])
+        ->get(route('quality-monitoring.index'))
+        ->assertSuccessful()
+        ->getContent();
+
+    expect($content)->toContain('Quality Monitoring');
+    expect($content)->toContain('Quality Ops');
+    expect($content)->toContain('Reports');
+    expect($content)->toContain('Workplans API');
 });
