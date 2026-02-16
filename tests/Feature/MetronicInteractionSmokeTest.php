@@ -66,6 +66,9 @@ it('renders core admin metronic routes with shell interaction hooks', function (
     expect($dashboardContent)->toContain(route('settings.developer.tokens.index'));
     expect($dashboardContent)->toContain(route('health.tenants'));
     expect($dashboardContent)->toContain(route('llm-usage.index'));
+    expect($dashboardContent)->toContain(route('tenant.my-tenants'));
+    expect($dashboardContent)->toContain(route('logout'));
+    expect($dashboardContent)->toContain('Log out');
 });
 
 it('renders tenant dashboard with metronic shell hooks and without legacy bootstrap modal classes', function (): void {

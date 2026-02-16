@@ -197,15 +197,24 @@
                                 </div>
                             </div>
                         @endforeach
+                    @elseif(!$navigation['isTenantContext'])
+                        <div class="kt-menu-item px-[10px] pt-3">
+                            <div class="rounded-lg border border-dashed border-border bg-accent/30 px-3 py-2 text-xs text-muted-foreground">
+                                Module workspaces show after switching into a tenant context.
+                                @if(\Illuminate\Support\Facades\Route::has('tenant.my-tenants'))
+                                    <a class="text-primary hover:underline" href="{{ route('tenant.my-tenants') }}">Open My Tenants</a>.
+                                @endif
+                            </div>
+                        </div>
                     @endif
                 </div>
             </div>
         </div>
     </aside>
 
-    <div class="flex grow flex-col">
-        <header class="kt-header fixed top-0 z-10 start-0 end-0 flex items-stretch shrink-0 bg-background border-b border-border" id="header">
-            <div class="kt-container-fixed flex items-center justify-between gap-4" id="headerContainer">
+    <div class="kt-wrapper flex grow flex-col">
+        <header class="kt-header fixed top-0 z-10 start-0 end-0 flex items-stretch shrink-0 bg-background" data-kt-sticky="true" data-kt-sticky-class="border-b border-border" data-kt-sticky-name="header" id="header">
+            <div class="kt-container-fixed flex justify-between items-stretch lg:gap-4" id="headerContainer">
                 <div class="flex items-center gap-3 lg:gap-6">
                     <button
                         class="kt-btn kt-btn-icon kt-btn-outline shrink-0 lg:hidden"
@@ -260,6 +269,13 @@
                     <button class="group kt-btn kt-btn-ghost kt-btn-icon size-9 rounded-full hover:bg-primary/10 hover:[&_i]:text-primary" data-kt-modal-toggle="#search_modal" type="button">
                         <i class="ki-filled ki-magnifier text-lg"></i>
                     </button>
+
+                    <form action="{{ route('logout') }}" method="POST">
+                        @csrf
+                        <button class="group kt-btn kt-btn-ghost kt-btn-icon size-9 rounded-full hover:bg-primary/10 hover:[&_i]:text-primary" type="submit">
+                            <i class="ki-filled ki-exit-right text-lg"></i>
+                        </button>
+                    </form>
 
                     <div class="kt-dropdown" data-kt-dropdown="true" data-kt-dropdown-placement="bottom-end">
                         <button class="group kt-btn kt-btn-ghost kt-btn-icon size-9 rounded-full hover:bg-primary/10 hover:[&_i]:text-primary" data-kt-dropdown-toggle="true" type="button">
@@ -330,6 +346,7 @@
 
 <script src="{{ asset('assets/metronic/js/core.bundle.js') }}"></script>
 <script src="{{ asset('assets/metronic/vendors/ktui/ktui.min.js') }}"></script>
+<script src="{{ asset('assets/metronic/vendors/apexcharts/apexcharts.min.js') }}"></script>
 <script src="{{ asset('assets/metronic/js/layouts/demo1.js') }}"></script>
 <script>
     const clearStaleUiOverlays = () => {

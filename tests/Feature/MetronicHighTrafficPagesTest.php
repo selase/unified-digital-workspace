@@ -1241,7 +1241,7 @@ it('renders the login screen with the metronic auth layout', function (): void {
     $this->withSession(['active_tenant_id' => $tenant->id])
         ->get(route('login'))
         ->assertSuccessful()
-        ->assertSee('Sign In to')
+        ->assertSee('Sign in')
         ->assertSee('assets/metronic/css/styles.css');
 });
 

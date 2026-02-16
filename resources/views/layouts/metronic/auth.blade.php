@@ -12,6 +12,14 @@
     @stack('custom-styles')
     @stack('styles')
     <style>
+        .page-bg {
+            background-image: url('{{ asset('assets/metronic/media/images/2600x1200/bg-10.png') }}');
+        }
+
+        .dark .page-bg {
+            background-image: url('{{ asset('assets/metronic/media/images/2600x1200/bg-10-dark.png') }}');
+        }
+
         .phpdebugbar-openhandler-overlay {
             display: none !important;
             opacity: 0 !important;
@@ -23,7 +31,7 @@
 
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
-<body class="antialiased min-h-full bg-mono text-foreground">
+<body class="antialiased min-h-full text-foreground bg-background">
 <script>
     const defaultThemeMode = 'light';
     let themeMode = localStorage.getItem('kt-theme') || defaultThemeMode;
@@ -35,30 +43,12 @@
     document.documentElement.classList.add(themeMode);
 </script>
 
-<div class="min-h-screen grid lg:grid-cols-2">
-    <section class="hidden lg:flex flex-col justify-between bg-primary text-primary-foreground p-12">
-        <div>
-            <div class="flex items-center gap-3">
-                <div class="size-10 rounded-full bg-white/20 flex items-center justify-center font-semibold">U</div>
-                <div class="text-lg font-semibold">Unified Digital Workspace</div>
-            </div>
-            <h1 class="mt-12 text-3xl font-semibold leading-tight">
-                Workspaces, workflows, and insights in one place.
-            </h1>
-            <p class="mt-4 text-sm text-primary-foreground/80">
-                Secure multi-tenant operations for HRMS, documents, incidents, and forums.
-            </p>
-        </div>
-        <div class="text-xs text-primary-foreground/70">
-            {{ \App\Libraries\Helper::getCurrentYear() }} - Powered by UDW.
-        </div>
-    </section>
-
-    <section class="flex flex-col justify-center p-6 sm:p-10 lg:p-16">
-        <div class="max-w-md w-full mx-auto">
+<div class="min-h-screen flex items-center justify-center bg-center bg-cover bg-no-repeat page-bg p-6">
+    <div class="kt-card w-full max-w-[420px]">
+        <div class="kt-card-content p-8 sm:p-10">
             @yield('content')
         </div>
-    </section>
+    </div>
 </div>
 
 <script src="{{ asset('assets/metronic/js/core.bundle.js') }}"></script>

@@ -68,6 +68,7 @@ final class WorkspaceNavigation
             ['label' => 'Tenant Health', 'route' => 'health.tenants'],
             ['label' => 'Application Health', 'route' => 'application.health'],
             ['label' => 'Developer Tokens', 'route' => 'settings.developer.tokens.index'],
+            ['label' => 'My Tenants', 'route' => 'tenant.my-tenants'],
         ])->map(fn (array $item): ?array => $this->resolveLink($item, $tenantSlug, $currentRouteName, $user))->filter()->values();
 
         $tenantLinks = collect([
