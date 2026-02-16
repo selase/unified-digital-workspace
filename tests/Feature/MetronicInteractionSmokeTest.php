@@ -66,6 +66,8 @@ it('renders core admin metronic routes with shell interaction hooks', function (
     expect($dashboardContent)->toContain(route('settings.developer.tokens.index'));
     expect($dashboardContent)->toContain(route('health.tenants'));
     expect($dashboardContent)->toContain(route('llm-usage.index'));
+    expect($dashboardContent)->toContain(route('document-management.index'));
+    expect($dashboardContent)->toContain(route('memos.index'));
     expect($dashboardContent)->toContain(route('forums.hub'));
     expect($dashboardContent)->toContain(route('incident-management.index'));
 });

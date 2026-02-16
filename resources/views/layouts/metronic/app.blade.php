@@ -155,6 +155,8 @@
     ];
 
     $moduleNavLinks = [
+        ['label' => 'Document Management', 'url' => $buildRoute('document-management.index')],
+        ['label' => 'Memos', 'url' => $buildRoute('memos.index')],
         ['label' => 'Forums', 'url' => $buildRoute('forums.hub')],
         ['label' => 'Incident Management', 'url' => $buildRoute('incident-management.index')],
         ['label' => 'HRMS', 'url' => $buildRoute('hrms-core.index')],

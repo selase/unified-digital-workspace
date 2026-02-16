@@ -223,14 +223,14 @@ unified-digital-workspace/
 
 ### Track 07: Document Management Module
 **Duration:** 4 weeks
-**Status:** 🟨 In Progress
+**Status:** ✅ Complete
 **Link:** [TRACK_07_DOCUMENT_MANAGEMENT.md](tracks/TRACK_07_DOCUMENT_MANAGEMENT.md)
 
 **Key Deliverables:**
 - [x] Document CRUD
 - [x] Polymorphic visibility control
 - [x] Document quiz system
-- [ ] Quiz analytics
+- [x] Quiz analytics
 - [x] Document versioning
 - [x] Audit trail
 - [x] Preview and download
@@ -347,7 +347,7 @@ unified-digital-workspace/
 
 ### Track 14: UI Theme Makeover (Metronic)
 **Duration:** 3-4 weeks
-**Status:** 🟨 In Progress
+**Status:** ✅ Complete
 **Link:** [TRACK_14_METRONIC_UI.md](tracks/TRACK_14_METRONIC_UI.md) *(to be authored)*
 
 **Execution TODO (Systematic Order):**
@@ -355,12 +355,12 @@ unified-digital-workspace/
 - [x] Main auth screens moved to Metronic auth layout
 - [x] Core superadmin and tenant routes switched to `layouts.metronic.app`
 - [x] Runtime hardening for stale overlays/backdrops and KTUI modal/image-input compatibility
-- [ ] Superadmin Batch A (high-traffic data pages): invoices/show, rate cards, API keys, health tenants
+- [x] Superadmin Batch A (high-traffic data pages): invoices/show, rate cards, API keys, health tenants
 - [x] Superadmin Batch B (tenants + subscriptions): create/edit/show, subscription index/show/invoice preview/team create
 - [x] Superadmin Batch C (users/roles/forms): user show/index modal polish, roles/forms parity with demo1 patterns
 - [x] Superadmin Batch D (analytics/profile/audit): global usage, profile panels, audit trail chart and table consistency
-- [ ] Tenant Batch A (settings + finance): tenant settings, payments, billing dashboard table/actions
-- [ ] Tenant Batch B (roles + dashboard): roles CRUD pages and dashboard cards/empty states consistency
+- [x] Tenant Batch A (settings + finance): tenant settings, payments, billing dashboard table/actions
+- [x] Tenant Batch B (roles + dashboard): roles CRUD pages and dashboard cards/empty states consistency
 - [x] Shared UI cleanup: legacy bootstrap utility classes (`btn`, `form-control`, `badge`, `table`) replaced with Metronic/Tailwind primitives on active Metronic routes
 - [x] Browser QA sweep per batch (desktop + mobile): menus, drawers, dropdowns, modals, datatables, forms *(automated smoke + interactive hook assertions)*
 - [x] Regression gate for each batch: `pint`, targeted Pest feature tests, final cross-route browser smoke test

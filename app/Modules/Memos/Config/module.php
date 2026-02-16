@@ -39,7 +39,7 @@ return [
     ],
 
     'routes' => [
-        'web' => false,
+        'web' => true,
         'api' => true,
     ],
 

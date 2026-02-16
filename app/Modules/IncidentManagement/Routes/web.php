@@ -2,11 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Modules\IncidentManagement\Http\Controllers\Web\IncidentHubController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return response()->json([
-        'module' => 'incident-management',
-        'status' => 'active',
-    ]);
-})->name('index');
+Route::get('/', [IncidentHubController::class, 'index'])->name('index');
