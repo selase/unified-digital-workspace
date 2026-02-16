@@ -173,3 +173,84 @@ it('shows incident module sidebar and top menu links on incident pages', functio
     expect($content)->toContain(route('incident-management.reports.index'));
     expect($content)->toContain('Operations');
 });
+
+it('shows hrms contextual menu and page links on hrms routes', function (): void {
+    $user = User::factory()->create();
+    $tenant = setActiveTenantForTest($user);
+
+    foreach ([
+        'hrms.employees.view',
+        'hrms.departments.view',
+        'hrms.leave.view',
+        'hrms.jobs.view',
+    ] as $permissionName) {
+        Permission::firstOrCreate([
+            'name' => $permissionName,
+            'guard_name' => 'web',
+        ], [
+            'uuid' => (string) Str::uuid(),
+            'category' => 'hrms',
+        ]);
+    }
+
+    setPermissionsTeamId($tenant->id);
+    $user->givePermissionTo([
+        'hrms.employees.view',
+        'hrms.departments.view',
+        'hrms.leave.view',
+        'hrms.jobs.view',
+    ]);
+
+    app(App\Services\ModuleManager::class)->enableForTenant('hrms-core', $tenant);
+
+    $content = $this->actingAs($user)
+        ->withSession(['active_tenant_id' => $tenant->id])
+        ->get(route('hrms-core.index'))
+        ->assertSuccessful()
+        ->getContent();
+
+    expect($content)->toContain(route('hrms-core.employees.index'));
+    expect($content)->toContain(route('hrms-core.departments.index'));
+    expect($content)->toContain(route('hrms-core.leave-requests.index'));
+    expect($content)->toContain(route('hrms-core.recruitment.index'));
+    expect($content)->toContain('People Ops');
+});
+
+it('shows cms contextual menu and page links on cms routes', function (): void {
+    $user = User::factory()->create();
+    $tenant = setActiveTenantForTest($user);
+
+    foreach ([
+        'cms.posts.view',
+        'cms.media.view',
+        'cms.menus.view',
+    ] as $permissionName) {
+        Permission::firstOrCreate([
+            'name' => $permissionName,
+            'guard_name' => 'web',
+        ], [
+            'uuid' => (string) Str::uuid(),
+            'category' => 'cms',
+        ]);
+    }
+
+    setPermissionsTeamId($tenant->id);
+    $user->givePermissionTo([
+        'cms.posts.view',
+        'cms.media.view',
+        'cms.menus.view',
+    ]);
+
+    app(App\Services\ModuleManager::class)->enableForTenant('cms-core', $tenant);
+
+    $content = $this->actingAs($user)
+        ->withSession(['active_tenant_id' => $tenant->id])
+        ->get(route('cms-core.index'))
+        ->assertSuccessful()
+        ->getContent();
+
+    expect($content)->toContain(route('cms-core.posts.index'));
+    expect($content)->toContain(route('cms-core.media.index'));
+    expect($content)->toContain(route('cms-core.menus.index'));
+    expect($content)->toContain('Publishing');
+});

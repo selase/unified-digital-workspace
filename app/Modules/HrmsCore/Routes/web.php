@@ -2,7 +2,11 @@
 
 declare(strict_types=1);
 
+use App\Modules\HrmsCore\Http\Controllers\Web\HrmsDepartmentDirectoryController;
+use App\Modules\HrmsCore\Http\Controllers\Web\HrmsEmployeeDirectoryController;
 use App\Modules\HrmsCore\Http\Controllers\Web\HrmsHubController;
+use App\Modules\HrmsCore\Http\Controllers\Web\HrmsLeaveRequestController;
+use App\Modules\HrmsCore\Http\Controllers\Web\HrmsRecruitmentController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -18,23 +22,7 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/', [HrmsHubController::class, 'index'])->name('index');
-
-// Organization routes will be added here
-// Route::prefix('organization')->name('organization.')->group(function () {
-//     Route::resource('departments', DepartmentController::class);
-//     Route::resource('directorates', DirectorateController::class);
-//     Route::resource('units', UnitController::class);
-//     Route::resource('centers', CenterController::class);
-//     Route::resource('grades', GradeController::class);
-// });
-
-// Employee routes will be added here
-// Route::resource('employees', EmployeeController::class);
-
-// Leave routes will be added here
-// Route::prefix('leave')->name('leave.')->group(function () {
-//     Route::resource('annual', AnnualLeaveController::class);
-//     Route::resource('other', OtherLeaveController::class);
-//     Route::resource('categories', LeaveCategoryController::class);
-//     Route::resource('holidays', HolidayController::class);
-// });
+Route::get('/employees', [HrmsEmployeeDirectoryController::class, 'index'])->name('employees.index');
+Route::get('/departments', [HrmsDepartmentDirectoryController::class, 'index'])->name('departments.index');
+Route::get('/leave-requests', [HrmsLeaveRequestController::class, 'index'])->name('leave-requests.index');
+Route::get('/recruitment', [HrmsRecruitmentController::class, 'index'])->name('recruitment.index');

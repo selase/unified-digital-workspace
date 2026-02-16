@@ -438,6 +438,10 @@ final class WorkspaceNavigation
                 'permission' => 'hrms.employees.view',
                 'home_route' => 'hrms-core.index',
                 'sidebar' => [
+                    ['label' => 'Employee Directory', 'route' => 'hrms-core.employees.index', 'permission' => 'hrms.employees.view'],
+                    ['label' => 'Departments', 'route' => 'hrms-core.departments.index', 'permission' => 'hrms.departments.view'],
+                    ['label' => 'Leave Requests', 'route' => 'hrms-core.leave-requests.index', 'permission' => 'hrms.leave.view'],
+                    ['label' => 'Recruitment', 'route' => 'hrms-core.recruitment.index', 'permission' => 'hrms.jobs.view'],
                     ['label' => 'Employees API', 'route' => 'api.hrms-core.v1.employees.index'],
                     ['label' => 'Leave API', 'route' => 'api.hrms-core.v1.leave-requests.index'],
                     ['label' => 'Recruitment API', 'route' => 'api.hrms-core.v1.job-postings.index'],
@@ -447,16 +451,17 @@ final class WorkspaceNavigation
                         'label' => 'Core',
                         'items' => [
                             ['label' => 'HRMS Hub', 'route' => 'hrms-core.index'],
-                            ['label' => 'Employees', 'route' => 'api.hrms-core.v1.employees.index'],
-                            ['label' => 'Departments', 'route' => 'api.hrms-core.v1.departments.index'],
+                            ['label' => 'Employees', 'route' => 'hrms-core.employees.index', 'permission' => 'hrms.employees.view'],
+                            ['label' => 'Departments', 'route' => 'hrms-core.departments.index', 'permission' => 'hrms.departments.view'],
                         ],
                     ],
                     [
                         'label' => 'People Ops',
                         'items' => [
-                            ['label' => 'Leave Requests', 'route' => 'api.hrms-core.v1.leave-requests.index'],
-                            ['label' => 'Appraisals', 'route' => 'api.hrms-core.v1.appraisals.index'],
-                            ['label' => 'Promotions', 'route' => 'api.hrms-core.v1.promotions.index'],
+                            ['label' => 'Leave Requests', 'route' => 'hrms-core.leave-requests.index', 'permission' => 'hrms.leave.view'],
+                            ['label' => 'Recruitment', 'route' => 'hrms-core.recruitment.index', 'permission' => 'hrms.jobs.view'],
+                            ['label' => 'Appraisals API', 'route' => 'api.hrms-core.v1.appraisals.index'],
+                            ['label' => 'Promotions API', 'route' => 'api.hrms-core.v1.promotions.index'],
                         ],
                     ],
                 ],
@@ -467,6 +472,9 @@ final class WorkspaceNavigation
                 'permission' => 'cms.posts.view',
                 'home_route' => 'cms-core.index',
                 'sidebar' => [
+                    ['label' => 'Posts', 'route' => 'cms-core.posts.index', 'permission' => 'cms.posts.view'],
+                    ['label' => 'Media Library', 'route' => 'cms-core.media.index', 'permission' => 'cms.media.view'],
+                    ['label' => 'Menus', 'route' => 'cms-core.menus.index', 'permission' => 'cms.menus.view'],
                     ['label' => 'Posts API', 'route' => 'api.cms-core.v1.posts.index'],
                     ['label' => 'Taxonomy API', 'route' => 'api.cms-core.v1.categories.index'],
                     ['label' => 'Media API', 'route' => 'api.cms-core.v1.media.index'],
@@ -476,7 +484,8 @@ final class WorkspaceNavigation
                         'label' => 'Publishing',
                         'items' => [
                             ['label' => 'CMS Hub', 'route' => 'cms-core.index'],
-                            ['label' => 'Posts', 'route' => 'api.cms-core.v1.posts.index'],
+                            ['label' => 'Posts', 'route' => 'cms-core.posts.index', 'permission' => 'cms.posts.view'],
+                            ['label' => 'Menus', 'route' => 'cms-core.menus.index', 'permission' => 'cms.menus.view'],
                             ['label' => 'Post Types', 'route' => 'api.cms-core.v1.post-types.index'],
                         ],
                     ],
@@ -485,7 +494,7 @@ final class WorkspaceNavigation
                         'items' => [
                             ['label' => 'Categories', 'route' => 'api.cms-core.v1.categories.index'],
                             ['label' => 'Tags', 'route' => 'api.cms-core.v1.tags.index'],
-                            ['label' => 'Media', 'route' => 'api.cms-core.v1.media.index'],
+                            ['label' => 'Media', 'route' => 'cms-core.media.index', 'permission' => 'cms.media.view'],
                         ],
                     ],
                 ],

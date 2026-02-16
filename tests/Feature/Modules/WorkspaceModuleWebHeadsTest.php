@@ -4,9 +4,18 @@ declare(strict_types=1);
 
 use App\Models\Tenant;
 use App\Models\User;
+use App\Modules\CmsCore\Database\Factories\MediaFactory;
+use App\Modules\CmsCore\Database\Factories\PostFactory;
+use App\Modules\CmsCore\Models\Menu;
 use App\Modules\DocumentManagement\Models\Document;
 use App\Modules\DocumentManagement\Models\DocumentQuiz;
 use App\Modules\DocumentManagement\Models\DocumentQuizAttempt;
+use App\Modules\HrmsCore\Database\Factories\EmployeeFactory;
+use App\Modules\HrmsCore\Database\Factories\LeaveCategoryFactory;
+use App\Modules\HrmsCore\Database\Factories\LeaveRequestFactory;
+use App\Modules\HrmsCore\Models\Organization\Department;
+use App\Modules\HrmsCore\Models\Recruitment\JobPosting;
+use App\Modules\HrmsCore\Models\Recruitment\JobRequisition;
 use App\Modules\IncidentManagement\Models\Incident;
 use App\Modules\Memos\Models\Memo;
 use App\Services\ModuleManager;
@@ -22,6 +31,86 @@ use Spatie\Permission\Models\Permission;
 function setupDocumentWebTenant(User $user): array
 {
     $tenantDb = database_path('tenant_documents_web_testing.sqlite');
+    if (file_exists($tenantDb)) {
+        unlink($tenantDb);
+    }
+    touch($tenantDb);
+
+    Config::set('database.connections.tenant', [
+        'driver' => 'sqlite',
+        'database' => $tenantDb,
+        'prefix' => '',
+        'foreign_key_constraints' => false,
+    ]);
+    Config::set('database.default_tenant_connection', 'tenant');
+
+    DB::purge('tenant');
+    DB::reconnect('tenant');
+
+    $tenant = setActiveTenantForTest($user, [
+        'isolation_mode' => 'db_per_tenant',
+        'db_driver' => 'sqlite',
+        'meta' => [
+            'database' => $tenantDb,
+        ],
+    ]);
+
+    Artisan::call('migrate', [
+        '--database' => 'tenant',
+        '--path' => app_path('Modules/DocumentManagement/Database/Migrations'),
+        '--realpath' => true,
+        '--force' => true,
+    ]);
+
+    return [$tenant, $tenantDb];
+}
+
+/**
+ * @return array{0: Tenant, 1: string}
+ */
+function setupHrmsWebTenant(User $user): array
+{
+    $tenantDb = database_path('tenant_hrms_web_testing.sqlite');
+    if (file_exists($tenantDb)) {
+        unlink($tenantDb);
+    }
+    touch($tenantDb);
+
+    Config::set('database.connections.tenant', [
+        'driver' => 'sqlite',
+        'database' => $tenantDb,
+        'prefix' => '',
+        'foreign_key_constraints' => false,
+    ]);
+    Config::set('database.default_tenant_connection', 'tenant');
+
+    DB::purge('tenant');
+    DB::reconnect('tenant');
+
+    $tenant = setActiveTenantForTest($user, [
+        'isolation_mode' => 'db_per_tenant',
+        'db_driver' => 'sqlite',
+        'meta' => [
+            'database' => $tenantDb,
+        ],
+    ]);
+
+    Artisan::call('migrate', [
+        '--database' => 'tenant',
+        '--path' => app_path('Modules/HrmsCore/Database/Migrations'),
+        '--realpath' => true,
+        '--force' => true,
+    ]);
+
+    return [$tenant, $tenantDb];
+}
+
+/**
+ * @return array{0: Tenant, 1: string}
+ */
+function setupCmsWebTenant(User $user): array
+{
+    $tenantDb = database_path('tenant_cms_web_testing.sqlite');
     if (file_exists($tenantDb)) {
         unlink($tenantDb);
     }
@@ -48,7 +137,7 @@ function setupDocumentWebTenant(User $user): array
 
     Artisan::call('migrate', [
         '--database' => 'tenant',
-        '--path' => app_path('Modules/DocumentManagement/Database/Migrations'),
+        '--path' => app_path('Modules/CmsCore/Database/Migrations'),
         '--realpath' => true,
         '--force' => true,
     ]);
@@ -303,20 +392,65 @@ test('incident management web hub renders for enabled tenant module', function (
 
 test('hrms core web hub renders for enabled tenant module', function (): void {
     $user = User::factory()->create();
-    $tenant = setActiveTenantForTest($user);
+    [$tenant] = setupHrmsWebTenant($user);
 
-    Permission::firstOrCreate([
-        'name' => 'hrms.employees.view',
-        'category' => 'hrms',
-        'guard_name' => 'web',
-    ], [
-        'uuid' => (string) Str::uuid(),
-    ]);
+    foreach ([
+        'hrms.employees.view',
+        'hrms.departments.view',
+        'hrms.leave.view',
+        'hrms.jobs.view',
+    ] as $permissionName) {
+        Permission::firstOrCreate([
+            'name' => $permissionName,
+            'category' => 'hrms',
+            'guard_name' => 'web',
+        ], [
+            'uuid' => (string) Str::uuid(),
+        ]);
+    }
 
     setPermissionsTeamId($tenant->id);
-    $user->givePermissionTo('hrms.employees.view');
+    $user->givePermissionTo([
+        'hrms.employees.view',
+        'hrms.departments.view',
+        'hrms.leave.view',
+        'hrms.jobs.view',
+    ]);
 
     app(ModuleManager::class)->enableForTenant('hrms-core', $tenant);
+
+    $employee = EmployeeFactory::new()->forTenant($tenant->id)->create([
+        'first_name' => 'Jane',
+        'last_name' => 'Mensah',
+    ]);
+    $department = Department::create([
+        'tenant_id' => $tenant->id,
+        'name' => 'Operations',
+        'slug' => 'operations',
+        'is_active' => true,
+    ]);
+    $category = LeaveCategoryFactory::new()->forTenant($tenant->id)->create([
+        'name' => 'Annual Leave',
+    ]);
+    LeaveRequestFactory::new()
+        ->forTenant($tenant->id)
+        ->forEmployee($employee)
+        ->forCategory($category)
+        ->create();
+
+    $requisition = JobRequisition::create([
+        'tenant_id' => $tenant->id,
+        'title' => 'Support Analyst',
+        'department_id' => $department->id,
+        'employment_type' => 'full_time',
+        'vacancies' => 1,
+        'status' => 'open',
+    ]);
+    JobPosting::create([
+        'tenant_id' => $tenant->id,
+        'requisition_id' => $requisition->id,
+        'title' => 'Support Analyst',
+    ]);
 
     $this->actingAs($user)
         ->withSession(['active_tenant_id' => $tenant->id])
@@ -324,24 +458,78 @@ test('hrms core web hub renders for enabled tenant module', function (): void {
         ->assertSuccessful()
         ->assertSee('HRMS Hub')
         ->assertSee('assets/metronic/css/styles.css');
+
+    $this->actingAs($user)
+        ->withSession(['active_tenant_id' => $tenant->id])
+        ->get('/hrms-core/employees')
+        ->assertSuccessful()
+        ->assertSee('Employee Directory')
+        ->assertSee('Jane Mensah');
+
+    $this->actingAs($user)
+        ->withSession(['active_tenant_id' => $tenant->id])
+        ->get('/hrms-core/departments')
+        ->assertSuccessful()
+        ->assertSee('Department Directory')
+        ->assertSee('Operations');
+
+    $this->actingAs($user)
+        ->withSession(['active_tenant_id' => $tenant->id])
+        ->get('/hrms-core/leave-requests')
+        ->assertSuccessful()
+        ->assertSee('Leave Requests')
+        ->assertSee('Annual Leave');
+
+    $this->actingAs($user)
+        ->withSession(['active_tenant_id' => $tenant->id])
+        ->get('/hrms-core/recruitment')
+        ->assertSuccessful()
+        ->assertSee('Recruitment Pipeline')
+        ->assertSee('Support Analyst');
 });
 
 test('cms core web hub renders for enabled tenant module', function (): void {
     $user = User::factory()->create();
-    $tenant = setActiveTenantForTest($user);
+    [$tenant] = setupCmsWebTenant($user);
 
-    Permission::firstOrCreate([
-        'name' => 'cms.posts.view',
-        'category' => 'cms',
-        'guard_name' => 'web',
-    ], [
-        'uuid' => (string) Str::uuid(),
-    ]);
+    foreach ([
+        'cms.posts.view',
+        'cms.media.view',
+        'cms.menus.view',
+    ] as $permissionName) {
+        Permission::firstOrCreate([
+            'name' => $permissionName,
+            'category' => 'cms',
+            'guard_name' => 'web',
+        ], [
+            'uuid' => (string) Str::uuid(),
+        ]);
+    }
 
     setPermissionsTeamId($tenant->id);
-    $user->givePermissionTo('cms.posts.view');
+    $user->givePermissionTo([
+        'cms.posts.view',
+        'cms.media.view',
+        'cms.menus.view',
+    ]);
 
     app(ModuleManager::class)->enableForTenant('cms-core', $tenant);
+
+    PostFactory::new()->forTenant($tenant->id)->create([
+        'author_id' => $user->id,
+        'title' => 'Policy Update',
+        'slug' => 'policy-update',
+    ]);
+    MediaFactory::new()->forTenant($tenant->id)->create([
+        'uploaded_by' => $user->id,
+        'filename' => 'policy-banner.jpg',
+        'path' => 'media/policy-banner.jpg',
+    ]);
+    Menu::create([
+        'tenant_id' => $tenant->id,
+        'name' => 'Main Navigation',
+        'slug' => 'main-navigation',
+    ]);
 
     $this->actingAs($user)
         ->withSession(['active_tenant_id' => $tenant->id])
@@ -349,6 +537,27 @@ test('cms core web hub renders for enabled tenant module', function (): void {
         ->assertSuccessful()
         ->assertSee('CMS Hub')
         ->assertSee('assets/metronic/css/styles.css');
+
+    $this->actingAs($user)
+        ->withSession(['active_tenant_id' => $tenant->id])
+        ->get('/cms-core/posts')
+        ->assertSuccessful()
+        ->assertSee('Post Library')
+        ->assertSee('Policy Update');
+
+    $this->actingAs($user)
+        ->withSession(['active_tenant_id' => $tenant->id])
+        ->get('/cms-core/media')
+        ->assertSuccessful()
+        ->assertSee('Media Library')
+        ->assertSee('policy-banner.jpg');
+
+    $this->actingAs($user)
+        ->withSession(['active_tenant_id' => $tenant->id])
+        ->get('/cms-core/menus')
+        ->assertSuccessful()
+        ->assertSee('Menu Registry')
+        ->assertSee('Main Navigation');
 });
 
 test('project management web hub renders for enabled tenant module', function (): void {
