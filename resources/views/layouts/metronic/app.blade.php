@@ -161,8 +161,8 @@
         ['label' => 'Incident Management', 'url' => $buildRoute('incident-management.index')],
         ['label' => 'HRMS', 'url' => $buildRoute('hrms-core.index')],
         ['label' => 'CMS', 'url' => $buildRoute('cms-core.index')],
-        ['label' => 'Project Management', 'url' => $buildRoute('project-management.')],
-        ['label' => 'Quality Monitoring', 'url' => $buildRoute('quality-monitoring.')],
+        ['label' => 'Project Management', 'url' => $buildRoute('project-management.index')],
+        ['label' => 'Quality Monitoring', 'url' => $buildRoute('quality-monitoring.index')],
     ];
 @endphp
 

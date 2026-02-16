@@ -361,6 +361,7 @@ unified-digital-workspace/
 - [x] Superadmin Batch D (analytics/profile/audit): global usage, profile panels, audit trail chart and table consistency
 - [x] Tenant Batch A (settings + finance): tenant settings, payments, billing dashboard table/actions
 - [x] Tenant Batch B (roles + dashboard): roles CRUD pages and dashboard cards/empty states consistency
+- [x] Module web heads parity: HRMS, CMS, Project Management, and Quality Monitoring hubs moved from JSON/redirect placeholders to Metronic web pages
 - [x] Shared UI cleanup: legacy bootstrap utility classes (`btn`, `form-control`, `badge`, `table`) replaced with Metronic/Tailwind primitives on active Metronic routes
 - [x] Browser QA sweep per batch (desktop + mobile): menus, drawers, dropdowns, modals, datatables, forms *(automated smoke + interactive hook assertions)*
 - [x] Regression gate for each batch: `pint`, targeted Pest feature tests, final cross-route browser smoke test

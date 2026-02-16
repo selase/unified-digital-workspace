@@ -70,6 +70,10 @@ it('renders core admin metronic routes with shell interaction hooks', function (
     expect($dashboardContent)->toContain(route('memos.index'));
     expect($dashboardContent)->toContain(route('forums.hub'));
     expect($dashboardContent)->toContain(route('incident-management.index'));
+    expect($dashboardContent)->toContain(route('hrms-core.index'));
+    expect($dashboardContent)->toContain(route('cms-core.index'));
+    expect($dashboardContent)->toContain(route('project-management.index'));
+    expect($dashboardContent)->toContain(route('quality-monitoring.index'));
 });
 
 it('renders tenant dashboard with metronic shell hooks and without legacy bootstrap modal classes', function (): void {

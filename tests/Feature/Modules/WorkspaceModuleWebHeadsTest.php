@@ -214,3 +214,103 @@ test('incident management web hub renders for enabled tenant module', function (
         ->assertSee($incident->title)
         ->assertSee('assets/metronic/css/styles.css');
 });
+
+test('hrms core web hub renders for enabled tenant module', function (): void {
+    $user = User::factory()->create();
+    $tenant = setActiveTenantForTest($user);
+
+    Permission::firstOrCreate([
+        'name' => 'hrms.employees.view',
+        'category' => 'hrms',
+        'guard_name' => 'web',
+    ], [
+        'uuid' => (string) Str::uuid(),
+    ]);
+
+    setPermissionsTeamId($tenant->id);
+    $user->givePermissionTo('hrms.employees.view');
+
+    app(ModuleManager::class)->enableForTenant('hrms-core', $tenant);
+
+    $this->actingAs($user)
+        ->withSession(['active_tenant_id' => $tenant->id])
+        ->get('/hrms-core')
+        ->assertSuccessful()
+        ->assertSee('HRMS Hub')
+        ->assertSee('assets/metronic/css/styles.css');
+});
+
+test('cms core web hub renders for enabled tenant module', function (): void {
+    $user = User::factory()->create();
+    $tenant = setActiveTenantForTest($user);
+
+    Permission::firstOrCreate([
+        'name' => 'cms.posts.view',
+        'category' => 'cms',
+        'guard_name' => 'web',
+    ], [
+        'uuid' => (string) Str::uuid(),
+    ]);
+
+    setPermissionsTeamId($tenant->id);
+    $user->givePermissionTo('cms.posts.view');
+
+    app(ModuleManager::class)->enableForTenant('cms-core', $tenant);
+
+    $this->actingAs($user)
+        ->withSession(['active_tenant_id' => $tenant->id])
+        ->get('/cms-core')
+        ->assertSuccessful()
+        ->assertSee('CMS Hub')
+        ->assertSee('assets/metronic/css/styles.css');
+});
+
+test('project management web hub renders for enabled tenant module', function (): void {
+    $user = User::factory()->create();
+    $tenant = setActiveTenantForTest($user);
+
+    Permission::firstOrCreate([
+        'name' => 'projects.view',
+        'category' => 'project-management',
+        'guard_name' => 'web',
+    ], [
+        'uuid' => (string) Str::uuid(),
+    ]);
+
+    setPermissionsTeamId($tenant->id);
+    $user->givePermissionTo('projects.view');
+
+    app(ModuleManager::class)->enableForTenant('project-management', $tenant);
+
+    $this->actingAs($user)
+        ->withSession(['active_tenant_id' => $tenant->id])
+        ->get('/project-management')
+        ->assertSuccessful()
+        ->assertSee('Project Management Hub')
+        ->assertSee('assets/metronic/css/styles.css');
+});
+
+test('quality monitoring web hub renders for enabled tenant module', function (): void {
+    $user = User::factory()->create();
+    $tenant = setActiveTenantForTest($user);
+
+    Permission::firstOrCreate([
+        'name' => 'qm.workplans.view',
+        'category' => 'quality-monitoring',
+        'guard_name' => 'web',
+    ], [
+        'uuid' => (string) Str::uuid(),
+    ]);
+
+    setPermissionsTeamId($tenant->id);
+    $user->givePermissionTo('qm.workplans.view');
+
+    app(ModuleManager::class)->enableForTenant('quality-monitoring', $tenant);
+
+    $this->actingAs($user)
+        ->withSession(['active_tenant_id' => $tenant->id])
+        ->get('/quality-monitoring')
+        ->assertSuccessful()
+        ->assertSee('Quality Monitoring Hub')
+        ->assertSee('assets/metronic/css/styles.css');
+});

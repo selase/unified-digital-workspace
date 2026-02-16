@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Modules\HrmsCore\Http\Controllers\Web\HrmsHubController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -16,12 +17,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/', function () {
-    return response()->json([
-        'module' => 'hrms-core',
-        'message' => 'HRMS Core module is active',
-    ]);
-})->name('index');
+Route::get('/', [HrmsHubController::class, 'index'])->name('index');
 
 // Organization routes will be added here
 // Route::prefix('organization')->name('organization.')->group(function () {

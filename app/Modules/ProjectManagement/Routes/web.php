@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Modules\ProjectManagement\Http\Controllers\Web\ProjectHubController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', fn () => redirect()->route('api.project-management.index'));
+Route::get('/', [ProjectHubController::class, 'index'])->name('index');
