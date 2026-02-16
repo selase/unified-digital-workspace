@@ -87,6 +87,13 @@ test('document management web hub renders for enabled tenant module', function (
         ->assertSee('Document Management Hub')
         ->assertSee('Operations Handbook')
         ->assertSee('assets/metronic/css/styles.css');
+
+    $this->actingAs($user)
+        ->withSession(['active_tenant_id' => $tenant->id])
+        ->get('/document-management/documents')
+        ->assertSuccessful()
+        ->assertSee('Document Library')
+        ->assertSee('Operations Handbook');
 });
 
 test('document quiz analytics page is manager-only', function (): void {
@@ -147,6 +154,66 @@ test('document quiz analytics page is manager-only', function (): void {
         ->assertSuccessful()
         ->assertSee('Quiz Analytics')
         ->assertSee('Safety Quiz');
+
+    $this->actingAs($user)
+        ->withSession(['active_tenant_id' => $tenant->id])
+        ->get('/document-management/quizzes')
+        ->assertSuccessful()
+        ->assertSee('Quiz Library')
+        ->assertSee('Safety Quiz');
+});
+
+test('document audit page requires audit permission', function (): void {
+    $user = User::factory()->create();
+    [$tenant] = setupDocumentWebTenant($user);
+
+    Permission::firstOrCreate([
+        'name' => 'documents.view',
+        'category' => 'documents',
+        'guard_name' => 'web',
+    ], [
+        'uuid' => (string) Str::uuid(),
+    ]);
+    Permission::firstOrCreate([
+        'name' => 'documents.audit.view',
+        'category' => 'documents',
+        'guard_name' => 'web',
+    ], [
+        'uuid' => (string) Str::uuid(),
+    ]);
+
+    setPermissionsTeamId($tenant->id);
+    $user->givePermissionTo('documents.view');
+
+    app(ModuleManager::class)->enableForTenant('document-management', $tenant);
+
+    $document = Document::create([
+        'title' => 'Audit Policy',
+        'slug' => 'audit-policy',
+        'owner_id' => (string) $user->uuid,
+        'status' => 'published',
+    ]);
+
+    $document->audits()->create([
+        'user_id' => (string) $user->uuid,
+        'event' => 'viewed',
+        'metadata' => ['source' => 'test'],
+        'created_at' => now(),
+    ]);
+
+    $this->actingAs($user)
+        ->withSession(['active_tenant_id' => $tenant->id])
+        ->get('/document-management/audits')
+        ->assertForbidden();
+
+    $user->givePermissionTo('documents.audit.view');
+
+    $this->actingAs($user)
+        ->withSession(['active_tenant_id' => $tenant->id])
+        ->get('/document-management/audits')
+        ->assertSuccessful()
+        ->assertSee('Audit Timeline')
+        ->assertSee('viewed');
 });
 
 test('memos web hub renders for enabled tenant module', function (): void {
@@ -213,6 +280,25 @@ test('incident management web hub renders for enabled tenant module', function (
         ->assertSee('Incident Management Hub')
         ->assertSee($incident->title)
         ->assertSee('assets/metronic/css/styles.css');
+
+    $this->actingAs($user)
+        ->withSession(['active_tenant_id' => $tenant->id])
+        ->get('/incident-management/incidents')
+        ->assertSuccessful()
+        ->assertSee('Incident Register')
+        ->assertSee($incident->reference_code);
+
+    $this->actingAs($user)
+        ->withSession(['active_tenant_id' => $tenant->id])
+        ->get('/incident-management/tasks')
+        ->assertSuccessful()
+        ->assertSee('Task Board');
+
+    $this->actingAs($user)
+        ->withSession(['active_tenant_id' => $tenant->id])
+        ->get('/incident-management/reports')
+        ->assertSuccessful()
+        ->assertSee('Progress Reports');
 });
 
 test('hrms core web hub renders for enabled tenant module', function (): void {

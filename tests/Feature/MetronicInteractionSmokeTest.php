@@ -144,3 +144,32 @@ it('switches top menu context when a tenant module page is active', function ():
     expect($content)->toContain('Reports');
     expect($content)->toContain('Workplans API');
 });
+
+it('shows incident module sidebar and top menu links on incident pages', function (): void {
+    $user = User::factory()->create();
+    [$tenant] = setupIncidentTenantConnection($user);
+
+    Permission::firstOrCreate([
+        'name' => 'incidents.view',
+        'guard_name' => 'web',
+    ], [
+        'uuid' => (string) Str::uuid(),
+        'category' => 'incident-management',
+    ]);
+
+    setPermissionsTeamId($tenant->id);
+    $user->givePermissionTo('incidents.view');
+
+    app(App\Services\ModuleManager::class)->enableForTenant('incident-management', $tenant);
+
+    $content = $this->actingAs($user)
+        ->withSession(['active_tenant_id' => $tenant->id])
+        ->get(route('incident-management.index'))
+        ->assertSuccessful()
+        ->getContent();
+
+    expect($content)->toContain(route('incident-management.incidents.index'));
+    expect($content)->toContain(route('incident-management.tasks.index'));
+    expect($content)->toContain(route('incident-management.reports.index'));
+    expect($content)->toContain('Operations');
+});

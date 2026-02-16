@@ -316,7 +316,10 @@ final class WorkspaceNavigation
                 'permission' => 'documents.view',
                 'home_route' => 'document-management.index',
                 'sidebar' => [
+                    ['label' => 'Document Library', 'route' => 'document-management.documents.index'],
+                    ['label' => 'Quiz Library', 'route' => 'document-management.quizzes.index'],
                     ['label' => 'Quiz Analytics', 'route' => 'document-management.analytics.index', 'permission' => 'documents.manage_quizzes'],
+                    ['label' => 'Audit Timeline', 'route' => 'document-management.audits.index', 'permission' => 'documents.audit.view'],
                     ['label' => 'Documents API', 'route' => 'api.document-management.v1.documents.index'],
                     ['label' => 'Module API Root', 'route' => 'api.document-management.index'],
                 ],
@@ -325,12 +328,15 @@ final class WorkspaceNavigation
                         'label' => 'Overview',
                         'items' => [
                             ['label' => 'Document Hub', 'route' => 'document-management.index'],
+                            ['label' => 'Document Library', 'route' => 'document-management.documents.index'],
+                            ['label' => 'Quiz Library', 'route' => 'document-management.quizzes.index'],
                             ['label' => 'Quiz Analytics', 'route' => 'document-management.analytics.index', 'permission' => 'documents.manage_quizzes'],
                         ],
                     ],
                     [
-                        'label' => 'Operations',
+                        'label' => 'Compliance',
                         'items' => [
+                            ['label' => 'Audit Timeline', 'route' => 'document-management.audits.index', 'permission' => 'documents.audit.view'],
                             ['label' => 'Documents API', 'route' => 'api.document-management.v1.documents.index'],
                             ['label' => 'Document Details API', 'route' => 'api.document-management.v1.documents.show', 'params' => ['document' => 1]],
                             ['label' => 'Quiz API', 'route' => 'api.document-management.v1.documents.quizzes.show', 'params' => ['document' => 1, 'quiz' => 1]],
@@ -359,8 +365,7 @@ final class WorkspaceNavigation
                         'label' => 'Workflow',
                         'items' => [
                             ['label' => 'Memo Details API', 'route' => 'api.memos.v1.memos.show', 'params' => ['memo' => 1]],
-                            ['label' => 'Send Code API', 'route' => 'api.memos.v1.memos.send-code', 'params' => ['memo' => 1]],
-                            ['label' => 'Acknowledge API', 'route' => 'api.memos.v1.memos.acknowledge', 'params' => ['memo' => 1]],
+                            ['label' => 'Module API Root', 'route' => 'api.memos.index'],
                         ],
                     ],
                 ],
@@ -399,6 +404,9 @@ final class WorkspaceNavigation
                 'permission' => 'incidents.view',
                 'home_route' => 'incident-management.index',
                 'sidebar' => [
+                    ['label' => 'Incident Register', 'route' => 'incident-management.incidents.index'],
+                    ['label' => 'Task Board', 'route' => 'incident-management.tasks.index'],
+                    ['label' => 'Progress Reports', 'route' => 'incident-management.reports.index'],
                     ['label' => 'Incidents API', 'route' => 'api.incident-management.v1.incidents.index'],
                     ['label' => 'Incidents Stats API', 'route' => 'api.incident-management.v1.incidents.stats'],
                     ['label' => 'Module API Root', 'route' => 'api.incident-management.index'],
@@ -408,6 +416,9 @@ final class WorkspaceNavigation
                         'label' => 'Overview',
                         'items' => [
                             ['label' => 'Incident Hub', 'route' => 'incident-management.index'],
+                            ['label' => 'Incident Register', 'route' => 'incident-management.incidents.index'],
+                            ['label' => 'Task Board', 'route' => 'incident-management.tasks.index'],
+                            ['label' => 'Progress Reports', 'route' => 'incident-management.reports.index'],
                             ['label' => 'Incidents API', 'route' => 'api.incident-management.v1.incidents.index'],
                         ],
                     ],
@@ -415,8 +426,8 @@ final class WorkspaceNavigation
                         'label' => 'Operations',
                         'items' => [
                             ['label' => 'Incident Stats', 'route' => 'api.incident-management.v1.incidents.stats'],
-                            ['label' => 'Statuses API', 'route' => 'api.incident-management.v1.statuses.store', 'permission' => 'incidents.statuses.manage'],
-                            ['label' => 'Categories API', 'route' => 'api.incident-management.v1.categories.store', 'permission' => 'incidents.categories.manage'],
+                            ['label' => 'Incidents Export', 'route' => 'api.incident-management.v1.incidents.export'],
+                            ['label' => 'Incident Details API', 'route' => 'api.incident-management.v1.incidents.show', 'params' => ['incident' => 1]],
                         ],
                     ],
                 ],
