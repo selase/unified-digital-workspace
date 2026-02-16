@@ -254,3 +254,40 @@ it('shows cms contextual menu and page links on cms routes', function (): void {
     expect($content)->toContain(route('cms-core.menus.index'));
     expect($content)->toContain('Publishing');
 });
+
+it('shows forums module links in tenant shell when forums module is enabled', function (): void {
+    $user = User::factory()->create();
+    $tenant = setActiveTenantForTest($user);
+
+    foreach ([
+        'forums.view',
+        'forums.moderate',
+    ] as $permissionName) {
+        Permission::firstOrCreate([
+            'name' => $permissionName,
+            'guard_name' => 'web',
+        ], [
+            'uuid' => (string) Str::uuid(),
+            'category' => 'forums',
+        ]);
+    }
+
+    setPermissionsTeamId($tenant->id);
+    $user->givePermissionTo([
+        'forums.view',
+        'forums.moderate',
+    ]);
+
+    app(App\Services\ModuleManager::class)->enableForTenant('forums', $tenant);
+
+    $content = $this->actingAs($user)
+        ->withSession(['active_tenant_id' => $tenant->id])
+        ->get(route('tenant.dashboard', ['subdomain' => $tenant->slug]))
+        ->assertSuccessful()
+        ->getContent();
+
+    expect($content)->toContain(route('forums.channels.index'));
+    expect($content)->toContain(route('forums.threads.index'));
+    expect($content)->toContain(route('forums.messages.index'));
+    expect($content)->toContain(route('forums.moderation.index'));
+});

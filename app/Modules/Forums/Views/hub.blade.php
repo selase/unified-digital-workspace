@@ -11,7 +11,14 @@
                     <h1 class="mt-2 text-2xl font-semibold text-foreground">Forums Hub</h1>
                     <p class="mt-2 text-sm text-muted-foreground">Channels, live discussions, and moderation overview.</p>
                 </div>
-                <a href="{{ route('api.forums.v1.channels.index') }}" class="kt-btn kt-btn-outline">Open Channels API</a>
+                <div class="flex flex-wrap gap-2">
+                    <a href="{{ route('forums.channels.index') }}" class="kt-btn kt-btn-outline">Channels</a>
+                    <a href="{{ route('forums.threads.index') }}" class="kt-btn kt-btn-outline">Threads</a>
+                    <a href="{{ route('forums.messages.index') }}" class="kt-btn kt-btn-outline">Messages</a>
+                    @can('forums.moderate')
+                        <a href="{{ route('forums.moderation.index') }}" class="kt-btn kt-btn-outline">Moderation</a>
+                    @endcan
+                </div>
             </div>
         </div>
 

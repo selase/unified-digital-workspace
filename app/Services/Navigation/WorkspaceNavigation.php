@@ -376,6 +376,10 @@ final class WorkspaceNavigation
                 'permission' => 'forums.view',
                 'home_route' => 'forums.hub',
                 'sidebar' => [
+                    ['label' => 'Channel Directory', 'route' => 'forums.channels.index'],
+                    ['label' => 'Thread Queue', 'route' => 'forums.threads.index'],
+                    ['label' => 'Message Center', 'route' => 'forums.messages.index'],
+                    ['label' => 'Moderation Queue', 'route' => 'forums.moderation.index', 'permission' => 'forums.moderate'],
                     ['label' => 'Channels API', 'route' => 'api.forums.v1.channels.index'],
                     ['label' => 'Threads API', 'route' => 'api.forums.v1.threads.index'],
                     ['label' => 'Messages API', 'route' => 'api.forums.v1.messages.index'],
@@ -385,14 +389,19 @@ final class WorkspaceNavigation
                         'label' => 'Overview',
                         'items' => [
                             ['label' => 'Forums Hub', 'route' => 'forums.hub'],
+                            ['label' => 'Channels', 'route' => 'forums.channels.index'],
+                            ['label' => 'Threads', 'route' => 'forums.threads.index'],
+                            ['label' => 'Messages', 'route' => 'forums.messages.index'],
                             ['label' => 'Module API Root', 'route' => 'api.forums.index'],
                         ],
                     ],
                     [
                         'label' => 'Discussions',
                         'items' => [
-                            ['label' => 'Channels', 'route' => 'api.forums.v1.channels.index'],
-                            ['label' => 'Threads', 'route' => 'api.forums.v1.threads.index'],
+                            ['label' => 'Moderation Queue', 'route' => 'forums.moderation.index', 'permission' => 'forums.moderate'],
+                            ['label' => 'Channels API', 'route' => 'api.forums.v1.channels.index'],
+                            ['label' => 'Threads API', 'route' => 'api.forums.v1.threads.index'],
+                            ['label' => 'Messages API', 'route' => 'api.forums.v1.messages.index'],
                             ['label' => 'Moderation', 'route' => 'api.forums.v1.moderation.overview', 'permission' => 'forums.moderate'],
                         ],
                     ],

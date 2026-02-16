@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use App\Models\User;
 use App\Modules\Forums\Models\ForumChannel;
+use App\Modules\Forums\Models\ForumMessage;
+use App\Modules\Forums\Models\ForumMessageRecipient;
 use App\Modules\Forums\Models\ForumModerationLog;
 use App\Modules\Forums\Models\ForumThread;
 use App\Services\ModuleManager;
@@ -58,9 +60,16 @@ test('forums hub is accessible when module is enabled for tenant', function (): 
     ], [
         'uuid' => (string) Str::uuid(),
     ]);
+    Permission::firstOrCreate([
+        'name' => 'forums.moderate',
+        'category' => 'forums',
+        'guard_name' => 'web',
+    ], [
+        'uuid' => (string) Str::uuid(),
+    ]);
 
     setPermissionsTeamId($tenant->id);
-    $user->givePermissionTo('forums.view');
+    $user->givePermissionTo(['forums.view', 'forums.moderate']);
 
     app(TenantDatabaseManager::class)->configure($tenant);
     app(ModuleManager::class)->enableForTenant('forums', $tenant);
@@ -91,12 +100,52 @@ test('forums hub is accessible when module is enabled for tenant', function (): 
         'reason' => 'Pinned for visibility',
     ]);
 
+    $message = ForumMessage::query()->create([
+        'sender_id' => (string) $user->uuid,
+        'subject' => 'Community update',
+        'body' => 'Please read and respond in your unit.',
+        'visibility' => ['scope' => 'unit'],
+    ]);
+
+    ForumMessageRecipient::query()->create([
+        'message_id' => $message->id,
+        'user_id' => (string) $user->uuid,
+    ]);
+
     $this->actingAs($user)
         ->withSession(['active_tenant_id' => $tenant->id])
         ->get('/forums/hub')
         ->assertSuccessful()
         ->assertSee('Forums Hub')
         ->assertSee('Welcome thread');
+
+    $this->actingAs($user)
+        ->withSession(['active_tenant_id' => $tenant->id])
+        ->get('/forums/channels')
+        ->assertSuccessful()
+        ->assertSee('Channel Directory')
+        ->assertSee('General');
+
+    $this->actingAs($user)
+        ->withSession(['active_tenant_id' => $tenant->id])
+        ->get('/forums/threads')
+        ->assertSuccessful()
+        ->assertSee('Thread Queue')
+        ->assertSee('Welcome thread');
+
+    $this->actingAs($user)
+        ->withSession(['active_tenant_id' => $tenant->id])
+        ->get('/forums/messages')
+        ->assertSuccessful()
+        ->assertSee('Message Center')
+        ->assertSee('Community update');
+
+    $this->actingAs($user)
+        ->withSession(['active_tenant_id' => $tenant->id])
+        ->get('/forums/moderation')
+        ->assertSuccessful()
+        ->assertSee('Moderation Queue')
+        ->assertSee('Pinned for visibility');
 });
 
 test('forums hub is forbidden when module is not enabled for tenant', function (): void {
@@ -117,5 +166,36 @@ test('forums hub is forbidden when module is not enabled for tenant', function (
     $this->actingAs($user)
         ->withSession(['active_tenant_id' => $tenant->id])
         ->get('/forums/hub')
+        ->assertForbidden();
+});
+
+test('forums moderation queue requires moderation permission', function (): void {
+    $user = User::factory()->create();
+    [$tenant] = setupForumsWebTenant($user);
+
+    Permission::firstOrCreate([
+        'name' => 'forums.view',
+        'category' => 'forums',
+        'guard_name' => 'web',
+    ], [
+        'uuid' => (string) Str::uuid(),
+    ]);
+
+    setPermissionsTeamId($tenant->id);
+    $user->givePermissionTo('forums.view');
+
+    app(TenantDatabaseManager::class)->configure($tenant);
+    app(ModuleManager::class)->enableForTenant('forums', $tenant);
+
+    Artisan::call('migrate', [
+        '--database' => 'tenant',
+        '--path' => app_path('Modules/Forums/Database/Migrations'),
+        '--realpath' => true,
+        '--force' => true,
+    ]);
+
+    $this->actingAs($user)
+        ->withSession(['active_tenant_id' => $tenant->id])
+        ->get('/forums/moderation')
         ->assertForbidden();
 });
