@@ -260,7 +260,7 @@
                     <div class="group overflow-hidden rounded-xl bg-white shadow-sm border transition hover:shadow-lg" style="border-color: var(--tgf-border);">
                         <div class="relative aspect-video bg-slate-900">
                             <img
-                                src="https://img.youtube.com/vi/{{ $video['id'] }}/maxresdefault.jpg"
+                                src="https://img.youtube.com/vi/{{ $video['id'] }}/0.jpg"
                                 alt="{{ $video['title'] }}"
                                 class="h-full w-full object-cover opacity-80 transition group-hover:opacity-100"
                                 loading="lazy"
