@@ -28,7 +28,6 @@ final class ThyroidGhanaSeeder extends Seeder
         app(TenantDatabaseManager::class)->configureShared();
         setPermissionsTeamId($tenant->id);
 
-        // Use the first associated user as author, or the superadmin
         $user = $tenant->users()->first()
             ?? \App\Models\User::where('email', 'hiselase@gmail.com')->first();
         $this->authorId = (string) ($user?->uuid ?? '');
@@ -57,9 +56,7 @@ final class ThyroidGhanaSeeder extends Seeder
 
     private function seedCategories(Tenant $tenant): void
     {
-        $categories = ['Awareness', 'Patient Support', 'Research', 'Events', 'Partnerships'];
-
-        foreach ($categories as $name) {
+        foreach (['Awareness', 'Patient Support', 'Research', 'Events', 'Partnerships'] as $name) {
             Category::query()->firstOrCreate(
                 ['tenant_id' => $tenant->id, 'slug' => \Illuminate\Support\Str::slug($name)],
                 ['name' => $name, 'is_active' => true, 'sort_order' => 0]
@@ -69,9 +66,7 @@ final class ThyroidGhanaSeeder extends Seeder
 
     private function seedTags(Tenant $tenant): void
     {
-        $tags = ['thyroid', 'health', 'ghana', 'awareness-week', 'surgery', 'fundraising', 'west-africa'];
-
-        foreach ($tags as $tag) {
+        foreach (['thyroid', 'health', 'ghana', 'awareness-week', 'surgery', 'fundraising', 'west-africa'] as $tag) {
             Tag::query()->firstOrCreate(
                 ['tenant_id' => $tenant->id, 'slug' => $tag],
                 ['name' => ucwords(str_replace('-', ' ', $tag))]
@@ -83,78 +78,21 @@ final class ThyroidGhanaSeeder extends Seeder
     {
         $pageType = PostType::where('tenant_id', $tenant->id)->where('slug', 'page')->first();
 
-        $pages = [
-            [
-                'slug' => 'home',
-                'title' => 'Home',
-                'excerpt' => 'Creating awareness of thyroid diseases in Ghana',
-                'body' => '<p>Welcome to the Thyroid Ghana Foundation. We are dedicated to raising awareness about thyroid disorders and ensuring prompt, appropriate treatment access for affected Ghanaians.</p>',
-                'status' => 'published',
-                'published_at' => now(),
-            ],
-            [
-                'slug' => 'about',
-                'title' => 'About Us',
-                'excerpt' => 'Learn about our mission, vision, and the work we do across Ghana.',
-                'body' => '<h2>Our Mission</h2><p>The Thyroid Ghana Foundation is a non-governmental organization dedicated to creating awareness of thyroid diseases in Ghana, creating opportunities for early detection of thyroid problems, supporting thyroid research and institutions involved in thyroid disease management, providing access to affordable treatment and advocating for improved healthcare practices for thyroid disease patients in the Country.</p><h2>Our Vision</h2><p>A Ghana where thyroid diseases are detected early, treated effectively, and no patient is left behind due to lack of awareness or access to healthcare.</p><h2>Our History</h2><p>Founded in July 2018, the Thyroid Ghana Foundation has grown from a small awareness initiative into a nationally recognized organization. As a proud member of the Thyroid Federation International, we connect Ghanaian patients and healthcare providers with global best practices in thyroid disease management.</p><p>Our work spans across multiple regions in Ghana, reaching communities that previously had little to no access to thyroid health information or services.</p>',
-                'status' => 'published',
-                'published_at' => now(),
-            ],
-            [
-                'slug' => 'the-challenge',
-                'title' => 'The Challenge',
-                'excerpt' => 'Understanding the scale of thyroid disease in Ghana.',
-                'body' => '<h2>The Thyroid Health Challenge in Ghana</h2><p>Thyroid disorders affect millions of people worldwide, yet awareness in Ghana remains critically low. Many patients live with undiagnosed conditions for years, suffering from symptoms that significantly impact their quality of life.</p><h2>Key Challenges</h2><ul><li><strong>Low Awareness:</strong> Many Ghanaians are unaware of thyroid diseases, their symptoms, and the importance of early detection.</li><li><strong>Limited Access:</strong> Access to specialized thyroid care is concentrated in major urban centers, leaving rural communities underserved.</li><li><strong>Cost Barriers:</strong> The cost of diagnosis, medication, and surgery can be prohibitive for many families.</li><li><strong>Specialist Shortage:</strong> There is a significant shortage of endocrinologists and thyroid specialists across the country.</li></ul><p>The Thyroid Ghana Foundation exists to address these challenges head-on, working at every level from community awareness to specialist referral networks.</p>',
-                'status' => 'published',
-                'published_at' => now(),
-            ],
-            [
-                'slug' => 'our-team',
-                'title' => 'Our Team',
-                'excerpt' => 'Meet the dedicated team behind the Thyroid Ghana Foundation.',
-                'body' => '<h2>Leadership Team</h2><p>Our foundation is led by a passionate team of healthcare professionals, advocates, and community leaders committed to improving thyroid health outcomes in Ghana.</p><h3>Nana Adwoa Konadu Dsane</h3><p><strong>Founder & President</strong></p><p>Nana Adwoa Konadu Dsane founded the Thyroid Ghana Foundation in 2018 driven by a deep commitment to improving healthcare access for thyroid patients. Under her leadership, the foundation has grown into a nationally recognized advocate for thyroid health.</p><h3>Rev. Prof. Patrick F. Ayeh-Kumi</h3><p><strong>Management Board Chair</strong></p><p>A distinguished academic and researcher who brings decades of medical expertise to the foundation\'s governance and strategic direction.</p><h3>Mr. Leslie Chartey Kumahlor</h3><p><strong>Head of Operations</strong></p><p>Oversees the day-to-day operations and ensures our programs reach communities across Ghana effectively.</p><h3>Dr. Joyce Emefa Addo-Klah</h3><p><strong>Public Relations Officer</strong></p><p>Leads our communications strategy and public engagement initiatives.</p><h3>Frank Anyimadu</h3><p><strong>Consultant Dietician</strong></p><p>Provides nutritional guidance and develops dietary programs for thyroid patients.</p><h3>Justice Kwesi Baah</h3><p><strong>Research Coordinator</strong></p><p>Coordinates research initiatives and partnerships with academic institutions.</p>',
-                'status' => 'published',
-                'published_at' => now(),
-            ],
-            [
-                'slug' => 'donate',
-                'title' => 'Support Our Cause',
-                'excerpt' => 'Your donation helps us reach more patients and fund critical thyroid research.',
-                'body' => '<h2>Make a Difference Today</h2><p>Your generous contribution directly supports our mission to improve thyroid health outcomes across Ghana. Every donation helps us:</p><ul><li>Fund screening programs in underserved communities</li><li>Provide medication subsidies for patients who cannot afford treatment</li><li>Support surgical interventions for thyroid cancer patients</li><li>Run awareness campaigns during World Thyroid Awareness Week</li><li>Train healthcare workers in thyroid disease detection</li></ul><h2>How to Donate</h2><p>We accept donations through mobile money, bank transfer, and online payment. Contact us at <strong>+233 (024) 337 6304</strong> or email <strong>info@thyroidghanafoundation.org</strong> for donation details.</p><h2>Corporate Partnerships</h2><p>We welcome corporate partnerships and sponsorships. Partner with us to make a lasting impact on thyroid health in Ghana.</p>',
-                'status' => 'published',
-                'published_at' => now(),
-            ],
-            [
-                'slug' => 'volunteer',
-                'title' => 'Volunteer With Us',
-                'excerpt' => 'Join our team of volunteers making a difference in thyroid health.',
-                'body' => '<h2>Become a Volunteer</h2><p>We are always looking for passionate individuals to join our cause. Volunteers play a vital role in our community outreach, awareness campaigns, and patient support programs.</p><h2>Volunteer Opportunities</h2><ul><li><strong>Community Health Educators:</strong> Help spread awareness about thyroid diseases in your community.</li><li><strong>Event Coordinators:</strong> Assist in organizing awareness events, screenings, and fundraisers.</li><li><strong>Patient Support:</strong> Provide emotional support and guidance to thyroid patients and their families.</li><li><strong>Research Assistants:</strong> Support our research initiatives and data collection efforts.</li></ul><p>To volunteer, contact us at <strong>info@thyroidghanafoundation.org</strong> or call <strong>+233 (024) 337 6304</strong>.</p>',
-                'status' => 'published',
-                'published_at' => now(),
-            ],
-            [
-                'slug' => 'partner-us',
-                'title' => 'Partner With Us',
-                'excerpt' => 'Explore partnership opportunities with the Thyroid Ghana Foundation.',
-                'body' => '<h2>Partnership Opportunities</h2><p>We believe in the power of collaboration. By partnering with us, your organization can make a meaningful contribution to thyroid health in Ghana while fulfilling corporate social responsibility goals.</p><h2>Types of Partnerships</h2><ul><li><strong>Healthcare Partnerships:</strong> Collaborate on screening programs, specialist referral networks, and treatment subsidies.</li><li><strong>Research Partnerships:</strong> Fund or co-lead thyroid research initiatives.</li><li><strong>Corporate Sponsorships:</strong> Sponsor our annual awareness events and community programs.</li><li><strong>Media Partnerships:</strong> Help us amplify our message through media channels.</li></ul><p>Contact us to discuss how we can work together.</p>',
-                'status' => 'published',
-                'published_at' => now(),
-            ],
-            [
-                'slug' => 'membership',
-                'title' => 'Membership',
-                'excerpt' => 'Join the Thyroid Ghana Foundation community.',
-                'body' => '<h2>Become a Member</h2><p>Membership in the Thyroid Ghana Foundation connects you with a community of patients, healthcare professionals, and advocates committed to improving thyroid health outcomes in Ghana.</p><h2>Member Benefits</h2><ul><li>Access to educational resources and workshops</li><li>Invitation to annual conferences and events</li><li>Connection with thyroid specialists and support groups</li><li>Regular newsletters with the latest thyroid health information</li><li>Opportunity to participate in research studies</li></ul><p>For membership inquiries, please contact us at <strong>info@thyroidghanafoundation.org</strong>.</p>',
-                'status' => 'published',
-                'published_at' => now(),
-            ],
-        ];
+        $pages = $this->getPageContent();
 
         foreach ($pages as $pageData) {
-            Post::query()->firstOrCreate(
+            $post = Post::query()->updateOrCreate(
                 ['tenant_id' => $tenant->id, 'post_type_id' => $pageType->id, 'slug' => $pageData['slug']],
                 array_merge($pageData, ['post_type_id' => $pageType->id, 'author_id' => $this->authorId])
             );
+
+            // Set page template for media-gallery page
+            if ($pageData['slug'] === 'media-gallery') {
+                \App\Modules\CmsCore\Models\PostMeta::query()->updateOrCreate(
+                    ['post_id' => $post->id, 'key' => 'page_template'],
+                    ['value' => 'media-gallery', 'tenant_id' => $tenant->id]
+                );
+            }
         }
     }
 
@@ -168,7 +106,7 @@ final class ThyroidGhanaSeeder extends Seeder
                 'slug' => 'ghana-health-awards-honors-launched',
                 'title' => 'Ghana Health Awards and Honors Launched',
                 'excerpt' => 'The Thyroid Ghana Foundation participates in the inaugural Ghana Health Awards ceremony recognizing outstanding contributions to healthcare.',
-                'body' => '<p>The Thyroid Ghana Foundation was honored to participate in the launch of the Ghana Health Awards and Honors in December 2022. This prestigious initiative recognizes outstanding contributions to healthcare delivery across Ghana.</p><p>Our foundation was acknowledged for our tireless work in thyroid health awareness and patient support. The event brought together healthcare leaders, policy makers, and organizations committed to improving health outcomes in the country.</p><p>We remain committed to advancing thyroid health and are grateful for this recognition of our efforts.</p>',
+                'body' => '<p>The Thyroid Ghana Foundation was honored to participate in the launch of the Ghana Health Awards and Honors in December 2022. This prestigious initiative recognizes outstanding contributions to healthcare delivery across Ghana.</p><p>Our foundation was acknowledged for our tireless work in thyroid health awareness and patient support. The event brought together healthcare leaders, policy makers, and organizations committed to improving health outcomes in the country.</p>',
                 'status' => 'published',
                 'published_at' => now()->subMonths(3),
             ],
@@ -176,27 +114,35 @@ final class ThyroidGhanaSeeder extends Seeder
                 'slug' => 'world-thyroid-awareness-week-2024',
                 'title' => '14th World Thyroid Awareness Week Launch',
                 'excerpt' => 'The foundation leads Ghana\'s participation in the annual World Thyroid Awareness Week with community screenings and education.',
-                'body' => '<p>The Thyroid Ghana Foundation proudly launched the 14th World Thyroid Awareness Week in Ghana, bringing together healthcare professionals, patients, and community leaders for a week of education and screening.</p><p>Activities included free thyroid screenings at community health centers, educational workshops for healthcare workers, and public awareness campaigns across social media and traditional media platforms.</p><p>World Thyroid Awareness Week is observed globally to raise awareness about thyroid diseases and the importance of early detection and treatment.</p>',
+                'body' => '<p>The Thyroid Ghana Foundation proudly launched the 14th World Thyroid Awareness Week in Ghana, bringing together healthcare professionals, patients, and community leaders.</p><p>Activities included free thyroid screenings at community health centers, educational workshops for healthcare workers, and public awareness campaigns across media platforms.</p>',
                 'status' => 'published',
                 'published_at' => now()->subMonths(2),
             ],
             [
                 'slug' => 'expanding-patient-forums-to-northern-regions',
                 'title' => 'Expanding Patient Forums to Northern Regions',
-                'excerpt' => 'Our patient support forums now reach communities in the Northern, Upper East, and Upper West regions.',
-                'body' => '<p>We are thrilled to announce the expansion of our Patient Forums program to the Northern, Upper East, and Upper West regions of Ghana. This expansion means that thyroid patients in these historically underserved areas now have access to support groups and educational resources.</p><p>The forums provide a safe space for patients to share experiences, learn about their conditions, and receive guidance from trained community health educators. Each forum meets monthly and is supported by healthcare professionals who volunteer their time.</p><p>This expansion was made possible through generous donations from our supporters and partnerships with regional health directorates.</p>',
+                'excerpt' => 'Our patient support forums now reach communities in the Northern, Upper East, and Upper West regions of Ghana.',
+                'body' => '<p>We are thrilled to announce the expansion of our Patient Forums program to the Northern, Upper East, and Upper West regions of Ghana. This expansion means that thyroid patients in these historically underserved areas now have access to support groups and educational resources.</p><p>The forums provide a safe space for patients to share experiences, learn about their conditions, and receive guidance from trained community health educators.</p>',
                 'status' => 'published',
                 'published_at' => now()->subMonth(),
+            ],
+            [
+                'slug' => 'founder-recognized-100-inspiring-africans',
+                'title' => 'Founder Recognized Among 100 Most Inspiring Individuals in Africa',
+                'excerpt' => 'Mrs. Nana Adwoa Konadu Dsane receives the African Regional Award for 100 Most Inspiring Individuals in Africa.',
+                'body' => '<p>We are proud to announce that our founder, Mrs. Nana Adwoa Konadu Dsane, has been recognized with the African Regional Award for 100 Most Inspiring Individuals in Africa (2021).</p><p>This recognition highlights her dedication to thyroid health advocacy and the impact of the Thyroid Ghana Foundation on healthcare across Ghana and West Africa. Mrs. Dsane also received the UPF Merit Ambassador for Peace Award and the Outstanding Philanthropic Award from Ladies in Business Magazine Global.</p>',
+                'status' => 'published',
+                'published_at' => now()->subMonths(4),
             ],
         ];
 
         foreach ($articles as $article) {
-            $post = Post::query()->firstOrCreate(
+            $post = Post::query()->updateOrCreate(
                 ['tenant_id' => $tenant->id, 'post_type_id' => $newsType->id, 'slug' => $article['slug']],
                 array_merge($article, ['post_type_id' => $newsType->id, 'author_id' => $this->authorId])
             );
 
-            if ($awarenessCategory && $post->wasRecentlyCreated) {
+            if ($awarenessCategory) {
                 $post->categories()->syncWithoutDetaching([$awarenessCategory->id => ['sort_order' => 0]]);
             }
         }
@@ -209,9 +155,8 @@ final class ThyroidGhanaSeeder extends Seeder
             ['name' => 'Main Navigation']
         );
 
-        if ($menu->items()->count() > 0) {
-            return;
-        }
+        // Clear and rebuild items
+        $menu->items()->delete();
 
         $pageType = PostType::where('tenant_id', $tenant->id)->where('slug', 'page')->first();
 
@@ -219,7 +164,7 @@ final class ThyroidGhanaSeeder extends Seeder
             ['label' => 'Home', 'slug' => 'home', 'sort_order' => 0],
             ['label' => 'About', 'slug' => 'about', 'sort_order' => 1],
             ['label' => 'The Challenge', 'slug' => 'the-challenge', 'sort_order' => 2],
-            ['label' => 'Our Team', 'slug' => 'our-team', 'sort_order' => 3],
+            ['label' => 'Thyroid Disease', 'slug' => 'thyroid-disease', 'sort_order' => 3],
             ['label' => 'News', 'slug' => null, 'sort_order' => 4, 'url' => '/site/news'],
             ['label' => 'Get Involved', 'slug' => 'volunteer', 'sort_order' => 5],
         ];
@@ -252,7 +197,7 @@ final class ThyroidGhanaSeeder extends Seeder
             'site_tagline' => 'Advancing Thyroid Health Across Ghana',
             'primary_color' => '#0D9488',
             'secondary_color' => '#B45309',
-            'footer_text' => '© ' . date('Y') . ' Thyroid Ghana Foundation. All rights reserved. Member of Thyroid Federation International.',
+            'footer_text' => '© '.date('Y').' Thyroid Ghana Foundation. All rights reserved. Member of Thyroid Federation International.',
             'active_theme' => 'default',
         ];
 
@@ -262,5 +207,126 @@ final class ThyroidGhanaSeeder extends Seeder
                 ['value' => $value]
             );
         }
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function getPageContent(): array
+    {
+        return [
+            [
+                'slug' => 'home',
+                'title' => 'Home',
+                'excerpt' => 'Creating awareness of thyroid diseases in Ghana',
+                'body' => '<p>Welcome to the Thyroid Ghana Foundation.</p>',
+                'status' => 'published',
+                'published_at' => now(),
+            ],
+            [
+                'slug' => 'about',
+                'title' => 'About Us',
+                'excerpt' => 'Learn about our mission, vision, and the work we do across Ghana.',
+                'body' => '<h2>Who We Are</h2><p>The Thyroid Ghana Foundation is a Non-Governmental Organization dedicated to creating awareness of thyroid disorders in Ghana and bringing prompt and appropriate treatment to those affected by thyroid diseases.</p><h2>Our Mission</h2><p>Creating awareness of thyroid diseases in Ghana, creating opportunities for early detection of thyroid problems, supporting thyroid research and institutions involved in thyroid disease management, providing access to affordable treatment and advocating for improved healthcare practices for thyroid disease patients in the country.</p><h2>Our Vision</h2><p>A Ghana where thyroid diseases are detected early, treated effectively, and no patient is left behind due to lack of awareness or access to healthcare.</p><h2>Our Objectives</h2><h3>Create Public Awareness</h3><p>Thyroid disorder remains the second most common endocrinological disorder in adults, yet remains relatively unknown to the public and some healthcare practitioners. This lack of awareness makes accurate diagnosis difficult since thyroid disease symptoms resemble other common ailments. Improved public awareness can lead to early detection and help individuals alert physicians to suspected thyroid conditions.</p><h3>Support Thyroid Research</h3><p>Research is necessary to equip healthcare practitioners and policy makers with accurate information for patient care decisions. The foundation solicits funds and logistics to support research projects and establish data collection systems at various healthcare centers.</p><h3>Support Affected Persons</h3><p>The foundation is developing a patient registry starting from Greater Accra, establishing a system providing free thyroid medication for those unable to afford treatment, and ultimately aims to build a thyroid care unit within Korle-Bu Teaching Hospital.</p><h2>Our History</h2><p>Founded in July 2018 by Mrs. Nana Adwoa Konadu Dsane following her own battle with hyperthyroidism, the Thyroid Ghana Foundation has grown from a small awareness initiative into a nationally recognized organization. As a proud member of the Thyroid Federation International, we connect Ghanaian patients and healthcare providers with global best practices in thyroid disease management.</p>',
+                'status' => 'published',
+                'published_at' => now(),
+            ],
+            [
+                'slug' => 'the-founder',
+                'title' => 'The Founder',
+                'excerpt' => 'Mrs. Nana Adwoa Konadu Dsane — Founder & President of the Thyroid Ghana Foundation.',
+                'body' => '<h2>Mrs. Nana Adwoa Konadu Dsane</h2><p><strong>Founder & President, Thyroid Ghana Foundation</strong></p><p>Mrs. Dsane holds a Commonwealth Executive Master of Business Administration (CEMBA) from Kwame Nkrumah University of Science and Technology and a BSc in Business Management Studies from the University of Cape Coast. She is pursuing a PhD in Human Resources at the University of South Africa, researching "Leadership and Empowerment on Organizational Citizenship Behaviour in Public Universities in Ghana."</p><p>She maintains numerous professional certifications including Fellow of the Chartered Institute of Leadership and Governance, Chartered Human Resource Management Practitioner, Chartered Professional Administrator, and Chartered Management Consultant.</p><h2>Career Background</h2><p>Mrs. Dsane currently serves as Deputy Director of the Medical and Scientific Research Centre at the University of Ghana Medical Centre. She brings approximately 20 years of administrative experience across research, health, education, and corporate sectors.</p><p>Previous roles include positions within the Office of Research Innovation and Development, Office of the Provost at the College of Health Sciences, the University of Ghana Medical School\'s Haematology Department, The Hunger Project-Ghana, and Trassaco Real Estate Company.</p><h2>The Personal Story Behind the Foundation</h2><p>Mrs. Dsane established the Thyroid Ghana Foundation following her own battle with hyperthyroidism. Experiencing the challenges of diagnosis and treatment firsthand motivated her to create an organization that would ensure other patients had better access to information, support, and affordable care.</p><h2>Additional Leadership Roles</h2><p>She serves as Board Chairperson of the Global Transformational Agents Foundation and Vice-Chairperson of the National Executive Council of the Chartered Institute of Leadership and Governance (Ghana Chapter).</p><h2>Awards & Recognition</h2><ul><li>CILG Personality of the Year 2018</li><li>African Regional Award for 100 Most Inspiring Individuals in Africa (2021)</li><li>UPF Merit Ambassador for Peace Award (2021)</li><li>Outstanding Philanthropic Award — Ladies in Business Magazine Global (2022)</li></ul>',
+                'status' => 'published',
+                'published_at' => now(),
+            ],
+            [
+                'slug' => 'our-team',
+                'title' => 'Our Team',
+                'excerpt' => 'Meet the dedicated leadership team behind the Thyroid Ghana Foundation.',
+                'body' => '<h2>Management Team</h2><div><h3>Nana Adwoa Konadu Dsane (Mrs.)</h3><p><strong>Founder & President</strong></p><p>Established the foundation in 2018 following her personal battle with hyperthyroidism. A seasoned administrator with over 20 years of experience.</p></div><div><h3>Rev. Prof. Patrick F. Ayeh-Kumi</h3><p><strong>Management Board Chair</strong></p><p>A distinguished academic and researcher who brings decades of medical expertise to the foundation\'s governance and strategic direction.</p></div><div><h3>Mr. Leslie Chartey Kumahlor</h3><p><strong>Head of Operations</strong></p><p>Oversees the day-to-day operations and ensures our programs reach communities across Ghana effectively.</p></div><div><h3>Dr. Joyce Emefa Addo-Klah</h3><p><strong>Public Relations Officer</strong></p><p>Leads our communications strategy and public engagement initiatives.</p></div><div><h3>Frank Anyimadu</h3><p><strong>Consultant Dietician</strong></p><p>Provides nutritional guidance and develops dietary programs for thyroid patients.</p></div><div><h3>Justice Kwesi Baah</h3><p><strong>Research Coordinator</strong></p><p>Coordinates research initiatives and partnerships with academic institutions.</p></div><h2>Advisory Board</h2><div><h3>Dr. Josephine Akpalu</h3><p><strong>Advisory Board Chair</strong></p></div><div><h3>Dr. Alfred Tetteh</h3><p><strong>Member, Management Board</strong></p></div><div><h3>Dr. Matilda Asante</h3><p><strong>Member, Management Board</strong></p></div>',
+                'status' => 'published',
+                'published_at' => now(),
+            ],
+            [
+                'slug' => 'our-plan',
+                'title' => 'Our Plan',
+                'excerpt' => 'A four-phase action plan to transform thyroid healthcare in Ghana.',
+                'body' => '<h2>Four-Phase Action Plan</h2><p>The Foundation has structured a comprehensive initiative beginning in Accra with four distinct phases designed to systematically address the thyroid health crisis in Ghana.</p><h3>Phase I: Awareness Creation</h3><p>Educate medical practitioners especially those stationed in rural areas about thyroid disease and its symptoms. Utilize flyers, billboards, media, and other communication channels for public awareness. Liaise with professional bodies for screening programs in underserved communities. Advocate for thyroid testing in standard hospital protocols. Create blogs and online journals for spreading accurate information. Engage government agencies to establish a dedicated Thyroid awareness month.</p><h3>Phase II: Affordable Treatment Access</h3><p>Reduce financial barriers to thyroid care for low-income patients through free distribution of medication to needy patients via partnerships with relevant agencies. Develop a programme encouraging thyroid patients to donate unused medications. Advocate for the inclusion of radioactive iodine treatment under the National Health Insurance Scheme.</p><h3>Phase III: Research Data Infrastructure</h3><p>Establish data collection points on thyroid disease at various health centers. Support thyroid research by providing logistics for health records. Make data accessible to local and international research groups, policy makers and health bodies.</p><h3>Phase IV: Dedicated Care Center</h3><p>Construct a specialized thyroid treatment facility providing integrated services from diagnosis to surgery where necessary at a subsidized cost. Facilitate professional knowledge-sharing on best practices in thyroid care.</p>',
+                'status' => 'published',
+                'published_at' => now(),
+            ],
+            [
+                'slug' => 'the-challenge',
+                'title' => 'The Challenge',
+                'excerpt' => 'Understanding the scale of thyroid disease in Ghana and the challenges we face.',
+                'body' => '<h2>The Thyroid Health Challenge in Ghana</h2><p>A comprehensive study examining thyroid cases at Korle-Bu Teaching Hospital (KBTH) spanning 2004-2010 revealed alarming findings about thyroid disease in Ghana.</p><h2>Key Statistics</h2><ul><li><strong>1,300 cases</strong> reported during the study period</li><li><strong>185.7 cases</strong> annually on average</li><li>Age range: <strong>1 to 86 years</strong>, with peak incidence in the 30-39 age group</li><li><strong>87.8% were female patients</strong> (1,141 of 1,300 cases)</li></ul><h2>A Wide Spectrum of Disease</h2><p>A wide spectrum of thyroid disorders exists in Ghana. Recent research indicates that salt iodization has reduced certain disease types while others have increased. Prevalence varies by geographic location, environmental factors, dietary iodine levels, and population characteristics. Women predominantly present with palpable anterior neck swelling.</p><h2>Diagnostic Challenges</h2><p>Ghana faces significant obstacles in thyroid disease detection. Robust diagnostic facilities for thyroid disorders are generally lacking in most countries in Africa. Thyroid disease shares symptoms with other conditions, complicating identification. Insufficient physician awareness means patients may receive incorrect diagnoses. Patients often undergo multiple tests before appropriate thyroid testing, increasing costs and delays.</p><h2>Treatment in Ghana</h2><p>Primary treatment options include pharmacotherapy, surgery (the more affordable option in Ghana), and radioactive iodine therapy. However, access to all three varies significantly across the country.</p>',
+                'status' => 'published',
+                'published_at' => now(),
+            ],
+            [
+                'slug' => 'thyroid-disease',
+                'title' => 'Understanding Thyroid Disease',
+                'excerpt' => 'Learn about the thyroid gland, types of thyroid disease, symptoms, and treatments.',
+                'body' => '<h2>What is the Thyroid?</h2><p>The thyroid is a small, butterfly-shaped gland located at the base of the neck just below the Adam\'s apple. It produces hormones that control how the body uses energy (metabolism) and protein synthesis. These hormones affect nearly every organ in your body.</p><h2>What is Thyroid Disease?</h2><p>Thyroid diseases involve benign or malignant disorders affecting thyroid structure and function. They occur when the gland produces too much hormone (hyperthyroidism) or too little (hypothyroidism).</p><h2>Hyperthyroidism (Overactive Thyroid)</h2><p>When the thyroid produces too much hormone, your body\'s processes speed up.</p><h3>Symptoms</h3><ul><li>Restlessness and nervousness</li><li>Severe headaches and neck pain</li><li>Rapid heartbeat and irritability</li><li>Increased sweating and tremors</li><li>Anxiety and sleep difficulties</li><li>Thin skin, brittle hair and nails</li><li>Muscle weakness and weight loss</li><li>Bulging eyes (in Graves\' disease)</li><li>Difficulty concentrating</li></ul><h3>Common Causes</h3><p>Graves\' disease (autoimmune condition), thyroid nodules, excessive TSH secretion, hypothyroidism medication overdose, and thyroiditis (inflammation of the thyroid).</p><h2>Hypothyroidism (Underactive Thyroid)</h2><p>When the thyroid doesn\'t produce enough hormone, body processes slow down.</p><h3>Symptoms</h3><ul><li>Fatigue and weakness</li><li>Dry skin and cold sensitivity</li><li>Memory problems and depression</li><li>Weight gain and slow heart rate</li><li>Constipation</li><li>In severe cases, coma</li></ul><h3>Common Causes</h3><p>Hashimoto\'s disease (autoimmune), thyroiditis, congenital hypothyroidism, post-surgical removal, radiation treatment, certain medications, pituitary dysfunction, and iodine imbalance.</p><h2>Diagnosis</h2><p>Blood tests measuring thyroid hormones (FT3, FT4) and TSH (thyroid-stimulating hormone) levels are the primary diagnostic tools. Imaging tests and biopsies may also be used.</p><h2>Treatment Options</h2><ul><li><strong>Hyperthyroidism:</strong> Radioactive iodine treatment, anti-thyroid medications, or surgery</li><li><strong>Hypothyroidism:</strong> Lifelong synthetic thyroid hormone replacement (typically levothyroxine)</li><li><strong>Thyroid Cancer:</strong> Surgical removal (thyroidectomy), potentially including affected lymph nodes</li></ul><h2>Prevention</h2><p>Protect your thyroid during X-rays (request a thyroid collar). Monitor family history of thyroid disease. Maintain adequate iodine intake through a balanced diet.</p>',
+                'status' => 'published',
+                'published_at' => now(),
+            ],
+            [
+                'slug' => 'do-i-have-thyroid-disease',
+                'title' => 'Do I Have Thyroid Disease?',
+                'excerpt' => 'Risk factors and self-assessment guide for thyroid conditions.',
+                'body' => '<h2>Could You Have a Thyroid Condition?</h2><p>The following factors may indicate an increased likelihood of thyroid disease. This is not a diagnosis — please consult a healthcare provider for proper evaluation.</p><h2>Demographic & Family Factors</h2><ul><li>Women have a higher chance of developing thyroid disease than men</li><li>Family history of autoimmune disorders</li><li>Existing autoimmune conditions</li></ul><h2>Lifestyle & Environmental Factors</h2><ul><li>Excessive consumption of soy products</li><li>Taking iodine or kelp supplements</li><li>Using thyroid hormones without a diagnosed disease</li><li>Previous radiation exposure or repeated neck X-rays</li><li>High stress levels</li><li>History of smoking</li></ul><h2>Medical Conditions to Watch</h2><ul><li>Treatment-resistant depression</li><li>Chronic Fatigue Syndrome or Fibromyalgia</li><li>Burnout or persistent exhaustion</li><li>Carpal tunnel syndrome</li><li>Reproductive issues (multiple miscarriages, infertility)</li><li>Blood pressure abnormalities</li><li>Elevated cholesterol unresponsive to diet or medication</li></ul><h2>Physical Symptoms to Monitor</h2><ul><li>Unexplained weight changes (gain or loss)</li><li>Post-pregnancy fatigue</li><li>Vision problems (double vision, light sensitivity)</li><li>Menstrual irregularities or early menopause</li><li>Anemia or vitamin deficiencies (B12, D)</li><li>Muscle weakness and joint pain</li><li>Leg swelling or edema</li><li>Voice changes or hoarseness</li><li>Seasonal mood sensitivity</li></ul><p><strong>Important:</strong> These are non-exhaustive indicators. If you identify with several of these factors, we recommend consulting with a healthcare provider for a thyroid function test.</p><h2>Next Steps</h2><p>Ask your doctor for a simple blood test measuring TSH and thyroid hormone levels. Early detection leads to better outcomes. Contact us at +233 (024) 337 6304 for guidance on where to get tested.</p>',
+                'status' => 'published',
+                'published_at' => now(),
+            ],
+            [
+                'slug' => 'faq',
+                'title' => 'Frequently Asked Questions',
+                'excerpt' => 'Common questions about thyroid disease, testing, and treatment.',
+                'body' => '<h2>Frequently Asked Questions</h2><h3>Do I need to fast before a thyroid blood test?</h3><p>Medical opinions vary on fasting before blood tests. Some doctors recommend fasting while others do not. If fasting is not observed, the TSH value may be slightly lower and the FT4 value slightly higher. It is recommended to always have blood drawn at a consistent time of day for reliable comparisons.</p><h3>How long after a medication change should I get tested?</h3><p>After 6 weeks, the values in your blood are stable. So only after at least 4, but preferably after 6 weeks should you have blood drawn again. Some patients wait 8 weeks. The medication\'s effects may take longer to appear in blood work than expected.</p><h3>What blood values indicate proper treatment?</h3><p>The ideal values vary by individual. A TSH value under 2 is almost always desirable, but some people feel best at a higher TSH. With T4 treatment alone, FT4 should be in the upper half of the normal range or slightly above. Normal reference values: TSH 0.4-4.0 mU/l; FT4 9-24 pmol/l.</p><h3>What is an autoimmune disease?</h3><p>Not all thyroid disorders are autoimmune — thyroid cancer, for example, is not. Common autoimmune conditions that may co-occur with thyroid disease include pernicious anemia, vitiligo, diabetes mellitus, Addison\'s disease, and rheumatoid arthritis. Autoimmune disorders can be detected by measuring specific antibodies in the blood.</p><h3>Are all thyroid diseases autoimmune?</h3><p>No. Thyroid cancer is not autoimmune, and pituitary conditions can affect thyroid hormone levels independently. While Hashimoto\'s thyroiditis and Graves\' disease are autoimmune, many other thyroid conditions have different causes.</p><h3>How can I support the Thyroid Ghana Foundation?</h3><p>You can donate, volunteer, become a member, or partner with us. Contact us at info@thyroidghanafoundation.org or call +233 (024) 337 6304 for more information.</p>',
+                'status' => 'published',
+                'published_at' => now(),
+            ],
+            [
+                'slug' => 'donate',
+                'title' => 'Support Our Cause',
+                'excerpt' => 'Your donation helps us reach more patients and fund critical thyroid research.',
+                'body' => '<h2>Make a Difference Today</h2><p>Your generous contribution directly supports our mission to improve thyroid health outcomes across Ghana. Every donation helps us:</p><ul><li>Fund screening programs in underserved communities</li><li>Provide medication subsidies for patients who cannot afford treatment</li><li>Support surgical interventions for thyroid cancer patients</li><li>Run awareness campaigns during World Thyroid Awareness Week</li><li>Train healthcare workers in thyroid disease detection</li></ul><h2>How to Donate</h2><p>We accept donations through mobile money, bank transfer, and online payment. Contact us at <strong>+233 (024) 337 6304</strong> or email <strong>info@thyroidghanafoundation.org</strong> for donation details.</p><h2>Corporate Partnerships</h2><p>We welcome corporate partnerships and sponsorships. Partner with us to make a lasting impact on thyroid health in Ghana and fulfil your corporate social responsibility goals.</p>',
+                'status' => 'published',
+                'published_at' => now(),
+            ],
+            [
+                'slug' => 'volunteer',
+                'title' => 'Volunteer With Us',
+                'excerpt' => 'Join our team of volunteers making a difference in thyroid health.',
+                'body' => '<h2>Become a Volunteer</h2><p>We are always looking for passionate individuals to join our cause. Volunteers play a vital role in our community outreach, awareness campaigns, and patient support programs.</p><h2>Volunteer Opportunities</h2><ul><li><strong>Community Health Educators:</strong> Help spread awareness about thyroid diseases in your community.</li><li><strong>Event Coordinators:</strong> Assist in organizing awareness events, screenings, and fundraisers.</li><li><strong>Patient Support:</strong> Provide emotional support and guidance to thyroid patients and their families.</li><li><strong>Research Assistants:</strong> Support our research initiatives and data collection efforts.</li></ul><p>To volunteer, contact us at <strong>info@thyroidghanafoundation.org</strong> or call <strong>+233 (024) 337 6304</strong>.</p>',
+                'status' => 'published',
+                'published_at' => now(),
+            ],
+            [
+                'slug' => 'partner-us',
+                'title' => 'Partner With Us',
+                'excerpt' => 'Explore partnership opportunities with the Thyroid Ghana Foundation.',
+                'body' => '<h2>Partnership Opportunities</h2><p>We believe in the power of collaboration. By partnering with us, your organization can make a meaningful contribution to thyroid health in Ghana while fulfilling corporate social responsibility goals.</p><h2>Types of Partnerships</h2><ul><li><strong>Healthcare Partnerships:</strong> Collaborate on screening programs, specialist referral networks, and treatment subsidies.</li><li><strong>Research Partnerships:</strong> Fund or co-lead thyroid research initiatives.</li><li><strong>Corporate Sponsorships:</strong> Sponsor our annual awareness events and community programs.</li><li><strong>Media Partnerships:</strong> Help us amplify our message through media channels.</li></ul><p>Contact us to discuss how we can work together.</p>',
+                'status' => 'published',
+                'published_at' => now(),
+            ],
+            [
+                'slug' => 'membership',
+                'title' => 'Membership',
+                'excerpt' => 'Join the Thyroid Ghana Foundation community.',
+                'body' => '<h2>Become a Member</h2><p>Membership in the Thyroid Ghana Foundation connects you with a community of patients, healthcare professionals, and advocates committed to improving thyroid health outcomes in Ghana.</p><h2>Member Benefits</h2><ul><li>Access to educational resources and workshops</li><li>Invitation to annual conferences and events</li><li>Connection with thyroid specialists and support groups</li><li>Regular newsletters with the latest thyroid health information</li><li>Opportunity to participate in research studies</li></ul><p>For membership inquiries, please contact us at <strong>info@thyroidghanafoundation.org</strong>.</p>',
+                'status' => 'published',
+                'published_at' => now(),
+            ],
+            [
+                'slug' => 'media-gallery',
+                'title' => 'Media Gallery',
+                'excerpt' => 'Watch videos, view photos, and explore media content from the Thyroid Ghana Foundation.',
+                'body' => '<h2>Videos & Media</h2><p>Explore our collection of educational videos, awareness campaign highlights, patient stories, and event coverage. Follow us on YouTube and social media for the latest updates.</p><h2>Awareness Campaigns</h2><p>Each year during World Thyroid Awareness Week, we produce educational content to help Ghanaians understand thyroid disease, its symptoms, and the importance of early detection.</p><h2>Patient Stories</h2><p>Hear from patients who have benefited from our support programs. Their stories inspire us to continue our work and reach even more communities across Ghana.</p><h2>Stay Connected</h2><p>Follow us on social media for the latest news, events, and educational content about thyroid health in Ghana.</p>',
+                'status' => 'published',
+                'published_at' => now(),
+            ],
+        ];
     }
 }
