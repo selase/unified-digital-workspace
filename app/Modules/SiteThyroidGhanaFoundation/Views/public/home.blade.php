@@ -251,9 +251,9 @@
             <div class="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
                 @php
                     $videos = [
-                        ['id' => 'SRF3teBGMTI', 'title' => 'World Thyroid Day — Ghana', 'desc' => 'Our activities during World Thyroid Day, highlighting free screenings and community outreach.'],
-                        ['id' => '3Kq1MIfTWCE', 'title' => 'Understanding Your Thyroid', 'desc' => 'An educational overview of the thyroid gland, common disorders, and available treatments.'],
-                        ['id' => 'PyKrG0Uo1lQ', 'title' => 'Living With Thyroid Disease', 'desc' => 'Hear from patients who share their journey and how the foundation has supported them.'],
+                        ['id' => 'qVNYLJCEn-A', 'title' => 'Official Launch of TGF', 'desc' => 'Coverage of the official launch event of the Thyroid Ghana Foundation.'],
+                        ['id' => 'Gn11u_1LAUE', 'title' => 'Feature Interview on TV3', 'desc' => 'Founder discusses thyroid health awareness on national television.'],
+                        ['id' => 'D_iYMxXvp5I', 'title' => 'Thyroid Patients & NHIS', 'desc' => 'Advocating for thyroid treatment under the National Health Insurance Scheme.'],
                     ];
                 @endphp
                 @foreach($videos as $video)

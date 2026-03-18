@@ -35,12 +35,11 @@
 
             @php
                 $videos = [
-                    ['id' => 'SRF3teBGMTI', 'title' => 'World Thyroid Day 2023 — Ghana', 'desc' => 'Our activities during World Thyroid Day, highlighting free screenings and community education programs.', 'category' => 'Awareness'],
-                    ['id' => '3Kq1MIfTWCE', 'title' => 'Understanding Your Thyroid', 'desc' => 'An educational overview of the thyroid gland, common disorders, symptoms, and available treatments.', 'category' => 'Education'],
-                    ['id' => 'PyKrG0Uo1lQ', 'title' => 'Living With Thyroid Disease in Ghana', 'desc' => 'Hear from patients who share their journey with thyroid disease and how the foundation has supported them.', 'category' => 'Patient Stories'],
-                    ['id' => 'uNMbp5AVUOY', 'title' => 'Thyroid Screening Outreach', 'desc' => 'Documenting our community screening programs reaching underserved populations across Ghana.', 'category' => 'Outreach'],
-                    ['id' => 'a2E65K1M2so', 'title' => 'Thyroid Surgery — What to Expect', 'desc' => 'A guide for patients preparing for thyroid surgery, including preparation, the procedure, and recovery.', 'category' => 'Education'],
-                    ['id' => 'MnGLnUKt81Q', 'title' => 'Foundation Annual Report Highlights', 'desc' => 'A summary of the Thyroid Ghana Foundation\'s achievements, impact, and plans for the future.', 'category' => 'About Us'],
+                    ['id' => 'qVNYLJCEn-A', 'title' => 'Official Launch of Thyroid Ghana Foundation', 'desc' => 'Coverage of the official launch event of the Thyroid Ghana Foundation, introducing our mission and vision.', 'category' => 'About Us'],
+                    ['id' => 'Gn11u_1LAUE', 'title' => 'Feature Interview on TV3', 'desc' => 'Founder Nana Adwoa Konadu Dsane discusses thyroid health awareness on national television.', 'category' => 'Media'],
+                    ['id' => 'D_iYMxXvp5I', 'title' => 'Include Thyroid Patients on NHIS', 'desc' => 'Advocacy for including thyroid disorder treatments under Ghana\'s National Health Insurance Scheme.', 'category' => 'Advocacy'],
+                    ['id' => 'U3Y6-N-0ZsQ', 'title' => 'Happy Birthday to the Foundation', 'desc' => 'Celebrating the anniversary of the Thyroid Ghana Foundation and reflecting on our achievements.', 'category' => 'Events'],
+                    ['id' => '98DMSeXAnX4', 'title' => 'A Safe and Healthy Christmas', 'desc' => 'Seasonal health tips and thyroid awareness message for the holiday season from the foundation.', 'category' => 'Awareness'],
                 ];
             @endphp
 
