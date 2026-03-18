@@ -29,8 +29,8 @@ final class WorkspaceNavigation
      *     sidebar: array{
      *         dashboards: array<int, array<string, mixed>>,
      *         superadmin: array<int, array<string, mixed>>,
-     *         tenant: array<int, array<string, mixed>>,
-     *         modules: array<int, array<string, mixed>>
+     *         modules: array<int, array<string, mixed>>,
+     *         tenant_groups: array<int, array<string, mixed>>
      *     },
      *     topMenuGroups: array<int, array<string, mixed>>
      * }
@@ -45,10 +45,18 @@ final class WorkspaceNavigation
         $currentRouteName = (string) ($request->route()?->getName() ?? '');
         $showSuperadminLinks = (bool) ($user?->can('access-superadmin-dashboard'));
 
-        $dashboards = collect([
-            ['label' => 'Admin Dashboard', 'route' => 'dashboard'],
+        $dashboardItems = [
             ['label' => 'Tenant Dashboard', 'route' => 'tenant.dashboard'],
-        ])->map(fn (array $item): ?array => $this->resolveLink($item, $tenantSlug, $currentRouteName, $user))->filter()->values();
+        ];
+
+        if ($user?->can('access-superadmin-dashboard')) {
+            array_unshift($dashboardItems, ['label' => 'Admin Dashboard', 'route' => 'dashboard']);
+        }
+
+        $dashboards = collect($dashboardItems)
+            ->map(fn (array $item): ?array => $this->resolveLink($item, $tenantSlug, $currentRouteName, $user))
+            ->filter()
+            ->values();
 
         $superadmin = collect([
             ['label' => 'Tenants', 'route' => 'tenants.index'],
@@ -71,20 +79,9 @@ final class WorkspaceNavigation
             ['label' => 'My Tenants', 'route' => 'tenant.my-tenants'],
         ])->map(fn (array $item): ?array => $this->resolveLink($item, $tenantSlug, $currentRouteName, $user))->filter()->values();
 
-        $tenantLinks = collect([
-            ['label' => 'Organization Settings', 'route' => 'tenant.settings.index'],
-            ['label' => 'Billing Settings', 'route' => 'tenant.settings.billing'],
-            ['label' => 'Payment Methods', 'route' => 'tenant.settings.payments.index'],
-            ['label' => 'Users', 'route' => 'tenant.users.index'],
-            ['label' => 'Roles', 'route' => 'tenant.roles.index'],
-            ['label' => 'Finance', 'route' => 'tenant.finance.index'],
-            ['label' => 'Tenant Billing', 'route' => 'billing.index'],
-            ['label' => 'Pricing', 'route' => 'tenant.pricing'],
-            ['label' => 'API Keys', 'route' => 'tenant.api-keys.index'],
-            ['label' => 'LLM Usage', 'route' => 'tenant.llm-usage.index'],
-            ['label' => 'LLM Configuration', 'route' => 'tenant.llm-config.index'],
-            ['label' => 'My Tenants', 'route' => 'tenant.my-tenants'],
-        ])->map(fn (array $item): ?array => $this->resolveLink($item, $tenantSlug, $currentRouteName, $user))->filter()->values();
+        $tenantGroups = $isTenantContext
+            ? $this->resolveTenantGroups($tenantSlug, $currentRouteName, $user)
+            : collect();
 
         $enabledModuleSlugs = $tenant
             ? $this->moduleManager->getEnabledForTenant($tenant)->pluck('slug')->values()
@@ -95,12 +92,14 @@ final class WorkspaceNavigation
             ->filter()
             ->values();
 
+        $tenantFlatLinks = $tenantGroups->flatMap(fn (array $group) => collect($group['items']));
+
         $activeModule = $moduleMenus->first(fn (array $module): bool => $module['is_active'] === true);
         $topMenuGroups = $this->resolveTopMenuGroups(
             activeModule: $activeModule,
             dashboards: $dashboards,
             superadmin: $showSuperadminLinks ? $superadmin : collect(),
-            tenantLinks: $isTenantContext ? $tenantLinks : collect(),
+            tenantLinks: $tenantFlatLinks,
             moduleMenus: $moduleMenus,
             tenantSlug: $tenantSlug,
             currentRouteName: $currentRouteName,
@@ -117,8 +116,8 @@ final class WorkspaceNavigation
             'sidebar' => [
                 'dashboards' => $dashboards->all(),
                 'superadmin' => $showSuperadminLinks ? $superadmin->all() : [],
-                'tenant' => $isTenantContext ? $tenantLinks->all() : [],
                 'modules' => $moduleMenus->all(),
+                'tenant_groups' => $tenantGroups->all(),
             ],
             'topMenuGroups' => $topMenuGroups->all(),
         ];
@@ -200,7 +199,7 @@ final class WorkspaceNavigation
         ?User $user,
     ): Collection {
         if ($activeModule) {
-            return collect($activeModule['top_menu'])
+            $activeModuleGroups = collect($activeModule['top_menu'])
                 ->map(function (array $group) use ($tenantSlug, $currentRouteName, $user): ?array {
                     $items = collect($group['items'] ?? [])
                         ->map(fn (array $item): ?array => $this->resolveLink($item, $tenantSlug, $currentRouteName, $user))
@@ -218,6 +217,30 @@ final class WorkspaceNavigation
                 })
                 ->filter()
                 ->values();
+
+            if ($activeModuleGroups->isNotEmpty()) {
+                return $activeModuleGroups;
+            }
+
+            $fallbackItems = collect($activeModule['items'] ?? [])
+                ->map(function (array $item): array {
+                    return [
+                        'label' => (string) ($item['label'] ?? 'Overview'),
+                        'url' => (string) ($item['url'] ?? '#'),
+                        'is_active' => (bool) ($item['is_active'] ?? false),
+                    ];
+                })
+                ->filter(fn (array $item): bool => $item['url'] !== '#')
+                ->values();
+
+            if ($fallbackItems->isNotEmpty()) {
+                return collect([
+                    [
+                        'label' => (string) ($activeModule['label'] ?? 'Module'),
+                        'items' => $fallbackItems->all(),
+                    ],
+                ]);
+            }
         }
 
         $groups = collect([
@@ -246,6 +269,68 @@ final class WorkspaceNavigation
         ])->filter(fn (array $group): bool => ! empty($group['items']))->values();
 
         return $groups;
+    }
+
+    /**
+     * @return Collection<int, array{label: string, icon: string, is_active: bool, items: array<int, array<string, mixed>>}>
+     */
+    private function resolveTenantGroups(?string $tenantSlug, string $currentRouteName, ?User $user): Collection
+    {
+        $groups = [
+            [
+                'label' => 'Organization',
+                'icon' => 'ki-filled ki-setting-2',
+                'items' => [
+                    ['label' => 'Organization Settings', 'route' => 'tenant.settings.index'],
+                    ['label' => 'Users', 'route' => 'tenant.users.index'],
+                    ['label' => 'Roles', 'route' => 'tenant.roles.index'],
+                    ['label' => 'My Tenants', 'route' => 'tenant.my-tenants'],
+                ],
+            ],
+            [
+                'label' => 'Finance',
+                'icon' => 'ki-filled ki-wallet',
+                'items' => [
+                    ['label' => 'Billing Settings', 'route' => 'tenant.settings.billing'],
+                    ['label' => 'Payment Methods', 'route' => 'tenant.settings.payments.index'],
+                    ['label' => 'Finance', 'route' => 'tenant.finance.index'],
+                    ['label' => 'Tenant Billing', 'route' => 'billing.index'],
+                    ['label' => 'Pricing', 'route' => 'tenant.pricing'],
+                ],
+            ],
+            [
+                'label' => 'Developer',
+                'icon' => 'ki-filled ki-code',
+                'items' => [
+                    ['label' => 'API Keys', 'route' => 'tenant.api-keys.index'],
+                    ['label' => 'LLM Usage', 'route' => 'tenant.llm-usage.index'],
+                    ['label' => 'LLM Configuration', 'route' => 'tenant.llm-config.index'],
+                ],
+            ],
+        ];
+
+        return collect($groups)
+            ->map(function (array $group) use ($tenantSlug, $currentRouteName, $user): ?array {
+                $items = collect($group['items'])
+                    ->map(fn (array $item): ?array => $this->resolveLink($item, $tenantSlug, $currentRouteName, $user))
+                    ->filter()
+                    ->values();
+
+                if ($items->isEmpty()) {
+                    return null;
+                }
+
+                $isActive = $items->contains(fn (array $item): bool => $item['is_active'] === true);
+
+                return [
+                    'label' => $group['label'],
+                    'icon' => $group['icon'],
+                    'is_active' => $isActive,
+                    'items' => $items->all(),
+                ];
+            })
+            ->filter()
+            ->values();
     }
 
     /**
@@ -351,6 +436,7 @@ final class WorkspaceNavigation
                 'permission' => 'memos.view',
                 'home_route' => 'memos.index',
                 'sidebar' => [
+                    ['label' => 'Memo List', 'route' => 'memos.list'],
                     ['label' => 'Memo API', 'route' => 'api.memos.v1.memos.index'],
                     ['label' => 'Module API Root', 'route' => 'api.memos.index'],
                 ],
@@ -359,13 +445,13 @@ final class WorkspaceNavigation
                         'label' => 'Overview',
                         'items' => [
                             ['label' => 'Memos Hub', 'route' => 'memos.index'],
-                            ['label' => 'Memo API List', 'route' => 'api.memos.v1.memos.index'],
+                            ['label' => 'Memo List', 'route' => 'memos.list'],
                         ],
                     ],
                     [
                         'label' => 'Workflow',
                         'items' => [
-                            ['label' => 'Memo Details API', 'route' => 'api.memos.v1.memos.show', 'params' => ['memo' => 1]],
+                            ['label' => 'Memo API', 'route' => 'api.memos.v1.memos.index'],
                             ['label' => 'Module API Root', 'route' => 'api.memos.index'],
                         ],
                     ],
@@ -414,7 +500,8 @@ final class WorkspaceNavigation
                 'permission' => 'incidents.view',
                 'home_route' => 'incident-management.index',
                 'sidebar' => [
-                    ['label' => 'Incident Register', 'route' => 'incident-management.incidents.index'],
+                    ['label' => 'Incident Register', 'route' => 'incident-management.incidents.index', 'active_patterns' => ['incident-management.incidents.*']],
+                    ['label' => 'Log Incident', 'route' => 'incident-management.incidents.create', 'permission' => 'incidents.create'],
                     ['label' => 'Task Board', 'route' => 'incident-management.tasks.index'],
                     ['label' => 'Progress Reports', 'route' => 'incident-management.reports.index'],
                     ['label' => 'Incidents API', 'route' => 'api.incident-management.v1.incidents.index'],
@@ -427,6 +514,7 @@ final class WorkspaceNavigation
                         'items' => [
                             ['label' => 'Incident Hub', 'route' => 'incident-management.index'],
                             ['label' => 'Incident Register', 'route' => 'incident-management.incidents.index'],
+                            ['label' => 'Log Incident', 'route' => 'incident-management.incidents.create', 'permission' => 'incidents.create'],
                             ['label' => 'Task Board', 'route' => 'incident-management.tasks.index'],
                             ['label' => 'Progress Reports', 'route' => 'incident-management.reports.index'],
                             ['label' => 'Incidents API', 'route' => 'api.incident-management.v1.incidents.index'],
@@ -448,7 +536,8 @@ final class WorkspaceNavigation
                 'permission' => 'hrms.employees.view',
                 'home_route' => 'hrms-core.index',
                 'sidebar' => [
-                    ['label' => 'Employee Directory', 'route' => 'hrms-core.employees.index', 'permission' => 'hrms.employees.view'],
+                    ['label' => 'Employee Directory', 'route' => 'hrms-core.employees.index', 'permission' => 'hrms.employees.view', 'active_patterns' => ['hrms-core.employees.*']],
+                    ['label' => 'Add Employee', 'route' => 'hrms-core.employees.create', 'permission' => 'hrms.employees.create'],
                     ['label' => 'Departments', 'route' => 'hrms-core.departments.index', 'permission' => 'hrms.departments.view'],
                     ['label' => 'Leave Requests', 'route' => 'hrms-core.leave-requests.index', 'permission' => 'hrms.leave.view'],
                     ['label' => 'Recruitment', 'route' => 'hrms-core.recruitment.index', 'permission' => 'hrms.jobs.view'],
@@ -462,6 +551,7 @@ final class WorkspaceNavigation
                         'items' => [
                             ['label' => 'HRMS Hub', 'route' => 'hrms-core.index'],
                             ['label' => 'Employees', 'route' => 'hrms-core.employees.index', 'permission' => 'hrms.employees.view'],
+                            ['label' => 'Add Employee', 'route' => 'hrms-core.employees.create', 'permission' => 'hrms.employees.create'],
                             ['label' => 'Departments', 'route' => 'hrms-core.departments.index', 'permission' => 'hrms.departments.view'],
                         ],
                     ],
@@ -482,12 +572,13 @@ final class WorkspaceNavigation
                 'permission' => 'cms.posts.view',
                 'home_route' => 'cms-core.index',
                 'sidebar' => [
-                    ['label' => 'Posts', 'route' => 'cms-core.posts.index', 'permission' => 'cms.posts.view'],
-                    ['label' => 'Media Library', 'route' => 'cms-core.media.index', 'permission' => 'cms.media.view'],
-                    ['label' => 'Menus', 'route' => 'cms-core.menus.index', 'permission' => 'cms.menus.view'],
-                    ['label' => 'Posts API', 'route' => 'api.cms-core.v1.posts.index'],
-                    ['label' => 'Taxonomy API', 'route' => 'api.cms-core.v1.categories.index'],
-                    ['label' => 'Media API', 'route' => 'api.cms-core.v1.media.index'],
+                    ['label' => 'Posts', 'route' => 'cms-core.posts.index', 'permission' => 'cms.posts.view', 'active_patterns' => ['cms-core.posts.*']],
+                    ['label' => 'New Post', 'route' => 'cms-core.posts.create', 'permission' => 'cms.posts.create'],
+                    ['label' => 'Media Library', 'route' => 'cms-core.media.index', 'permission' => 'cms.media.view', 'active_patterns' => ['cms-core.media.*']],
+                    ['label' => 'Categories', 'route' => 'cms-core.categories.index', 'permission' => 'cms.categories.view', 'active_patterns' => ['cms-core.categories.*']],
+                    ['label' => 'Tags', 'route' => 'cms-core.tags.index', 'permission' => 'cms.tags.view', 'active_patterns' => ['cms-core.tags.*']],
+                    ['label' => 'Menus', 'route' => 'cms-core.menus.index', 'permission' => 'cms.menus.view', 'active_patterns' => ['cms-core.menus.*']],
+                    ['label' => 'Website Settings', 'route' => 'cms-core.settings.index', 'permission' => 'cms.settings.manage'],
                 ],
                 'top_menu' => [
                     [
@@ -495,6 +586,7 @@ final class WorkspaceNavigation
                         'items' => [
                             ['label' => 'CMS Hub', 'route' => 'cms-core.index'],
                             ['label' => 'Posts', 'route' => 'cms-core.posts.index', 'permission' => 'cms.posts.view'],
+                            ['label' => 'New Post', 'route' => 'cms-core.posts.create', 'permission' => 'cms.posts.create'],
                             ['label' => 'Menus', 'route' => 'cms-core.menus.index', 'permission' => 'cms.menus.view'],
                             ['label' => 'Post Types', 'route' => 'api.cms-core.v1.post-types.index'],
                         ],
@@ -515,24 +607,25 @@ final class WorkspaceNavigation
                 'permission' => 'projects.view',
                 'home_route' => 'project-management.index',
                 'sidebar' => [
+                    ['label' => 'Projects', 'route' => 'project-management.projects.index'],
+                    ['label' => 'Task Board', 'route' => 'project-management.tasks.index'],
                     ['label' => 'Projects API', 'route' => 'api.project-management.v1.projects.index'],
-                    ['label' => 'Project Summary API', 'route' => 'api.project-management.v1.projects.summary', 'params' => ['project' => 1]],
-                    ['label' => 'Project Gantt API', 'route' => 'api.project-management.v1.projects.gantt', 'params' => ['project' => 1]],
                 ],
                 'top_menu' => [
                     [
                         'label' => 'Core',
                         'items' => [
                             ['label' => 'Project Hub', 'route' => 'project-management.index'],
-                            ['label' => 'Projects', 'route' => 'api.project-management.v1.projects.index'],
-                            ['label' => 'Tasks', 'route' => 'api.project-management.v1.projects.tasks.index', 'params' => ['project' => 1]],
+                            ['label' => 'Projects', 'route' => 'project-management.projects.index'],
+                            ['label' => 'Tasks', 'route' => 'project-management.tasks.index'],
                         ],
                     ],
                     [
                         'label' => 'Planning',
                         'items' => [
-                            ['label' => 'Summary', 'route' => 'api.project-management.v1.projects.summary', 'params' => ['project' => 1]],
-                            ['label' => 'Gantt', 'route' => 'api.project-management.v1.projects.gantt', 'params' => ['project' => 1]],
+                            ['label' => 'Projects API', 'route' => 'api.project-management.v1.projects.index'],
+                            ['label' => 'Summary API', 'route' => 'api.project-management.v1.projects.summary', 'params' => ['project' => 1]],
+                            ['label' => 'Gantt API', 'route' => 'api.project-management.v1.projects.gantt', 'params' => ['project' => 1]],
                         ],
                     ],
                 ],
@@ -543,8 +636,9 @@ final class WorkspaceNavigation
                 'permission' => 'qm.workplans.view',
                 'home_route' => 'quality-monitoring.index',
                 'sidebar' => [
+                    ['label' => 'Workplans', 'route' => 'quality-monitoring.workplans.index'],
+                    ['label' => 'Alerts', 'route' => 'quality-monitoring.alerts.index', 'permission' => 'qm.alerts.manage'],
                     ['label' => 'Workplans API', 'route' => 'api.quality-monitoring.v1.workplans.index'],
-                    ['label' => 'Alerts API', 'route' => 'api.quality-monitoring.v1.alerts.index'],
                     ['label' => 'Indicators API', 'route' => 'api.quality-monitoring.v1.indicators.index'],
                 ],
                 'top_menu' => [
@@ -552,16 +646,16 @@ final class WorkspaceNavigation
                         'label' => 'Quality Ops',
                         'items' => [
                             ['label' => 'Quality Hub', 'route' => 'quality-monitoring.index'],
-                            ['label' => 'Workplans', 'route' => 'api.quality-monitoring.v1.workplans.index'],
-                            ['label' => 'Dashboard', 'route' => 'api.quality-monitoring.v1.workplans.dashboard', 'params' => ['workplan' => 1]],
+                            ['label' => 'Workplans', 'route' => 'quality-monitoring.workplans.index'],
+                            ['label' => 'Alerts', 'route' => 'quality-monitoring.alerts.index', 'permission' => 'qm.alerts.manage'],
                         ],
                     ],
                     [
                         'label' => 'Reports',
                         'items' => [
-                            ['label' => 'Summary', 'route' => 'api.quality-monitoring.v1.workplans.reports.summary', 'params' => ['workplan' => 1]],
-                            ['label' => 'Variances', 'route' => 'api.quality-monitoring.v1.workplans.reports.variances', 'params' => ['workplan' => 1]],
-                            ['label' => 'Alerts', 'route' => 'api.quality-monitoring.v1.alerts.index'],
+                            ['label' => 'Workplans API', 'route' => 'api.quality-monitoring.v1.workplans.index'],
+                            ['label' => 'Indicators API', 'route' => 'api.quality-monitoring.v1.indicators.index'],
+                            ['label' => 'Alerts API', 'route' => 'api.quality-monitoring.v1.alerts.index'],
                         ],
                     ],
                 ],

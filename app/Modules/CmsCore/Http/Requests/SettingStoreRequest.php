@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\CmsCore\Http\Requests;
 
+use App\Modules\CmsCore\Models\Setting;
 use App\Services\Tenancy\TenantContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -27,7 +28,7 @@ final class SettingStoreRequest extends FormRequest
             'key' => ['required', 'string', 'max:255'],
             'value' => ['required'],
             'key_unique' => [
-                Rule::unique('settings', 'key')
+                Rule::unique(Setting::class, 'key')
                     ->where('tenant_id', $tenantId)
                     ->where('group', $this->input('group')),
             ],

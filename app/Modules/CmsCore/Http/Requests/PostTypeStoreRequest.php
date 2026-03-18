@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\CmsCore\Http\Requests;
 
+use App\Modules\CmsCore\Models\PostType;
 use App\Services\Tenancy\TenantContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -28,7 +29,7 @@ final class PostTypeStoreRequest extends FormRequest
                 'nullable',
                 'string',
                 'max:255',
-                Rule::unique('post_types', 'slug')->where('tenant_id', $tenantId),
+                Rule::unique(PostType::class, 'slug')->where('tenant_id', $tenantId),
             ],
             'description' => ['nullable', 'string'],
             'icon' => ['nullable', 'string', 'max:255'],

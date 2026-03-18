@@ -136,7 +136,7 @@ final class Post extends Model
      */
     public function author(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'author_id');
+        return $this->belongsTo(User::class, 'author_id', 'uuid');
     }
 
     /**
@@ -144,7 +144,7 @@ final class Post extends Model
      */
     public function editor(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'editor_id');
+        return $this->belongsTo(User::class, 'editor_id', 'uuid');
     }
 
     /**

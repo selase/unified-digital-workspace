@@ -59,8 +59,8 @@ final class Kernel extends HttpKernel
             StartSession::class,
             ShareErrorsFromSession::class,
             VerifyCsrfToken::class,
-            SubstituteBindings::class,
             Middleware\ResolveTenant::class,
+            SubstituteBindings::class,
             Middleware\EnforceUsageLimits::class,
             Middleware\MeterRequestUsage::class,
             Middleware\TrackActiveUser::class,
@@ -69,8 +69,8 @@ final class Kernel extends HttpKernel
         'api' => [
             // \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
             'throttle:api',
-            SubstituteBindings::class,
             Middleware\ResolveTenant::class,
+            SubstituteBindings::class,
             Middleware\EnforceUsageLimits::class,
             Middleware\MeterRequestUsage::class,
             Middleware\TrackActiveUser::class,
@@ -107,5 +107,6 @@ final class Kernel extends HttpKernel
         'throttle_llm' => Middleware\ThrottleLlmRequests::class,
         '2fa' => \PragmaRX\Google2FALaravel\Middleware::class,
         '2fa_challenge' => Middleware\TwoFactorChallenge::class,
+        'cms.website' => Middleware\CmsWebsiteMode::class,
     ];
 }

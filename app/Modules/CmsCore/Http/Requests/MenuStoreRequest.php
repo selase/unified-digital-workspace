@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\CmsCore\Http\Requests;
 
+use App\Modules\CmsCore\Models\Menu;
 use App\Services\Tenancy\TenantContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -28,7 +29,7 @@ final class MenuStoreRequest extends FormRequest
                 'nullable',
                 'string',
                 'max:255',
-                Rule::unique('menus', 'slug')->where('tenant_id', $tenantId),
+                Rule::unique(Menu::class, 'slug')->where('tenant_id', $tenantId),
             ],
         ];
     }

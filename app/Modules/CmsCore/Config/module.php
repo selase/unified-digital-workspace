@@ -58,6 +58,11 @@ return [
             'name' => 'Media Library',
             'description' => 'Upload and manage media assets',
         ],
+        'cms.public.website' => [
+            'type' => 'boolean',
+            'name' => 'Public Website',
+            'description' => 'Serve a public-facing website from CMS content',
+        ],
     ],
 
     /*
@@ -98,6 +103,7 @@ return [
     'routes' => [
         'web' => true,
         'api' => true,
+        'public' => true,
     ],
 
     /*

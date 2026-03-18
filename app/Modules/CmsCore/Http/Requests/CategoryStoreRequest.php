@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\CmsCore\Http\Requests;
 
+use App\Modules\CmsCore\Models\Category;
 use App\Services\Tenancy\TenantContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -28,13 +29,13 @@ final class CategoryStoreRequest extends FormRequest
                 'nullable',
                 'string',
                 'max:255',
-                Rule::unique('categories', 'slug')->where('tenant_id', $tenantId),
+                Rule::unique(Category::class, 'slug')->where('tenant_id', $tenantId),
             ],
             'description' => ['nullable', 'string'],
             'parent_id' => [
                 'nullable',
                 'integer',
-                Rule::exists('categories', 'id')->where('tenant_id', $tenantId),
+                Rule::exists(Category::class, 'id')->where('tenant_id', $tenantId),
             ],
             'sort_order' => ['sometimes', 'integer', 'min:0'],
             'is_active' => ['sometimes', 'boolean'],

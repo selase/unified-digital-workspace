@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\CmsCore\Http\Requests;
 
+use App\Modules\CmsCore\Models\Post;
 use App\Services\Tenancy\TenantContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -49,7 +50,7 @@ final class MediaStoreRequest extends FormRequest
             'post_ids' => ['nullable', 'array'],
             'post_ids.*' => [
                 'integer',
-                Rule::exists('posts', 'id')->where('tenant_id', $tenantId),
+                Rule::exists(Post::class, 'id')->where('tenant_id', $tenantId),
             ],
         ];
     }

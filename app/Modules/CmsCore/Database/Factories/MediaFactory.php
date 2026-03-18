@@ -46,7 +46,7 @@ final class MediaFactory extends Factory
             'caption' => null,
             'title' => fake()->sentence(3),
             'description' => null,
-            'uploaded_by' => User::factory(),
+            'uploaded_by' => fn () => (string) User::factory()->create()->uuid,
             'source' => 'upload',
             'is_public' => true,
         ];
@@ -56,7 +56,7 @@ final class MediaFactory extends Factory
     {
         return $this->state(fn () => [
             'tenant_id' => $tenantId,
-            'uploaded_by' => User::factory()->state(['tenant_id' => $tenantId]),
+            'uploaded_by' => fn () => (string) User::factory()->state(['tenant_id' => $tenantId])->create()->uuid,
         ]);
     }
 }

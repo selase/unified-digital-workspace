@@ -10,6 +10,13 @@ use App\Modules\CmsCore\Database\Factories\PostFactory;
 use App\Modules\CmsCore\Database\Factories\PostTypeFactory;
 use App\Modules\CmsCore\Database\Factories\TagFactory;
 use App\Services\ModuleManager;
+use App\Services\Tenancy\TenantContext;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Str;
+use Spatie\Permission\Models\Permission;
 
 use function Pest\Laravel\actingAs;
 
@@ -18,12 +25,75 @@ use function Pest\Laravel\actingAs;
  */
 function createCmsApiContext(): array
 {
-    $user = User::factory()->create();
-    $tenant = setActiveTenantForTest($user);
+    $tenantDb = database_path('tenant_cms_testing.sqlite');
+    if (file_exists($tenantDb)) {
+        unlink($tenantDb);
+    }
+    touch($tenantDb);
 
+    Config::set('database.connections.tenant', [
+        'driver' => 'sqlite',
+        'database' => $tenantDb,
+        'prefix' => '',
+        'foreign_key_constraints' => true,
+    ]);
+    Config::set('database.default_tenant_connection', 'tenant');
+
+    DB::purge('tenant');
+    DB::reconnect('tenant');
+
+    $user = User::factory()->create();
+    $tenant = setActiveTenantForTest($user, [
+        'isolation_mode' => 'db_per_tenant',
+        'db_driver' => 'sqlite',
+        'meta' => [
+            'database' => $tenantDb,
+        ],
+    ]);
+
+    switchToCmsTenantContext($tenant);
+
+    $permissions = [
+        'cms.post-types.view',
+        'cms.post-types.manage',
+        'cms.posts.view',
+        'cms.posts.create',
+        'cms.posts.update',
+        'cms.posts.delete',
+        'cms.media.view',
+        'cms.media.manage',
+        'cms.menus.manage',
+        'cms.settings.manage',
+    ];
+
+    foreach ($permissions as $permission) {
+        Permission::firstOrCreate([
+            'name' => $permission,
+            'guard_name' => 'web',
+        ], [
+            'uuid' => (string) Str::uuid(),
+            'category' => 'Modules',
+        ]);
+    }
+
+    $user->givePermissionTo($permissions);
     app(ModuleManager::class)->enableForTenant('cms-core', $tenant);
 
+    Artisan::call('migrate', [
+        '--database' => 'tenant',
+        '--path' => app_path('Modules/CmsCore/Database/Migrations'),
+        '--realpath' => true,
+        '--force' => true,
+    ]);
+
     return [$user, $tenant];
+}
+
+function switchToCmsTenantContext(Tenant $tenant): void
+{
+    Session::put('active_tenant_id', $tenant->id);
+    setPermissionsTeamId($tenant->id);
+    app(TenantContext::class)->setTenant($tenant);
 }
 
 it('returns post types', function () {
@@ -101,7 +171,7 @@ it('creates and updates posts', function () {
         'title' => 'Hello CMS',
         'status' => 'draft',
         'body' => 'Content',
-        'author_id' => $user->id,
+        'author_id' => (string) $user->uuid,
         'category_ids' => [$category->id],
         'tag_ids' => [$tag->id],
     ]);
@@ -126,7 +196,7 @@ it('deletes posts', function () {
     [$user, $tenant] = createCmsApiContext();
 
     $post = PostFactory::new()->forTenant($tenant->id)->create([
-        'author_id' => $user->id,
+        'author_id' => (string) $user->uuid,
     ]);
 
     $response = actingAs($user, 'sanctum')
@@ -155,7 +225,7 @@ it('creates and updates media records', function () {
     [$user, $tenant] = createCmsApiContext();
 
     $post = PostFactory::new()->forTenant($tenant->id)->create([
-        'author_id' => $user->id,
+        'author_id' => (string) $user->uuid,
     ]);
 
     $createResponse = actingAs($user, 'sanctum')->postJson('/api/cms-core/v1/media', [
@@ -166,7 +236,7 @@ it('creates and updates media records', function () {
         'extension' => 'jpg',
         'mime_type' => 'image/jpeg',
         'size_bytes' => 2048,
-        'uploaded_by' => $user->id,
+        'uploaded_by' => (string) $user->uuid,
         'post_ids' => [$post->id],
     ]);
 
@@ -191,7 +261,7 @@ it('deletes media records', function () {
     [$user, $tenant] = createCmsApiContext();
 
     $media = MediaFactory::new()->forTenant($tenant->id)->create([
-        'uploaded_by' => $user->id,
+        'uploaded_by' => (string) $user->uuid,
     ]);
 
     $response = actingAs($user, 'sanctum')

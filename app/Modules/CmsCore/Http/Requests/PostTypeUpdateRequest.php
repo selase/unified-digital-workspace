@@ -31,7 +31,7 @@ final class PostTypeUpdateRequest extends FormRequest
                 'sometimes',
                 'string',
                 'max:255',
-                Rule::unique('post_types', 'slug')
+                Rule::unique(PostType::class, 'slug')
                     ->where('tenant_id', $tenantId)
                     ->ignore($postType->id),
             ],

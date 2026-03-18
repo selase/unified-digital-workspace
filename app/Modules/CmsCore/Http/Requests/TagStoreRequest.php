@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\CmsCore\Http\Requests;
 
+use App\Modules\CmsCore\Models\Tag;
 use App\Services\Tenancy\TenantContext;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -28,7 +29,7 @@ final class TagStoreRequest extends FormRequest
                 'nullable',
                 'string',
                 'max:255',
-                Rule::unique('tags', 'slug')->where('tenant_id', $tenantId),
+                Rule::unique(Tag::class, 'slug')->where('tenant_id', $tenantId),
             ],
             'description' => ['nullable', 'string'],
         ];

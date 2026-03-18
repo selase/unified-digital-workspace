@@ -31,7 +31,7 @@ final class CategoryUpdateRequest extends FormRequest
                 'sometimes',
                 'string',
                 'max:255',
-                Rule::unique('categories', 'slug')
+                Rule::unique(Category::class, 'slug')
                     ->where('tenant_id', $tenantId)
                     ->ignore($category->id),
             ],
@@ -39,7 +39,7 @@ final class CategoryUpdateRequest extends FormRequest
             'parent_id' => [
                 'nullable',
                 'integer',
-                Rule::exists('categories', 'id')->where('tenant_id', $tenantId),
+                Rule::exists(Category::class, 'id')->where('tenant_id', $tenantId),
             ],
             'sort_order' => ['sometimes', 'integer', 'min:0'],
             'is_active' => ['sometimes', 'boolean'],

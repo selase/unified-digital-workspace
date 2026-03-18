@@ -31,7 +31,7 @@ final class TagUpdateRequest extends FormRequest
                 'sometimes',
                 'string',
                 'max:255',
-                Rule::unique('tags', 'slug')
+                Rule::unique(Tag::class, 'slug')
                     ->where('tenant_id', $tenantId)
                     ->ignore($tag->id),
             ],

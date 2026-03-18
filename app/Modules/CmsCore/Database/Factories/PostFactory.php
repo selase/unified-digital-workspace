@@ -35,7 +35,7 @@ final class PostFactory extends Factory
             'body' => fake()->paragraphs(3, true),
             'published_at' => null,
             'scheduled_for' => null,
-            'author_id' => User::factory(),
+            'author_id' => fn () => (string) User::factory()->create()->uuid,
             'editor_id' => null,
             'featured_media_id' => null,
             'parent_id' => null,
@@ -56,7 +56,7 @@ final class PostFactory extends Factory
         return $this->state(fn () => [
             'tenant_id' => $tenantId,
             'post_type_id' => PostType::factory()->state(['tenant_id' => $tenantId]),
-            'author_id' => User::factory()->state(['tenant_id' => $tenantId]),
+            'author_id' => fn () => (string) User::factory()->state(['tenant_id' => $tenantId])->create()->uuid,
         ]);
     }
 }

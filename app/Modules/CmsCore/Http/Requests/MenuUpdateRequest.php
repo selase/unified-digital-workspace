@@ -31,7 +31,7 @@ final class MenuUpdateRequest extends FormRequest
                 'sometimes',
                 'string',
                 'max:255',
-                Rule::unique('menus', 'slug')
+                Rule::unique(Menu::class, 'slug')
                     ->where('tenant_id', $tenantId)
                     ->ignore($menu->id),
             ],

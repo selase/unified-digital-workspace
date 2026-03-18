@@ -30,7 +30,7 @@ final class SettingUpdateRequest extends FormRequest
             'key' => ['sometimes', 'string', 'max:255'],
             'value' => ['sometimes'],
             'key_unique' => [
-                Rule::unique('settings', 'key')
+                Rule::unique(Setting::class, 'key')
                     ->where('tenant_id', $tenantId)
                     ->where('group', $this->input('group', $setting->group))
                     ->ignore($setting->id),
