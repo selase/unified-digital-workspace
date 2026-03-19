@@ -15,8 +15,14 @@
     <section x-data="carousel()" x-init="start()" class="relative overflow-hidden" style="background: var(--tgf-dark);">
         <div class="relative" style="min-height: 520px;">
             @php
-                // Load slides from CMS settings, fall back to defaults
-                $savedSlides = json_decode($theme->get('homepage_slides', '[]'), true) ?: [];
+                // Load slider posts — managed via CMS as PostType "slider"
+                $sliderPosts = \App\Modules\CmsCore\Models\Post::query()
+                    ->published()
+                    ->forType('slider')
+                    ->with(['featuredMedia', 'meta'])
+                    ->orderBy('sort_order')
+                    ->get();
+
                 $gradients = [
                     'linear-gradient(135deg, #0F172A 0%, #134E4A 100%)',
                     'linear-gradient(135deg, #134E4A 0%, #0F766E 100%)',
@@ -24,33 +30,20 @@
                     'linear-gradient(135deg, #0F766E 0%, #134E4A 100%)',
                 ];
 
-                if (!empty($savedSlides)) {
-                    $slides = collect($savedSlides)->map(function ($s, $i) use ($gradients) {
-                        return [
-                            'pretitle' => $s['pretitle'] ?? '',
-                            'title' => $s['title'] ?? '',
-                            'text' => $s['text'] ?? '',
-                            'cta' => !empty($s['cta_label']) ? [$s['cta_label'], $s['cta_url'] ?? '#'] : null,
-                            'cta2' => !empty($s['cta2_label']) ? [$s['cta2_label'], $s['cta2_url'] ?? '#'] : null,
-                            'gradient' => $gradients[$i % count($gradients)],
-                        ];
-                    })->all();
-                } else {
-                    // Default slides when none configured
-                    $slides = [
-                        [
-                            'pretitle' => 'Thyroid Ghana Foundation',
-                            'title' => 'Advancing Thyroid Health Across Ghana',
-                            'text' => 'Creating awareness, enabling early detection, and providing access to affordable treatment for thyroid diseases.',
-                            'cta' => ['Learn About Our Mission', $cmsUrl->route('pages.show', 'about')],
-                            'cta2' => ['Support Our Cause', $cmsUrl->route('pages.show', 'donate')],
-                            'gradient' => $gradients[0],
-                        ],
-                    ];
-                }
+                // Helper to get meta value (handles array cast)
+                $getMeta = function ($post, $key) {
+                    $val = $post->meta?->where('key', $key)->first()?->value;
+                    return is_array($val) ? ($val[0] ?? '') : ($val ?? '');
+                };
             @endphp
 
-            @foreach($slides as $i => $slide)
+            @foreach($sliderPosts as $i => $slide)
+                @php
+                    $bgImage = $slide->featuredMedia ? $slide->featuredMedia->url() : null;
+                    $bgStyle = $bgImage
+                        ? "background: linear-gradient(rgba(15,23,42,0.7), rgba(15,23,42,0.7)), url('{$bgImage}') center/cover no-repeat;"
+                        : 'background: ' . $gradients[$i % count($gradients)] . ';';
+                @endphp
                 <div
                     x-show="current === {{ $i }}"
                     x-transition:enter="transition ease-out duration-700"
@@ -60,17 +53,23 @@
                     x-transition:leave-start="opacity-100"
                     x-transition:leave-end="opacity-0"
                     class="absolute inset-0 flex items-center"
-                    style="background: {{ $slide['gradient'] }};"
+                    style="{{ $bgStyle }}"
                 >
                     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                         <div class="max-w-2xl">
-                            <p class="text-sm font-semibold uppercase tracking-widest" style="color: var(--tgf-accent-light);">{{ $slide['pretitle'] }}</p>
-                            <h2 class="mt-4 text-3xl font-extrabold leading-tight text-white sm:text-4xl lg:text-5xl">{{ $slide['title'] }}</h2>
-                            <p class="mt-5 text-base leading-relaxed text-slate-300 sm:text-lg">{{ $slide['text'] }}</p>
+                            @if($slide->body)
+                                <p class="text-sm font-semibold uppercase tracking-widest" style="color: var(--tgf-accent-light);">{{ strip_tags($slide->body) }}</p>
+                            @endif
+                            <h2 class="mt-4 text-3xl font-extrabold leading-tight text-white sm:text-4xl lg:text-5xl">{{ $slide->title }}</h2>
+                            @if($slide->excerpt)
+                                <p class="mt-5 text-base leading-relaxed text-slate-300 sm:text-lg">{{ $slide->excerpt }}</p>
+                            @endif
                             <div class="mt-8 flex flex-wrap gap-4">
-                                <a href="{{ $slide['cta'][1] }}" class="tgf-btn-primary">{{ $slide['cta'][0] }}</a>
-                                @if($slide['cta2'])
-                                    <a href="{{ $slide['cta2'][1] }}" class="tgf-btn-accent">{{ $slide['cta2'][0] }}</a>
+                                @if($getMeta($slide, 'cta_label'))
+                                    <a href="{{ $getMeta($slide, 'cta_url') ?: '#' }}" class="tgf-btn-primary">{{ $getMeta($slide, 'cta_label') }}</a>
+                                @endif
+                                @if($getMeta($slide, 'cta2_label'))
+                                    <a href="{{ $getMeta($slide, 'cta2_url') ?: '#' }}" class="tgf-btn-accent">{{ $getMeta($slide, 'cta2_label') }}</a>
                                 @endif
                             </div>
                         </div>
@@ -80,7 +79,7 @@
 
             {{-- Dots --}}
             <div class="absolute bottom-6 left-1/2 flex -translate-x-1/2 items-center gap-2">
-                @foreach($slides as $i => $slide)
+                @foreach($sliderPosts as $i => $s)
                     <button
                         @click="goTo({{ $i }})"
                         class="h-2 rounded-full transition-all duration-300"
@@ -311,7 +310,7 @@
         function carousel() {
             return {
                 current: 0,
-                total: {{ count($slides) }},
+                total: {{ $sliderPosts->count() }},
                 timer: null,
                 start() { this.timer = setInterval(() => this.next(), 6000); },
                 next() { this.current = (this.current + 1) % this.total; },

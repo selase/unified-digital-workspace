@@ -37,6 +37,7 @@ final class ThyroidGhanaSeeder extends Seeder
         $this->seedTags($tenant);
         $this->seedPages($tenant);
         $this->seedNews($tenant);
+        $this->seedSliders($tenant);
         $this->seedMenus($tenant);
         $this->seedThemeSettings($tenant);
     }
@@ -51,6 +52,11 @@ final class ThyroidGhanaSeeder extends Seeder
         PostType::query()->firstOrCreate(
             ['tenant_id' => $tenant->id, 'slug' => 'post'],
             ['name' => 'News', 'description' => 'News articles and announcements', 'is_active' => true, 'supports' => ['excerpt', 'featured_media', 'categories', 'tags']]
+        );
+
+        PostType::query()->firstOrCreate(
+            ['tenant_id' => $tenant->id, 'slug' => 'slider'],
+            ['name' => 'Slider', 'description' => 'Homepage carousel slides', 'is_active' => true, 'supports' => ['excerpt', 'featured_media']]
         );
     }
 
@@ -111,6 +117,73 @@ final class ThyroidGhanaSeeder extends Seeder
 
             if ($awarenessCategory) {
                 $post->categories()->syncWithoutDetaching([$awarenessCategory->id => ['sort_order' => 0]]);
+            }
+        }
+    }
+
+    private function seedSliders(Tenant $tenant): void
+    {
+        $sliderType = PostType::where('tenant_id', $tenant->id)->where('slug', 'slider')->first();
+
+        $sliders = [
+            [
+                'slug' => 'slide-advancing-thyroid-health',
+                'title' => 'Advancing Thyroid Health Across Ghana',
+                'excerpt' => 'Creating awareness, enabling early detection, and providing access to affordable treatment for thyroid diseases — because every Ghanaian deserves quality healthcare.',
+                'body' => 'Thyroid Ghana Foundation',
+                'sort_order' => 0,
+                'meta' => [
+                    'cta_label' => 'Learn About Our Mission',
+                    'cta_url' => '/site/about',
+                    'cta2_label' => 'Support Our Cause',
+                    'cta2_url' => '/site/donate',
+                ],
+            ],
+            [
+                'slug' => 'slide-world-thyroid-awareness-week',
+                'title' => 'World Thyroid Awareness Week',
+                'excerpt' => "Every year, we lead Ghana's participation in the global awareness week — providing free screenings, educational workshops, and community outreach across multiple regions.",
+                'body' => 'Awareness & Education',
+                'sort_order' => 1,
+                'meta' => [
+                    'cta_label' => 'Read Latest News',
+                    'cta_url' => '/site/news',
+                ],
+            ],
+            [
+                'slug' => 'slide-expanding-patient-forums',
+                'title' => 'Expanding Forums to Northern Regions',
+                'excerpt' => 'Our patient support forums now reach communities in the Northern, Upper East, and Upper West regions — so no thyroid patient faces their condition alone.',
+                'body' => 'Patient Support',
+                'sort_order' => 2,
+                'meta' => [
+                    'cta_label' => 'Get Involved',
+                    'cta_url' => '/site/volunteer',
+                    'cta2_label' => 'Make a Donation',
+                    'cta2_url' => '/site/donate',
+                ],
+            ],
+        ];
+
+        foreach ($sliders as $sliderData) {
+            $meta = $sliderData['meta'] ?? [];
+            unset($sliderData['meta']);
+
+            $post = Post::query()->updateOrCreate(
+                ['tenant_id' => $tenant->id, 'post_type_id' => $sliderType->id, 'slug' => $sliderData['slug']],
+                array_merge($sliderData, [
+                    'post_type_id' => $sliderType->id,
+                    'author_id' => $this->authorId,
+                    'status' => 'published',
+                    'published_at' => now(),
+                ])
+            );
+
+            foreach ($meta as $key => $value) {
+                \App\Modules\CmsCore\Models\PostMeta::query()->updateOrCreate(
+                    ['post_id' => $post->id, 'key' => $key],
+                    ['value' => $value, 'tenant_id' => $tenant->id]
+                );
             }
         }
     }
