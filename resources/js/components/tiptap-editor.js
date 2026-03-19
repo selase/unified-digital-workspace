@@ -2,18 +2,22 @@ import { Editor } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
 
+// Store editor instances outside Alpine's reactive system
+// to prevent proxy conflicts with ProseMirror transactions
+const editors = new WeakMap();
+
 export default function tiptapEditor(content = '', uploadUrl = '') {
     return {
-        editor: null,
         content: content,
         uploadUrl: uploadUrl,
         uploading: false,
 
         init() {
             const self = this;
+            const editorElement = this.$refs.editor;
 
-            this.editor = new Editor({
-                element: this.$refs.editor,
+            const editor = new Editor({
+                element: editorElement,
                 extensions: [
                     StarterKit.configure({
                         heading: { levels: [2, 3, 4] },
@@ -62,71 +66,81 @@ export default function tiptapEditor(content = '', uploadUrl = '') {
                         return false;
                     },
                 },
-                onUpdate: ({ editor }) => {
-                    this.content = editor.getHTML();
+                onUpdate: ({ editor: ed }) => {
+                    this.content = ed.getHTML();
                 },
             });
+
+            // Store editor outside Alpine's reactive proxy
+            editors.set(editorElement, editor);
         },
 
         destroy() {
-            if (this.editor) {
-                this.editor.destroy();
+            const editor = editors.get(this.$refs.editor);
+            if (editor) {
+                editor.destroy();
+                editors.delete(this.$refs.editor);
             }
         },
 
+        /** Get the raw (non-proxied) editor instance */
+        _editor() {
+            return editors.get(this.$refs.editor);
+        },
+
         isActive(type, attrs = {}) {
-            return this.editor?.isActive(type, attrs) ?? false;
+            return this._editor()?.isActive(type, attrs) ?? false;
         },
 
         toggleBold() {
-            this.editor?.chain().focus().toggleBold().run();
+            this._editor()?.chain().focus().toggleBold().run();
         },
 
         toggleItalic() {
-            this.editor?.chain().focus().toggleItalic().run();
+            this._editor()?.chain().focus().toggleItalic().run();
         },
 
         toggleStrike() {
-            this.editor?.chain().focus().toggleStrike().run();
+            this._editor()?.chain().focus().toggleStrike().run();
         },
 
         toggleHeading(level) {
-            this.editor?.chain().focus().toggleHeading({ level }).run();
+            this._editor()?.chain().focus().toggleHeading({ level }).run();
         },
 
         toggleBulletList() {
-            this.editor?.chain().focus().toggleBulletList().run();
+            this._editor()?.chain().focus().toggleBulletList().run();
         },
 
         toggleOrderedList() {
-            this.editor?.chain().focus().toggleOrderedList().run();
+            this._editor()?.chain().focus().toggleOrderedList().run();
         },
 
         toggleBlockquote() {
-            this.editor?.chain().focus().toggleBlockquote().run();
+            this._editor()?.chain().focus().toggleBlockquote().run();
         },
 
         toggleCode() {
-            this.editor?.chain().focus().toggleCode().run();
+            this._editor()?.chain().focus().toggleCode().run();
         },
 
         toggleCodeBlock() {
-            this.editor?.chain().focus().toggleCodeBlock().run();
+            this._editor()?.chain().focus().toggleCodeBlock().run();
         },
 
         setHorizontalRule() {
-            this.editor?.chain().focus().setHorizontalRule().run();
+            this._editor()?.chain().focus().setHorizontalRule().run();
         },
 
         setLink() {
             const url = window.prompt('URL');
             if (url) {
-                this.editor?.chain().focus().setLink({ href: url }).run();
+                this._editor()?.chain().focus().setLink({ href: url }).run();
             }
         },
 
         unsetLink() {
-            this.editor?.chain().focus().unsetLink().run();
+            this._editor()?.chain().focus().unsetLink().run();
         },
 
         addImage() {
@@ -144,7 +158,7 @@ export default function tiptapEditor(content = '', uploadUrl = '') {
             } else {
                 const url = window.prompt('Image URL');
                 if (url) {
-                    this.editor?.chain().focus().setImage({ src: url }).run();
+                    this._editor()?.chain().focus().setImage({ src: url }).run();
                 }
             }
         },
@@ -177,7 +191,7 @@ export default function tiptapEditor(content = '', uploadUrl = '') {
                 const data = await response.json();
 
                 if (data.url) {
-                    this.editor?.chain().focus().setImage({
+                    this._editor()?.chain().focus().setImage({
                         src: data.url,
                         alt: data.alt || file.name,
                     }).run();
@@ -191,11 +205,11 @@ export default function tiptapEditor(content = '', uploadUrl = '') {
         },
 
         undo() {
-            this.editor?.chain().focus().undo().run();
+            this._editor()?.chain().focus().undo().run();
         },
 
         redo() {
-            this.editor?.chain().focus().redo().run();
+            this._editor()?.chain().focus().redo().run();
         },
     };
 }
