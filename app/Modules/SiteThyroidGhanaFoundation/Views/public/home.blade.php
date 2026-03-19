@@ -15,32 +15,39 @@
     <section x-data="carousel()" x-init="start()" class="relative overflow-hidden" style="background: var(--tgf-dark);">
         <div class="relative" style="min-height: 520px;">
             @php
-                $slides = [
-                    [
-                        'pretitle' => 'Thyroid Ghana Foundation',
-                        'title' => 'Advancing Thyroid Health Across Ghana',
-                        'text' => 'Creating awareness, enabling early detection, and providing access to affordable treatment for thyroid diseases — because every Ghanaian deserves quality healthcare.',
-                        'cta' => ['Learn About Our Mission', $cmsUrl->route('pages.show', 'about')],
-                        'cta2' => ['Support Our Cause', $cmsUrl->route('pages.show', 'donate')],
-                        'gradient' => 'linear-gradient(135deg, #0F172A 0%, #134E4A 100%)',
-                    ],
-                    [
-                        'pretitle' => 'Awareness & Education',
-                        'title' => 'World Thyroid Awareness Week',
-                        'text' => 'Every year, we lead Ghana\'s participation in the global awareness week — providing free screenings, educational workshops, and community outreach across multiple regions.',
-                        'cta' => ['Read Latest News', $cmsUrl->route('posts.archive')],
-                        'cta2' => null,
-                        'gradient' => 'linear-gradient(135deg, #134E4A 0%, #0F766E 100%)',
-                    ],
-                    [
-                        'pretitle' => 'Patient Support',
-                        'title' => 'Expanding Forums to Northern Regions',
-                        'text' => 'Our patient support forums now reach communities in the Northern, Upper East, and Upper West regions — so no thyroid patient faces their condition alone.',
-                        'cta' => ['Get Involved', $cmsUrl->route('pages.show', 'volunteer')],
-                        'cta2' => ['Make a Donation', $cmsUrl->route('pages.show', 'donate')],
-                        'gradient' => 'linear-gradient(135deg, #0F172A 0%, #1E3A5F 100%)',
-                    ],
+                // Load slides from CMS settings, fall back to defaults
+                $savedSlides = json_decode($theme->get('homepage_slides', '[]'), true) ?: [];
+                $gradients = [
+                    'linear-gradient(135deg, #0F172A 0%, #134E4A 100%)',
+                    'linear-gradient(135deg, #134E4A 0%, #0F766E 100%)',
+                    'linear-gradient(135deg, #0F172A 0%, #1E3A5F 100%)',
+                    'linear-gradient(135deg, #0F766E 0%, #134E4A 100%)',
                 ];
+
+                if (!empty($savedSlides)) {
+                    $slides = collect($savedSlides)->map(function ($s, $i) use ($gradients) {
+                        return [
+                            'pretitle' => $s['pretitle'] ?? '',
+                            'title' => $s['title'] ?? '',
+                            'text' => $s['text'] ?? '',
+                            'cta' => !empty($s['cta_label']) ? [$s['cta_label'], $s['cta_url'] ?? '#'] : null,
+                            'cta2' => !empty($s['cta2_label']) ? [$s['cta2_label'], $s['cta2_url'] ?? '#'] : null,
+                            'gradient' => $gradients[$i % count($gradients)],
+                        ];
+                    })->all();
+                } else {
+                    // Default slides when none configured
+                    $slides = [
+                        [
+                            'pretitle' => 'Thyroid Ghana Foundation',
+                            'title' => 'Advancing Thyroid Health Across Ghana',
+                            'text' => 'Creating awareness, enabling early detection, and providing access to affordable treatment for thyroid diseases.',
+                            'cta' => ['Learn About Our Mission', $cmsUrl->route('pages.show', 'about')],
+                            'cta2' => ['Support Our Cause', $cmsUrl->route('pages.show', 'donate')],
+                            'gradient' => $gradients[0],
+                        ],
+                    ];
+                }
             @endphp
 
             @foreach($slides as $i => $slide)

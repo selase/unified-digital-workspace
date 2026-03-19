@@ -64,6 +64,22 @@ final class CmsSettingsController extends Controller
             }
         }
 
+        // Save homepage slides as JSON
+        $slidesInput = $request->input('slides', []);
+        $slides = collect($slidesInput)->filter(fn (array $s): bool => ! empty($s['title']))->values()->all();
+
+        if (! empty($slides)) {
+            Setting::query()->updateOrCreate(
+                ['group' => 'theme', 'key' => 'homepage_slides'],
+                ['value' => json_encode($slides)]
+            );
+        } else {
+            Setting::query()
+                ->where('group', 'theme')
+                ->where('key', 'homepage_slides')
+                ->delete();
+        }
+
         return redirect()
             ->route('cms-core.settings.index')
             ->with('status', 'success')
