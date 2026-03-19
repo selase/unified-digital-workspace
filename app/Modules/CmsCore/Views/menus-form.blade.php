@@ -117,14 +117,19 @@
         @endif
     </section>
 
+    @php
+        $itemsJson = $menuItems->map(function ($item) {
+            return [
+                'label' => $item->label,
+                'url' => $item->url ?? '',
+                'post_id' => $item->post_id ? (string) $item->post_id : '',
+            ];
+        })->values();
+    @endphp
     <script>
         function menuBuilder() {
             return {
-                items: @json($menuItems->map(fn ($item) => [
-                    'label' => $item->label,
-                    'url' => $item->url ?? '',
-                    'post_id' => $item->post_id ? (string) $item->post_id : '',
-                ])->values()),
+                items: {!! json_encode($itemsJson) !!},
                 addItem() {
                     this.items.push({ label: '', url: '', post_id: '' });
                 },
