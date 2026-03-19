@@ -15,7 +15,7 @@
     @endphp
 
     <section class="grid gap-6">
-        <div class="rounded-xl border border-border bg-background p-6 lg:p-8">
+        <div class="kt-card p-6 lg:p-8">
             <div class="flex flex-wrap items-start justify-between gap-4">
                 <div>
                     <p class="text-xs uppercase tracking-wide text-muted-foreground">Tenant</p>
@@ -34,7 +34,7 @@
         </div>
 
         <div class="grid gap-6 lg:grid-cols-3">
-            <div class="rounded-xl border border-border bg-background p-6">
+            <div class="kt-card p-6">
                 <div class="flex items-center gap-4">
                     <img src="{{ $tenantLogo }}" alt="{{ $tenant->name }}" class="size-16 rounded-full object-cover" />
                     <div>
@@ -60,7 +60,7 @@
             </div>
 
             <div class="lg:col-span-2 grid gap-6">
-                <div class="rounded-xl border border-border bg-background p-6">
+                <div class="kt-card p-6">
                     <div class="flex flex-wrap items-start justify-between gap-4">
                         <div>
                             <h2 class="text-lg font-semibold text-foreground">Usage Analytics</h2>
@@ -104,7 +104,7 @@
                 </div>
 
                 <div class="grid gap-6 lg:grid-cols-2">
-                    <div class="rounded-xl border border-border bg-background p-6">
+                    <div class="kt-card p-6">
                         <div>
                             <h3 class="text-base font-semibold text-foreground">Storage (MB)</h3>
                             <p class="mt-1 text-xs text-muted-foreground">S3/Object usage.</p>
@@ -125,7 +125,7 @@
                         </div>
                     </div>
 
-                    <div class="rounded-xl border border-border bg-background p-6">
+                    <div class="kt-card p-6">
                         <div>
                             <h3 class="text-base font-semibold text-foreground">Database (MB)</h3>
                             <p class="mt-1 text-xs text-muted-foreground">Database footprint.</p>
@@ -147,7 +147,7 @@
                     </div>
                 </div>
 
-                <div class="rounded-xl border border-border bg-background p-6">
+                <div class="kt-card p-6">
                     <div class="flex flex-wrap items-start justify-between gap-4">
                         <div>
                             <h2 class="text-lg font-semibold text-foreground">Team Members</h2>

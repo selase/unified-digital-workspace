@@ -22,7 +22,7 @@
     @endphp
 
     <section class="grid gap-6">
-        <div class="rounded-xl border border-border bg-background p-6 lg:p-8">
+        <div class="kt-card p-6 lg:p-8">
             <div class="flex flex-wrap items-center justify-between gap-4">
                 <div>
                     <p class="text-xs uppercase tracking-wide text-muted-foreground">Subscription Invoice</p>
@@ -34,7 +34,7 @@
         </div>
 
         <div class="grid gap-6 lg:grid-cols-3">
-            <div class="lg:col-span-2 rounded-xl border border-border bg-background p-6">
+            <div class="lg:col-span-2 kt-card p-6">
                 <div class="grid gap-6 lg:grid-cols-2">
                     <div>
                         <div class="text-xs uppercase text-muted-foreground">Issue Date</div>
@@ -97,7 +97,7 @@
                 </div>
             </div>
 
-            <div class="rounded-xl border border-border bg-background p-6">
+            <div class="kt-card p-6">
                 <div class="flex items-center gap-2">
                     <span class="kt-badge {{ $statusClass }}">{{ strtoupper($status) }}</span>
                     <span class="text-xs text-muted-foreground">Invoice status</span>

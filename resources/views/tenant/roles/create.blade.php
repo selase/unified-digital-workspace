@@ -4,7 +4,7 @@
 
 @section('content')
     <section class="grid gap-6">
-        <div class="rounded-xl border border-border bg-background p-6 lg:p-8">
+        <div class="kt-card p-6 lg:p-8">
             <div class="flex flex-wrap items-start justify-between gap-4">
                 <div>
                     <p class="text-xs uppercase tracking-wide text-muted-foreground">Organization Roles</p>
@@ -15,7 +15,7 @@
             </div>
         </div>
 
-        <div class="rounded-xl border border-border bg-background p-6">
+        <div class="kt-card p-6">
             <form class="kt-form" action="{{ route('tenant.roles.store', ['subdomain' => request()->route('subdomain')]) }}" method="POST">
                 @csrf
                 <div class="kt-form-item">

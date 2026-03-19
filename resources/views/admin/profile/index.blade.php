@@ -10,7 +10,7 @@
             </div>
         @endif
 
-        <div class="rounded-xl border border-border bg-background p-6 lg:p-8">
+        <div class="kt-card p-6 lg:p-8">
             <div class="flex flex-wrap items-start justify-between gap-4">
                 <div class="flex items-center gap-4">
                     <span class="size-16 overflow-hidden rounded-full border border-border bg-muted">
@@ -48,7 +48,7 @@
             </div>
         </div>
 
-        <div class="rounded-xl border border-border bg-background p-6">
+        <div class="kt-card p-6">
             <h2 class="text-lg font-semibold text-foreground">Account Details</h2>
             <div class="mt-4 grid gap-4 md:grid-cols-2">
                 <div>

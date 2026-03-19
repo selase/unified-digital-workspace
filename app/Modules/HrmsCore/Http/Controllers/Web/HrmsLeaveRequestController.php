@@ -15,13 +15,29 @@ final class HrmsLeaveRequestController extends Controller
     {
         abort_if(! $request->user()?->can('hrms.leave.view'), 403);
 
+        $search = mb_trim((string) $request->string('search'));
+        $status = (string) $request->string('status');
+
         $leaveRequests = LeaveRequest::query()
             ->with(['employee', 'leaveCategory:id,name'])
+            ->when($search !== '', function ($query) use ($search): void {
+                $query->whereHas('employee', function ($employeeQuery) use ($search): void {
+                    $employeeQuery
+                        ->where('first_name', 'like', "%{$search}%")
+                        ->orWhere('last_name', 'like', "%{$search}%");
+                });
+            })
+            ->when($status !== '', function ($query) use ($status): void {
+                $query->where('status', $status);
+            })
             ->latest('id')
-            ->paginate(20);
+            ->paginate(20)
+            ->withQueryString();
 
         return view('hrms-core::leave-requests', [
             'leaveRequests' => $leaveRequests,
+            'search' => $search,
+            'status' => $status,
         ]);
     }
 }

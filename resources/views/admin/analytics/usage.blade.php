@@ -7,7 +7,7 @@
         @php
             $usageMetrics = $usageMetrics ?? \App\Enum\UsageMetric::cases();
         @endphp
-        <div class="rounded-xl border border-border bg-background p-6 lg:p-8">
+        <div class="kt-card p-6 lg:p-8">
             <div class="flex flex-wrap items-start justify-between gap-4">
                 <div>
                     <p class="text-xs uppercase tracking-wide text-muted-foreground">Analytics</p>
@@ -39,7 +39,7 @@
         </div>
 
         <div class="grid gap-6 xl:grid-cols-12">
-            <div class="rounded-xl border border-border bg-background p-6 xl:col-span-8">
+            <div class="kt-card p-6 xl:col-span-8">
                 <div>
                     <h3 class="text-sm font-semibold uppercase text-foreground">Request Throughput</h3>
                     <p class="text-xs text-muted-foreground">Global system load over time</p>
@@ -62,7 +62,7 @@
                 </div>
             </div>
 
-            <div class="rounded-xl border border-border bg-background p-6 xl:col-span-4">
+            <div class="kt-card p-6 xl:col-span-4">
                 <div>
                     <h3 class="text-sm font-semibold uppercase text-foreground">Traffic Health</h3>
                     <p class="text-xs text-muted-foreground">Status code distribution</p>
@@ -92,7 +92,7 @@
             </div>
         </div>
 
-        <div class="rounded-xl border border-border bg-background p-6">
+        <div class="kt-card p-6">
             <div>
                 <h3 class="text-sm font-semibold uppercase text-foreground">Engine Load Profile</h3>
                 <p class="text-xs text-muted-foreground">Aggregated hourly request volume (Peak Hours)</p>
@@ -114,7 +114,7 @@
         </div>
 
         <div class="grid gap-6 lg:grid-cols-2">
-            <div class="rounded-xl border border-border bg-background p-6">
+            <div class="kt-card p-6">
                 <div>
                     <h3 class="text-sm font-semibold uppercase text-foreground">Cloud Storage</h3>
                     <p class="text-xs text-muted-foreground">S3/Object storage consumption (GB)</p>
@@ -134,7 +134,7 @@
                     ]" />
                 </div>
             </div>
-            <div class="rounded-xl border border-border bg-background p-6">
+            <div class="kt-card p-6">
                 <div>
                     <h3 class="text-sm font-semibold uppercase text-foreground">Database Footprint</h3>
                     <p class="text-xs text-muted-foreground">Aggregate DB size across tenants (MB)</p>
@@ -156,7 +156,7 @@
             </div>
         </div>
 
-        <div class="rounded-xl border border-border bg-background p-6">
+        <div class="kt-card p-6">
             <div>
                 <h3 class="text-sm font-semibold uppercase text-foreground">Metric Catalog</h3>
                 <p class="text-xs text-muted-foreground">Definitions of active usage signals</p>

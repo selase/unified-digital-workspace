@@ -11,7 +11,7 @@
     @endphp
 
     <section class="grid gap-6">
-        <div class="rounded-xl border border-border bg-background p-6 lg:p-8">
+        <div class="kt-card p-6 lg:p-8">
             <div class="flex flex-wrap items-start justify-between gap-4">
                 <div>
                     <p class="text-xs uppercase tracking-wide text-muted-foreground">Document Management</p>
@@ -29,19 +29,19 @@
             </div>
 
             <div class="mt-5 grid gap-3 md:grid-cols-4">
-                <div class="rounded-lg border border-border bg-muted/30 p-4">
+                <div class="rounded-lg bg-muted/30 p-4">
                     <p class="text-xs uppercase tracking-wide text-muted-foreground">Total Documents</p>
                     <p class="mt-2 text-xl font-semibold text-foreground">{{ $totalDocumentCount }}</p>
                 </div>
-                <div class="rounded-lg border border-border bg-muted/30 p-4">
+                <div class="rounded-lg bg-muted/30 p-4">
                     <p class="text-xs uppercase tracking-wide text-muted-foreground">Draft</p>
                     <p class="mt-2 text-xl font-semibold text-foreground">{{ $draftCount }}</p>
                 </div>
-                <div class="rounded-lg border border-border bg-muted/30 p-4">
+                <div class="rounded-lg bg-muted/30 p-4">
                     <p class="text-xs uppercase tracking-wide text-muted-foreground">Published</p>
                     <p class="mt-2 text-xl font-semibold text-foreground">{{ $publishedCount }}</p>
                 </div>
-                <div class="rounded-lg border border-border bg-muted/30 p-4">
+                <div class="rounded-lg bg-muted/30 p-4">
                     <p class="text-xs uppercase tracking-wide text-muted-foreground">Archived</p>
                     <p class="mt-2 text-xl font-semibold text-foreground">{{ $archivedCount }}</p>
                 </div>
@@ -49,7 +49,7 @@
         </div>
 
         <div class="grid gap-6 xl:grid-cols-12">
-            <div class="rounded-xl border border-border bg-background p-6 xl:col-span-8">
+            <div class="kt-card p-6 xl:col-span-8">
                 <div class="mb-4 flex items-center justify-between gap-3">
                     <h2 class="text-lg font-semibold text-foreground">Recent Documents</h2>
                     <span class="text-xs text-muted-foreground">Latest 10 updates</span>
@@ -99,14 +99,14 @@
                 </div>
             </div>
 
-            <div class="rounded-xl border border-border bg-background p-6 xl:col-span-4">
+            <div class="kt-card p-6 xl:col-span-4">
                 <div class="mb-4 flex items-center justify-between gap-3">
                     <h2 class="text-lg font-semibold text-foreground">Quiz Snapshot</h2>
                     <span class="text-xs text-muted-foreground">Latest 8 quizzes</span>
                 </div>
                 <div class="space-y-3">
                     @forelse($quizzes as $quiz)
-                        <div class="rounded-lg border border-border p-4">
+                        <div class="rounded-lg bg-muted/30 p-4">
                             <div class="flex items-start justify-between gap-3">
                                 <div>
                                     <p class="font-medium text-foreground">{{ $quiz['title'] }}</p>

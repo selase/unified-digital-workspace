@@ -16,17 +16,24 @@ final class ForumChannelDirectoryController extends Controller
     {
         abort_if(! $request->user()?->can('forums.view'), 403);
 
+        $search = mb_trim((string) $request->string('search'));
+
         $channels = ForumChannel::query()
             ->withCount('threads')
             ->withCount([
                 'threads as flagged_threads_count' => fn ($query) => $query->where('status', ForumThread::STATUS_FLAGGED),
             ])
+            ->when($search !== '', function ($query) use ($search): void {
+                $query->where('name', 'like', "%{$search}%");
+            })
             ->orderBy('sort_order')
             ->orderBy('name')
-            ->paginate(20);
+            ->paginate(20)
+            ->withQueryString();
 
         return view('forums::channels', [
             'channels' => $channels,
+            'search' => $search,
         ]);
     }
 }

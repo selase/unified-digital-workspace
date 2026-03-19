@@ -4,7 +4,7 @@
 
 @section('content')
     <section class="grid gap-6">
-        <div class="rounded-xl border border-border bg-background p-6 lg:p-8">
+        <div class="kt-card p-6 lg:p-8">
             <div class="flex flex-wrap items-start justify-between gap-4">
                 <div>
                     <p class="text-xs uppercase tracking-wide text-muted-foreground">Tenants</p>
@@ -15,7 +15,7 @@
             </div>
         </div>
 
-        <div class="rounded-xl border border-border bg-background p-6">
+        <div class="kt-card p-6">
             <form action="{{ route('tenants.store') }}" method="post" enctype="multipart/form-data" class="kt-form">
                 @csrf
 

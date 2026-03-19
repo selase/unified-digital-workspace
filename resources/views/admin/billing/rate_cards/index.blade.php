@@ -10,7 +10,7 @@
     @endphp
 
     <section class="grid gap-6">
-        <div class="rounded-xl border border-border bg-background p-6 lg:p-8">
+        <div class="kt-card p-6 lg:p-8">
             <div class="flex flex-wrap items-start justify-between gap-4">
                 <div>
                     <p class="text-xs uppercase tracking-wide text-muted-foreground">Billing</p>
@@ -20,15 +20,15 @@
             </div>
 
             <div class="mt-5 grid gap-3 md:grid-cols-3">
-                <div class="rounded-lg border border-border bg-muted/30 p-4">
+                <div class="rounded-lg bg-muted/30 p-4">
                     <p class="text-xs uppercase tracking-wide text-muted-foreground">Metrics Configured</p>
                     <p class="mt-2 text-xl font-semibold text-foreground">{{ $configuredMetricCount }} / {{ count($metrics) }}</p>
                 </div>
-                <div class="rounded-lg border border-border bg-muted/30 p-4">
+                <div class="rounded-lg bg-muted/30 p-4">
                     <p class="text-xs uppercase tracking-wide text-muted-foreground">Active Tax Rules</p>
                     <p class="mt-2 text-xl font-semibold text-foreground">{{ $activeTaxCount }}</p>
                 </div>
-                <div class="rounded-lg border border-border bg-muted/30 p-4">
+                <div class="rounded-lg bg-muted/30 p-4">
                     <p class="text-xs uppercase tracking-wide text-muted-foreground">Compound Rules</p>
                     <p class="mt-2 text-xl font-semibold text-foreground">{{ $compoundTaxCount }}</p>
                 </div>
@@ -36,7 +36,7 @@
         </div>
 
         <div class="grid gap-6 lg:grid-cols-3">
-            <div class="lg:col-span-2 rounded-xl border border-border bg-background p-6">
+            <div class="lg:col-span-2 kt-card p-6">
                 <div class="flex flex-wrap items-start justify-between gap-4">
                     <div>
                         <h2 class="text-lg font-semibold text-foreground">Default Rate Card</h2>
@@ -88,7 +88,7 @@
                 </form>
             </div>
 
-            <div class="rounded-xl border border-border bg-background p-6">
+            <div class="kt-card p-6">
                 <div class="flex flex-wrap items-start justify-between gap-4">
                     <div>
                         <h2 class="text-lg font-semibold text-foreground">Tax Configuration</h2>

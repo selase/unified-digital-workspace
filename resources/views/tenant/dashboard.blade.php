@@ -9,7 +9,7 @@
     @endphp
 
     <section class="grid gap-6">
-        <div class="rounded-xl border border-border bg-background p-6 lg:p-8">
+        <div class="kt-card p-6 lg:p-8">
             <div class="text-center">
                 <h3 class="text-2xl font-semibold text-foreground">
                     Welcome to {{ app(\App\Services\Tenancy\TenantContext::class)->getTenant()->name }}!
@@ -18,15 +18,15 @@
             </div>
 
             <div class="mt-5 grid gap-3 md:grid-cols-3">
-                <div class="rounded-lg border border-border bg-muted/30 p-4 text-start">
+                <div class="rounded-lg bg-muted/30 p-4 text-start">
                     <p class="text-xs uppercase tracking-wide text-muted-foreground">Onboarding Progress</p>
                     <p class="mt-2 text-xl font-semibold text-foreground">{{ $checklistProgress }}%</p>
                 </div>
-                <div class="rounded-lg border border-border bg-muted/30 p-4 text-start">
+                <div class="rounded-lg bg-muted/30 p-4 text-start">
                     <p class="text-xs uppercase tracking-wide text-muted-foreground">Checklist Completed</p>
                     <p class="mt-2 text-xl font-semibold text-foreground">{{ $completedChecklistItems }} / {{ count($checklist) }}</p>
                 </div>
-                <div class="rounded-lg border border-border bg-muted/30 p-4 text-start">
+                <div class="rounded-lg bg-muted/30 p-4 text-start">
                     <p class="text-xs uppercase tracking-wide text-muted-foreground">Usage Metrics</p>
                     <p class="mt-2 text-xl font-semibold text-foreground">{{ count($usages) }}</p>
                 </div>
@@ -36,7 +36,7 @@
         <div class="grid gap-6 lg:grid-cols-12">
             @if(!$checklist['onboarding'])
                 <div class="lg:col-span-4">
-                    <div class="rounded-xl border border-border bg-background p-6 h-full" id="kt_getting_started_widget">
+                    <div class="kt-card p-6 h-full" id="kt_getting_started_widget">
                         <div>
                             <h3 class="text-sm font-semibold uppercase text-foreground">Getting Started</h3>
                             <p class="text-xs text-muted-foreground">Complete these to set up your org</p>
@@ -95,7 +95,7 @@
 
             <div class="{{ $checklist['onboarding'] ? 'lg:col-span-12' : 'lg:col-span-8' }}">
                 <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-                    <div class="rounded-xl border border-border bg-background p-5">
+                    <div class="kt-card p-5">
                         <div class="text-xs text-muted-foreground">Connected Tenants</div>
                         <div class="mt-2 text-2xl font-semibold text-foreground">
                             {{ auth()->user()->tenants()->count() }}
@@ -103,7 +103,7 @@
                     </div>
 
                     @forelse($usages as $usage)
-                        <div class="rounded-xl border border-border bg-background p-5">
+                        <div class="kt-card p-5">
                             <div class="flex items-center justify-between">
                                 <span class="text-xs text-muted-foreground">{{ ucfirst(str_replace('_', ' ', $usage['slug'])) }} Usage</span>
                                 <span class="text-xs text-muted-foreground">{{ $usage['used'] }}/{{ $usage['limit'] }}</span>

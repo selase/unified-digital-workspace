@@ -4,7 +4,7 @@
 
 @section('content')
     <section class="grid gap-6">
-        <div class="rounded-xl border border-border bg-background p-6 lg:p-8">
+        <div class="kt-card p-6 lg:p-8">
             <div class="flex flex-wrap items-center justify-between gap-4">
                 <div>
                     <p class="text-xs uppercase tracking-wide text-muted-foreground">Growth</p>
@@ -17,7 +17,7 @@
             </div>
         </div>
 
-        <div class="rounded-xl border border-border bg-background p-6">
+        <div class="kt-card p-6">
             <dl class="grid gap-5 md:grid-cols-2">
                 <div>
                     <dt class="text-xs uppercase text-muted-foreground">Full Name</dt>

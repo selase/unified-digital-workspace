@@ -17,14 +17,14 @@
     @endphp
 
     <section class="grid gap-6">
-        <div class="rounded-xl border border-border bg-background p-6 lg:p-8">
+        <div class="kt-card p-6 lg:p-8">
             <div class="flex flex-wrap items-start justify-between gap-4">
                 <div>
                     <p class="text-xs uppercase tracking-wide text-muted-foreground">Operations</p>
                     <h1 class="mt-2 text-2xl font-semibold text-foreground">Tenant Health</h1>
                     <p class="mt-2 text-sm text-muted-foreground">Track domain and database health for each tenant.</p>
                 </div>
-                <div class="flex items-center gap-2 rounded-lg border border-border bg-muted/30 p-2">
+                <div class="flex items-center gap-2 rounded-lg bg-muted/30 p-2">
                     <button type="button" class="kt-btn kt-btn-sm kt-btn-primary" data-health-filter="all">All</button>
                     <button type="button" class="kt-btn kt-btn-sm kt-btn-outline" data-health-filter="issues">Issues Only</button>
                 </div>
@@ -34,22 +34,22 @@
             </div>
 
             <div class="mt-5 grid gap-3 md:grid-cols-3">
-                <div class="rounded-lg border border-border bg-muted/30 p-4">
+                <div class="rounded-lg bg-muted/30 p-4">
                     <p class="text-xs uppercase tracking-wide text-muted-foreground">Total Tenants</p>
                     <p class="mt-2 text-xl font-semibold text-foreground">{{ $totalTenants }}</p>
                 </div>
-                <div class="rounded-lg border border-border bg-muted/30 p-4">
+                <div class="rounded-lg bg-muted/30 p-4">
                     <p class="text-xs uppercase tracking-wide text-muted-foreground">With Custom Domains</p>
                     <p class="mt-2 text-xl font-semibold text-foreground">{{ $customDomainCount }}</p>
                 </div>
-                <div class="rounded-lg border border-border bg-muted/30 p-4">
+                <div class="rounded-lg bg-muted/30 p-4">
                     <p class="text-xs uppercase tracking-wide text-muted-foreground">Domain Issues</p>
                     <p class="mt-2 text-xl font-semibold {{ $domainIssueCount > 0 ? 'text-destructive' : 'text-foreground' }}">{{ $domainIssueCount }}</p>
                 </div>
             </div>
         </div>
 
-        <div class="rounded-xl border border-border bg-background p-6">
+        <div class="kt-card p-6">
             <div class="overflow-x-auto">
                 <table class="kt-table table-auto kt-table-border" id="kt_table_tenant_health">
                     <thead>

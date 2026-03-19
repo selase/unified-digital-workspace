@@ -13,7 +13,7 @@
     @endphp
 
     <section class="grid gap-6">
-        <div class="rounded-xl border border-border bg-background p-6 lg:p-8">
+        <div class="kt-card p-6 lg:p-8">
             <div class="flex flex-wrap items-start justify-between gap-4">
                 <div>
                     <p class="text-xs uppercase tracking-wide text-muted-foreground">Developer</p>
@@ -27,22 +27,22 @@
             </div>
 
             <div class="mt-5 grid gap-3 md:grid-cols-3">
-                <div class="rounded-lg border border-border bg-muted/30 p-4">
+                <div class="rounded-lg bg-muted/30 p-4">
                     <p class="text-xs uppercase tracking-wide text-muted-foreground">{{ __('Active') }}</p>
                     <p class="mt-2 text-xl font-semibold text-foreground">{{ $activeKeyCount }}</p>
                 </div>
-                <div class="rounded-lg border border-border bg-muted/30 p-4">
+                <div class="rounded-lg bg-muted/30 p-4">
                     <p class="text-xs uppercase tracking-wide text-muted-foreground">{{ __('Expired') }}</p>
                     <p class="mt-2 text-xl font-semibold text-foreground">{{ $expiredKeyCount }}</p>
                 </div>
-                <div class="rounded-lg border border-border bg-muted/30 p-4">
+                <div class="rounded-lg bg-muted/30 p-4">
                     <p class="text-xs uppercase tracking-wide text-muted-foreground">{{ __('Revoked') }}</p>
                     <p class="mt-2 text-xl font-semibold text-foreground">{{ $revokedKeyCount }}</p>
                 </div>
             </div>
         </div>
 
-        <div class="rounded-xl border border-border bg-background p-6">
+        <div class="kt-card p-6">
             <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
                 <h2 class="text-lg font-semibold text-foreground">{{ __('Issued Keys') }}</h2>
                 <div class="w-full sm:w-72">

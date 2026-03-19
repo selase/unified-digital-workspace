@@ -16,6 +16,7 @@ final class ForumMessageCenterController extends Controller
     {
         abort_if(! $request->user()?->can('forums.view'), 403);
 
+        $search = mb_trim((string) $request->string('search'));
         $userUuid = (string) $request->user()?->uuid;
 
         $messages = ForumMessage::query()
@@ -28,8 +29,12 @@ final class ForumMessageCenterController extends Controller
                         ->where('user_id', $userUuid)
                         ->whereNull('deleted_at'));
             })
+            ->when($search !== '', function ($query) use ($search): void {
+                $query->where('subject', 'like', "%{$search}%");
+            })
             ->latest('updated_at')
-            ->paginate(20);
+            ->paginate(20)
+            ->withQueryString();
 
         $unreadCount = ForumMessageRecipient::query()
             ->where('user_id', $userUuid)
@@ -40,6 +45,7 @@ final class ForumMessageCenterController extends Controller
         return view('forums::messages', [
             'messages' => $messages,
             'unreadCount' => $unreadCount,
+            'search' => $search,
         ]);
     }
 }

@@ -9,7 +9,7 @@
     @endphp
 
     <section class="grid gap-6">
-        <div class="rounded-xl border border-border bg-background p-6 lg:p-8">
+        <div class="kt-card p-6 lg:p-8">
             <div class="flex flex-wrap items-start justify-between gap-4">
                 <div>
                     <p class="text-xs uppercase tracking-wide text-muted-foreground">Role Overview</p>
@@ -27,15 +27,15 @@
             </div>
 
             <div class="mt-5 grid gap-3 md:grid-cols-3">
-                <div class="rounded-lg border border-border bg-muted/30 p-4">
+                <div class="rounded-lg bg-muted/30 p-4">
                     <p class="text-xs uppercase tracking-wide text-muted-foreground">Permission Categories</p>
                     <p class="mt-2 text-xl font-semibold text-foreground">{{ $permissionCategoryCount }}</p>
                 </div>
-                <div class="rounded-lg border border-border bg-muted/30 p-4">
+                <div class="rounded-lg bg-muted/30 p-4">
                     <p class="text-xs uppercase tracking-wide text-muted-foreground">Total Permissions</p>
                     <p class="mt-2 text-xl font-semibold text-foreground">{{ $permissionCount }}</p>
                 </div>
-                <div class="rounded-lg border border-border bg-muted/30 p-4">
+                <div class="rounded-lg bg-muted/30 p-4">
                     <p class="text-xs uppercase tracking-wide text-muted-foreground">Role Scope</p>
                     <p class="mt-2 text-xl font-semibold text-foreground">{{ $role->tenant_id ? 'Custom' : 'System' }}</p>
                 </div>
@@ -43,7 +43,7 @@
         </div>
 
         <div class="grid gap-6 lg:grid-cols-3">
-            <div class="rounded-xl border border-border bg-background p-6">
+            <div class="kt-card p-6">
                 <h2 class="text-sm font-semibold uppercase text-foreground">Role Summary</h2>
                 <div class="mt-4 space-y-3 text-sm text-muted-foreground">
                     <div class="flex items-center justify-between">
@@ -67,7 +67,7 @@
                 @endif
             </div>
 
-            <div class="rounded-xl border border-border bg-background p-6 lg:col-span-2">
+            <div class="kt-card p-6 lg:col-span-2">
                 <div class="flex items-center justify-between gap-3">
                     <h2 class="text-sm font-semibold uppercase text-foreground">Role Permissions</h2>
                     <span class="text-xs text-muted-foreground">{{ $role->permissions->count() }} assigned</span>

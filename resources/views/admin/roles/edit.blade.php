@@ -4,7 +4,7 @@
 
 @section('content')
     <section class="grid gap-6">
-        <div class="rounded-xl border border-border bg-background p-6 lg:p-8">
+        <div class="kt-card p-6 lg:p-8">
             <div class="flex flex-wrap items-start justify-between gap-4">
                 <div>
                     <p class="text-xs uppercase tracking-wide text-muted-foreground">Access Control</p>
@@ -15,7 +15,7 @@
             </div>
         </div>
 
-        <div class="rounded-xl border border-border bg-background p-6">
+        <div class="kt-card p-6">
             <form id="editRoleForm" class="kt-form" action="{{ route('roles.update', $role->id) }}" method="POST">
                 @csrf
                 @method('PUT')

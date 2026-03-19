@@ -5,7 +5,7 @@
         </div>
     @endif
 
-    <div class="rounded-xl border border-border bg-background p-6">
+    <div class="kt-card p-6">
         <div>
             <h2 class="text-lg font-semibold text-foreground">Two-Factor Authentication</h2>
             <p class="mt-1 text-sm text-muted-foreground">Extra security for your account using TOTP.</p>
@@ -22,7 +22,7 @@
                         <button wire:click="enableTwoFactor" class="kt-btn kt-btn-primary kt-btn-sm">Enable 2FA</button>
                     </div>
                 @else
-                    <div class="rounded-lg border border-border bg-muted/30 p-5 text-center">
+                    <div class="rounded-lg bg-muted/30 p-5 text-center">
                         <h3 class="text-base font-semibold text-foreground">Configure Authenticator App</h3>
                         <div class="my-5 flex justify-center">
                             {!! (new \PragmaRX\Google2FALaravel\Support\Authenticator(request()))->getQRCodeInline(

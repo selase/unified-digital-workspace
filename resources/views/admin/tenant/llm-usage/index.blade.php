@@ -4,7 +4,7 @@
 
 @section('content')
     <section class="grid gap-6">
-        <div class="rounded-xl border border-border bg-background p-6 lg:p-8">
+        <div class="kt-card p-6 lg:p-8">
             <div class="flex flex-wrap items-start justify-between gap-4">
                 <div>
                     <p class="text-xs uppercase tracking-wide text-muted-foreground">AI Billing</p>
@@ -24,32 +24,32 @@
                 <p class="mt-2 text-3xl font-semibold text-foreground">{{ number_format((float) $topupBalance) }}</p>
                 <p class="mt-2 text-sm text-muted-foreground">{{ __('Used when your monthly quota is exhausted.') }}</p>
             </div>
-            <div class="rounded-xl border border-border bg-background p-6">
+            <div class="kt-card p-6">
                 <p class="text-xs uppercase text-muted-foreground">{{ __('Add More Tokens') }}</p>
                 <p class="mt-2 text-sm text-muted-foreground">{{ __('Purchase one-time token packs to avoid service interruption.') }}</p>
             </div>
         </div>
 
         <div class="grid gap-5 lg:grid-cols-4">
-            <div class="rounded-xl border border-border bg-background p-5">
+            <div class="kt-card p-5">
                 <p class="text-xs uppercase text-muted-foreground">{{ __('Total Tokens') }}</p>
                 <p class="mt-1 text-2xl font-semibold text-foreground">{{ number_format((float) ($totalUsage->total_tokens ?? 0)) }}</p>
             </div>
-            <div class="rounded-xl border border-border bg-background p-5">
+            <div class="kt-card p-5">
                 <p class="text-xs uppercase text-muted-foreground">{{ __('Total Cost (Est.)') }}</p>
                 <p class="mt-1 text-2xl font-semibold text-foreground">${{ number_format((float) ($totalUsage->total_cost ?? 0), 4) }}</p>
             </div>
-            <div class="rounded-xl border border-border bg-background p-5">
+            <div class="kt-card p-5">
                 <p class="text-xs uppercase text-muted-foreground">{{ __('Input Tokens') }}</p>
                 <p class="mt-1 text-2xl font-semibold text-foreground">{{ number_format((float) ($totalUsage->prompt_tokens ?? 0)) }}</p>
             </div>
-            <div class="rounded-xl border border-border bg-background p-5">
+            <div class="kt-card p-5">
                 <p class="text-xs uppercase text-muted-foreground">{{ __('Output Tokens') }}</p>
                 <p class="mt-1 text-2xl font-semibold text-foreground">{{ number_format((float) ($totalUsage->completion_tokens ?? 0)) }}</p>
             </div>
         </div>
 
-        <div class="rounded-xl border border-border bg-background p-6">
+        <div class="kt-card p-6">
             <div class="mb-4">
                 <h2 class="text-lg font-semibold text-foreground">{{ __('Recent Activity') }}</h2>
                 <p class="text-xs text-muted-foreground">{{ __('Latest LLM requests, token usage, and estimated cost.') }}</p>

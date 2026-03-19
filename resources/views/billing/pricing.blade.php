@@ -4,7 +4,7 @@
 
 @section('content')
     <section class="grid gap-6">
-        <div class="rounded-xl border border-border bg-background p-6 lg:p-8 text-center">
+        <div class="kt-card p-6 lg:p-8 text-center">
             <p class="text-xs uppercase tracking-wide text-muted-foreground">Billing</p>
             <h1 class="mt-2 text-3xl font-semibold text-foreground">Choose Your Plan</h1>
             <p class="mt-3 text-sm text-muted-foreground">

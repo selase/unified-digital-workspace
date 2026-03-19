@@ -1,4 +1,4 @@
-<div class="rounded-xl border border-border bg-background p-6">
+<div class="kt-card p-6">
     <div class="mb-4 flex items-center justify-between gap-3">
         <div>
             <h2 class="text-lg font-semibold text-foreground">Activity Logs</h2>

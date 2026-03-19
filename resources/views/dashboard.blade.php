@@ -58,7 +58,7 @@
 
         <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
             @can('user analytics')
-                <div class="rounded-xl border border-border bg-background p-5">
+                <div class="kt-card p-5">
                     <div class="flex items-center justify-between">
                         <span class="flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary">
                             <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none">
@@ -83,7 +83,7 @@
             @endcan
 
             @can('read audit-trail')
-                <div class="rounded-xl border border-border bg-background p-5">
+                <div class="kt-card p-5">
                     <div class="flex items-center justify-between">
                         <span class="flex size-10 items-center justify-center rounded-full bg-violet-50 text-violet-600">
                             <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none">
@@ -105,7 +105,7 @@
                 </div>
             @endcan
 
-            <div class="rounded-xl border border-border bg-background p-5">
+            <div class="kt-card p-5">
                 <div class="flex items-center justify-between">
                     <span class="flex size-10 items-center justify-center rounded-full bg-yellow-50 text-yellow-600">
                         <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none">
@@ -123,7 +123,7 @@
                 <div class="text-sm text-muted-foreground">Milestone Reached</div>
             </div>
 
-            <div class="rounded-xl border border-border bg-background p-5">
+            <div class="kt-card p-5">
                 <div class="flex items-center justify-between">
                     <span class="flex size-10 items-center justify-center rounded-full bg-green-50 text-green-600">
                         <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none">
@@ -144,7 +144,7 @@
 
         @can('user analytics')
             <div class="grid gap-6 lg:grid-cols-12">
-                <div class="lg:col-span-8 rounded-xl border border-border bg-background p-6" id="kt_users_trend_widget">
+                <div class="lg:col-span-8 kt-card p-6" id="kt_users_trend_widget">
                     <div class="flex items-center justify-between gap-3">
                         <h3 class="text-sm font-semibold uppercase text-foreground">{{ strtoupper(__('locale.labels.users_by_role')) }}</h3>
                         <form action="{{ route('dashboard') }}" method="GET">
@@ -172,7 +172,7 @@
                 </div>
 
                 <div class="lg:col-span-4 grid gap-6">
-                    <div class="rounded-xl border border-border bg-background p-6" id="kt_getting_started_widget">
+                    <div class="kt-card p-6" id="kt_getting_started_widget">
                         <h3 class="text-sm font-semibold uppercase text-foreground">Getting Started</h3>
                         <div class="mt-4 space-y-4">
                             <div class="flex items-center gap-3">
@@ -220,7 +220,7 @@
                         </div>
                     </div>
 
-                    <div class="rounded-xl border border-border bg-background p-6" id="kt_recent_users_widget">
+                    <div class="kt-card p-6" id="kt_recent_users_widget">
                         <h3 class="text-sm font-semibold uppercase text-foreground">{{ strtoupper(__('locale.labels.recent_users')) }}</h3>
                         <div class="mt-4 space-y-4">
                             @foreach ($users as $user)
@@ -248,7 +248,7 @@
         @endcan
 
         <div class="grid gap-6 lg:grid-cols-3">
-            <div class="rounded-xl border border-border bg-background p-6" id="kt_tenant_growth_widget">
+            <div class="kt-card p-6" id="kt_tenant_growth_widget">
                 <h3 class="text-sm font-semibold uppercase text-foreground">Tenant Growth (Last {{ $days }} Days)</h3>
                 <div class="mt-4">
                     <x-chart id="tenant-growth-chart" type="line" :data="[
@@ -266,7 +266,7 @@
                 </div>
             </div>
 
-            <div class="rounded-xl border border-border bg-background p-6" id="kt_tenant_status_widget">
+            <div class="kt-card p-6" id="kt_tenant_status_widget">
                 <h3 class="text-sm font-semibold uppercase text-foreground">Tenant Status</h3>
                 <div class="mt-4">
                     <x-chart id="tenant-status-chart" type="doughnut" :data="[
@@ -281,7 +281,7 @@
                 </div>
             </div>
 
-            <div class="rounded-xl border border-border bg-background p-6" id="kt_top_tenants_widget">
+            <div class="kt-card p-6" id="kt_top_tenants_widget">
                 <h3 class="text-sm font-semibold uppercase text-foreground">Top 5 Tenants (by Users)</h3>
                 <div class="mt-4">
                     <x-chart id="top-tenants-chart" type="bar" :data="[
@@ -299,7 +299,7 @@
         </div>
 
         <div class="grid gap-6 lg:grid-cols-2">
-            <div class="rounded-xl border border-border bg-background p-6">
+            <div class="kt-card p-6">
                 <div>
                     <h3 class="text-sm font-semibold uppercase text-foreground">Login Activity</h3>
                     <span class="text-xs text-muted-foreground">Real-time session telemetry</span>
@@ -321,7 +321,7 @@
                     ]" />
                 </div>
             </div>
-            <div class="rounded-xl border border-border bg-background p-6">
+            <div class="kt-card p-6">
                 <div>
                     <h3 class="text-sm font-semibold uppercase text-foreground">Resource Growth</h3>
                     <span class="text-xs text-muted-foreground">Enterprise feature consumption</span>
@@ -344,7 +344,7 @@
 
         @hasrole('Superadmin')
             <div class="grid gap-6 lg:grid-cols-2">
-                <div class="rounded-xl border border-border bg-background p-6">
+                <div class="kt-card p-6">
                     <h3 class="text-sm font-semibold uppercase text-foreground">Provisioning Distribution</h3>
                     <div class="mt-4">
                         <x-chart id="isolation-mode-chart" type="pie" :data="[
@@ -358,7 +358,7 @@
                         ]" />
                     </div>
                 </div>
-                <div class="rounded-xl border border-border bg-background p-6">
+                <div class="kt-card p-6">
                     <h3 class="text-sm font-semibold uppercase text-foreground">Infrastructure Overview</h3>
                     <p class="text-xs text-muted-foreground">System-wide resource allocation</p>
                     <div class="mt-4 space-y-4">
@@ -403,19 +403,19 @@
             </div>
 
             <div class="grid gap-6 md:grid-cols-2">
-                <div class="rounded-xl border border-border bg-background p-6">
+                <div class="kt-card p-6">
                     <h3 class="text-sm font-semibold uppercase text-foreground">{{ strtoupper(__('locale.labels.browsers')) }}</h3>
                     <div class="mt-4" id="browser-session" style="width: 100%; height: 300px;"></div>
                 </div>
-                <div class="rounded-xl border border-border bg-background p-6">
+                <div class="kt-card p-6">
                     <h3 class="text-sm font-semibold uppercase text-foreground">{{ strtoupper(__('locale.labels.locations')) }}</h3>
                     <div class="mt-4" id="location-session" style="width: 100%; height: 300px;"></div>
                 </div>
-                <div class="rounded-xl border border-border bg-background p-6">
+                <div class="kt-card p-6">
                     <h3 class="text-sm font-semibold uppercase text-foreground">{{ strtoupper(__('locale.labels.platform_or_os')) }}</h3>
                     <div class="mt-4" id="platform-session" style="width: 100%; height: 300px;"></div>
                 </div>
-                <div class="rounded-xl border border-border bg-background p-6">
+                <div class="kt-card p-6">
                     <h3 class="text-sm font-semibold uppercase text-foreground">{{ strtoupper(__('locale.labels.devices')) }}</h3>
                     <div class="mt-4" id="client-device-session" style="width: 100%; height: 300px;"></div>
                 </div>

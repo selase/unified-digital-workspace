@@ -22,7 +22,15 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/', [HrmsHubController::class, 'index'])->name('index');
-Route::get('/employees', [HrmsEmployeeDirectoryController::class, 'index'])->name('employees.index');
+Route::prefix('employees')->name('employees.')->group(function (): void {
+    Route::get('/', [HrmsEmployeeDirectoryController::class, 'index'])->name('index');
+    Route::get('/create', [HrmsEmployeeDirectoryController::class, 'create'])->name('create');
+    Route::post('/', [HrmsEmployeeDirectoryController::class, 'store'])->name('store');
+    Route::get('/{employee}', [HrmsEmployeeDirectoryController::class, 'show'])->name('show');
+    Route::get('/{employee}/edit', [HrmsEmployeeDirectoryController::class, 'edit'])->name('edit');
+    Route::put('/{employee}', [HrmsEmployeeDirectoryController::class, 'update'])->name('update');
+    Route::delete('/{employee}', [HrmsEmployeeDirectoryController::class, 'destroy'])->name('destroy');
+});
 Route::get('/departments', [HrmsDepartmentDirectoryController::class, 'index'])->name('departments.index');
 Route::get('/leave-requests', [HrmsLeaveRequestController::class, 'index'])->name('leave-requests.index');
 Route::get('/recruitment', [HrmsRecruitmentController::class, 'index'])->name('recruitment.index');

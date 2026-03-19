@@ -87,7 +87,7 @@
                 <h2 class="mb-8 text-xl font-bold" style="color: var(--tgf-dark);">Related News</h2>
                 <div class="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
                     @foreach($relatedPosts as $relatedPost)
-                        <article class="group overflow-hidden rounded-xl bg-white shadow-sm border transition hover:shadow-lg" style="border-color: var(--tgf-border);">
+                        <article class="group overflow-hidden rounded-xl bg-white shadow-sm transition hover:shadow-lg">
                             @if($relatedPost->featuredMedia)
                                 <div class="aspect-video overflow-hidden">
                                     <img src="{{ $relatedPost->featuredMedia->url() }}" alt="{{ $relatedPost->title }}" class="h-full w-full object-cover transition group-hover:scale-105" loading="lazy" />

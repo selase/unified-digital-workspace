@@ -4,7 +4,7 @@
 
 @section('content')
     <section class="grid gap-6">
-        <div class="rounded-xl border border-border bg-background p-6 lg:p-8">
+        <div class="kt-card p-6 lg:p-8">
             <div class="flex flex-wrap items-start justify-between gap-4">
                 <div>
                     <p class="text-xs uppercase tracking-wide text-muted-foreground">Feature Registry</p>
@@ -15,7 +15,7 @@
             </div>
         </div>
 
-        <div class="rounded-xl border border-border bg-background p-6">
+        <div class="kt-card p-6">
             <form id="editFeatureForm" class="kt-form" action="{{ route('features.update', $feature->id) }}" method="POST">
                 @csrf
                 @method('PUT')
@@ -68,7 +68,7 @@
                     <label class="kt-form-label">Associated Permissions</label>
                     <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3 mt-4">
                         @foreach($permissions->groupBy('category') as $category => $perms)
-                            <div class="rounded-lg border border-border bg-muted/30 p-4">
+                            <div class="rounded-lg bg-muted/30 p-4">
                                 <h3 class="text-sm font-semibold text-foreground mb-3">{{ ucfirst($category) }}</h3>
                                 <div class="space-y-2">
                                     @foreach($perms as $permission)

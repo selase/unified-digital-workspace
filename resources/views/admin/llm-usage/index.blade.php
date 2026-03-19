@@ -4,24 +4,24 @@
 
 @section('content')
     <section class="grid gap-6">
-        <div class="rounded-xl border border-border bg-background p-6 lg:p-8">
+        <div class="kt-card p-6 lg:p-8">
             <p class="text-xs uppercase tracking-wide text-muted-foreground">AI Operations</p>
             <h1 class="mt-2 text-2xl font-semibold text-foreground">Global LLM Usage Dashboard</h1>
             <p class="mt-2 text-sm text-muted-foreground">Monitor usage, cost, and tenant model distribution across the platform.</p>
         </div>
 
         <div class="grid gap-5 lg:grid-cols-3">
-            <div class="rounded-xl border border-border bg-background p-6">
+            <div class="kt-card p-6">
                 <p class="text-xs uppercase text-muted-foreground">Total Tokens</p>
                 <p class="mt-2 text-3xl font-semibold text-foreground">{{ number_format((float) ($summary->total_tokens ?? 0)) }}</p>
                 <p class="mt-1 text-xs text-muted-foreground">All time</p>
             </div>
-            <div class="rounded-xl border border-border bg-background p-6">
+            <div class="kt-card p-6">
                 <p class="text-xs uppercase text-muted-foreground">Estimated Cost</p>
                 <p class="mt-2 text-3xl font-semibold text-foreground">${{ number_format((float) ($summary->total_cost ?? 0), 2) }}</p>
                 <p class="mt-1 text-xs text-muted-foreground">All time</p>
             </div>
-            <div class="rounded-xl border border-border bg-background p-6">
+            <div class="kt-card p-6">
                 <p class="text-xs uppercase text-muted-foreground">Total Requests</p>
                 <p class="mt-2 text-3xl font-semibold text-foreground">{{ number_format((float) ($summary->total_requests ?? 0)) }}</p>
                 <p class="mt-1 text-xs text-muted-foreground">All time</p>
@@ -29,7 +29,7 @@
         </div>
 
         <div class="grid gap-6 xl:grid-cols-12">
-            <div class="rounded-xl border border-border bg-background p-6 xl:col-span-8">
+            <div class="kt-card p-6 xl:col-span-8">
                 <h2 class="text-lg font-semibold text-foreground">Top Tenants by Usage (Last 30 Days)</h2>
                 <p class="mt-1 text-xs text-muted-foreground">Highest token consumers in the most recent 30-day window.</p>
                 <div class="mt-4 overflow-x-auto">
@@ -60,7 +60,7 @@
                 </div>
             </div>
 
-            <div class="rounded-xl border border-border bg-background p-6 xl:col-span-4">
+            <div class="kt-card p-6 xl:col-span-4">
                 <h2 class="text-lg font-semibold text-foreground">Model Distribution</h2>
                 <p class="mt-1 text-xs text-muted-foreground">Usage split by model.</p>
                 <div class="mt-4 overflow-x-auto">
@@ -88,7 +88,7 @@
             </div>
         </div>
 
-        <div class="rounded-xl border border-border bg-background p-6">
+        <div class="kt-card p-6">
             <h2 class="text-lg font-semibold text-foreground">Daily Usage Trend (Last 30 Days)</h2>
             <p class="mt-1 text-xs text-muted-foreground">Daily aggregate of token and cost usage.</p>
             <div class="mt-4 overflow-x-auto">

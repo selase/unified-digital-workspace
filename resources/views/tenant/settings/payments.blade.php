@@ -9,7 +9,7 @@
     @endphp
 
     <section class="grid gap-6">
-        <div class="rounded-xl border border-border bg-background p-6 lg:p-8">
+        <div class="kt-card p-6 lg:p-8">
             <div>
                 <p class="text-xs uppercase tracking-wide text-muted-foreground">Settings</p>
                 <h1 class="mt-2 text-2xl font-semibold text-foreground">Merchant Payment Settings</h1>
@@ -17,15 +17,15 @@
             </div>
 
             <div class="mt-5 grid gap-3 md:grid-cols-3">
-                <div class="rounded-lg border border-border bg-muted/30 p-4">
+                <div class="rounded-lg bg-muted/30 p-4">
                     <p class="text-xs uppercase tracking-wide text-muted-foreground">Providers Connected</p>
                     <p class="mt-2 text-xl font-semibold text-foreground">{{ $configuredProviders }} / 2</p>
                 </div>
-                <div class="rounded-lg border border-border bg-muted/30 p-4">
+                <div class="rounded-lg bg-muted/30 p-4">
                     <p class="text-xs uppercase tracking-wide text-muted-foreground">Providers Active</p>
                     <p class="mt-2 text-xl font-semibold text-foreground">{{ $activeProviders }}</p>
                 </div>
-                <div class="rounded-lg border border-border bg-muted/30 p-4">
+                <div class="rounded-lg bg-muted/30 p-4">
                     <p class="text-xs uppercase tracking-wide text-muted-foreground">Webhooks</p>
                     <p class="mt-2 text-xl font-semibold text-foreground">Tenant Scoped</p>
                 </div>
@@ -42,7 +42,7 @@
         @endif
 
         <div class="grid gap-6 lg:grid-cols-2">
-            <div class="rounded-xl border border-border bg-background p-6">
+            <div class="kt-card p-6">
                 <div class="flex items-start justify-between gap-4">
                     <div>
                         <h2 class="text-lg font-semibold text-foreground">Stripe Integration</h2>
@@ -107,7 +107,7 @@
                 </form>
             </div>
 
-            <div class="rounded-xl border border-border bg-background p-6">
+            <div class="kt-card p-6">
                 <div class="flex items-start justify-between gap-4">
                     <div>
                         <h2 class="text-lg font-semibold text-foreground">Paystack Integration</h2>

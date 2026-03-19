@@ -9,7 +9,7 @@
     @endphp
 
     <section class="grid gap-6">
-        <div class="rounded-xl border border-border bg-background p-6 lg:p-8">
+        <div class="kt-card p-6 lg:p-8">
             <div>
                 <p class="text-xs uppercase tracking-wide text-muted-foreground">Finance</p>
                 <h1 class="mt-2 text-2xl font-semibold text-foreground">Finance & Sales</h1>
@@ -18,35 +18,35 @@
         </div>
 
         <div class="grid gap-6 lg:grid-cols-5">
-            <div class="rounded-xl border border-border bg-background p-6">
+            <div class="kt-card p-6">
                 <div class="text-xs uppercase text-muted-foreground">Gross Sales Volume</div>
                 <div class="mt-3 text-2xl font-semibold text-foreground">
                     ${{ number_format($stats['total_volume'] / 100, 2) }}
                 </div>
                 <p class="mt-2 text-xs text-muted-foreground">Total processed volume.</p>
             </div>
-            <div class="rounded-xl border border-border bg-background p-6">
+            <div class="kt-card p-6">
                 <div class="text-xs uppercase text-muted-foreground">Successful Payments</div>
                 <div class="mt-3 text-2xl font-semibold text-foreground">{{ $stats['transaction_count'] }}</div>
                 <p class="mt-2 text-xs text-muted-foreground">Transactions completed successfully.</p>
             </div>
-            <div class="rounded-xl border border-border bg-background p-6">
+            <div class="kt-card p-6">
                 <div class="text-xs uppercase text-muted-foreground">Refund Count</div>
                 <div class="mt-3 text-2xl font-semibold text-foreground">{{ $refundCount }}</div>
                 <p class="mt-2 text-xs text-muted-foreground">Refund rows in current result set.</p>
             </div>
-            <div class="rounded-xl border border-border bg-background p-6">
+            <div class="kt-card p-6">
                 <div class="text-xs uppercase text-muted-foreground">Failed Payments</div>
                 <div class="mt-3 text-2xl font-semibold text-foreground">{{ $failedCount }}</div>
                 <p class="mt-2 text-xs text-muted-foreground">Marked as failed in current result set.</p>
             </div>
-            <div class="rounded-xl border border-border bg-background p-6">
+            <div class="kt-card p-6">
                 <div class="text-xs uppercase text-muted-foreground">Revenue Performance</div>
                 <div class="mt-4" id="kt_finance_chart" style="height: 200px"></div>
             </div>
         </div>
 
-        <div class="rounded-xl border border-border bg-background p-6">
+        <div class="kt-card p-6">
             <div class="flex flex-wrap items-end justify-between gap-4 mb-4">
                 <div>
                     <h2 class="text-lg font-semibold text-foreground">Transactions</h2>

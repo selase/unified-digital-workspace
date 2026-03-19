@@ -1,5 +1,5 @@
 <div>
-    <div class="mb-6 rounded-xl border border-border bg-background p-6">
+    <div class="mb-6 kt-card p-6">
         <div class="flex flex-wrap items-start justify-between gap-3">
             <div>
                 <h3 class="text-lg font-semibold text-foreground">Infrastructure Health</h3>

@@ -4,7 +4,7 @@
 
 @section('content')
     <section class="grid gap-6">
-        <div class="rounded-xl border border-border bg-background p-6 lg:p-8">
+        <div class="kt-card p-6 lg:p-8">
             <div class="flex flex-wrap items-start justify-between gap-4">
                 <div>
                     <p class="text-xs uppercase tracking-wide text-muted-foreground">Tenants</p>
@@ -20,7 +20,7 @@
             @method('PUT')
 
             <div class="grid gap-6 lg:grid-cols-2">
-                <div class="rounded-xl border border-border bg-background p-6">
+                <div class="kt-card p-6">
                     <h2 class="text-lg font-semibold text-foreground">Tenant Profile</h2>
                     <p class="mt-2 text-sm text-muted-foreground">Core details and LLM restrictions.</p>
 
@@ -246,7 +246,7 @@
                     </div>
                 </div>
 
-                <div class="rounded-xl border border-border bg-background p-6">
+                <div class="kt-card p-6">
                     <h2 class="text-lg font-semibold text-foreground">Billing Strategy & Custom Rates</h2>
                     <p class="mt-2 text-sm text-muted-foreground">Override pricing and customize tenant markup.</p>
 

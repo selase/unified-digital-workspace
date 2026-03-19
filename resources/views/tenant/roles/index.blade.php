@@ -9,7 +9,7 @@
     @endphp
 
     <section class="grid gap-6">
-        <div class="rounded-xl border border-border bg-background p-6 lg:p-8">
+        <div class="kt-card p-6 lg:p-8">
             <div class="flex flex-wrap items-start justify-between gap-4">
                 <div>
                     <p class="text-xs uppercase tracking-wide text-muted-foreground">Organization Access</p>
@@ -24,15 +24,15 @@
             </div>
 
             <div class="mt-5 grid gap-3 md:grid-cols-3">
-                <div class="rounded-lg border border-border bg-muted/30 p-4">
+                <div class="rounded-lg bg-muted/30 p-4">
                     <p class="text-xs uppercase tracking-wide text-muted-foreground">Total Roles</p>
                     <p class="mt-2 text-xl font-semibold text-foreground">{{ $roles->count() }}</p>
                 </div>
-                <div class="rounded-lg border border-border bg-muted/30 p-4">
+                <div class="rounded-lg bg-muted/30 p-4">
                     <p class="text-xs uppercase tracking-wide text-muted-foreground">Custom Roles</p>
                     <p class="mt-2 text-xl font-semibold text-foreground">{{ $customRoleCount }}</p>
                 </div>
-                <div class="rounded-lg border border-border bg-muted/30 p-4">
+                <div class="rounded-lg bg-muted/30 p-4">
                     <p class="text-xs uppercase tracking-wide text-muted-foreground">System Roles</p>
                     <p class="mt-2 text-xl font-semibold text-foreground">{{ $systemRoleCount }}</p>
                 </div>
@@ -41,7 +41,7 @@
 
         <div class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
             @foreach($roles as $role)
-                <article class="rounded-xl border border-border bg-background p-6 flex flex-col gap-4">
+                <article class="kt-card p-6 flex flex-col gap-4">
                     <div>
                         <h2 class="text-lg font-semibold text-foreground">{{ $role->name }}</h2>
                         <p class="text-sm text-muted-foreground mt-1">Total users with this role: {{ $role->users_count ?? 0 }}</p>

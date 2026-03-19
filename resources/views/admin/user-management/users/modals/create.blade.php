@@ -43,7 +43,7 @@
 
             <div class="space-y-3 lg:col-span-2">
                 <label class="kt-label font-semibold text-foreground">Roles</label>
-                <div class="rounded-lg border border-border bg-muted/30 p-4 space-y-4 max-h-56 overflow-y-auto">
+                <div class="rounded-lg bg-muted/30 p-4 space-y-4 max-h-56 overflow-y-auto">
                     @foreach ($roles as $role)
                         <div class="space-y-1">
                             <label for="role_{{ $role->id }}" class="inline-flex items-start gap-3 cursor-pointer">

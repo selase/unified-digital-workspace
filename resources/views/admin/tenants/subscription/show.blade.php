@@ -22,7 +22,7 @@
     @endphp
 
     <section class="grid gap-6">
-        <div class="rounded-xl border border-border bg-background p-6 lg:p-8">
+        <div class="kt-card p-6 lg:p-8">
             <div class="flex flex-wrap items-start justify-between gap-4">
                 <div>
                     <p class="text-xs uppercase tracking-wide text-muted-foreground">Tenant Subscription</p>
@@ -50,7 +50,7 @@
         </div>
 
         <div class="grid gap-6 lg:grid-cols-3">
-            <div class="lg:col-span-2 rounded-xl border border-border bg-background p-6">
+            <div class="lg:col-span-2 kt-card p-6">
                 <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
                     <h2 class="text-lg font-semibold text-foreground">Invoices & Payments</h2>
                     <span class="text-xs text-muted-foreground">Recent activity for this subscription.</span>
@@ -116,7 +116,7 @@
                 </div>
             </div>
 
-            <div class="rounded-xl border border-border bg-background p-6">
+            <div class="kt-card p-6">
                 <div class="flex items-center gap-3">
                     @if($tenantLogo)
                         <img src="{{ $tenantLogo }}" alt="{{ $tenant?->name ?? 'Tenant' }}" class="size-12 rounded-full object-cover" />

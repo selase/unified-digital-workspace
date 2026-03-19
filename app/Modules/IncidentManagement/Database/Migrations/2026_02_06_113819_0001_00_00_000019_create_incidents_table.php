@@ -22,7 +22,7 @@ return new class extends Migration
             $table->foreignId('priority_id')->nullable()->constrained('incident_priorities')->nullOnDelete();
             $table->foreignId('status_id')->nullable()->constrained('incident_statuses')->nullOnDelete();
             $table->uuid('reported_by_id')->nullable()->index();
-            $table->foreignId('reporter_id')->nullable()->constrained('incident_reporters')->nullOnDelete();
+            $table->foreignId('reporter_id')->nullable()->index();
             $table->string('reported_via')->default('internal');
             $table->uuid('assigned_to_id')->nullable()->index();
             $table->timestampTz('due_at')->nullable()->index();

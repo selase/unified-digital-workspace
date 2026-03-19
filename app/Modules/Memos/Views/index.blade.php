@@ -11,7 +11,7 @@
     @endphp
 
     <section class="grid gap-6">
-        <div class="rounded-xl border border-border bg-background p-6 lg:p-8">
+        <div class="kt-card p-6 lg:p-8">
             <div class="flex flex-wrap items-start justify-between gap-4">
                 <div>
                     <p class="text-xs uppercase tracking-wide text-muted-foreground">Memo Management</p>
@@ -22,19 +22,19 @@
             </div>
 
             <div class="mt-5 grid gap-3 md:grid-cols-4">
-                <div class="rounded-lg border border-border bg-muted/30 p-4">
+                <div class="rounded-lg bg-muted/30 p-4">
                     <p class="text-xs uppercase tracking-wide text-muted-foreground">Draft</p>
                     <p class="mt-2 text-xl font-semibold text-foreground">{{ $draftCount }}</p>
                 </div>
-                <div class="rounded-lg border border-border bg-muted/30 p-4">
+                <div class="rounded-lg bg-muted/30 p-4">
                     <p class="text-xs uppercase tracking-wide text-muted-foreground">Pending Verification</p>
                     <p class="mt-2 text-xl font-semibold text-foreground">{{ $pendingVerificationCount }}</p>
                 </div>
-                <div class="rounded-lg border border-border bg-muted/30 p-4">
+                <div class="rounded-lg bg-muted/30 p-4">
                     <p class="text-xs uppercase tracking-wide text-muted-foreground">Sent</p>
                     <p class="mt-2 text-xl font-semibold text-foreground">{{ $sentCount }}</p>
                 </div>
-                <div class="rounded-lg border border-border bg-muted/30 p-4">
+                <div class="rounded-lg bg-muted/30 p-4">
                     <p class="text-xs uppercase tracking-wide text-muted-foreground">Acknowledged</p>
                     <p class="mt-2 text-xl font-semibold text-foreground">{{ $acknowledgedCount }}</p>
                 </div>
@@ -42,7 +42,7 @@
         </div>
 
         <div class="grid gap-6 xl:grid-cols-12">
-            <div class="rounded-xl border border-border bg-background p-6 xl:col-span-8">
+            <div class="kt-card p-6 xl:col-span-8">
                 <div class="mb-4 flex items-center justify-between gap-3">
                     <h2 class="text-lg font-semibold text-foreground">Recent Memos</h2>
                     <span class="text-xs text-muted-foreground">Latest 10 updates</span>
@@ -78,20 +78,20 @@
                 </div>
             </div>
 
-            <div class="rounded-xl border border-border bg-background p-6 xl:col-span-4">
+            <div class="kt-card p-6 xl:col-span-4">
                 <h2 class="text-lg font-semibold text-foreground">Execution Snapshot</h2>
                 <div class="mt-4 space-y-3">
-                    <div class="rounded-lg border border-border p-4">
+                    <div class="rounded-lg bg-muted/30 p-4">
                         <p class="text-xs uppercase tracking-wide text-muted-foreground">Acknowledgement Required</p>
                         <p class="mt-2 text-xl font-semibold text-foreground">{{ $acknowledgementRequiredCount }}</p>
                     </div>
-                    <div class="rounded-lg border border-border p-4">
+                    <div class="rounded-lg bg-muted/30 p-4">
                         <p class="text-xs uppercase tracking-wide text-muted-foreground">Pending Acknowledgement</p>
                         <p class="mt-2 text-xl font-semibold {{ $pendingAcknowledgementCount > 0 ? 'text-destructive' : 'text-foreground' }}">
                             {{ $pendingAcknowledgementCount }}
                         </p>
                     </div>
-                    <div class="rounded-lg border border-border p-4">
+                    <div class="rounded-lg bg-muted/30 p-4">
                         <p class="text-xs uppercase tracking-wide text-muted-foreground">Open Actions</p>
                         <p class="mt-2 text-xl font-semibold text-foreground">{{ $openActionCount }}</p>
                     </div>

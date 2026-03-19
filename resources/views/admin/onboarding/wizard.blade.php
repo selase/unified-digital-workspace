@@ -8,7 +8,7 @@
     @endphp
 
     <section class="grid gap-6">
-        <div class="rounded-xl border border-border bg-background p-6 lg:p-8">
+        <div class="kt-card p-6 lg:p-8">
             <p class="text-xs uppercase tracking-wide text-muted-foreground">Onboarding</p>
             <h1 class="mt-2 text-2xl font-semibold text-foreground">Welcome to {{ $tenant->name }}!</h1>
             <p class="mt-2 text-sm text-muted-foreground">Set your organization branding now or continue directly to your dashboard.</p>

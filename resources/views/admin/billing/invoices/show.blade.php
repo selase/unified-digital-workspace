@@ -10,7 +10,7 @@
     @endphp
 
     <section class="grid gap-6">
-        <div class="rounded-xl border border-border bg-background p-6 lg:p-8">
+        <div class="kt-card p-6 lg:p-8">
             <div class="flex flex-wrap items-start justify-between gap-4">
                 <div>
                     <p class="text-xs uppercase tracking-wide text-muted-foreground">Billing</p>
@@ -64,22 +64,22 @@
             </div>
 
             <div class="mt-5 grid gap-3 md:grid-cols-3">
-                <div class="rounded-lg border border-border bg-muted/30 p-4">
+                <div class="rounded-lg bg-muted/30 p-4">
                     <p class="text-xs uppercase tracking-wide text-muted-foreground">Line Items</p>
                     <p class="mt-2 text-xl font-semibold text-foreground">{{ $lineItemCount }}</p>
                 </div>
-                <div class="rounded-lg border border-border bg-muted/30 p-4">
+                <div class="rounded-lg bg-muted/30 p-4">
                     <p class="text-xs uppercase tracking-wide text-muted-foreground">Adjustments / Credits</p>
                     <p class="mt-2 text-xl font-semibold text-foreground">{{ $adjustmentCount }}</p>
                 </div>
-                <div class="rounded-lg border border-border bg-muted/30 p-4">
+                <div class="rounded-lg bg-muted/30 p-4">
                     <p class="text-xs uppercase tracking-wide text-muted-foreground">Tax Lines</p>
                     <p class="mt-2 text-xl font-semibold text-foreground">{{ $taxLineCount }}</p>
                 </div>
             </div>
         </div>
 
-        <div class="rounded-xl border border-border bg-background p-6">
+        <div class="kt-card p-6">
             <div class="grid gap-6 lg:grid-cols-3">
                 <div>
                     <p class="text-xs uppercase text-muted-foreground">Billed To</p>

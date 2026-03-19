@@ -10,7 +10,7 @@
     @endphp
 
     <section class="grid gap-6">
-        <div class="rounded-xl border border-border bg-background p-6 lg:p-8">
+        <div class="kt-card p-6 lg:p-8">
             <div>
                 <p class="text-xs uppercase tracking-wide text-muted-foreground">Settings</p>
                 <h1 class="mt-2 text-2xl font-semibold text-foreground">Billing Settings</h1>
@@ -18,22 +18,22 @@
             </div>
 
             <div class="mt-5 grid gap-3 md:grid-cols-3">
-                <div class="rounded-lg border border-border bg-muted/30 p-4">
+                <div class="rounded-lg bg-muted/30 p-4">
                     <p class="text-xs uppercase tracking-wide text-muted-foreground">Billing Email</p>
                     <p class="mt-2 text-xl font-semibold text-foreground">{{ $hasBillingEmail ? 'Configured' : 'Missing' }}</p>
                 </div>
-                <div class="rounded-lg border border-border bg-muted/30 p-4">
+                <div class="rounded-lg bg-muted/30 p-4">
                     <p class="text-xs uppercase tracking-wide text-muted-foreground">Tax ID</p>
                     <p class="mt-2 text-xl font-semibold text-foreground">{{ $hasTaxId ? 'Configured' : 'Missing' }}</p>
                 </div>
-                <div class="rounded-lg border border-border bg-muted/30 p-4">
+                <div class="rounded-lg bg-muted/30 p-4">
                     <p class="text-xs uppercase tracking-wide text-muted-foreground">Billing Address</p>
                     <p class="mt-2 text-xl font-semibold text-foreground">{{ $hasBillingAddress ? 'Configured' : 'Missing' }}</p>
                 </div>
             </div>
         </div>
 
-        <div class="rounded-xl border border-border bg-background p-6">
+        <div class="kt-card p-6">
             <div class="flex items-center justify-between gap-3">
                 <div>
                     <h2 class="text-lg font-semibold text-foreground">Invoice Details</h2>

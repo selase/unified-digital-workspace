@@ -4,7 +4,7 @@
 
 @section('content')
     <section class="grid gap-6">
-        <div class="rounded-xl border border-border bg-background p-6 lg:p-8">
+        <div class="kt-card p-6 lg:p-8">
             <div>
                 <p class="text-xs uppercase tracking-wide text-muted-foreground">Audit Trail</p>
                 <h1 class="mt-2 text-2xl font-semibold text-foreground">{{ __('locale.menu.login_history') }}</h1>
@@ -13,25 +13,25 @@
         </div>
 
         <div class="grid gap-6 md:grid-cols-2">
-            <div class="rounded-xl border border-border bg-background p-6">
+            <div class="kt-card p-6">
                 <h3 class="text-sm font-semibold uppercase text-foreground">{{ strtoupper(__('locale.labels.browsers')) }}</h3>
                 <div class="mt-4" id="browser-session" style="width: 100%; height: 300px;"></div>
             </div>
-            <div class="rounded-xl border border-border bg-background p-6">
+            <div class="kt-card p-6">
                 <h3 class="text-sm font-semibold uppercase text-foreground">{{ strtoupper(__('locale.labels.locations')) }}</h3>
                 <div class="mt-4" id="location-session" style="width: 100%; height: 300px;"></div>
             </div>
-            <div class="rounded-xl border border-border bg-background p-6">
+            <div class="kt-card p-6">
                 <h3 class="text-sm font-semibold uppercase text-foreground">{{ strtoupper(__('locale.labels.platform_or_os')) }}</h3>
                 <div class="mt-4" id="platform-session" style="width: 100%; height: 300px;"></div>
             </div>
-            <div class="rounded-xl border border-border bg-background p-6">
+            <div class="kt-card p-6">
                 <h3 class="text-sm font-semibold uppercase text-foreground">{{ strtoupper(__('locale.labels.devices')) }}</h3>
                 <div class="mt-4" id="client-device-session" style="width: 100%; height: 300px;"></div>
             </div>
         </div>
 
-        <div class="rounded-xl border border-border bg-background p-6">
+        <div class="kt-card p-6">
             <div class="overflow-x-auto">
                 <table class="kt-table table-auto kt-table-border" id="login-history-table">
                     <thead>

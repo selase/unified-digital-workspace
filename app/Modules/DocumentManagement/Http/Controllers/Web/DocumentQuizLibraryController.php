@@ -15,14 +15,21 @@ final class DocumentQuizLibraryController extends Controller
     {
         abort_if(! $request->user()?->can('documents.view'), 403);
 
+        $search = mb_trim((string) $request->string('search'));
+
         $quizzes = DocumentQuiz::query()
             ->with('document:id,title')
             ->withCount(['questions', 'attempts'])
+            ->when($search !== '', function ($query) use ($search): void {
+                $query->where('title', 'like', "%{$search}%");
+            })
             ->latest()
-            ->paginate(15);
+            ->paginate(15)
+            ->withQueryString();
 
         return view('document-management::quizzes', [
             'quizzes' => $quizzes,
+            'search' => $search,
         ]);
     }
 }

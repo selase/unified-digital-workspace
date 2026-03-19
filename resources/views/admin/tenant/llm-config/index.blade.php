@@ -4,13 +4,13 @@
 
 @section('content')
     <section class="grid gap-6">
-        <div class="rounded-xl border border-border bg-background p-6 lg:p-8">
+        <div class="kt-card p-6 lg:p-8">
             <p class="text-xs uppercase tracking-wide text-muted-foreground">AI Configuration</p>
             <h1 class="mt-2 text-2xl font-semibold text-foreground">{{ __('LLM Configurations') }}</h1>
             <p class="mt-2 text-sm text-muted-foreground">Manage BYOK provider credentials and activation per provider.</p>
         </div>
 
-        <div class="rounded-xl border border-border bg-background p-6">
+        <div class="kt-card p-6">
             <form action="{{ route('tenant.llm-config.update') }}" method="POST" class="grid gap-5">
                 @csrf
                 @method('PUT')

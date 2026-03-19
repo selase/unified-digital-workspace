@@ -45,7 +45,7 @@
 
             <div class="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
                 @foreach($videos as $video)
-                    <div class="group overflow-hidden rounded-xl bg-white shadow-sm border transition hover:shadow-lg" style="border-color: var(--tgf-border);">
+                    <div class="group overflow-hidden rounded-xl bg-white shadow-sm transition hover:shadow-lg">
                         <div class="relative aspect-video bg-slate-900">
                             <img
                                 src="https://img.youtube.com/vi/{{ $video['id'] }}/0.jpg"

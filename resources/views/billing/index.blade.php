@@ -4,7 +4,7 @@
 
 @section('content')
     <section class="grid gap-6">
-        <div class="rounded-xl border border-border bg-background p-6 lg:p-8">
+        <div class="kt-card p-6 lg:p-8">
             <div class="flex flex-wrap items-start justify-between gap-4">
                 <div>
                     <p class="text-xs uppercase tracking-wide text-muted-foreground">Billing</p>
@@ -19,7 +19,7 @@
         </div>
 
         <div class="grid gap-6 xl:grid-cols-4">
-            <div class="rounded-xl border border-border bg-background p-6 xl:col-span-1">
+            <div class="kt-card p-6 xl:col-span-1">
                 <p class="text-xs uppercase tracking-wide text-muted-foreground">Current Plan</p>
                 <h2 class="mt-3 text-3xl font-semibold text-foreground">${{ number_format((float) ($tenant->package?->price ?? 0), 2) }}</h2>
                 <div class="mt-2 flex items-center gap-2">
@@ -38,7 +38,7 @@
                 </div>
             </div>
 
-            <div class="rounded-xl border border-border bg-background p-6 xl:col-span-1">
+            <div class="kt-card p-6 xl:col-span-1">
                 <p class="text-xs uppercase tracking-wide text-muted-foreground">Projected</p>
                 <h2 class="mt-3 text-3xl font-semibold text-foreground">${{ number_format((float) ($accruedMetered ?? 0), 2) }}</h2>
                 <p class="mt-2 text-sm text-muted-foreground">Accrued metered charges this month.</p>
@@ -50,7 +50,7 @@
                 </div>
             </div>
 
-            <div class="rounded-xl border border-border bg-background p-6 xl:col-span-2">
+            <div class="kt-card p-6 xl:col-span-2">
                 <div class="flex items-center justify-between gap-4">
                     <div>
                         <h2 class="text-lg font-semibold text-foreground">Spending Analytics</h2>
@@ -62,7 +62,7 @@
         </div>
 
         <div class="grid gap-6 xl:grid-cols-3">
-            <div class="rounded-xl border border-border bg-background p-6 xl:col-span-2">
+            <div class="kt-card p-6 xl:col-span-2">
                 <div class="mb-4">
                     <h2 class="text-lg font-semibold text-foreground">Invoice History</h2>
                     <p class="text-xs text-muted-foreground">All officially issued invoices.</p>
@@ -104,7 +104,7 @@
                 </div>
             </div>
 
-            <div class="rounded-xl border border-border bg-background p-6">
+            <div class="kt-card p-6">
                 <div class="mb-4">
                     <h2 class="text-lg font-semibold text-foreground">Payment History</h2>
                 </div>

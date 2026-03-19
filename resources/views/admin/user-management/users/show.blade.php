@@ -13,7 +13,7 @@
     @endphp
 
     <section class="grid gap-6">
-        <div class="rounded-xl border border-border bg-background p-6 lg:p-8">
+        <div class="kt-card p-6 lg:p-8">
             <div class="flex flex-wrap items-start justify-between gap-4">
                 <div>
                     <p class="text-xs uppercase tracking-wide text-muted-foreground">User Management</p>
@@ -33,7 +33,7 @@
         </div>
 
         <div class="grid gap-6 lg:grid-cols-3">
-            <div class="rounded-xl border border-border bg-background p-6">
+            <div class="kt-card p-6">
                 <div class="flex flex-col items-center text-center">
                     <img src="{{ $avatar }}" alt="{{ $user->displayName() }}" class="size-24 rounded-full object-cover" />
                     <div class="mt-4 text-lg font-semibold text-foreground">{{ $user->displayName() }}</div>
@@ -62,7 +62,7 @@
             </div>
 
             <div class="lg:col-span-2 grid gap-6">
-                <div class="rounded-xl border border-border bg-background p-6">
+                <div class="kt-card p-6">
                     <div class="flex items-center justify-between gap-3">
                         <div>
                             <h2 class="text-lg font-semibold text-foreground">Account Details</h2>
@@ -90,7 +90,7 @@
                     </div>
                 </div>
 
-                <div class="rounded-xl border border-border bg-background p-6">
+                <div class="kt-card p-6">
                     <div class="flex items-center justify-between gap-3">
                         <div>
                             <h2 class="text-lg font-semibold text-foreground">Security</h2>
@@ -105,7 +105,7 @@
                     </div>
                 </div>
 
-                <div class="rounded-xl border border-border bg-background p-6">
+                <div class="kt-card p-6">
                     <div class="flex items-center justify-between gap-3">
                         <div>
                             <h2 class="text-lg font-semibold text-foreground">Recent Sessions</h2>
