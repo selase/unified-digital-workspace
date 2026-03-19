@@ -25,6 +25,7 @@
         "vite": "^7.3.1"
     },
     "dependencies": {
+        "@tailwindcss/typography": "^0.5.19",
         "@tiptap/core": "^3.20.0",
         "@tiptap/extension-image": "^3.20.0",
         "@tiptap/pm": "^3.20.0",
