@@ -93,7 +93,7 @@ final class CmsPostLibraryController extends Controller
         abort_if(! $request->user()?->can('cms.posts.view'), 403);
 
         $post->load([
-            'postType:id,name',
+            'postType:id,name,slug',
             'author:uuid,first_name,last_name,email',
             'editor:uuid,first_name,last_name,email',
             'categories:id,name',
