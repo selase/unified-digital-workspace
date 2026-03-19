@@ -178,7 +178,7 @@ final class CmsPostLibraryController extends Controller
 
     private function storeFeaturedImage(UploadedFile $file, string $uploadedBy): int
     {
-        $path = $file->store('cms/posts/featured', 'tenant');
+        $path = $file->store('cms/posts/featured', 'public');
         $originalFilename = (string) $file->getClientOriginalName();
         $extension = $file->getClientOriginalExtension();
         $mimeType = $file->getClientMimeType();
@@ -186,7 +186,7 @@ final class CmsPostLibraryController extends Controller
         $title = pathinfo($originalFilename, PATHINFO_FILENAME);
 
         $media = Media::query()->create([
-            'disk' => 'tenant',
+            'disk' => 'public',
             'path' => (string) $path,
             'original_filename' => $originalFilename,
             'filename' => basename((string) $path),

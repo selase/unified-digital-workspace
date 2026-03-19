@@ -65,7 +65,7 @@ final class CmsMediaLibraryController extends Controller
 
         /** @var UploadedFile $file */
         $file = $request->file('file');
-        $path = $file->store('cms/media', 'tenant');
+        $path = $file->store('cms/media', 'public');
         $originalFilename = (string) $file->getClientOriginalName();
         $extension = $file->getClientOriginalExtension();
         $mimeType = $file->getClientMimeType();
@@ -75,7 +75,7 @@ final class CmsMediaLibraryController extends Controller
         $dimensions = $this->extractDimensions($file);
 
         $media = Media::query()->create([
-            'disk' => 'tenant',
+            'disk' => 'public',
             'path' => (string) $path,
             'original_filename' => $originalFilename,
             'filename' => basename((string) $path),
@@ -154,7 +154,7 @@ final class CmsMediaLibraryController extends Controller
 
         /** @var UploadedFile $file */
         $file = $request->file('file');
-        $path = $file->store('cms/inline', 'tenant');
+        $path = $file->store('cms/inline', 'public');
         $originalFilename = (string) $file->getClientOriginalName();
         $extension = $file->getClientOriginalExtension();
         $mimeType = $file->getClientMimeType();
@@ -164,7 +164,7 @@ final class CmsMediaLibraryController extends Controller
         $dimensions = $this->extractDimensions($file);
 
         $media = Media::query()->create([
-            'disk' => 'tenant',
+            'disk' => 'public',
             'path' => (string) $path,
             'original_filename' => $originalFilename,
             'filename' => basename((string) $path),
