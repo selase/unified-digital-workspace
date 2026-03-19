@@ -9,7 +9,7 @@
         'canonical' => $cmsUrl->route('posts.show', $post->slug),
         'type' => 'article',
         'ogImage' => $post->featuredMedia
-            ? Storage::disk($post->featuredMedia->disk)->url($post->featuredMedia->path)
+            ? $post->featuredMedia->url()
             : null,
     ])
 @endsection
@@ -54,7 +54,7 @@
             <div class="mx-auto max-w-3xl">
                 @if($post->featuredMedia)
                     <div class="mb-10 overflow-hidden rounded-xl">
-                        <img src="{{ Storage::disk($post->featuredMedia->disk)->url($post->featuredMedia->path) }}" alt="{{ $post->featuredMedia->alt_text ?? $post->title }}" class="w-full object-cover" />
+                        <img src="{{ $post->featuredMedia->url() }}" alt="{{ $post->featuredMedia->alt_text ?? $post->title }}" class="w-full object-cover" />
                     </div>
                 @endif
 
@@ -86,7 +86,7 @@
                         <article class="group overflow-hidden rounded-xl bg-white shadow-sm border transition hover:shadow-lg" style="border-color: var(--tgf-border);">
                             @if($relatedPost->featuredMedia)
                                 <div class="aspect-video overflow-hidden">
-                                    <img src="{{ Storage::disk($relatedPost->featuredMedia->disk)->url($relatedPost->featuredMedia->path) }}" alt="{{ $relatedPost->title }}" class="h-full w-full object-cover transition group-hover:scale-105" loading="lazy" />
+                                    <img src="{{ $relatedPost->featuredMedia->url() }}" alt="{{ $relatedPost->title }}" class="h-full w-full object-cover transition group-hover:scale-105" loading="lazy" />
                                 </div>
                             @else
                                 <div class="aspect-video" style="background: linear-gradient(135deg, var(--tgf-primary), #134E4A);"></div>

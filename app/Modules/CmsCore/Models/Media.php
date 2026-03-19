@@ -116,6 +116,21 @@ final class Media extends Model
     }
 
     /**
+     * Get the public-facing URL for this media file.
+     *
+     * For the `public` disk, uses the standard Storage URL.
+     * For the `tenant` disk, routes through the CMS media serve controller.
+     */
+    public function url(): string
+    {
+        if ($this->disk === 'public') {
+            return \Illuminate\Support\Facades\Storage::disk('public')->url($this->path);
+        }
+
+        return route('cms-core.media.serve', $this);
+    }
+
+    /**
      * @return Factory<static>
      */
     protected static function newFactory(): Factory

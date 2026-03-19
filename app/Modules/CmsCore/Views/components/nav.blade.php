@@ -26,7 +26,7 @@
         <a href="{{ $cmsUrl->route('home') }}" class="flex items-center gap-3">
             @if($logo)
                 <img
-                    src="{{ Storage::disk($logo->disk)->url($logo->path) }}"
+                    src="{{ $logo->url() }}"
                     alt="{{ $siteName }}"
                     class="h-8 w-auto"
                 />

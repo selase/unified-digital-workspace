@@ -12,7 +12,7 @@
     @endif
 
     @if($theme->favicon())
-        <link rel="icon" href="{{ Storage::disk($theme->favicon()->disk)->url($theme->favicon()->path) }}" />
+        <link rel="icon" href="{{ $theme->favicon()->url() }}" />
     @endif
 
     <link rel="preconnect" href="https://fonts.bunny.net" />

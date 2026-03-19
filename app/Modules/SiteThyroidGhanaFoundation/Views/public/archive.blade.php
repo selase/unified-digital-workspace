@@ -25,7 +25,7 @@
                         <article class="group overflow-hidden rounded-xl bg-white shadow-sm border transition hover:shadow-lg" style="border-color: var(--tgf-border);">
                             @if($post->featuredMedia)
                                 <div class="aspect-video overflow-hidden">
-                                    <img src="{{ Storage::disk($post->featuredMedia->disk)->url($post->featuredMedia->path) }}" alt="{{ $post->title }}" class="h-full w-full object-cover transition group-hover:scale-105" loading="lazy" />
+                                    <img src="{{ $post->featuredMedia->url() }}" alt="{{ $post->title }}" class="h-full w-full object-cover transition group-hover:scale-105" loading="lazy" />
                                 </div>
                             @else
                                 <div class="aspect-video" style="background: linear-gradient(135deg, var(--tgf-primary), #134E4A);"></div>

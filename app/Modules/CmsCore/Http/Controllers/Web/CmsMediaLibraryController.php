@@ -65,7 +65,7 @@ final class CmsMediaLibraryController extends Controller
 
         /** @var UploadedFile $file */
         $file = $request->file('file');
-        $path = $file->store('cms/media', 'public');
+        $path = $file->store('cms/media', 'tenant');
         $originalFilename = (string) $file->getClientOriginalName();
         $extension = $file->getClientOriginalExtension();
         $mimeType = $file->getClientMimeType();
@@ -75,7 +75,7 @@ final class CmsMediaLibraryController extends Controller
         $dimensions = $this->extractDimensions($file);
 
         $media = Media::query()->create([
-            'disk' => 'public',
+            'disk' => 'tenant',
             'path' => (string) $path,
             'original_filename' => $originalFilename,
             'filename' => basename((string) $path),
@@ -154,7 +154,7 @@ final class CmsMediaLibraryController extends Controller
 
         /** @var UploadedFile $file */
         $file = $request->file('file');
-        $path = $file->store('cms/inline', 'public');
+        $path = $file->store('cms/inline', 'tenant');
         $originalFilename = (string) $file->getClientOriginalName();
         $extension = $file->getClientOriginalExtension();
         $mimeType = $file->getClientMimeType();
@@ -164,7 +164,7 @@ final class CmsMediaLibraryController extends Controller
         $dimensions = $this->extractDimensions($file);
 
         $media = Media::query()->create([
-            'disk' => 'public',
+            'disk' => 'tenant',
             'path' => (string) $path,
             'original_filename' => $originalFilename,
             'filename' => basename((string) $path),
@@ -179,10 +179,8 @@ final class CmsMediaLibraryController extends Controller
             'is_public' => true,
         ]);
 
-        $url = Storage::disk('tenant')->url($media->path);
-
         return response()->json([
-            'url' => $url,
+            'url' => route('cms-core.media.serve', $media),
             'id' => $media->id,
             'alt' => $media->title,
         ]);

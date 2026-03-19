@@ -12,7 +12,7 @@
     @endif
 
     @if($theme->favicon())
-        <link rel="icon" href="{{ Storage::disk($theme->favicon()->disk)->url($theme->favicon()->path) }}" />
+        <link rel="icon" href="{{ $theme->favicon()->url() }}" />
     @endif
 
     <link rel="preconnect" href="https://fonts.bunny.net" />
@@ -76,7 +76,7 @@
             {{-- Logo --}}
             <a href="{{ $cmsUrl->route('home') }}" class="flex items-center gap-3">
                 @if($theme->logo())
-                    <img src="{{ Storage::disk($theme->logo()->disk)->url($theme->logo()->path) }}" alt="{{ $theme->siteName() }}" class="h-12 w-auto" />
+                    <img src="{{ $theme->logo()->url() }}" alt="{{ $theme->siteName() }}" class="h-12 w-auto" />
                 @else
                     <div class="flex h-10 w-10 items-center justify-center rounded-lg" style="background: var(--tgf-primary);">
                         <span class="text-lg font-bold text-white">TGF</span>
@@ -187,7 +187,7 @@
                 <div class="lg:col-span-1">
                     <div class="flex items-center gap-2">
                         @if($theme->logo())
-                            <img src="{{ Storage::disk($theme->logo()->disk)->url($theme->logo()->path) }}" alt="{{ $theme->siteName() }}" class="h-10 w-auto rounded bg-white p-1" />
+                            <img src="{{ $theme->logo()->url() }}" alt="{{ $theme->siteName() }}" class="h-10 w-auto rounded bg-white p-1" />
                         @endif
                         <span class="text-lg font-bold text-white">Thyroid Ghana Foundation</span>
                     </div>

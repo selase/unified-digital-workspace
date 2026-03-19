@@ -24,7 +24,7 @@
                 <h2 class="mb-4 text-sm font-semibold text-foreground">Preview</h2>
                 @if(str_starts_with($media->mime_type, 'image/'))
                     <img
-                        src="{{ Storage::disk($media->disk)->url($media->path) }}"
+                        src="{{ $media->url() }}"
                         alt="{{ $media->alt_text ?? $media->title }}"
                         class="max-h-[500px] w-auto rounded-lg object-contain"
                     />

@@ -6,6 +6,7 @@ namespace App\Modules\CmsCore\Providers;
 
 use App\Modules\CmsCore\Console\Commands\GenerateSitemapCommand;
 use App\Modules\CmsCore\Console\Commands\MakeSiteCommand;
+use App\Modules\CmsCore\Http\Controllers\Web\CmsMediaServeController;
 use App\Modules\CmsCore\Services\CmsUrlService;
 use App\Modules\Concerns\ModuleServiceProvider;
 use Illuminate\Support\Facades\Route;
@@ -57,6 +58,11 @@ final class CmsCoreServiceProvider extends ModuleServiceProvider
 
         $moduleSlug = $this->getModuleSlug();
         $publicRoutes = $this->getModulePath().'/Routes/public.php';
+
+        // Media serve route — no auth required, serves tenant files to browsers
+        Route::get('cms-media/{media}', [CmsMediaServeController::class, 'show'])
+            ->middleware(['web', "module:{$moduleSlug}"])
+            ->name("{$moduleSlug}.media.serve");
 
         if (file_exists($publicRoutes)) {
             // /site prefix — subdomain access (backward compatible)

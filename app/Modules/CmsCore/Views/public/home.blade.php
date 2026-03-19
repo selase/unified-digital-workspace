@@ -16,7 +16,7 @@
         'title' => $homepage?->title ?? $theme->siteName(),
         'subtitle' => $homepage?->excerpt ?? $theme->siteTagline(),
         'image' => $homepage?->featuredMedia
-            ? Storage::disk($homepage->featuredMedia->disk)->url($homepage->featuredMedia->path)
+            ? $homepage->featuredMedia->url()
             : null,
         'ctaText' => 'Read Latest News',
         'ctaUrl' => $cmsUrl->route('posts.archive'),

@@ -6,7 +6,6 @@ namespace App\Modules\CmsCore\Services;
 
 use App\Modules\CmsCore\Models\Post;
 use App\Modules\CmsCore\Models\PostMeta;
-use Illuminate\Support\Facades\Storage;
 
 final class CmsSeoService
 {
@@ -26,7 +25,7 @@ final class CmsSeoService
 
         $ogImage = null;
         if ($post->featuredMedia) {
-            $ogImage = Storage::disk($post->featuredMedia->disk)->url($post->featuredMedia->path);
+            $ogImage = $post->featuredMedia->url();
         }
 
         return [

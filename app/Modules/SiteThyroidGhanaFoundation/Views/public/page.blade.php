@@ -8,7 +8,7 @@
         'description' => $page->excerpt ?? '',
         'canonical' => $cmsUrl->route('pages.show', $page->slug),
         'ogImage' => $page->featuredMedia
-            ? Storage::disk($page->featuredMedia->disk)->url($page->featuredMedia->path)
+            ? $page->featuredMedia->url()
             : null,
     ])
 @endsection
@@ -37,7 +37,7 @@
                 @if($page->featuredMedia)
                     <div class="mb-10 overflow-hidden rounded-xl">
                         <img
-                            src="{{ Storage::disk($page->featuredMedia->disk)->url($page->featuredMedia->path) }}"
+                            src="{{ $page->featuredMedia->url() }}"
                             alt="{{ $page->featuredMedia->alt_text ?? $page->title }}"
                             class="w-full object-cover"
                         />

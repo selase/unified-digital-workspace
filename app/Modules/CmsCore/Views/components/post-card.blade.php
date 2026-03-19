@@ -4,7 +4,7 @@
     @if($post->featuredMedia)
         <div class="aspect-video overflow-hidden bg-gray-100">
             <img
-                src="{{ Storage::disk($post->featuredMedia->disk)->url($post->featuredMedia->path) }}"
+                src="{{ $post->featuredMedia->url() }}"
                 alt="{{ $post->featuredMedia->alt_text ?? $post->title }}"
                 class="h-full w-full object-cover transition group-hover:scale-105"
                 loading="lazy"

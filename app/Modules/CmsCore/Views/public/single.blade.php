@@ -9,7 +9,7 @@
         'canonical' => $cmsUrl->route('posts.show', $post->slug),
         'type' => 'article',
         'ogImage' => $post->featuredMedia
-            ? Storage::disk($post->featuredMedia->disk)->url($post->featuredMedia->path)
+            ? $post->featuredMedia->url()
             : null,
     ])
 @endsection
@@ -61,7 +61,7 @@
             @if($post->featuredMedia)
                 <div class="mt-8">
                     <img
-                        src="{{ Storage::disk($post->featuredMedia->disk)->url($post->featuredMedia->path) }}"
+                        src="{{ $post->featuredMedia->url() }}"
                         alt="{{ $post->featuredMedia->alt_text ?? $post->title }}"
                         class="w-full rounded-lg object-cover"
                     />
