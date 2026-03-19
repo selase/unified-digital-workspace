@@ -1,7 +1,6 @@
 import { Editor } from '@tiptap/core';
 import StarterKit from '@tiptap/starter-kit';
 import Image from '@tiptap/extension-image';
-import Link from '@tiptap/extension-link';
 
 export default function tiptapEditor(content = '', uploadUrl = '') {
     return {
@@ -18,15 +17,15 @@ export default function tiptapEditor(content = '', uploadUrl = '') {
                 extensions: [
                     StarterKit.configure({
                         heading: { levels: [2, 3, 4] },
+                        link: {
+                            openOnClick: false,
+                            HTMLAttributes: { rel: 'noopener noreferrer' },
+                        },
                     }),
                     Image.configure({
                         HTMLAttributes: {
                             class: 'rounded-lg max-w-full',
                         },
-                    }),
-                    Link.configure({
-                        openOnClick: false,
-                        HTMLAttributes: { rel: 'noopener noreferrer' },
                     }),
                 ],
                 content: this.content,
@@ -34,7 +33,6 @@ export default function tiptapEditor(content = '', uploadUrl = '') {
                     attributes: {
                         class: 'prose max-w-none min-h-[200px] p-4 focus:outline-none',
                     },
-                    // Handle pasted/dropped images
                     handleDrop(view, event) {
                         const files = event.dataTransfer?.files;
                         if (files && files.length > 0) {
@@ -133,7 +131,6 @@ export default function tiptapEditor(content = '', uploadUrl = '') {
 
         addImage() {
             if (this.uploadUrl) {
-                // Use file picker for upload
                 const input = document.createElement('input');
                 input.type = 'file';
                 input.accept = 'image/*';
@@ -145,7 +142,6 @@ export default function tiptapEditor(content = '', uploadUrl = '') {
                 };
                 input.click();
             } else {
-                // Fallback: URL prompt
                 const url = window.prompt('Image URL');
                 if (url) {
                     this.editor?.chain().focus().setImage({ src: url }).run();
