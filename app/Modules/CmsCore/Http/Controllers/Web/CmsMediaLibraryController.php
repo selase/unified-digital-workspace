@@ -141,6 +141,53 @@ final class CmsMediaLibraryController extends Controller
             ->with('message', 'Media metadata updated.');
     }
 
+    /**
+     * Inline upload for the TipTap editor — returns JSON with the image URL.
+     */
+    public function uploadInline(Request $request): \Illuminate\Http\JsonResponse
+    {
+        abort_if(! $request->user()?->can('cms.media.manage'), 403);
+
+        $request->validate([
+            'file' => ['required', 'image', 'max:10240'],
+        ]);
+
+        /** @var UploadedFile $file */
+        $file = $request->file('file');
+        $path = $file->store('cms/inline', 'tenant');
+        $originalFilename = (string) $file->getClientOriginalName();
+        $extension = $file->getClientOriginalExtension();
+        $mimeType = $file->getClientMimeType();
+        $size = $file->getSize();
+        $title = pathinfo($originalFilename, PATHINFO_FILENAME);
+
+        $dimensions = $this->extractDimensions($file);
+
+        $media = Media::query()->create([
+            'disk' => 'tenant',
+            'path' => (string) $path,
+            'original_filename' => $originalFilename,
+            'filename' => basename((string) $path),
+            'extension' => $extension === '' ? null : $extension,
+            'mime_type' => $mimeType ?: 'image/jpeg',
+            'size_bytes' => $size ?: 0,
+            'width' => $dimensions['width'],
+            'height' => $dimensions['height'],
+            'title' => $title !== '' ? $title : null,
+            'uploaded_by' => (string) $request->user()?->uuid,
+            'source' => 'editor',
+            'is_public' => true,
+        ]);
+
+        $url = Storage::disk('tenant')->url($media->path);
+
+        return response()->json([
+            'url' => $url,
+            'id' => $media->id,
+            'alt' => $media->title,
+        ]);
+    }
+
     public function destroy(Request $request, Media $media): RedirectResponse
     {
         abort_if(! $request->user()?->can('cms.media.manage'), 403);

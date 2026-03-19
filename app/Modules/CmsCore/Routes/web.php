@@ -25,6 +25,7 @@ Route::prefix('media')->name('media.')->group(function (): void {
     Route::get('/', [CmsMediaLibraryController::class, 'index'])->name('index');
     Route::get('/upload', [CmsMediaLibraryController::class, 'create'])->name('create');
     Route::post('/', [CmsMediaLibraryController::class, 'store'])->name('store');
+    Route::post('/upload-inline', [CmsMediaLibraryController::class, 'uploadInline'])->name('upload-inline');
     Route::get('/{media}', [CmsMediaLibraryController::class, 'show'])->name('show');
     Route::get('/{media}/edit', [CmsMediaLibraryController::class, 'edit'])->name('edit');
     Route::put('/{media}', [CmsMediaLibraryController::class, 'update'])->name('update');

@@ -90,7 +90,7 @@
         @error('excerpt') <p class="text-xs text-destructive mt-1">{{ $message }}</p> @enderror
     </div>
 
-    <div class="kt-form-item lg:col-span-2" x-data="tiptapEditor(@js(old('body', $post?->body ?? '')))">
+    <div class="kt-form-item lg:col-span-2" x-data="tiptapEditor(@js(old('body', $post?->body ?? '')), @js(route('cms-core.media.upload-inline')))">
         <label class="kt-form-label">Body <span class="text-destructive">*</span></label>
         <input type="hidden" name="body" x-model="content">
 
@@ -109,7 +109,10 @@
             <button type="button" @click="toggleCode()" :class="isActive('code') ? 'bg-primary/10 text-primary' : 'text-muted-foreground'" class="rounded px-2 py-1 text-xs font-mono hover:bg-muted/50" title="Inline Code">&lt;/&gt;</button>
             <span class="mx-1 h-4 w-px bg-border"></span>
             <button type="button" @click="setLink()" :class="isActive('link') ? 'bg-primary/10 text-primary' : 'text-muted-foreground'" class="rounded px-2 py-1 text-xs hover:bg-muted/50" title="Add Link">Link</button>
-            <button type="button" @click="addImage()" class="rounded px-2 py-1 text-xs text-muted-foreground hover:bg-muted/50" title="Add Image">Image</button>
+            <button type="button" @click="addImage()" class="rounded px-2 py-1 text-xs text-muted-foreground hover:bg-muted/50" title="Upload Image" :disabled="uploading">
+                <span x-show="!uploading">Image</span>
+                <span x-show="uploading" x-cloak>Uploading...</span>
+            </button>
             <button type="button" @click="setHorizontalRule()" class="rounded px-2 py-1 text-xs text-muted-foreground hover:bg-muted/50" title="Horizontal Rule">&mdash;</button>
             <span class="mx-1 h-4 w-px bg-border"></span>
             <button type="button" @click="undo()" class="rounded px-2 py-1 text-xs text-muted-foreground hover:bg-muted/50" title="Undo">Undo</button>

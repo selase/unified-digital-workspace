@@ -26,7 +26,7 @@
                 @if($post->excerpt)
                     <p class="mt-4 text-sm text-muted-foreground">{{ $post->excerpt }}</p>
                 @endif
-                <div class="mt-4 whitespace-pre-wrap text-sm text-foreground">{{ $post->body }}</div>
+                <div class="prose mt-4 max-w-none text-sm text-foreground">{!! $post->body !!}</div>
             </div>
 
             <div class="kt-card p-6 xl:col-span-4">
