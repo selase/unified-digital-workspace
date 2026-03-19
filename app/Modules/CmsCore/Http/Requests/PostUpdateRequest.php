@@ -83,6 +83,9 @@ final class PostUpdateRequest extends FormRequest
             'seo_title' => ['nullable', 'string', 'max:255'],
             'seo_description' => ['nullable', 'string', 'max:500'],
             'seo_canonical' => ['nullable', 'url', 'max:500'],
+            'video_url' => ['nullable', 'url', 'max:500'],
+            'audio_url' => ['nullable', 'url', 'max:500'],
+            'poster_media_id' => ['nullable', 'integer'],
         ];
     }
 

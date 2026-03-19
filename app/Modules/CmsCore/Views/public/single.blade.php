@@ -57,8 +57,11 @@
                 @endif
             </div>
 
-            {{-- Featured image --}}
-            @if($post->featuredMedia)
+            {{-- Embedded media (video/audio) --}}
+            @include('cms-core::components.post-media', ['post' => $post])
+
+            {{-- Featured image (only if no video) --}}
+            @if($post->featuredMedia && !$post->meta?->where('key', 'video_url')->first()?->value)
                 <div class="mt-8">
                     <img
                         src="{{ $post->featuredMedia->url() }}"

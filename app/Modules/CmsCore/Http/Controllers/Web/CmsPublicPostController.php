@@ -49,6 +49,7 @@ final class CmsPublicPostController extends Controller
                 'featuredMedia',
                 'categories:id,name,slug',
                 'tags:id,name,slug',
+                'meta',
             ])
             ->firstOrFail();
 

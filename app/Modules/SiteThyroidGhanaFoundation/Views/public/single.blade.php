@@ -52,7 +52,11 @@
     <article class="py-16 lg:py-20">
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div class="mx-auto max-w-3xl">
-                @if($post->featuredMedia)
+                {{-- Embedded media (video/audio) --}}
+                @include('cms-core::components.post-media', ['post' => $post])
+
+                {{-- Featured image (only if no video) --}}
+                @if($post->featuredMedia && !$post->meta?->where('key', 'video_url')->first()?->value)
                     <div class="mb-10 overflow-hidden rounded-xl">
                         <img src="{{ $post->featuredMedia->url() }}" alt="{{ $post->featuredMedia->alt_text ?? $post->title }}" class="w-full object-cover" />
                     </div>

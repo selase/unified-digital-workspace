@@ -6,6 +6,7 @@
     $selectedMedia = collect(old('media_ids', $post?->media?->pluck('id')->all() ?? []))->map(fn ($id) => (int) $id)->all();
     $selectedFeaturedMediaId = old('featured_media_id', $post?->featured_media_id);
     $seoMeta = $seoMeta ?? ['seo_title' => '', 'seo_description' => '', 'seo_canonical' => ''];
+    $mediaMeta = $mediaMeta ?? ['video_url' => '', 'audio_url' => '', 'poster_media_id' => ''];
 @endphp
 
 <input name="author_id" type="hidden" value="{{ old('author_id', $post?->author_id ?? (string) auth()->user()?->uuid) }}">
@@ -177,6 +178,46 @@
             </select>
         </div>
         @error('media_ids') <p class="text-xs text-destructive mt-1">{{ $message }}</p> @enderror
+    </div>
+</div>
+
+{{-- Embedded Media Section --}}
+<div class="mt-8 border-t border-border pt-6">
+    <h3 class="mb-4 text-sm font-semibold text-foreground">Embedded Media</h3>
+    <p class="mb-4 text-xs text-muted-foreground">Optionally attach a video, audio clip, or poster image to this post. These display prominently on the public page.</p>
+    <div class="grid gap-6 lg:grid-cols-2">
+        <div class="kt-form-item lg:col-span-2">
+            <label class="kt-form-label">Video URL</label>
+            <div class="kt-form-control">
+                <input class="kt-input" name="video_url" type="url" value="{{ old('video_url', $mediaMeta['video_url']) }}" placeholder="https://www.youtube.com/watch?v=... or https://vimeo.com/...">
+            </div>
+            <p class="mt-1 text-xs text-muted-foreground">YouTube or Vimeo URL. Embeds automatically on the public page.</p>
+            @error('video_url') <p class="text-xs text-destructive mt-1">{{ $message }}</p> @enderror
+        </div>
+
+        <div class="kt-form-item">
+            <label class="kt-form-label">Audio URL</label>
+            <div class="kt-form-control">
+                <input class="kt-input" name="audio_url" type="url" value="{{ old('audio_url', $mediaMeta['audio_url']) }}" placeholder="https://soundcloud.com/... or direct .mp3 link">
+            </div>
+            @error('audio_url') <p class="text-xs text-destructive mt-1">{{ $message }}</p> @enderror
+        </div>
+
+        <div class="kt-form-item">
+            <label class="kt-form-label">Poster Image</label>
+            <div class="kt-form-control">
+                <select class="kt-select" data-kt-select="true" name="poster_media_id">
+                    <option value="">None (uses featured image)</option>
+                    @foreach($mediaItems as $mediaItem)
+                        <option value="{{ $mediaItem->id }}" @selected((int) old('poster_media_id', $mediaMeta['poster_media_id']) === $mediaItem->id)>
+                            {{ $mediaItem->title ?: $mediaItem->original_filename ?: $mediaItem->filename ?: 'Media #'.$mediaItem->id }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+            <p class="mt-1 text-xs text-muted-foreground">Thumbnail for video/audio. Falls back to featured image.</p>
+            @error('poster_media_id') <p class="text-xs text-destructive mt-1">{{ $message }}</p> @enderror
+        </div>
     </div>
 </div>
 

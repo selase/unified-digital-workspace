@@ -10,6 +10,7 @@ use App\Modules\CmsCore\Http\Requests\PostUpdateRequest;
 use App\Modules\CmsCore\Models\Category;
 use App\Modules\CmsCore\Models\Media;
 use App\Modules\CmsCore\Models\Post;
+use App\Modules\CmsCore\Models\PostMeta;
 use App\Modules\CmsCore\Models\PostType;
 use App\Modules\CmsCore\Models\Tag;
 use App\Modules\CmsCore\Services\CmsSeoService;
@@ -74,11 +75,12 @@ final class CmsPostLibraryController extends Controller
     public function store(PostStoreRequest $request): RedirectResponse
     {
         $payload = $this->normalizePayload($request->validated(), $request);
-        $attributes = Arr::except($payload, ['category_ids', 'tag_ids', 'media_ids', 'featured_image', 'seo_title', 'seo_description', 'seo_canonical']);
+        $attributes = Arr::except($payload, ['category_ids', 'tag_ids', 'media_ids', 'featured_image', 'seo_title', 'seo_description', 'seo_canonical', 'video_url', 'audio_url', 'poster_media_id']);
 
         $post = Post::create($attributes);
         $this->syncRelations($post, $payload);
         $this->seoService->saveForPost($post, $request->only(['seo_title', 'seo_description', 'seo_canonical']));
+        $this->saveMediaMeta($post, $request->only(['video_url', 'audio_url', 'poster_media_id']));
 
         return redirect()
             ->route('cms-core.posts.show', $post)
@@ -118,13 +120,14 @@ final class CmsPostLibraryController extends Controller
     public function update(PostUpdateRequest $request, Post $post): RedirectResponse
     {
         $payload = $this->normalizePayload($request->validated(), $request);
-        $attributes = Arr::except($payload, ['category_ids', 'tag_ids', 'media_ids', 'featured_image', 'seo_title', 'seo_description', 'seo_canonical']);
+        $attributes = Arr::except($payload, ['category_ids', 'tag_ids', 'media_ids', 'featured_image', 'seo_title', 'seo_description', 'seo_canonical', 'video_url', 'audio_url', 'poster_media_id']);
 
         $post->fill($attributes);
         $post->save();
 
         $this->syncRelations($post, $payload);
         $this->seoService->saveForPost($post, $request->only(['seo_title', 'seo_description', 'seo_canonical']));
+        $this->saveMediaMeta($post, $request->only(['video_url', 'audio_url', 'poster_media_id']));
 
         return redirect()
             ->route('cms-core.posts.show', $post)
@@ -261,6 +264,46 @@ final class CmsPostLibraryController extends Controller
                 ->get(['id', 'title']),
             'statusOptions' => ['draft', 'published', 'scheduled', 'archived'],
             'seoMeta' => $post ? $this->seoService->getMetaValues($post) : ['seo_title' => '', 'seo_description' => '', 'seo_canonical' => ''],
+            'mediaMeta' => $post ? $this->getMediaMeta($post) : ['video_url' => '', 'audio_url' => '', 'poster_media_id' => ''],
         ];
+    }
+
+    /**
+     * @return array{video_url: string, audio_url: string, poster_media_id: string}
+     */
+    private function getMediaMeta(Post $post): array
+    {
+        $meta = PostMeta::query()
+            ->where('post_id', $post->id)
+            ->whereIn('key', ['video_url', 'audio_url', 'poster_media_id'])
+            ->pluck('value', 'key');
+
+        return [
+            'video_url' => (string) ($meta['video_url'] ?? ''),
+            'audio_url' => (string) ($meta['audio_url'] ?? ''),
+            'poster_media_id' => (string) ($meta['poster_media_id'] ?? ''),
+        ];
+    }
+
+    /**
+     * @param  array<string, string|null>  $values
+     */
+    private function saveMediaMeta(Post $post, array $values): void
+    {
+        foreach (['video_url', 'audio_url', 'poster_media_id'] as $key) {
+            $value = $values[$key] ?? null;
+
+            if ($value !== null && $value !== '') {
+                PostMeta::query()->updateOrCreate(
+                    ['post_id' => $post->id, 'key' => $key],
+                    ['value' => $value]
+                );
+            } else {
+                PostMeta::query()
+                    ->where('post_id', $post->id)
+                    ->where('key', $key)
+                    ->delete();
+            }
+        }
     }
 }

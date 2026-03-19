@@ -12,6 +12,12 @@
                     <p class="mt-2 text-sm text-muted-foreground">Slug: {{ $post->slug }} · Status: {{ ucfirst($post->status) }}</p>
                 </div>
                 <div class="flex items-center gap-2">
+                    @php
+                        $previewRoute = $post->postType?->slug === 'page'
+                            ? route('cms-core.public.pages.show', $post->slug)
+                            : route('cms-core.public.posts.show', $post->slug);
+                    @endphp
+                    <a class="kt-btn kt-btn-primary" href="{{ $previewRoute }}" target="_blank">Preview</a>
                     @can('cms.posts.update')
                         <a class="kt-btn kt-btn-outline" href="{{ route('cms-core.posts.edit', $post) }}">Edit</a>
                     @endcan
