@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Database\Seeders;
 
 use App\Models\Tenant;
+use App\Services\ModuleManager;
 use Illuminate\Database\Seeder;
 
 final class TenantSeeder extends Seeder
@@ -35,6 +36,24 @@ final class TenantSeeder extends Seeder
             'city' => 'Accra',
             'state' => 'Greater Accra',
         ]);
+
+        $tgf = Tenant::query()->updateOrCreate(['slug' => 'thyroid-ghana-foundation'], [
+            'name' => 'Thyroid Ghana Foundation',
+            'email' => 'info@thyroidghanafoundation.org',
+            'status' => \App\Enum\TenantStatusEnum::ACTIVE,
+            'isolation_mode' => 'shared',
+            'db_driver' => 'pgsql',
+            'country' => 'Ghana',
+            'city' => 'Accra',
+            'state' => 'Greater Accra',
+        ]);
+
+        $moduleManager = app(ModuleManager::class);
+        foreach (['cms-core', 'site-thyroid-ghana-foundation'] as $slug) {
+            if ($moduleManager->exists($slug)) {
+                $moduleManager->enableForTenant($slug, $tgf);
+            }
+        }
 
         Tenant::query()->updateOrCreate(['slug' => 'banned-tenant'], [
             'name' => 'Banned Corp',
