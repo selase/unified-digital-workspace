@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Services\Search;
 
 use App\Models\Invoice;
-use App\Models\User;
 use App\Services\Tenancy\TenantContext;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
@@ -21,7 +20,7 @@ final class SearchService
      */
     public function search(string $query): Collection
     {
-        if (strlen($query) < 2) {
+        if (mb_strlen($query) < 2) {
             return collect();
         }
 
@@ -31,11 +30,11 @@ final class SearchService
         // 1. Search Users
         // Users are typically scoped by tenant via relationships or if they belong to the tenant
         if ($tenant) {
-             // Search Tenant Users
-             $users = $tenant->users()
+            // Search Tenant Users
+            $users = $tenant->users()
                 ->where(function ($q) use ($query) {
                     $q->where('name', 'like', "%{$query}%")
-                      ->orWhere('email', 'like', "%{$query}%");
+                        ->orWhere('email', 'like', "%{$query}%");
                 })
                 ->take(5)
                 ->get();
@@ -61,11 +60,11 @@ final class SearchService
                     title: $invoice->number,
                     url: route('billing.invoices.show', $invoice),
                     type: 'Invoice',
-                    description: 'Amount: ' . $invoice->total . ' ' . $invoice->currency,
+                    description: 'Amount: '.$invoice->total.' '.$invoice->currency,
                     icon: 'file-text'
                 ));
             }
-            
+
             // 3. Navigation Shortcuts (Static)
             $this->addNavigationShortcuts($results, $query);
         }
@@ -77,20 +76,20 @@ final class SearchService
     {
         $shortcuts = [
             ['title' => 'Dashboard', 'url' => route('tenant.dashboard'), 'keywords' => 'home dashboard'],
-            ['title' => 'Billing', 'url' => route('billing.index'), 'keywords' => 'finance billing payments'],
+            ['title' => 'Billing', 'url' => route('tenant.billing.index'), 'keywords' => 'finance billing payments'],
             ['title' => 'Settings', 'url' => route('tenant.settings.index'), 'keywords' => 'config settings configuration'],
             ['title' => 'Users', 'url' => route('tenant.users.index'), 'keywords' => 'people team members users'],
         ];
 
         foreach ($shortcuts as $shortcut) {
-            if (Str::contains(strtolower($shortcut['keywords']), strtolower($query)) || 
-                Str::contains(strtolower($shortcut['title']), strtolower($query))) {
-                
+            if (Str::contains(mb_strtolower($shortcut['keywords']), mb_strtolower($query)) ||
+                Str::contains(mb_strtolower($shortcut['title']), mb_strtolower($query))) {
+
                 $results->push(new SearchResult(
                     title: $shortcut['title'],
                     url: $shortcut['url'],
                     type: 'Page',
-                    description: 'Go to ' . $shortcut['title'],
+                    description: 'Go to '.$shortcut['title'],
                     icon: 'arrow-right'
                 ));
             }

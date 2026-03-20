@@ -19,11 +19,11 @@ Route::group(['middleware' => ['auth', '2fa_challenge', 'onboarding']], function
         ->name('tenant.dashboard');
 
     Route::get('/billing', [App\Http\Controllers\Billing\BillingController::class, 'index'])
-        ->name('billing.index');
+        ->name('tenant.billing.index');
     Route::get('/pricing', [App\Http\Controllers\Billing\BillingController::class, 'pricing'])
         ->name('tenant.pricing');
     Route::post('/billing/checkout', [App\Http\Controllers\Billing\CheckoutController::class, 'store'])
-        ->name('billing.checkout');
+        ->name('tenant.billing.checkout');
 
     Route::get('/settings', [OrgSettingsController::class, 'index'])
         ->name('tenant.settings.index');

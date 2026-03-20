@@ -7,7 +7,7 @@ A new invoice has been generated for your account for the period **{{ $invoice->
 **Total Amount:** {{ number_format((float)$invoice->total, 2) }} {{ $invoice->currency }}  
 **Due Date:** {{ $invoice->due_at->format('M d, Y') }}
 
-<x-mail::button :url="route('billing.index')">
+<x-mail::button :url="route('tenant.billing.index')">
 View & Pay Invoice
 </x-mail::button>
 

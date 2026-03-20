@@ -15,7 +15,7 @@
                     <button type="button" class="kt-btn kt-btn-outline" onclick="window.print()">Print Invoice</button>
                     <a href="{{ route('billing.invoices.download', $invoice->id) }}" class="kt-btn kt-btn-outline">Download PDF</a>
                     @if($invoice->status !== 'paid')
-                        <form action="{{ route('billing.checkout') }}" method="POST">
+                        <form action="{{ route('tenant.billing.checkout') }}" method="POST">
                             @csrf
                             <input type="hidden" name="invoice_id" value="{{ $invoice->id }}">
                             <button type="submit" class="kt-btn kt-btn-primary">Pay Invoice Now</button>

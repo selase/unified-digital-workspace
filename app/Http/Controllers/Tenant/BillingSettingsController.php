@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Tenant\UpdateBillingSettingsRequest;
 use App\Services\Tenancy\TenantContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -23,7 +22,7 @@ final class BillingSettingsController extends Controller
             'taxId' => $tenant->meta['tax_id'] ?? '',
             'billingAddress' => $tenant->meta['billing_address'] ?? $tenant->address,
             'breadcrumbs' => [
-                ['name' => 'Billing', 'link' => route('billing.index')],
+                ['name' => 'Billing', 'link' => route('tenant.billing.index')],
                 ['name' => 'Settings'],
             ],
         ]);
@@ -32,7 +31,7 @@ final class BillingSettingsController extends Controller
     public function update(Request $request, TenantContext $tenantContext): RedirectResponse
     {
         $tenant = $tenantContext->getTenant();
-        
+
         $validated = $request->validate([
             'billing_email' => ['required', 'email'],
             'tax_id' => ['nullable', 'string', 'max:50'],

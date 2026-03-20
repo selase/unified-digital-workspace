@@ -43,7 +43,7 @@
                         @if($currentPackage?->id === $package->id)
                             <button class="kt-btn kt-btn-outline w-full" disabled>Active</button>
                         @else
-                            <form action="{{ route('billing.checkout') }}" method="POST">
+                            <form action="{{ route('tenant.billing.checkout') }}" method="POST">
                                 @csrf
                                 <input type="hidden" name="plan" value="{{ $package->slug }}">
                                 <button type="submit" class="kt-btn kt-btn-primary w-full">Upgrade to {{ $package->name }}</button>

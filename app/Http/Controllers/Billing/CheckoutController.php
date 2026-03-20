@@ -15,7 +15,7 @@ final class CheckoutController extends Controller
     public function store(Request $request, PaymentGateway $gateway, TenantContext $tenantContext)
     {
         $tenant = $tenantContext->getTenant();
-        if (!$tenant) {
+        if (! $tenant) {
             abort(404, 'Tenant not found');
         }
 
@@ -35,7 +35,7 @@ final class CheckoutController extends Controller
             ->findOrFail($request->input('invoice_id'));
 
         $customerId = $this->getOrCreateCustomerId($request, $gateway, $tenant);
-        $amount = (int) round((float)$invoice->total * 100);
+        $amount = (int) round((float) $invoice->total * 100);
         $redirectUrl = route('billing.invoices.show', $invoice->id);
 
         $checkoutUrl = $gateway->createOneTimeCheckoutSession(
@@ -60,7 +60,7 @@ final class CheckoutController extends Controller
         ]);
 
         $customerId = $this->getOrCreateCustomerId($request, $gateway, $tenant);
-        $redirectUrl = route('billing.index');
+        $redirectUrl = route('tenant.billing.index');
 
         $checkoutUrl = $gateway->createCheckoutSession(
             $customerId,
@@ -77,7 +77,7 @@ final class CheckoutController extends Controller
         $metaKey = "{$driver}_id";
         $customerId = $tenant->meta[$metaKey] ?? null;
 
-        if (!$customerId) {
+        if (! $customerId) {
             $customerId = $gateway->createCustomer($request->user()->email, $tenant->name);
             $meta = $tenant->meta ?? [];
             $meta[$metaKey] = $customerId;
