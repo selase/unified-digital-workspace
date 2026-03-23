@@ -8,7 +8,7 @@ use App\Contracts\Secrets\SecretsProvider;
 use App\Models\Tenant;
 use Illuminate\Support\Facades\Config;
 
-class TenantStorageManager
+final class TenantStorageManager
 {
     public function __construct(private readonly SecretsProvider $secrets) {}
 
@@ -37,8 +37,8 @@ class TenantStorageManager
         $baseRoot = $baseConfig['root'] ?? '';
 
         $newRoot = $baseRoot
-            ? mb_rtrim((string) $baseRoot, '/')."/tenants/{$tenant->id}"
-            : "tenants/{$tenant->id}";
+            ? mb_rtrim((string) $baseRoot, '/')."/tenants/{$tenant->slug}"
+            : "tenants/{$tenant->slug}";
 
         Config::set('filesystems.disks.tenant', array_merge((array) $baseConfig, [
             'driver' => $baseConfig['driver'] ?? $driver,
