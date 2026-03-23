@@ -98,48 +98,36 @@ final class TeamController extends Controller
                 $action = '';
 
                 if (Auth::user()->can('update user')) {
-                    $action .= '<a href="javascript:void(0)" onclick="resendAccountPassword(\''.$user->uuid.'\')" class="btn btn-icon btn-active-light-info w-30px h-30px"
-                                    data-kt-permissions-table-filter="delete_row" data-toggle="tooltip" data-placement="top"  title="Resend Account Password">
-                                    <i class="fas fa-key fs-4"></i>
+                    $action .= '<a href="javascript:void(0)" onclick="resendAccountPassword(\''.$user->uuid.'\')" class="kt-btn kt-btn-icon kt-btn-ghost size-8" title="Resend Account Password">
+                                    <i class="ki-filled ki-key text-info"></i>
                                 </a>';
                 }
 
                 if (Auth::user()->can('impersonate user') && $user->roles->pluck('name')->first() !== 'Superadmin') {
-                    $action .= '<a href="'.route('impersonation.impersonate', $user->id).'" class="btn btn-icon btn-active-light-warning w-30px h-30px me-3"
-                                        data-kt-permissions-table-filter="delete_row" data-toggle="tooltip" data-placement="top"  title="Login as '.$user->displayName().'">
-                                        <i class="fas fa-user-tag fs-4"></i>
+                    $action .= '<a href="'.route('impersonation.impersonate', $user->id).'" class="kt-btn kt-btn-icon kt-btn-ghost size-8" title="Login as '.$user->displayName().'">
+                                        <i class="ki-filled ki-user-tick text-warning"></i>
                                     </a>';
                 }
 
                 if (Auth::user()->can('delete user') && $user->roles->pluck('name')->first() !== 'Superadmin') {
-                    $action .= '<a href="javascript:void(0)" onclick="deleteData(\''.$user->uuid.'\', \'/user-management/users/\')" class="btn btn-icon btn-active-light-danger w-30px h-30px"
-                                        data-kt-permissions-table-filter="delete_row" data-toggle="tooltip" data-placement="top"  title="Delete User">
-                                        <i class="fas fa-trash fs-4"></i>
+                    $action .= '<a href="javascript:void(0)" onclick="deleteData(\''.$user->uuid.'\', \'/user-management/users/\')" class="kt-btn kt-btn-icon kt-btn-ghost size-8" title="Delete User">
+                                        <i class="ki-filled ki-trash text-danger"></i>
                                     </a>';
                 }
 
-                $user->photo
-                    ? $userPhoto = Storage::url($user->photo)
-                    : $userPhoto = $user->gravatar;
+                $userPhoto = $user->photo ? Storage::url($user->photo) : $user->gravatar;
 
-                $client = '<div class="symbol symbol-circle symbol-50px overflow-hidden me-3">
-                                <a href="javascript:void(0)">
-                                    <div class="symbol-label">
-                                        <img src="'.$userPhoto.'"
-                                            alt="'.$user->displayName().'" class="w-100">
-                                    </div>
-                                </a>
-                            </div>
-
-                            <div class="d-flex flex-column">
-                                <a href="javascript:void(0)"
-                                    class="text-gray-800 text-hover-primary mb-1">'.$user->displayName().'</a>
-                                <span>'.$user->email.'</span>
+                $client = '<div class="flex items-center gap-3">
+                                <img src="'.$userPhoto.'" alt="'.$user->displayName().'" class="size-9 rounded-full object-cover shrink-0" />
+                                <div class="flex flex-col">
+                                    <span class="font-medium text-foreground">'.$user->displayName().'</span>
+                                    <span class="text-sm text-muted-foreground">'.$user->email.'</span>
+                                </div>
                             </div>';
 
                 $nestedData['uuid'] = $user->uuid;
                 $nestedData['client'] = $client;
-                $nestedData['role'] = $user->roles->map(fn ($role) => '<span class="badge badge-light-primary fw-bolder me-1">'.ucfirst($role->name).'</span>')->implode(' ');
+                $nestedData['role'] = $user->roles->map(fn ($role) => '<span class="kt-badge kt-badge-primary">'.ucfirst($role->name).'</span>')->implode(' ');
                 $nestedData['created_at'] = $user->created_at->format('Y-m-d');
                 $nestedData['action'] = $action;
 
