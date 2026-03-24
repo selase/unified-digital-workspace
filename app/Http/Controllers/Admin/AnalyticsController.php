@@ -127,7 +127,7 @@ final class AnalyticsController extends Controller
     {
         $pricingService = app(PricingService::class);
 
-        $query = \App\Models\Tenant::query()->where('is_active', true);
+        $query = \App\Models\Tenant::query()->where('status', 'active');
         if ($tenantId) {
             $query->where('id', $tenantId);
         }
