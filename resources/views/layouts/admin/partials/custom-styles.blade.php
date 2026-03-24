@@ -234,24 +234,34 @@
     }
 
     @media print {
-        [data-kt-app-sidebar-minimize],
-        aside,
-        nav[class*="sidebar"],
+        #sidebar,
         .kt-sidebar,
-        [class*="sidebar"],
-        banner,
+        #sidebar_header,
+        #sidebar_content,
+        .kt-header,
         header,
+        banner,
         [id*="clockwork"],
         [id*="telescope"],
-        .sf-toolbar {
+        .sf-toolbar,
+        .phpdebugbar {
             display: none !important;
+            width: 0 !important;
         }
 
-        main,
-        [class*="wrapper"],
-        [class*="content"] {
+        body {
+            display: block !important;
+        }
+
+        .kt-wrapper {
             margin-left: 0 !important;
             padding-left: 0 !important;
+            width: 100% !important;
+        }
+
+        #content {
+            margin: 0 !important;
+            padding: 0 !important;
             width: 100% !important;
         }
     }
