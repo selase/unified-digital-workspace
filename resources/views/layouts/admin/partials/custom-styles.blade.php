@@ -232,4 +232,27 @@
             {{ $primaryColor }}
             !important;
     }
+
+    @media print {
+        [data-kt-app-sidebar-minimize],
+        aside,
+        nav[class*="sidebar"],
+        .kt-sidebar,
+        [class*="sidebar"],
+        banner,
+        header,
+        [id*="clockwork"],
+        [id*="telescope"],
+        .sf-toolbar {
+            display: none !important;
+        }
+
+        main,
+        [class*="wrapper"],
+        [class*="content"] {
+            margin-left: 0 !important;
+            padding-left: 0 !important;
+            width: 100% !important;
+        }
+    }
 </style>
