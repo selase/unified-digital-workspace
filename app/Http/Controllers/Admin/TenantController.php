@@ -6,15 +6,14 @@ namespace App\Http\Controllers\Admin;
 
 use App\Enum\TenantStatusEnum;
 use App\Enum\UsageMetric;
-use Carbon\Carbon;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Tenant\CreateTenantRequest;
-use App\Http\Requests\Tenant\UpdateTenantRequest;
 use App\Libraries\Helper;
 use App\Models\Tenant;
 use App\Models\UsageRollup;
 use App\Providers\RouteServiceProvider;
 use App\Services\Tenancy\TenantProvisioner;
+use Carbon\Carbon;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
@@ -140,19 +139,12 @@ final class TenantController extends Controller
                     ? $profile = Storage::url($tenant->logo)
                     : $profile = $tenant->gravatar;
 
-                $tenantProfile = '<div class="symbol symbol-circle symbol-50px overflow-hidden me-3">
-                                <a href="javascript:void(0)">
-                                    <div class="symbol-label">
-                                        <img src="'.$profile.'"
-                                            alt="'.$tenant->name.'" class="w-100">
-                                    </div>
-                                </a>
-                            </div>
-
-                            <div class="d-flex flex-column">
-                                <a href="javascript:void(0)"
-                                    class="text-gray-800 text-hover-primary mb-1">'.$tenant->name.'</a>
-                                <span>'.$tenant->email.'</span>
+                $tenantProfile = '<div class="flex items-center gap-3">
+                                <img src="'.$profile.'" alt="'.$tenant->name.'" class="size-9 rounded-full object-cover shrink-0" />
+                                <div class="flex flex-col">
+                                    <span class="font-medium text-foreground">'.$tenant->name.'</span>
+                                    <span class="text-sm text-muted-foreground">'.$tenant->email.'</span>
+                                </div>
                             </div>';
 
                 $nestedData['uuid'] = $tenant->uuid;
@@ -302,26 +294,26 @@ final class TenantController extends Controller
         $breadcrumbs = [
             ['link' => route('dashboard'), 'name' => __('Home')],
             ['link' => route('admin.billing.analytics.usage'), 'name' => __('Usage Analytics')],
-            ['name' => 'Drill-down: ' . $tenant->name],
+            ['name' => 'Drill-down: '.$tenant->name],
         ];
 
         return view('admin.tenants.show', [
-            'breadcrumbs' => $breadcrumbs, 
+            'breadcrumbs' => $breadcrumbs,
             'tenant' => $tenant,
             'days' => $days,
             'start_date' => $startDate->format('Y-m-d'),
             'end_date' => $endDate->format('Y-m-d'),
             'usageTrend' => [
-                'labels' => $usageTrendData->pluck('period_start')->map(fn($d) => $d->format('M d H:i'))->toArray(),
+                'labels' => $usageTrendData->pluck('period_start')->map(fn ($d) => $d->format('M d H:i'))->toArray(),
                 'data' => $usageTrendData->pluck('value')->toArray(),
             ],
             'storageTrend' => [
-                'labels' => $storageTrendData->pluck('period_start')->map(fn($d) => $d->format('M d'))->toArray(),
-                'data' => $storageTrendData->pluck('value')->map(fn($v) => round($v / 1024 / 1024, 2))->toArray(), // MB for individual tenant usually fits
+                'labels' => $storageTrendData->pluck('period_start')->map(fn ($d) => $d->format('M d'))->toArray(),
+                'data' => $storageTrendData->pluck('value')->map(fn ($v) => round($v / 1024 / 1024, 2))->toArray(), // MB for individual tenant usually fits
             ],
             'dbTrend' => [
-                'labels' => $dbTrendData->pluck('period_start')->map(fn($d) => $d->format('M d'))->toArray(),
-                'data' => $dbTrendData->pluck('value')->map(fn($v) => round($v / 1024 / 1024, 2))->toArray(), // MB
+                'labels' => $dbTrendData->pluck('period_start')->map(fn ($d) => $d->format('M d'))->toArray(),
+                'data' => $dbTrendData->pluck('value')->map(fn ($v) => round($v / 1024 / 1024, 2))->toArray(), // MB
             ],
         ]);
     }
@@ -340,7 +332,7 @@ final class TenantController extends Controller
         $tenant = Tenant::with(['usagePrices'])->where('uuid', $id)->firstOrFail();
         $packages = \App\Models\Package::where('is_active', true)->get();
         $availableModels = array_keys(config('llm.models', []));
-        $metrics = \App\Enum\UsageMetric::cases();
+        $metrics = UsageMetric::cases();
 
         return view('admin.tenants.edit', [
             'breadcrumbs' => $breadcrumbs,
@@ -416,25 +408,6 @@ final class TenantController extends Controller
             'status' => 'success',
             'message' => __('locale.messages.updated', ['name' => 'Tenant']),
         ]);
-    }
-
-    private function syncUsagePrices($target, array $prices): void
-    {
-        foreach ($prices as $metricValue => $data) {
-            if (empty($data['unit_price']) && empty($data['unit_quantity'])) {
-                $target->usagePrices()->where('metric', $metricValue)->delete();
-                continue;
-            }
-
-            $target->usagePrices()->updateOrCreate(
-                ['metric' => $metricValue],
-                [
-                    'unit_price' => $data['unit_price'] ?? 0,
-                    'unit_quantity' => $data['unit_quantity'] ?? 1,
-                    'currency' => 'USD',
-                ]
-            );
-        }
     }
 
     /**
@@ -513,6 +486,26 @@ final class TenantController extends Controller
         $target .= 'dashboard';
 
         return redirect()->to($target);
+    }
+
+    private function syncUsagePrices($target, array $prices): void
+    {
+        foreach ($prices as $metricValue => $data) {
+            if (empty($data['unit_price']) && empty($data['unit_quantity'])) {
+                $target->usagePrices()->where('metric', $metricValue)->delete();
+
+                continue;
+            }
+
+            $target->usagePrices()->updateOrCreate(
+                ['metric' => $metricValue],
+                [
+                    'unit_price' => $data['unit_price'] ?? 0,
+                    'unit_quantity' => $data['unit_quantity'] ?? 1,
+                    'currency' => 'USD',
+                ]
+            );
+        }
     }
 
     private function updateFeature(Tenant $tenant, string $featureKey, bool $enabled): void

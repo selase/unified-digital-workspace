@@ -231,19 +231,12 @@ final class AuditTrailController extends Controller
                     ? $userPhoto = Storage::url($login->user->photo)
                     : $userPhoto = $login->user->gravatar;
 
-                $user = '<div class="symbol symbol-circle symbol-50px overflow-hidden me-3">
-                                <a href="javascript:void(0)">
-                                    <div class="symbol-label">
-                                        <img src="'.$userPhoto.'"
-                                            alt="'.$login->user->displayName().'" class="w-100">
-                                    </div>
-                                </a>
-                            </div>
-
-                            <div class="d-flex flex-column">
-                                <a href="javascript:void(0)"
-                                    class="text-gray-800 text-hover-primary mb-1">'.$login->user->displayName().'</a>
-                                <span>'.$login->user->email.'</span>
+                $user = '<div class="flex items-center gap-3">
+                                <img src="'.$userPhoto.'" alt="'.$login->user->displayName().'" class="size-9 rounded-full object-cover shrink-0" />
+                                <div class="flex flex-col">
+                                    <span class="font-medium text-foreground">'.$login->user->displayName().'</span>
+                                    <span class="text-sm text-muted-foreground">'.$login->user->email.'</span>
+                                </div>
                             </div>';
 
                 $nestedData['id'] = $login->id;
