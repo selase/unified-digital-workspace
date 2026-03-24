@@ -22,10 +22,22 @@ final class CmsPublicPostController extends Controller
 
     public function archive(Request $request): View
     {
-        $posts = Post::query()
+        $search = $request->string('q')->trim()->value();
+
+        $query = Post::query()
             ->published()
             ->forType('post')
-            ->with(['author:uuid,first_name,last_name', 'featuredMedia', 'categories:id,name,slug'])
+            ->with(['author:uuid,first_name,last_name', 'featuredMedia', 'categories:id,name,slug']);
+
+        if ($search !== '') {
+            $query->where(function ($q) use ($search): void {
+                $q->where('title', 'like', "%{$search}%")
+                    ->orWhere('excerpt', 'like', "%{$search}%")
+                    ->orWhere('body', 'like', "%{$search}%");
+            });
+        }
+
+        $posts = $query
             ->latest('published_at')
             ->paginate(12)
             ->withQueryString();
@@ -33,6 +45,7 @@ final class CmsPublicPostController extends Controller
         return view($this->viewResolver->resolve('archive'), [
             'posts' => $posts,
             'title' => 'News',
+            'search' => $search,
             'theme' => $this->theme,
             'cmsLayout' => $this->viewResolver->resolveLayout(),
         ]);

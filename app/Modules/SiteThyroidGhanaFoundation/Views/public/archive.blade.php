@@ -16,6 +16,22 @@
         </div>
     </section>
 
+    {{-- Search bar --}}
+    <section class="border-b bg-slate-50 py-6" style="border-color: var(--tgf-border);">
+        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <form action="{{ $cmsUrl->route('posts.archive') }}" method="GET" class="flex items-center gap-3">
+                <div class="relative flex-1 max-w-lg">
+                    <svg class="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    <input type="text" name="q" value="{{ $search ?? '' }}" placeholder="Search articles..." class="w-full rounded-lg border bg-white py-2.5 pl-10 pr-4 text-sm outline-none transition focus:ring-2" style="border-color: var(--tgf-border); --tw-ring-color: var(--tgf-primary);" />
+                </div>
+                <button type="submit" class="tgf-btn-primary py-2.5!">Search</button>
+                @if(!empty($search))
+                    <a href="{{ $cmsUrl->route('posts.archive') }}" class="text-sm font-medium transition hover:opacity-70" style="color: var(--tgf-primary);">Clear</a>
+                @endif
+            </form>
+        </div>
+    </section>
+
     {{-- Articles grid --}}
     <section class="py-16 lg:py-20">
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -57,7 +73,13 @@
                 </div>
             @else
                 <div class="py-20 text-center">
-                    <p class="text-lg" style="color: var(--tgf-muted);">No articles found.</p>
+                    <p class="text-lg" style="color: var(--tgf-muted);">
+                        @if(!empty($search))
+                            No articles matching "{{ $search }}".
+                        @else
+                            No articles found.
+                        @endif
+                    </p>
                 </div>
             @endif
         </div>

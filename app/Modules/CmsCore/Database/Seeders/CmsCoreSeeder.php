@@ -61,6 +61,19 @@ final class CmsCoreSeeder extends Seeder
             'is_active' => true,
         ]);
 
+        PostType::query()->updateOrCreate([
+            'tenant_id' => $tenant->id,
+            'slug' => 'newsletter',
+        ], [
+            'name' => 'Newsletter',
+            'description' => 'Periodic newsletters and publications (PDF).',
+            'supports' => [
+                'excerpt' => true,
+                'featured_media' => true,
+            ],
+            'is_active' => true,
+        ]);
+
         $pageType = PostType::query()->updateOrCreate([
             'tenant_id' => $tenant->id,
             'slug' => 'page',
