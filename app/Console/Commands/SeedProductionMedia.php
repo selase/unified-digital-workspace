@@ -84,6 +84,15 @@ final class SeedProductionMedia extends Command
                 continue;
             }
 
+            // Use the first user on the tenant (or any user) as uploaded_by
+            $uploader = DB::connection('landlord')->table('tenant_user')
+                ->where('tenant_id', $tenant->id)
+                ->value('user_id');
+
+            if (! $uploader) {
+                $uploader = DB::connection('landlord')->table('users')->value('uuid');
+            }
+
             $id = DB::connection('landlord')->table('media')->insertGetId([
                 'uuid' => (string) Str::uuid(),
                 'tenant_id' => $tenant->id,
@@ -96,7 +105,7 @@ final class SeedProductionMedia extends Command
                 'size_bytes' => 0,
                 'title' => $item['title'],
                 'is_public' => true,
-                'uploaded_by' => null,
+                'uploaded_by' => $uploader,
                 'created_at' => $now,
                 'updated_at' => $now,
             ]);
