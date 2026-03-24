@@ -26,22 +26,30 @@ final class TenantStorageManager
 
     private function configureShared(Tenant $tenant): void
     {
-        $driver = Config::get('filesystems.default', 'local');
-        $baseConfig = Config::get("filesystems.disks.{$driver}");
+        // Prefer S3 for tenant storage when available, fall back to default disk
+        $s3Config = Config::get('filesystems.disks.s3');
+        $useS3 = $s3Config && ! empty($s3Config['key']) && ! empty($s3Config['bucket']);
 
-        if (! $baseConfig) {
-            $baseConfig = Config::get('filesystems.disks.local');
-            $driver = 'local';
+        if ($useS3) {
+            $baseConfig = $s3Config;
+            $baseRoot = $s3Config['root'] ?? '';
+        } else {
+            $driver = Config::get('filesystems.default', 'local');
+            $baseConfig = Config::get("filesystems.disks.{$driver}");
+
+            if (! $baseConfig) {
+                $baseConfig = Config::get('filesystems.disks.local');
+            }
+
+            $baseRoot = $baseConfig['root'] ?? '';
         }
-
-        $baseRoot = $baseConfig['root'] ?? '';
 
         $newRoot = $baseRoot
             ? mb_rtrim((string) $baseRoot, '/')."/tenants/{$tenant->slug}"
             : "tenants/{$tenant->slug}";
 
         Config::set('filesystems.disks.tenant', array_merge((array) $baseConfig, [
-            'driver' => $baseConfig['driver'] ?? $driver,
+            'driver' => $baseConfig['driver'] ?? 'local',
             'root' => $newRoot,
         ]));
     }

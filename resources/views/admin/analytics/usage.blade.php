@@ -156,6 +156,47 @@
             </div>
         </div>
 
+        @if(!empty($costEstimates))
+        <div class="kt-card p-6">
+            <div>
+                <h3 class="text-sm font-semibold uppercase text-foreground">Cost Estimates</h3>
+                <p class="text-xs text-muted-foreground">Projected metered charges per tenant for the selected period</p>
+            </div>
+            <div class="kt-table-wrapper mt-4">
+                <table class="kt-table table-auto kt-table-border">
+                    <thead>
+                        <tr class="text-xs uppercase text-muted-foreground">
+                            <th>Tenant</th>
+                            <th>Metric</th>
+                            <th class="text-right">Usage</th>
+                            <th class="text-right">Estimated Cost</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-sm text-muted-foreground">
+                        @foreach($costEstimates as $estimate)
+                            @php $metricCount = count($estimate['metrics']); $first = true; @endphp
+                            @foreach($estimate['metrics'] as $metricKey => $metricData)
+                                <tr>
+                                    @if($first)
+                                        <td rowspan="{{ $metricCount + 1 }}" class="text-foreground font-medium align-top">{{ $estimate['tenant_name'] }}</td>
+                                        @php $first = false; @endphp
+                                    @endif
+                                    <td>{{ str($metricKey)->replace('.', ' ')->replace('_', ' ')->title() }}</td>
+                                    <td class="text-right">{{ number_format($metricData['usage'], 0) }} {{ $metricData['unit'] }}</td>
+                                    <td class="text-right">${{ number_format($metricData['cost'], 2) }}</td>
+                                </tr>
+                            @endforeach
+                            <tr class="bg-muted/30">
+                                <td class="font-semibold text-foreground text-right" colspan="2">Subtotal</td>
+                                <td class="font-semibold text-foreground text-right">${{ number_format($estimate['total'], 2) }}</td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        @endif
+
         <div class="kt-card p-6">
             <div>
                 <h3 class="text-sm font-semibold uppercase text-foreground">Metric Catalog</h3>

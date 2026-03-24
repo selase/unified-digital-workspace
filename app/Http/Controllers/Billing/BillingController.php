@@ -8,7 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Transaction;
 use Illuminate\Http\Request;
 
- // Or View if Blade
+// Or View if Blade
 
 final class BillingController extends Controller
 {
@@ -74,45 +74,6 @@ final class BillingController extends Controller
         ]);
     }
 
-    private function calculateAccruedMetered(\App\Models\Tenant $tenant): float
-    {
-        $total = 0.0;
-        $start = now()->startOfMonth();
-        
-        $metrics = \App\Enum\UsageMetric::cases();
-        
-        // Check for tenant-specific or package-specific pricing
-        $tenant->load(['usagePrices', 'package.usagePrices']);
-
-        foreach ($metrics as $metric) {
-            // Get usage for this month
-            $usageCount = $tenant->usage()
-                ->where('feature_slug', $metric->value)
-                ->where('period_start', '>=', $start)
-                ->sum('used_count');
-                
-            if ($usageCount <= 0) continue;
-
-            // Find effective price (Tenant > Package)
-            $priceModel = $tenant->usagePrices->firstWhere('metric', $metric);
-            
-            if (!$priceModel && $tenant->package) {
-                $priceModel = $tenant->package->usagePrices->firstWhere('metric', $metric);
-            }
-            
-            if ($priceModel) {
-                $unitPrice = (float) $priceModel->unit_price;
-                $perUnits = (float) ($priceModel->unit_quantity ?? 1);
-                
-                if ($perUnits > 0) {
-                    $total += ($usageCount / $perUnits) * $unitPrice;
-                }
-            }
-        }
-        
-        return $total;
-    }
-
     public function pricing(Request $request, \App\Services\Tenancy\TenantContext $tenantContext)
     {
         $tenant = $tenantContext->getTenant();
@@ -123,5 +84,28 @@ final class BillingController extends Controller
             'packages' => $packages,
             'currentPackage' => $tenant->package,
         ]);
+    }
+
+    private function calculateAccruedMetered(\App\Models\Tenant $tenant): float
+    {
+        $pricingService = app(\App\Services\Tenancy\PricingService::class);
+        $total = 0.0;
+        $start = now()->startOfMonth();
+
+        foreach (\App\Enum\UsageMetric::cases() as $metric) {
+            $usageValue = \App\Models\UsageRollup::where('tenant_id', $tenant->id)
+                ->where('period', 'day')
+                ->where('period_start', '>=', $start)
+                ->where('metric', $metric)
+                ->sum('value');
+
+            if ($usageValue <= 0) {
+                continue;
+            }
+
+            $total += $pricingService->calculateCost($tenant, $metric, (float) $usageValue);
+        }
+
+        return $total;
     }
 }
