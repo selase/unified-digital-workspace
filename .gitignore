@@ -22,3 +22,11 @@ yarn-error.log
 /starter-requirements.md
 /hrms
 /.worktrees
+
+# Local dev screenshots (kept in repo root for ad-hoc UI review)
+/*.png
+/*.jpg
+/*.jpeg
+
+# Soloterm dev process config (personal)
+/solo.yml
