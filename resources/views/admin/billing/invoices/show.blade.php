@@ -22,7 +22,7 @@
                         <span class="text-xs text-muted-foreground">Due by {{ $invoice->due_at->format('M d, Y') }}</span>
                     </div>
                 </div>
-                <div class="flex flex-wrap items-center gap-3">
+                <div class="no-print flex flex-wrap items-center gap-3">
                     @if($invoice->status === 'draft')
                         <form id="issueInvoiceForm" action="{{ route('admin.billing.invoices.issue', $invoice) }}" method="POST">
                             @csrf
@@ -63,7 +63,7 @@
                 </div>
             </div>
 
-            <div class="mt-5 grid gap-3 md:grid-cols-3">
+            <div class="no-print mt-5 grid gap-3 md:grid-cols-3">
                 <div class="rounded-lg bg-muted/30 p-4">
                     <p class="text-xs uppercase tracking-wide text-muted-foreground">Line Items</p>
                     <p class="mt-2 text-xl font-semibold text-foreground">{{ $lineItemCount }}</p>
@@ -203,6 +203,15 @@
             </form>
         </div>
     </div>
+@endpush
+
+@push('styles')
+    <style>
+        @media print {
+            /* Hide action buttons and stat cards when printing */
+            .no-print { display: none !important; }
+        }
+    </style>
 @endpush
 
 @push('custom-scripts')
