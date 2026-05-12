@@ -68,7 +68,7 @@ final class CmsMediaLibraryController extends Controller
         $path = $file->store('cms/media', 'tenant');
         $originalFilename = (string) $file->getClientOriginalName();
         $extension = $file->getClientOriginalExtension();
-        $mimeType = $file->getClientMimeType();
+        $mimeType = $this->resolveMimeType($file, $extension);
         $size = $file->getSize();
         $title = $request->string('title')->value() ?: pathinfo($originalFilename, PATHINFO_FILENAME);
 
@@ -80,7 +80,7 @@ final class CmsMediaLibraryController extends Controller
             'original_filename' => $originalFilename,
             'filename' => basename((string) $path),
             'extension' => $extension === '' ? null : $extension,
-            'mime_type' => $mimeType ?: 'application/octet-stream',
+            'mime_type' => $mimeType,
             'size_bytes' => $size ?: 0,
             'checksum_sha256' => hash_file('sha256', $file->getRealPath()) ?: null,
             'width' => $dimensions['width'],
@@ -197,6 +197,21 @@ final class CmsMediaLibraryController extends Controller
             ->route('cms-core.media.index')
             ->with('status', 'success')
             ->with('message', 'Media deleted.');
+    }
+
+    /**
+     * Resolve a usable MIME type for the upload, normalising .ico files
+     * whose browser-reported MIME may be missing or generic.
+     */
+    private function resolveMimeType(UploadedFile $file, string $extension): string
+    {
+        $mimeType = $file->getClientMimeType() ?: '';
+
+        if (mb_strtolower($extension) === 'ico' && ! str_starts_with($mimeType, 'image/')) {
+            return 'image/x-icon';
+        }
+
+        return $mimeType !== '' ? $mimeType : 'application/octet-stream';
     }
 
     /**

@@ -24,7 +24,7 @@
                         <div class="kt-form-control">
                             <input class="kt-input file:mr-3 file:rounded-lg file:border-0 file:bg-primary/10 file:px-3 file:py-2 file:text-sm file:font-medium file:text-primary hover:file:bg-primary/20" name="file" type="file" required>
                         </div>
-                        <p class="mt-1 text-xs text-muted-foreground">Max 10MB. Images, documents, audio, and video files accepted.</p>
+                        <p class="mt-1 text-xs text-muted-foreground">Max 10MB. Images (incl. <code>.ico</code> for favicons), documents, audio, and video files accepted.</p>
                         @error('file') <p class="text-xs text-destructive mt-1">{{ $message }}</p> @enderror
                     </div>
 

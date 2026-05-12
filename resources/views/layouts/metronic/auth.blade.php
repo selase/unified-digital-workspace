@@ -5,7 +5,7 @@
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1, shrink-to-fit=no" name="viewport"/>
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <link rel="shortcut icon" href="{{ asset('assets/metronic/media/app/favicon.ico') }}"/>
+    @include('partials.favicon')
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"/>
     <link href="{{ asset('assets/metronic/vendors/keenicons/styles.bundle.css') }}" rel="stylesheet"/>
     <link href="{{ asset('assets/metronic/css/styles.css') }}" rel="stylesheet"/>

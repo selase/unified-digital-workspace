@@ -13,6 +13,7 @@
 
     @if($theme->favicon())
         <link rel="icon" href="{{ $theme->favicon()->url() }}" />
+        <link rel="apple-touch-icon" href="{{ $theme->favicon()->url() }}" />
     @endif
 
     <link rel="preconnect" href="https://fonts.bunny.net" />
