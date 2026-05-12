@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace Database\Seeders;
 
 use App\Models\Tenant;
+use App\Models\User;
 use App\Services\ModuleManager;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Artisan;
 
 final class TenantSeeder extends Seeder
 {
@@ -55,6 +57,9 @@ final class TenantSeeder extends Seeder
             }
         }
 
+        $this->provisionDefaultAdmin($tgf, 'dev@thyroidghanafoundation.org');
+        $this->provisionDefaultAdmin($tgf, 'hiselase@gmail.com');
+
         Tenant::query()->updateOrCreate(['slug' => 'banned-tenant'], [
             'name' => 'Banned Corp',
             'email' => 'banned@example.com',
@@ -64,6 +69,23 @@ final class TenantSeeder extends Seeder
             'country' => 'Global',
             'city' => 'Banned City',
             'state' => 'Banned State',
+        ]);
+    }
+
+    /**
+     * Delegate to tenant:provision-admin so seeded tenants ship with an
+     * accessible admin. Silently skipped when the target user doesn't exist
+     * (e.g. the env hasn't seeded users yet).
+     */
+    private function provisionDefaultAdmin(Tenant $tenant, string $email): void
+    {
+        if (! User::query()->where('email', $email)->exists()) {
+            return;
+        }
+
+        Artisan::call('tenant:provision-admin', [
+            'tenant' => $tenant->slug,
+            'email' => $email,
         ]);
     }
 }

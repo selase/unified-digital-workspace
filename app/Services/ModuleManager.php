@@ -146,6 +146,7 @@ final class ModuleManager
         // Sync module features to tenant
         $this->syncModuleFeatures($slug, $tenant);
         $this->syncModulePermissions($module);
+        $this->grantModulePermissionsToTenantAdmins($module, $tenant);
 
         return $tenantModule;
     }
@@ -402,6 +403,40 @@ final class ModuleManager
                 'uuid' => (string) Str::uuid(),
                 'category' => $category,
             ]);
+        }
+    }
+
+    /**
+     * Grant the module's permissions to the tenant's Org Superadmin / Org Admin
+     * users so they can immediately use the feature after enable.
+     *
+     * Spatie permissions with teams scope direct user permissions by team_id,
+     * so we set the active team to the tenant before assigning. Role-level
+     * permissions would leak across tenants, hence the per-user approach.
+     *
+     * @param  array<string, mixed>  $module
+     */
+    private function grantModulePermissionsToTenantAdmins(array $module, Tenant $tenant): void
+    {
+        $permissions = $module['permissions'] ?? [];
+
+        if (empty($permissions)) {
+            return;
+        }
+
+        $previousTeamId = app(PermissionRegistrar::class)->getPermissionsTeamId();
+        setPermissionsTeamId($tenant->id);
+
+        try {
+            $tenant->users()
+                ->get()
+                ->each(function ($user) use ($permissions): void {
+                    if ($user->hasRole(['Org Superadmin', 'Org Admin'])) {
+                        $user->givePermissionTo($permissions);
+                    }
+                });
+        } finally {
+            setPermissionsTeamId($previousTeamId);
         }
     }
 }
