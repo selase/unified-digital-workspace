@@ -183,11 +183,32 @@ final class CmsThemeService
 
     /**
      * Get the favicon Media record.
+     *
+     * Prefers the higher-resolution site_icon when set, falling back to
+     * the legacy favicon field for tenants that haven't migrated yet.
      */
     public function favicon(): ?Media
     {
-        $mediaId = $this->get('favicon_media_id');
+        return $this->siteIcon();
+    }
+
+    /**
+     * Get the master site icon (single high-res square source).
+     *
+     * Used to derive all platform-specific icons (web, iOS, Android, PWA).
+     */
+    public function siteIcon(): ?Media
+    {
+        $mediaId = $this->get('site_icon_media_id') ?: $this->get('favicon_media_id');
 
         return $mediaId ? Media::query()->find($mediaId) : null;
+    }
+
+    /**
+     * Theme color used in the web manifest and browser-chrome meta tag.
+     */
+    public function themeColor(): string
+    {
+        return (string) ($this->get('theme_color') ?: $this->primaryColor());
     }
 }

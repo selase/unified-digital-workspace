@@ -26,6 +26,14 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
+// Site icons — tenant-aware favicon, apple-touch-icon, and PWA manifest.
+// Registered at root paths so browsers find them at their well-known URLs.
+Route::get('/favicon.ico', [App\Http\Controllers\SiteIconController::class, 'favicon'])->name('site-icon.favicon');
+Route::get('/apple-touch-icon.png', [App\Http\Controllers\SiteIconController::class, 'appleTouchIcon'])->name('site-icon.apple');
+Route::get('/apple-touch-icon-precomposed.png', [App\Http\Controllers\SiteIconController::class, 'appleTouchIcon']);
+Route::get('/site-icon/{size}.png', [App\Http\Controllers\SiteIconController::class, 'serve'])->whereNumber('size')->name('site-icon.serve');
+Route::get('/site.webmanifest', [App\Http\Controllers\SiteIconController::class, 'manifest'])->name('site-icon.manifest');
+
 Route::get('/', fn (): Factory|View => view('welcome'));
 Route::get('/sample-product', fn (): Factory|View => view('sample-product-page'));
 Route::get('/product-template', fn (): Factory|View => view('product.landing'))->name('product.template');

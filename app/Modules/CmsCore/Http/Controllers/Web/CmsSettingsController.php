@@ -40,8 +40,8 @@ final class CmsSettingsController extends Controller
     {
         $fields = [
             'site_name', 'site_tagline', 'primary_color', 'secondary_color',
-            'logo_media_id', 'favicon_media_id', 'header_menu_id', 'footer_menu_id',
-            'footer_text', 'active_theme', 'custom_css',
+            'logo_media_id', 'favicon_media_id', 'site_icon_media_id', 'theme_color',
+            'header_menu_id', 'footer_menu_id', 'footer_text', 'active_theme', 'custom_css',
         ];
 
         foreach ($fields as $key) {

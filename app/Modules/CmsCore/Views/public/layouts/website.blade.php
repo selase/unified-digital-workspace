@@ -11,10 +11,7 @@
         @yield('seo')
     @endif
 
-    @if($theme->favicon())
-        <link rel="icon" href="{{ $theme->favicon()->url() }}" />
-        <link rel="apple-touch-icon" href="{{ $theme->favicon()->url() }}" />
-    @endif
+    @include('partials.favicon')
 
     <link rel="preconnect" href="https://fonts.bunny.net" />
     <link href="https://fonts.bunny.net/css?family=inter:400,500,600,700&display=swap" rel="stylesheet" />

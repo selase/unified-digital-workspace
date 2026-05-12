@@ -73,18 +73,29 @@
                     </div>
 
                     <div class="kt-form-item">
-                        <label class="kt-form-label">Favicon</label>
+                        <label class="kt-form-label">Site Icon</label>
                         <div class="kt-form-control">
-                            <select class="kt-select" name="favicon_media_id">
+                            <select class="kt-select" name="site_icon_media_id">
                                 <option value="">None</option>
                                 @foreach($mediaItems as $media)
-                                    <option value="{{ $media->id }}" @selected((int) ($settings['favicon_media_id'] ?? 0) === $media->id)>
+                                    <option value="{{ $media->id }}" @selected((int) ($settings['site_icon_media_id'] ?? 0) === $media->id)>
                                         {{ $media->title ?: $media->original_filename ?: $media->filename }}
                                     </option>
                                 @endforeach
                             </select>
                         </div>
-                        @error('favicon_media_id') <p class="text-xs text-destructive mt-1">{{ $message }}</p> @enderror
+                        <p class="mt-1 text-xs text-muted-foreground">Square PNG, ideally 512×512+. Used to derive favicons for web, iOS apple-touch-icon, and Android PWA icons.</p>
+                        @error('site_icon_media_id') <p class="text-xs text-destructive mt-1">{{ $message }}</p> @enderror
+                    </div>
+
+                    <div class="kt-form-item">
+                        <label class="kt-form-label">Theme Color</label>
+                        <div class="kt-form-control flex items-center gap-3">
+                            <input class="kt-input w-20" name="theme_color" type="color" value="{{ old('theme_color', $settings['theme_color'] ?? $settings['primary_color'] ?? '#1d4ed8') }}">
+                            <input class="kt-input flex-1" type="text" value="{{ old('theme_color', $settings['theme_color'] ?? $settings['primary_color'] ?? '#1d4ed8') }}" readonly>
+                        </div>
+                        <p class="mt-1 text-xs text-muted-foreground">Used for the browser chrome on mobile and the PWA splash background. Defaults to Primary Color.</p>
+                        @error('theme_color') <p class="text-xs text-destructive mt-1">{{ $message }}</p> @enderror
                     </div>
                 </div>
 

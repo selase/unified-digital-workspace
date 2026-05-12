@@ -25,6 +25,8 @@ final class CmsSettingsUpdateRequest extends FormRequest
             'secondary_color' => ['nullable', 'string', 'max:50'],
             'logo_media_id' => ['nullable', 'integer'],
             'favicon_media_id' => ['nullable', 'integer'],
+            'site_icon_media_id' => ['nullable', 'integer'],
+            'theme_color' => ['nullable', 'string', 'regex:/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/'],
             'header_menu_id' => ['nullable', 'integer'],
             'footer_menu_id' => ['nullable', 'integer'],
             'footer_text' => ['nullable', 'string', 'max:500'],
