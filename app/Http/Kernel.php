@@ -61,6 +61,7 @@ final class Kernel extends HttpKernel
             VerifyCsrfToken::class,
             Middleware\ResolveTenant::class,
             SubstituteBindings::class,
+            Middleware\RedirectAdminFromCustomDomain::class,
             Middleware\EnforceUsageLimits::class,
             Middleware\MeterRequestUsage::class,
             Middleware\TrackActiveUser::class,
