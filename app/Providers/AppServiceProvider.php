@@ -113,6 +113,8 @@ final class AppServiceProvider extends ServiceProvider
             ]));
 
         $this->configureQueue();
+
+        \App\Models\Tenant::observe(\App\Observers\TenantObserver::class);
     }
 
     private function registerBladeDirectives(): void
