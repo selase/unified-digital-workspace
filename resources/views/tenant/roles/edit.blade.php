@@ -47,16 +47,21 @@
                                 </tr>
                             </thead>
                             <tbody class="text-sm text-muted-foreground">
-                                @foreach($permissions->groupBy('category') as $category => $perms)
+                                @foreach($permissions->groupBy('category')->sortKeys() as $category => $perms)
                                     <tr>
-                                        <td class="text-foreground font-medium text-capitalize">{{ str_replace('-', ' ', $category) }}</td>
+                                        <td class="text-foreground font-medium capitalize">{{ str_replace(['-', '_'], ' ', $category) }}</td>
                                         <td>
                                             <div class="flex flex-wrap gap-3">
                                                 @foreach($perms as $permission)
-                                                    <label class="flex items-center gap-2 text-sm text-foreground">
+                                                    @php
+                                                        $label = str_contains($permission->name, '.')
+                                                            ? preg_replace('/^[a-z0-9-]+\./', '', $permission->name)
+                                                            : $permission->name;
+                                                    @endphp
+                                                    <label class="flex items-center gap-2 text-sm text-foreground" title="{{ $permission->name }}">
                                                         <input class="kt-checkbox permission-checkbox" type="checkbox" value="{{ $permission->name }}" name="permissions[]"
                                                             {{ $role->hasPermissionTo($permission->name) ? 'checked' : '' }} />
-                                                        <span>{{ explode(' ', $permission->name)[0] }}</span>
+                                                        <span>{{ $label }}</span>
                                                     </label>
                                                 @endforeach
                                             </div>
