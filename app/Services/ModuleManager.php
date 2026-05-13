@@ -377,6 +377,7 @@ final class ModuleManager
     {
         Cache::forget("tenant.{$tenant->id}.module.{$slug}");
         Cache::forget("tenant.{$tenant->id}.enabled_modules");
+        Tenancy\EntitlementService::forgetAllowedPermissions($tenant->id);
     }
 
     /**
@@ -396,8 +397,12 @@ final class ModuleManager
 
         $category = $module['permission_category'] ?? $module['slug'] ?? 'module';
 
+        // firstOrCreate (not updateOrCreate) so we never clobber a category set
+        // by an earlier seeder or module — the role-grouping UI relies on stable
+        // categories (e.g. existing "user" / "role" groups must not collapse into
+        // a single "core" group just because Core now declares those permissions).
         foreach ($permissions as $permission) {
-            Permission::query()->updateOrCreate([
+            Permission::query()->firstOrCreate([
                 'name' => $permission,
             ], [
                 'uuid' => (string) Str::uuid(),

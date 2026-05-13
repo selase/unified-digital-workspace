@@ -5,12 +5,30 @@ declare(strict_types=1);
 namespace App\Services\Tenancy;
 
 use App\Models\Feature;
+use App\Models\Permission;
+use App\Models\Tenant;
 use App\Models\TenantFeature;
+use App\Services\ModuleManager;
 use Illuminate\Support\Facades\Cache;
 
 final class EntitlementService
 {
+    /** Cache TTL for the per-tenant allowed-permissions list. */
+    public const ALLOWED_PERMISSIONS_TTL_MINUTES = 10;
+
     public function __construct(private readonly TenantContext $context) {}
+
+    /** Cache key for the tenant's allowed-permission set. */
+    public static function allowedPermissionsCacheKey(string $tenantId): string
+    {
+        return "tenant_{$tenantId}_allowed_permissions";
+    }
+
+    /** Invalidate the cached permission set for a tenant (e.g. after a module enable/disable). */
+    public static function forgetAllowedPermissions(string $tenantId): void
+    {
+        Cache::forget(self::allowedPermissionsCacheKey($tenantId));
+    }
 
     /**
      * Check if the current tenant is entitled to a specific permission.
@@ -41,29 +59,73 @@ final class EntitlementService
     }
 
     /**
-     * Get all permission names that a tenant is entitled to from the TENANT_SAFE list.
+     * Permission names this tenant can assign to custom roles.
+     *
+     * Result is the union of:
+     *   - The baseline tenant permissions (Permission::BASELINE_TENANT_PERMISSIONS)
+     *   - Permissions declared by every module currently enabled for the tenant
+     *
+     * Feature-flagged permissions are filtered down to those whose linked
+     * feature is enabled on the tenant — so plan-gated features (e.g.
+     * custom domains) only appear once the tenant has been entitled.
+     *
+     * @return array<int, string>
      */
     public function getAllowedPermissionsForTenant(string $tenantId): array
     {
-        return Cache::remember("tenant_{$tenantId}_allowed_permissions", now()->addMinutes(10), function () use ($tenantId) {
-            $tenantSafePermissions = \App\Models\Permission::whereIn('name', \App\Models\Permission::TENANT_SAFE)->get();
+        return Cache::remember(
+            self::allowedPermissionsCacheKey($tenantId),
+            now()->addMinutes(self::ALLOWED_PERMISSIONS_TTL_MINUTES),
+            function () use ($tenantId): array {
+                $candidateNames = $this->candidatePermissionNames($tenantId);
 
-            return $tenantSafePermissions->filter(function ($permission) use ($tenantId) {
-                // If permission has no features, it's allowed
-                if ($permission->features->isEmpty()) {
-                    return true;
+                if ($candidateNames === []) {
+                    return [];
                 }
 
-                // If any associated feature is enabled, it's allowed
-                foreach ($permission->features as $feature) {
-                    if ($this->isFeatureEnabledForTenant($tenantId, $feature->slug)) {
+                $permissions = Permission::query()
+                    ->whereIn('name', $candidateNames)
+                    ->with('features:id,slug')
+                    ->get();
+
+                return $permissions->filter(function (Permission $permission) use ($tenantId): bool {
+                    if ($permission->features->isEmpty()) {
                         return true;
                     }
-                }
 
-                return false;
-            })->pluck('name')->toArray();
-        });
+                    foreach ($permission->features as $feature) {
+                        if ($this->isFeatureEnabledForTenant($tenantId, $feature->slug)) {
+                            return true;
+                        }
+                    }
+
+                    return false;
+                })->pluck('name')->values()->all();
+            }
+        );
+    }
+
+    /**
+     * Compose the candidate permission name pool for a tenant: baseline +
+     * everything declared by every enabled module.
+     *
+     * @return array<int, string>
+     */
+    private function candidatePermissionNames(string $tenantId): array
+    {
+        $tenant = Tenant::query()->find($tenantId);
+
+        $moduleNames = $tenant
+            ? app(ModuleManager::class)
+                ->getEnabledForTenant($tenant)
+                ->flatMap(fn (array $module): array => $module['permissions'] ?? [])
+                ->all()
+            : [];
+
+        return array_values(array_unique(array_merge(
+            Permission::BASELINE_TENANT_PERMISSIONS,
+            $moduleNames
+        )));
     }
 
     /**

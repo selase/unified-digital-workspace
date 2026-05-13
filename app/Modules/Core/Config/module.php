@@ -61,17 +61,36 @@ return [
     |--------------------------------------------------------------------------
     | Permissions
     |--------------------------------------------------------------------------
-    | Permissions defined by this module. These are seeded into the
-    | permissions table.
+    | The Core module owns the baseline tenant permissions every tenant Org
+    | Superadmin / Org Admin needs to operate. Names use the existing legacy
+    | "verb noun" convention rather than module.action.scope, since the gates
+    | throughout app/Http/Controllers reference them as-is — renaming would
+    | be a separate, larger migration.
+    |
+    | Module-specific permissions (e.g. cms.posts.view, hrms.employees.create)
+    | live in their own modules and union with this baseline at runtime via
+    | EntitlementService::getAllowedPermissionsForTenant().
     */
     'permissions' => [
-        'core.dashboard.view',
-        'core.settings.view',
-        'core.settings.update',
-        'core.users.view',
-        'core.users.create',
-        'core.users.update',
-        'core.users.delete',
+        'access dashboard',
+        'read user',
+        'create user',
+        'update user',
+        'delete user',
+        'read role',
+        'create role',
+        'update role',
+        'delete role',
+        'read team',
+        'create team',
+        'update team',
+        'delete team',
+        'read communication',
+        'create communication',
+        'update communication',
+        'delete communication',
+        'manage organization settings',
+        'manage api keys',
     ],
 
     /*

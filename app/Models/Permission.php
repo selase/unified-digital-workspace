@@ -12,9 +12,14 @@ final class Permission extends SpatiePermission
     use HasUuid;
 
     /**
-     * List of permissions that an Org Superadmin is allowed to assign to their custom roles.
+     * Baseline permissions every tenant Org Superadmin can assign regardless of
+     * which modules are enabled. Module-declared permissions are unioned on top
+     * by App\Services\Tenancy\EntitlementService::getAllowedPermissionsForTenant.
+     *
+     * Kept as a const for cheap, deterministic access — module-aware expansion
+     * happens at the service layer where the active tenant is available.
      */
-    public const TENANT_SAFE = [
+    public const BASELINE_TENANT_PERMISSIONS = [
         'access dashboard',
         'read user',
         'create user',
@@ -34,6 +39,13 @@ final class Permission extends SpatiePermission
         'delete communication',
         'manage organization settings',
     ];
+
+    /**
+     * @deprecated Use BASELINE_TENANT_PERMISSIONS plus module-declared permissions
+     *             via EntitlementService::getAllowedPermissionsForTenant. Retained
+     *             so callers that referenced the old constant still resolve.
+     */
+    public const TENANT_SAFE = self::BASELINE_TENANT_PERMISSIONS;
 
     protected $connection = 'landlord';
 
