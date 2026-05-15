@@ -185,6 +185,23 @@ protected function isAccessible(User $user, ?string $path = null): bool
 
 - Use Laravel's built-in authentication and authorization features (gates, policies, Sanctum, etc.).
 
+### Permission naming convention
+
+Permission names follow the `module.action.scope` convention. Two namespaces:
+
+- `core.*` — tenant baseline (every Org Superadmin / Org Admin gets these). Examples: `core.dashboard.access`, `core.users.read`, `core.settings.manage`.
+- `admin.*` — landlord scope, Superadmin only, cross-tenant operations. Examples: `admin.tenants.create`, `admin.users.impersonate`, `admin.audit-trail.read`.
+- Module permissions own their slug as the prefix. Examples: `cms.posts.view`, `hrms.employees.view`, `incidents.view`.
+
+When adding a new permission:
+
+1. Pick the right prefix (`core.*` for tenant-baseline, `admin.*` for landlord, `<module-slug>.*` for a module).
+2. Use `verb` or `action.scope` as the suffix — `read`, `create`, `update`, `delete`, or domain verbs like `manage`, `impersonate`, `view`, `moderate`.
+3. Module permissions belong in the module's `Config/module.php` under `permissions`; tenant baseline belongs in `App\Models\Permission::BASELINE_TENANT_PERMISSIONS`.
+4. Never invent new "verb noun" names like `read user` — that legacy convention is being removed (see `App\Services\Auth\AbilityAliasService`).
+
+The alias service still bridges legacy names to the new ones at `Gate::before` time during the migration window. Once Phase 3.4 ships, only new-style names will exist in the DB; legacy callers will silently fail. Always use new-style names in new code.
+
 ## URL Generation
 
 - When generating links to other pages, prefer named routes and the `route()` function.
