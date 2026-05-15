@@ -9,7 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
 use Symfony\Component\HttpKernel\Exception\HttpException;
 
-class TenantResolver
+final class TenantResolver
 {
     /**
      * Resolve the active tenant from the request.
@@ -116,10 +116,20 @@ class TenantResolver
             return;
         }
 
-        // Robust membership check using relationship query
-        if (! $user->tenants()->where('tenants.id', $tenant->id)->exists()) {
-            throw new \App\Exceptions\TenantMembershipException();
+        // Direct membership.
+        if ($user->tenants()->where('tenants.id', $tenant->id)->exists()) {
+            return;
         }
+
+        // Admins of an ancestor tenant inherit access to descendants — the
+        // single-parent hierarchy cascades DOWN by design.
+        $ancestorIds = collect($tenant->ancestors())->pluck('id')->all();
+
+        if ($ancestorIds !== [] && $user->tenants()->whereIn('tenants.id', $ancestorIds)->exists()) {
+            return;
+        }
+
+        throw new \App\Exceptions\TenantMembershipException;
     }
 
     /**
