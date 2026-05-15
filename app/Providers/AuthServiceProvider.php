@@ -57,5 +57,27 @@ final class AuthServiceProvider extends ServiceProvider
                     ->exists();
             });
         });
+
+        // Transitional alias: code that calls a new module.action.scope
+        // ability resolves against the legacy permission row if one exists.
+        // Returning null falls through to Spatie's normal permission check
+        // so a tenant that already has the new-style row works without alias.
+        \Illuminate\Support\Facades\Gate::before(function ($user, string $ability) {
+            if (! \App\Services\Auth\AbilityAliasService::isNewStyle($ability)) {
+                return null;
+            }
+
+            $legacy = \App\Services\Auth\AbilityAliasService::toLegacy($ability);
+
+            if ($legacy === null) {
+                return null;
+            }
+
+            if ($user && method_exists($user, 'hasPermissionTo') && $user->hasPermissionTo($legacy)) {
+                return true;
+            }
+
+            return null;
+        });
     }
 }
