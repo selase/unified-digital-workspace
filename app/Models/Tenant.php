@@ -24,6 +24,9 @@ final class Tenant extends Model
     use HasUuids;
     use SpatieActivityLogs;
 
+    /** Max depth allowed in the tenant hierarchy (root is depth 0). */
+    public const HIERARCHY_DEPTH_CAP = 3;
+
     protected $connection = 'landlord';
 
     protected $guarded = [];
@@ -83,6 +86,59 @@ final class Tenant extends Model
     public function package()
     {
         return $this->belongsTo(Package::class);
+    }
+
+    /**
+     * Parent tenant in the single-parent tree. Null for root tenants.
+     */
+    public function parent(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(self::class, 'parent_id');
+    }
+
+    /**
+     * Immediate children. Use ancestorsAndSelf()/descendants() for transitive walks.
+     *
+     * @return HasMany<Tenant, $this>
+     */
+    public function children(): HasMany
+    {
+        return $this->hasMany(self::class, 'parent_id');
+    }
+
+    /**
+     * Walk up the parent chain (excluding self).
+     *
+     * @return array<int, Tenant>
+     */
+    public function ancestors(): array
+    {
+        // Symmetric with descendants(): walk at most HIERARCHY_DEPTH_CAP - 1
+        // levels so the longest tolerated chain matches the tree depth cap.
+        $ancestors = [];
+        $current = $this->parent;
+        $depth = 0;
+
+        while ($current !== null && $depth < self::HIERARCHY_DEPTH_CAP - 1) {
+            $ancestors[] = $current;
+            $current = $current->parent;
+            $depth++;
+        }
+
+        return $ancestors;
+    }
+
+    /**
+     * All descendants (transitive children), capped at HIERARCHY_DEPTH_CAP.
+     *
+     * @return \Illuminate\Support\Collection<int, Tenant>
+     */
+    public function descendants(): \Illuminate\Support\Collection
+    {
+        $bucket = collect();
+        $this->collectDescendantsInto($bucket, 0);
+
+        return $bucket;
     }
 
     public function subscriptions(): HasMany
@@ -284,5 +340,19 @@ final class Tenant extends Model
                 return null;
             }
         );
+    }
+
+    private function collectDescendantsInto(\Illuminate\Support\Collection $bucket, int $currentDepth): void
+    {
+        // HIERARCHY_DEPTH_CAP=3 means a tree can have up to 3 levels (root +
+        // 2 below). From any node, descendants() walks at most CAP-1 levels.
+        if ($currentDepth >= self::HIERARCHY_DEPTH_CAP - 1) {
+            return;
+        }
+
+        foreach ($this->children as $child) {
+            $bucket->push($child);
+            $child->collectDescendantsInto($bucket, $currentDepth + 1);
+        }
     }
 }
