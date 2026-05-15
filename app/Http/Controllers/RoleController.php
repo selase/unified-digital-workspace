@@ -69,7 +69,7 @@ final class RoleController extends Controller
      */
     public function edit(int $id): View
     {
-        // $this->authorize('update role');
+        // $this->authorize('core.roles.update');
 
         $breadcrumbs = [
             ['link' => url('dashboard'), 'name' => __('Home')],
@@ -95,7 +95,7 @@ final class RoleController extends Controller
      */
     public function update(UpdateRoleRequest $request, int|string $id): RedirectResponse
     {
-        // $this->authorize('update role');
+        // $this->authorize('core.roles.update');
 
         $request->validated();
 

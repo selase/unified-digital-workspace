@@ -24,7 +24,7 @@ final class ApiKeyController extends Controller
      */
     public function index(string $subdomain): View
     {
-        $this->authorize('manage api keys');
+        $this->authorize('core.api-keys.manage');
 
         $tenant = $this->tenantContext->getTenant();
         $apiKeys = TenantApiKey::where('tenant_id', $tenant->id)
@@ -45,7 +45,7 @@ final class ApiKeyController extends Controller
      */
     public function store(Request $request, string $subdomain): JsonResponse
     {
-        $this->authorize('manage api keys');
+        $this->authorize('core.api-keys.manage');
 
         $request->validate([
             'name' => 'required|string|max:255',
@@ -71,7 +71,7 @@ final class ApiKeyController extends Controller
      */
     public function destroy(string $subdomain, string $id): JsonResponse
     {
-        $this->authorize('manage api keys');
+        $this->authorize('core.api-keys.manage');
 
         $tenant = $this->tenantContext->getTenant();
 

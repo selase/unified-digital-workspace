@@ -97,19 +97,19 @@ final class TeamController extends Controller
             foreach ($users as $user) {
                 $action = '';
 
-                if (Auth::user()->can('update user')) {
+                if (Auth::user()->can('core.users.update')) {
                     $action .= '<a href="javascript:void(0)" onclick="resendAccountPassword(\''.$user->uuid.'\')" class="kt-btn kt-btn-icon kt-btn-ghost size-8" title="Resend Account Password">
                                     <i class="ki-filled ki-key text-info"></i>
                                 </a>';
                 }
 
-                if (Auth::user()->can('impersonate user') && $user->roles->pluck('name')->first() !== 'Superadmin') {
+                if (Auth::user()->can('admin.users.impersonate') && $user->roles->pluck('name')->first() !== 'Superadmin') {
                     $action .= '<a href="'.route('impersonation.impersonate', $user->id).'" class="kt-btn kt-btn-icon kt-btn-ghost size-8" title="Login as '.$user->displayName().'">
                                         <i class="ki-filled ki-user-tick text-warning"></i>
                                     </a>';
                 }
 
-                if (Auth::user()->can('delete user') && $user->roles->pluck('name')->first() !== 'Superadmin') {
+                if (Auth::user()->can('core.users.delete') && $user->roles->pluck('name')->first() !== 'Superadmin') {
                     $action .= '<a href="javascript:void(0)" onclick="deleteData(\''.$user->uuid.'\', \'/user-management/users/\')" class="kt-btn kt-btn-icon kt-btn-ghost size-8" title="Delete User">
                                         <i class="ki-filled ki-trash text-danger"></i>
                                     </a>';
@@ -150,7 +150,7 @@ final class TeamController extends Controller
      */
     public function create(string $id): View
     {
-        $this->authorize('create team');
+        $this->authorize('core.teams.create');
 
         $tenant = Tenant::findByUuid($id);
         $roles = Role::all();

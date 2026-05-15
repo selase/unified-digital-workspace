@@ -25,7 +25,7 @@
                 </div>
                 <div class="flex flex-wrap items-center gap-3">
                     <a href="{{ route('users.index') }}" class="kt-btn kt-btn-outline">Back to Users</a>
-                    @can('update user')
+                    @can('core.users.update')
                         <a href="{{ route('users.edit', $user) }}" class="kt-btn kt-btn-primary">Edit User</a>
                     @endcan
                 </div>

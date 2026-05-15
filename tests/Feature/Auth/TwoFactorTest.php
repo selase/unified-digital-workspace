@@ -14,8 +14,8 @@ test('user without 2fa can access dashboard normally', function () {
     $user = User::factory()->create();
     $user->refresh();
 
-    App\Models\Permission::create(['name' => 'access dashboard', 'category' => 'test']);
-    $user->givePermissionTo('access dashboard');
+    App\Models\Permission::create(['name' => 'core.dashboard.access', 'category' => 'test']);
+    $user->givePermissionTo('core.dashboard.access');
 
     $response = $this->actingAs($user)
         ->get('/dashboard');
@@ -45,7 +45,7 @@ test('user can pass 2fa challenge with valid code', function () {
     $google2fa = new Google2FA();
     $validCode = $google2fa->getCurrentOtp($secret);
 
-    $permission = App\Models\Permission::updateOrCreate(['name' => 'access dashboard', 'guard_name' => 'web'], ['category' => 'test']);
+    $permission = App\Models\Permission::updateOrCreate(['name' => 'core.dashboard.access', 'guard_name' => 'web'], ['category' => 'test']);
     $user->givePermissionTo($permission);
 
     $response = $this->actingAs($user)

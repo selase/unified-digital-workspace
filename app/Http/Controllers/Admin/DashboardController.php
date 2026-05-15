@@ -15,7 +15,7 @@ final class DashboardController extends Controller
 {
     public function __invoke(\Illuminate\Http\Request $request, \App\Services\TenantStatsService $tenantStatsService): Factory|View
     {
-        $this->authorize('access dashboard');
+        $this->authorize('core.dashboard.access');
 
         $days = $request->integer('days', 7);
         // Ensure days is within reasonable bounds
@@ -70,7 +70,7 @@ final class DashboardController extends Controller
             'topTenantsByUsers' => $topTenantsByUsers,
             'topTenantsByUsers' => $topTenantsByUsers,
             'isolationModeDistribution' => $tenantStatsService->getIsolationModeDistribution(),
-            
+
             // Billing Data
             'totalSuccessVolume' => \App\Models\Transaction::where('status', 'success')->sum('amount'), // Cents
             'totalTransactions' => \App\Models\Transaction::count(),

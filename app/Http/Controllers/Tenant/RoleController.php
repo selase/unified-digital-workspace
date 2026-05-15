@@ -19,7 +19,7 @@ final class RoleController extends Controller
 {
     public function index(string $subdomain): View|JsonResponse
     {
-        $this->authorize('read role');
+        $this->authorize('core.roles.read');
         $tenant = $this->getTenant();
 
         // Spatie Team logic: fetch roles where tenant_id is this tenant OR null (global)
@@ -37,7 +37,7 @@ final class RoleController extends Controller
 
     public function create(string $subdomain): View
     {
-        $this->authorize('create role');
+        $this->authorize('core.roles.create');
         $tenant = $this->getTenant();
         $allowedPermissionNames = app(\App\Services\Tenancy\EntitlementService::class)->getAllowedPermissionsForTenant($tenant->id);
         $permissions = Permission::whereIn('name', $allowedPermissionNames)->get();
@@ -47,7 +47,7 @@ final class RoleController extends Controller
 
     public function show(string $subdomain, string $id): View|JsonResponse
     {
-        $this->authorize('read role');
+        $this->authorize('core.roles.read');
         $tenant = $this->getTenant();
 
         $role = Role::where(function ($query) use ($tenant) {
@@ -64,7 +64,7 @@ final class RoleController extends Controller
 
     public function edit(string $subdomain, string $id): View
     {
-        $this->authorize('update role');
+        $this->authorize('core.roles.update');
         $tenant = $this->getTenant();
         $role = Role::where('tenant_id', $tenant->id)
             ->where('id', $id)
@@ -78,7 +78,7 @@ final class RoleController extends Controller
 
     public function store(Request $request, string $subdomain): RedirectResponse|JsonResponse
     {
-        $this->authorize('create role');
+        $this->authorize('core.roles.create');
         $tenant = $this->getTenant();
 
         $allowedPermissionNames = app(\App\Services\Tenancy\EntitlementService::class)->getAllowedPermissionsForTenant($tenant->id);
@@ -122,7 +122,7 @@ final class RoleController extends Controller
 
     public function update(Request $request, string $subdomain, string $id): RedirectResponse|JsonResponse
     {
-        $this->authorize('update role');
+        $this->authorize('core.roles.update');
         $tenant = $this->getTenant();
 
         $role = Role::where('tenant_id', $tenant->id)
@@ -171,7 +171,7 @@ final class RoleController extends Controller
 
     public function destroy(string $subdomain, string $id): JsonResponse|RedirectResponse
     {
-        $this->authorize('delete role');
+        $this->authorize('core.roles.delete');
         $tenant = $this->getTenant();
 
         $role = Role::where(function ($q) use ($tenant) {

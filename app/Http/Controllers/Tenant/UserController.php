@@ -19,7 +19,7 @@ final class UserController extends Controller
 {
     public function index(string $subdomain)
     {
-        $this->authorize('read user');
+        $this->authorize('core.users.read');
         $tenant = $this->getTenant();
 
         $breadcrumbs = [
@@ -53,7 +53,7 @@ final class UserController extends Controller
 
     public function getAllUsers(Request $request, string $subdomain): JsonResponse
     {
-        $this->authorize('read user');
+        $this->authorize('core.users.read');
         $tenant = $this->getTenant();
 
         $columns = [
@@ -101,14 +101,14 @@ final class UserController extends Controller
         foreach ($users as $user) {
             $action = '';
             // Basic actions for tenant admin
-            if (auth()->user()->can('update user')) {
+            if (auth()->user()->can('core.users.update')) {
                 $action .= '<a href="javascript:void(0)" onclick="updateUser(\''.$user->uuid.'\')" class="btn btn-icon btn-active-light-primary w-30px h-30px me-3"
                                     data-toggle="tooltip" data-placement="top" title="Edit User">
                                     <i class="fas fa-edit fs-4"></i>
                                 </a>';
             }
 
-            if (auth()->user()->can('delete user')) {
+            if (auth()->user()->can('core.users.delete')) {
                 $action .= '<a href="javascript:void(0)" onclick="deleteData(\''.$user->uuid.'\', \'/users/\')" class="btn btn-icon btn-active-light-danger w-30px h-30px"
                                     data-toggle="tooltip" data-placement="top" title="Delete User">
                                     <i class="fas fa-trash fs-4"></i>
@@ -145,7 +145,7 @@ final class UserController extends Controller
 
     public function store(StoreUserRequest $request, string $subdomain): JsonResponse
     {
-        $this->authorize('create user');
+        $this->authorize('core.users.create');
         $tenant = $this->getTenant();
         $validated = $request->validated();
 
@@ -188,7 +188,7 @@ final class UserController extends Controller
 
     public function edit(string $subdomain, User $user): JsonResponse
     {
-        $this->authorize('update user');
+        $this->authorize('core.users.update');
         $tenant = $this->getTenant();
 
         // Ensure user belongs to this tenant
@@ -206,7 +206,7 @@ final class UserController extends Controller
 
     public function update(UpdateUserRequest $request, string $subdomain, User $user): JsonResponse
     {
-        $this->authorize('update user');
+        $this->authorize('core.users.update');
         $tenant = $this->getTenant();
         $validated = $request->validated();
 

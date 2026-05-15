@@ -32,7 +32,7 @@ final class ModuleCatalogController extends Controller
 
     public function index(Request $request): View
     {
-        abort_if(! $request->user()?->can('manage organization settings'), 403);
+        abort_if(! $request->user()?->can('core.settings.manage'), 403);
 
         $tenant = $this->tenantContext->getTenant();
         abort_if(! $tenant, 404);
@@ -72,7 +72,7 @@ final class ModuleCatalogController extends Controller
 
     public function enable(Request $request, string $subdomain, string $slug): RedirectResponse
     {
-        abort_if(! $request->user()?->can('manage organization settings'), 403);
+        abort_if(! $request->user()?->can('core.settings.manage'), 403);
 
         $tenant = $this->tenantContext->getTenant();
         abort_if(! $tenant, 404);
@@ -92,7 +92,7 @@ final class ModuleCatalogController extends Controller
 
     public function disable(Request $request, string $subdomain, string $slug): RedirectResponse
     {
-        abort_if(! $request->user()?->can('manage organization settings'), 403);
+        abort_if(! $request->user()?->can('core.settings.manage'), 403);
 
         $tenant = $this->tenantContext->getTenant();
         abort_if(! $tenant, 404);

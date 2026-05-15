@@ -57,7 +57,7 @@
         @endif
 
         <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-            @can('user analytics')
+            @can('admin.users.analytics')
                 <div class="kt-card p-5">
                     <div class="flex items-center justify-between">
                         <span class="flex size-10 items-center justify-center rounded-full bg-primary/10 text-primary">
@@ -82,7 +82,7 @@
                 </div>
             @endcan
 
-            @can('read audit-trail')
+            @can('admin.audit-trail.read')
                 <div class="kt-card p-5">
                     <div class="flex items-center justify-between">
                         <span class="flex size-10 items-center justify-center rounded-full bg-violet-50 text-violet-600">
@@ -142,7 +142,7 @@
             </div>
         </div>
 
-        @can('user analytics')
+        @can('admin.users.analytics')
             <div class="grid gap-6 lg:grid-cols-12">
                 <div class="lg:col-span-8 kt-card p-6" id="kt_users_trend_widget">
                     <div class="flex items-center justify-between gap-3">

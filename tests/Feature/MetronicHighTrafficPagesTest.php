@@ -27,7 +27,7 @@ it('renders the admin dashboard with the metronic layout', function (): void {
     $user = User::factory()->create();
 
     Permission::firstOrCreate([
-        'name' => 'access dashboard',
+        'name' => 'core.dashboard.access',
         'guard_name' => 'web',
     ], [
         'uuid' => (string) Str::uuid(),
@@ -35,7 +35,7 @@ it('renders the admin dashboard with the metronic layout', function (): void {
     ]);
 
     setPermissionsTeamId(null);
-    $user->givePermissionTo('access dashboard');
+    $user->givePermissionTo('core.dashboard.access');
 
     $this->actingAs($user)
         ->get(route('dashboard'))
@@ -56,7 +56,7 @@ it('renders the admin users index with the metronic layout', function (): void {
     $user = User::factory()->create();
 
     Permission::firstOrCreate([
-        'name' => 'read user',
+        'name' => 'core.users.read',
         'guard_name' => 'web',
     ], [
         'uuid' => (string) Str::uuid(),
@@ -64,7 +64,7 @@ it('renders the admin users index with the metronic layout', function (): void {
     ]);
 
     setPermissionsTeamId(null);
-    $user->givePermissionTo('read user');
+    $user->givePermissionTo('core.users.read');
 
     $this->actingAs($user)
         ->get(route('users.index'))
@@ -161,7 +161,7 @@ it('renders the admin user-management roles index view with the metronic layout'
     ]);
 
     $permission = Permission::firstOrCreate([
-        'name' => 'read user',
+        'name' => 'core.users.read',
         'guard_name' => 'web',
     ], [
         'uuid' => (string) Str::uuid(),
@@ -186,7 +186,7 @@ it('renders the admin user-management roles edit view with the metronic layout',
     ]);
 
     $permission = Permission::firstOrCreate([
-        'name' => 'update user',
+        'name' => 'core.users.update',
         'guard_name' => 'web',
     ], [
         'uuid' => (string) Str::uuid(),
@@ -502,7 +502,7 @@ it('renders the admin tenants index with the metronic layout', function (): void
     $user = User::factory()->create();
 
     Permission::firstOrCreate([
-        'name' => 'read tenant',
+        'name' => 'admin.tenants.read',
         'guard_name' => 'web',
     ], [
         'uuid' => (string) Str::uuid(),
@@ -510,7 +510,7 @@ it('renders the admin tenants index with the metronic layout', function (): void
     ]);
 
     setPermissionsTeamId(null);
-    $user->givePermissionTo('read tenant');
+    $user->givePermissionTo('admin.tenants.read');
 
     $this->actingAs($user)
         ->get(route('tenants.index'))
@@ -523,7 +523,7 @@ it('renders the admin tenants create view with the metronic layout', function ()
     $user = User::factory()->create();
 
     Permission::firstOrCreate([
-        'name' => 'create tenant',
+        'name' => 'admin.tenants.create',
         'guard_name' => 'web',
     ], [
         'uuid' => (string) Str::uuid(),
@@ -531,7 +531,7 @@ it('renders the admin tenants create view with the metronic layout', function ()
     ]);
 
     setPermissionsTeamId(null);
-    $user->givePermissionTo('create tenant');
+    $user->givePermissionTo('admin.tenants.create');
 
     $this->actingAs($user)
         ->get(route('tenants.create'))
@@ -544,7 +544,7 @@ it('renders the admin tenants edit view with the metronic layout', function (): 
     $user = User::factory()->create();
 
     Permission::firstOrCreate([
-        'name' => 'update tenant',
+        'name' => 'admin.tenants.update',
         'guard_name' => 'web',
     ], [
         'uuid' => (string) Str::uuid(),
@@ -552,7 +552,7 @@ it('renders the admin tenants edit view with the metronic layout', function (): 
     ]);
 
     setPermissionsTeamId(null);
-    $user->givePermissionTo('update tenant');
+    $user->givePermissionTo('admin.tenants.update');
 
     $tenant = Tenant::factory()->create();
 
@@ -567,7 +567,7 @@ it('renders the admin tenants show view with the metronic layout', function (): 
     $user = User::factory()->create();
 
     Permission::firstOrCreate([
-        'name' => 'read tenant',
+        'name' => 'admin.tenants.read',
         'guard_name' => 'web',
     ], [
         'uuid' => (string) Str::uuid(),
@@ -575,7 +575,7 @@ it('renders the admin tenants show view with the metronic layout', function (): 
     ]);
 
     setPermissionsTeamId(null);
-    $user->givePermissionTo('read tenant');
+    $user->givePermissionTo('admin.tenants.read');
 
     $tenant = Tenant::factory()->create();
 
@@ -590,7 +590,7 @@ it('renders the admin tenants team create view with the metronic layout', functi
     $user = User::factory()->create();
 
     Permission::firstOrCreate([
-        'name' => 'create team',
+        'name' => 'core.teams.create',
         'guard_name' => 'web',
     ], [
         'uuid' => (string) Str::uuid(),
@@ -598,7 +598,7 @@ it('renders the admin tenants team create view with the metronic layout', functi
     ]);
 
     setPermissionsTeamId(null);
-    $user->givePermissionTo('create team');
+    $user->givePermissionTo('core.teams.create');
 
     $tenant = Tenant::factory()->create();
 
@@ -646,7 +646,7 @@ it('renders the tenant roles index with the metronic layout', function (): void 
     $tenant = setActiveTenantForTest($user);
 
     Permission::firstOrCreate([
-        'name' => 'read role',
+        'name' => 'core.roles.read',
         'guard_name' => 'web',
     ], [
         'uuid' => (string) Str::uuid(),
@@ -654,7 +654,7 @@ it('renders the tenant roles index with the metronic layout', function (): void 
     ]);
 
     setPermissionsTeamId($tenant->id);
-    $user->givePermissionTo('read role');
+    $user->givePermissionTo('core.roles.read');
 
     $role = Role::create([
         'name' => 'Operations Lead',
@@ -676,7 +676,7 @@ it('renders the tenant roles create view with the metronic layout', function ():
     $tenant = setActiveTenantForTest($user);
 
     Permission::firstOrCreate([
-        'name' => 'create role',
+        'name' => 'core.roles.create',
         'guard_name' => 'web',
     ], [
         'uuid' => (string) Str::uuid(),
@@ -684,7 +684,7 @@ it('renders the tenant roles create view with the metronic layout', function ():
     ]);
 
     setPermissionsTeamId($tenant->id);
-    $user->givePermissionTo('create role');
+    $user->givePermissionTo('core.roles.create');
 
     $this->actingAs($user)
         ->withSession(['active_tenant_id' => $tenant->id])
@@ -699,7 +699,7 @@ it('renders the tenant roles show view with the metronic layout', function (): v
     $tenant = setActiveTenantForTest($user);
 
     Permission::firstOrCreate([
-        'name' => 'read role',
+        'name' => 'core.roles.read',
         'guard_name' => 'web',
     ], [
         'uuid' => (string) Str::uuid(),
@@ -707,7 +707,7 @@ it('renders the tenant roles show view with the metronic layout', function (): v
     ]);
 
     setPermissionsTeamId($tenant->id);
-    $user->givePermissionTo('read role');
+    $user->givePermissionTo('core.roles.read');
 
     $role = Role::create([
         'name' => 'Clinical Lead',
@@ -789,7 +789,7 @@ it('does not render legacy bootstrap ui class patterns on key metronic routes', 
     $tenant = setActiveTenantForTest($tenantUser);
 
     Permission::firstOrCreate([
-        'name' => 'access dashboard',
+        'name' => 'core.dashboard.access',
         'guard_name' => 'web',
     ], [
         'uuid' => (string) Str::uuid(),
@@ -797,7 +797,7 @@ it('does not render legacy bootstrap ui class patterns on key metronic routes', 
     ]);
 
     setPermissionsTeamId($tenant->id);
-    $tenantUser->givePermissionTo('access dashboard');
+    $tenantUser->givePermissionTo('core.dashboard.access');
 
     $adminRoutes = [
         route('dashboard'),
@@ -837,7 +837,7 @@ it('renders the admin user show view with the metronic layout', function (): voi
     $subjectUser = User::factory()->create();
 
     Permission::firstOrCreate([
-        'name' => 'read user',
+        'name' => 'core.users.read',
         'guard_name' => 'web',
     ], [
         'uuid' => (string) Str::uuid(),
@@ -845,7 +845,7 @@ it('renders the admin user show view with the metronic layout', function (): voi
     ]);
 
     setPermissionsTeamId(null);
-    $user->givePermissionTo('read user');
+    $user->givePermissionTo('core.users.read');
 
     $this->actingAs($user)
         ->get(route('users.show', $subjectUser->uuid))

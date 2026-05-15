@@ -21,7 +21,7 @@ final class AuditTrailController extends Controller
      */
     public function activityLogIndex(Request $request): View
     {
-        $this->authorize('read audit-trail');
+        $this->authorize('admin.audit-trail.read');
 
         $breadcrumbs = [
             ['link' => route('dashboard'), 'name' => __('Home')],
@@ -33,7 +33,7 @@ final class AuditTrailController extends Controller
 
     public function getAllActivityLogs(Request $request): JsonResponse
     {
-        $this->authorize('read audit-trail');
+        $this->authorize('admin.audit-trail.read');
 
         $columns = [
             0 => 'id',
@@ -130,7 +130,7 @@ final class AuditTrailController extends Controller
 
     public function loginHistoryIndex(): Factory|\Illuminate\Contracts\View\View
     {
-        $this->authorize('read audit-trail');
+        $this->authorize('admin.audit-trail.read');
 
         $loginHistory = UserLoginHistory::query()->latest()->get();
 
@@ -149,7 +149,7 @@ final class AuditTrailController extends Controller
 
     public function getAllLoginHistories(Request $request): JsonResponse
     {
-        $this->authorize('read audit-trail');
+        $this->authorize('admin.audit-trail.read');
 
         $columns = [
             0 => 'id',
@@ -265,7 +265,7 @@ final class AuditTrailController extends Controller
 
     public function exportActivityLogs(Request $request)
     {
-        $this->authorize('read audit-trail');
+        $this->authorize('admin.audit-trail.read');
 
         $tenant = app(\App\Services\Tenancy\TenantContext::class)->getTenant();
         $tenantId = $tenant?->id;

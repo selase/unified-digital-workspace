@@ -11,7 +11,7 @@
                     <h1 class="mt-2 text-2xl font-semibold text-foreground">Tenants</h1>
                     <p class="mt-2 text-sm text-muted-foreground">Manage organizations, access, and subscription status.</p>
                 </div>
-                @can('create tenant')
+                @can('admin.tenants.create')
                     <a href="{{ route('tenants.create') }}" class="kt-btn kt-btn-primary">
                         <i class="ki-filled ki-plus text-base"></i>
                         Add Tenant

@@ -13,7 +13,7 @@
                 </div>
                 <div class="flex flex-wrap items-center gap-3">
                     <div class="flex flex-wrap gap-2" data-kt-user-table-toolbar="base">
-                        @can('create user')
+                        @can('core.users.create')
                             <button type="button" class="kt-btn kt-btn-primary" onclick="createUser()">
                                 <i class="ki-filled ki-plus text-base"></i>
                                 {{ __('locale.labels.add_user') }}
@@ -95,7 +95,7 @@
                             <img src="{{ asset('assets/media/illustrations/sketchy-1/5.png') }}" class="w-56" />
                             <div class="text-lg font-semibold text-foreground">No users found</div>
                             <div class="text-sm text-muted-foreground">It looks like you haven't added any team members yet.</div>
-                            @can('create user')
+                            @can('core.users.create')
                                 <button type="button" class="kt-btn kt-btn-primary" onclick="createUser()">
                                     <i class="ki-filled ki-plus"></i>
                                     Add Your First User

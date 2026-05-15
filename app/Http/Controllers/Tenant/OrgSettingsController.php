@@ -20,7 +20,7 @@ final class OrgSettingsController extends Controller
      */
     public function index(): View
     {
-        $this->authorize('manage organization settings');
+        $this->authorize('core.settings.manage');
         $tenant = $this->tenantContext->getTenant();
 
         $breadcrumbs = [
@@ -39,7 +39,7 @@ final class OrgSettingsController extends Controller
      */
     public function update(Request $request): RedirectResponse
     {
-        $this->authorize('manage organization settings');
+        $this->authorize('core.settings.manage');
         $tenant = $this->tenantContext->getTenant();
 
         $validatedData = $request->validate([
@@ -91,7 +91,7 @@ final class OrgSettingsController extends Controller
 
     public function verifyDomain(): RedirectResponse
     {
-        $this->authorize('manage organization settings');
+        $this->authorize('core.settings.manage');
         /** @var \App\Models\Tenant $tenant */
         $tenant = $this->tenantContext->getTenant();
 

@@ -47,7 +47,7 @@ test('superadmin can view tenant team via ajax', function () {
 test('impersonation button is visible for superadmin in team table', function () {
     // Setup
     $superAdminRole = Role::firstOrCreate(['name' => 'Superadmin', 'guard_name' => 'web']);
-    $impersonatePermission = Permission::firstOrCreate(['name' => 'impersonate user', 'guard_name' => 'web', 'category' => 'system']);
+    $impersonatePermission = Permission::firstOrCreate(['name' => 'admin.users.impersonate', 'guard_name' => 'web', 'category' => 'system']);
     $superAdminRole->givePermissionTo($impersonatePermission);
 
     $user = User::factory()->create();
@@ -88,7 +88,7 @@ test('impersonation button is visible for superadmin in team table', function ()
 test('superadmin can start and stop impersonation', function () {
     // Setup
     $superAdminRole = Role::firstOrCreate(['name' => 'Superadmin', 'guard_name' => 'web']);
-    $impersonatePermission = Permission::firstOrCreate(['name' => 'impersonate user', 'guard_name' => 'web', 'category' => 'system']);
+    $impersonatePermission = Permission::firstOrCreate(['name' => 'admin.users.impersonate', 'guard_name' => 'web', 'category' => 'system']);
     $superAdminRole->givePermissionTo($impersonatePermission);
 
     $admin = User::factory()->create();

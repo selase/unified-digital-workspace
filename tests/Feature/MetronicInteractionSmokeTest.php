@@ -15,10 +15,10 @@ it('renders core admin metronic routes with shell interaction hooks', function (
     ]);
 
     $permissions = [
-        'access dashboard' => 'dashboard',
-        'read user' => 'user',
-        'read tenant' => 'tenant',
-        'read audit-trail' => 'audit-trail',
+        'core.dashboard.access' => 'dashboard',
+        'core.users.read' => 'users',
+        'admin.tenants.read' => 'tenants',
+        'admin.audit-trail.read' => 'audit-trail',
     ];
 
     foreach ($permissions as $permissionName => $category) {
@@ -76,7 +76,7 @@ it('renders tenant dashboard with metronic shell hooks and without legacy bootst
     $tenant = setActiveTenantForTest($user);
 
     Permission::firstOrCreate([
-        'name' => 'access dashboard',
+        'name' => 'core.dashboard.access',
         'guard_name' => 'web',
     ], [
         'uuid' => (string) Str::uuid(),
@@ -84,7 +84,7 @@ it('renders tenant dashboard with metronic shell hooks and without legacy bootst
     ]);
 
     setPermissionsTeamId($tenant->id);
-    $user->givePermissionTo('access dashboard');
+    $user->givePermissionTo('core.dashboard.access');
 
     $content = $this->actingAs($user)
         ->withSession(['active_tenant_id' => $tenant->id])
