@@ -17,6 +17,11 @@ return [
     'depends_on' => ['cms-core'],
     'conflicts_with' => [],
 
+    // SaaS-level features the tenant's package must include before this
+    // module can be enabled. Custom site modules publish content under a
+    // tenant-owned domain, so custom-domains is the gate.
+    'required_features' => ['custom-domains'],
+
     'features' => [],
     'permissions' => [],
 

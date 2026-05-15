@@ -6,12 +6,15 @@ namespace App\Services;
 
 use App\Exceptions\ModuleConflictException;
 use App\Exceptions\ModuleDependencyException;
+use App\Exceptions\ModuleEntitlementException;
 use App\Exceptions\ModuleNotFoundException;
 use App\Models\Permission;
 use App\Models\Tenant;
+use App\Models\TenantFeature;
 use App\Models\TenantModule;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use Spatie\Permission\PermissionRegistrar;
@@ -304,8 +307,118 @@ final class ModuleManager
 
         $this->checkDependencies($module, $tenant);
         $this->checkConflicts($module, $tenant);
+        $this->checkEntitlements($module, $tenant);
 
         return $module;
+    }
+
+    /**
+     * Inspect a module against the tenant's current entitlements without
+     * throwing — useful for catalog UIs that need to render lock states.
+     *
+     * @param  array<string, mixed>|string  $moduleOrSlug
+     */
+    public function canEnableForTenant(array|string $moduleOrSlug, Tenant $tenant): bool
+    {
+        $module = is_string($moduleOrSlug) ? $this->find($moduleOrSlug) : $moduleOrSlug;
+
+        if (! $module) {
+            return false;
+        }
+
+        foreach (($module['required_features'] ?? []) as $feature) {
+            if (! $this->tenantHasFeature($tenant, $feature)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Features missing from the tenant that would block enabling the module.
+     * Empty array means the tenant is fully entitled.
+     *
+     * @return array<int, string>
+     */
+    public function missingFeaturesForTenant(string $slug, Tenant $tenant): array
+    {
+        $module = $this->find($slug);
+
+        if (! $module) {
+            return [];
+        }
+
+        $missing = [];
+
+        foreach (($module['required_features'] ?? []) as $feature) {
+            if (! $this->tenantHasFeature($tenant, $feature)) {
+                $missing[] = $feature;
+            }
+        }
+
+        return $missing;
+    }
+
+    /**
+     * Resolve "does the tenant effectively have this feature?" by checking
+     * the granular tenant_features table first (per-tenant overrides,
+     * module-added flags), then falling back to the tenant's package
+     * entitlements via the package_features pivot.
+     *
+     * Lazy resolution — we deliberately don't sync package → tenant_features
+     * because that creates drift on plan downgrades. Each lookup gives the
+     * current, correct answer from both sources.
+     */
+    private function tenantHasFeature(Tenant $tenant, string $featureSlug): bool
+    {
+        $hasDirect = TenantFeature::query()
+            ->where('tenant_id', $tenant->id)
+            ->where('feature_key', $featureSlug)
+            ->where('enabled', true)
+            ->exists();
+
+        if ($hasDirect) {
+            return true;
+        }
+
+        if ($tenant->package_id === null) {
+            return false;
+        }
+
+        return DB::table('package_features')
+            ->join('features', 'features.id', '=', 'package_features.feature_id')
+            ->where('package_features.package_id', $tenant->package_id)
+            ->where('features.slug', $featureSlug)
+            ->exists();
+    }
+
+    /**
+     * @param  array<string, mixed>  $module
+     *
+     * @throws ModuleEntitlementException
+     */
+    private function checkEntitlements(array $module, Tenant $tenant): void
+    {
+        $required = $module['required_features'] ?? [];
+
+        if ($required === []) {
+            return;
+        }
+
+        $missing = [];
+
+        foreach ($required as $feature) {
+            if (! $this->tenantHasFeature($tenant, $feature)) {
+                $missing[] = $feature;
+            }
+        }
+
+        if ($missing !== []) {
+            throw new ModuleEntitlementException(
+                "Module '{$module['slug']}' requires features not on tenant's package: ".implode(', ', $missing)
+            );
+        }
     }
 
     /**
