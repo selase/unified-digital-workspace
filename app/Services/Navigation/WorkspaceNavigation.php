@@ -284,6 +284,7 @@ final class WorkspaceNavigation
                     ['label' => 'Organization Settings', 'route' => 'tenant.settings.index'],
                     ['label' => 'Users', 'route' => 'tenant.users.index'],
                     ['label' => 'Roles', 'route' => 'tenant.roles.index'],
+                    ['label' => 'Modules', 'route' => 'tenant.modules.index'],
                     ['label' => 'My Tenants', 'route' => 'tenant.my-tenants'],
                 ],
             ],

@@ -52,6 +52,15 @@ Route::group(['middleware' => ['auth', '2fa_challenge', 'onboarding']], function
         ->names('tenant.llm-usage')
         ->only(['index']);
 
+    // Module catalog — tenant admins enable/disable optional modules subject to
+    // package entitlements (handled by ModuleManager::checkEntitlements).
+    Route::get('modules', [App\Http\Controllers\Tenant\ModuleCatalogController::class, 'index'])
+        ->name('tenant.modules.index');
+    Route::post('modules/{slug}/enable', [App\Http\Controllers\Tenant\ModuleCatalogController::class, 'enable'])
+        ->name('tenant.modules.enable');
+    Route::post('modules/{slug}/disable', [App\Http\Controllers\Tenant\ModuleCatalogController::class, 'disable'])
+        ->name('tenant.modules.disable');
+
     // Merchant Finance & Sales
     Route::get('/finance', [App\Http\Controllers\Tenant\FinanceController::class, 'index'])->name('tenant.finance.index');
     Route::post('/finance/refund/{transaction}', [App\Http\Controllers\Tenant\FinanceController::class, 'refund'])->name('tenant.finance.refund');
