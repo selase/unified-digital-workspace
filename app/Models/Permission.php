@@ -16,28 +16,30 @@ final class Permission extends SpatiePermission
      * which modules are enabled. Module-declared permissions are unioned on top
      * by App\Services\Tenancy\EntitlementService::getAllowedPermissionsForTenant.
      *
-     * Kept as a const for cheap, deterministic access — module-aware expansion
-     * happens at the service layer where the active tenant is available.
+     * Uses module.action.scope names; the legacy "verb noun" twins still
+     * exist in the database and resolve transparently via
+     * App\Services\Auth\AbilityAliasService.
      */
     public const BASELINE_TENANT_PERMISSIONS = [
-        'access dashboard',
-        'read user',
-        'create user',
-        'update user',
-        'delete user',
-        'read role',
-        'create role',
-        'update role',
-        'delete role',
-        'read team',
-        'create team',
-        'update team',
-        'delete team',
-        'read communication',
-        'create communication',
-        'update communication',
-        'delete communication',
-        'manage organization settings',
+        'core.dashboard.access',
+        'core.users.read',
+        'core.users.create',
+        'core.users.update',
+        'core.users.delete',
+        'core.roles.read',
+        'core.roles.create',
+        'core.roles.update',
+        'core.roles.delete',
+        'core.teams.read',
+        'core.teams.create',
+        'core.teams.update',
+        'core.teams.delete',
+        'core.communications.read',
+        'core.communications.create',
+        'core.communications.update',
+        'core.communications.delete',
+        'core.settings.manage',
+        'core.api-keys.manage',
     ];
 
     /**

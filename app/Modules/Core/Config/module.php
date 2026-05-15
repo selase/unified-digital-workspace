@@ -61,36 +61,32 @@ return [
     |--------------------------------------------------------------------------
     | Permissions
     |--------------------------------------------------------------------------
-    | The Core module owns the baseline tenant permissions every tenant Org
-    | Superadmin / Org Admin needs to operate. Names use the existing legacy
-    | "verb noun" convention rather than module.action.scope, since the gates
-    | throughout app/Http/Controllers reference them as-is — renaming would
-    | be a separate, larger migration.
-    |
-    | Module-specific permissions (e.g. cms.posts.view, hrms.employees.create)
-    | live in their own modules and union with this baseline at runtime via
-    | EntitlementService::getAllowedPermissionsForTenant().
+    | The Core module owns the baseline tenant permissions every tenant
+    | Org Superadmin / Org Admin needs to operate. Names follow the
+    | module.action.scope convention. Legacy "verb noun" names still
+    | exist in the database for back-compat and resolve via
+    | App\Services\Auth\AbilityAliasService.
     */
     'permissions' => [
-        'access dashboard',
-        'read user',
-        'create user',
-        'update user',
-        'delete user',
-        'read role',
-        'create role',
-        'update role',
-        'delete role',
-        'read team',
-        'create team',
-        'update team',
-        'delete team',
-        'read communication',
-        'create communication',
-        'update communication',
-        'delete communication',
-        'manage organization settings',
-        'manage api keys',
+        'core.dashboard.access',
+        'core.users.read',
+        'core.users.create',
+        'core.users.update',
+        'core.users.delete',
+        'core.roles.read',
+        'core.roles.create',
+        'core.roles.update',
+        'core.roles.delete',
+        'core.teams.read',
+        'core.teams.create',
+        'core.teams.update',
+        'core.teams.delete',
+        'core.communications.read',
+        'core.communications.create',
+        'core.communications.update',
+        'core.communications.delete',
+        'core.settings.manage',
+        'core.api-keys.manage',
     ],
 
     /*

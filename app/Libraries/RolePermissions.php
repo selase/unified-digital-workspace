@@ -6,115 +6,116 @@ namespace App\Libraries;
 
 use Spatie\Permission\Models\Role;
 
+/**
+ * Seeds the canonical role -> permission grants for the three system roles.
+ *
+ * Permission names use the new module.action.scope convention:
+ *   core.*  = tenant baseline (every Org Superadmin / Org Admin gets these)
+ *   admin.* = landlord scope (Superadmin only; cross-tenant operations)
+ *
+ * Legacy "verb noun" names still live in the permissions table for
+ * backward compatibility and resolve via App\Services\Auth\AbilityAliasService.
+ * The role -> permission mirroring migration (2026_05_15_063932) ensures any
+ * role that previously had a legacy permission also has its new-style twin.
+ */
 final class RolePermissions
 {
-    /**
-     * Assign the permissions
-     */
     public static function assign(): void
     {
         self::setSuperadminPermissions();
-
         self::setOrganizationSuperadminPermissions();
-
         self::setOrganizationAdminPermissions();
     }
 
-    /**
-     * Set superadmin permissions
-     */
     public static function setSuperadminPermissions(): void
     {
         $superadmin = Role::findByName('Superadmin');
 
         $superadmin->givePermissionTo([
-            'create setting',
-            'read setting',
-            'update setting',
-            'delete setting',
-            'create role',
-            'read role',
-            'update role',
-            'delete role',
-            'create permission',
-            'read permission',
-            'update permission',
-            'delete permission',
-            'create user',
-            'read user',
-            'update user',
-            'delete user',
-            'create communication',
-            'read communication',
-            'update communication',
-            'delete communication',
-            'access dashboard',
-            'user analytics',
-            'read audit-trail',
-            'create tenant',
-            'read tenant',
-            'update tenant',
-            'delete tenant',
-            'create team',
-            'read team',
-            'update team',
-            'delete team',
-            'impersonate user',
-            'read application health',
-            'manage organization settings',
-            'manage api keys',
+            // Landlord scope
+            'admin.settings.create',
+            'admin.settings.read',
+            'admin.settings.update',
+            'admin.settings.delete',
+            'admin.permissions.create',
+            'admin.permissions.read',
+            'admin.permissions.update',
+            'admin.permissions.delete',
+            'admin.tenants.create',
+            'admin.tenants.read',
+            'admin.tenants.update',
+            'admin.tenants.delete',
+            'admin.users.analytics',
+            'admin.users.impersonate',
+            'admin.audit-trail.read',
+            'admin.health.read',
+
+            // Inherited tenant baseline (Superadmin acts cross-tenant too)
+            'core.dashboard.access',
+            'core.users.create',
+            'core.users.read',
+            'core.users.update',
+            'core.users.delete',
+            'core.roles.create',
+            'core.roles.read',
+            'core.roles.update',
+            'core.roles.delete',
+            'core.teams.create',
+            'core.teams.read',
+            'core.teams.update',
+            'core.teams.delete',
+            'core.communications.create',
+            'core.communications.read',
+            'core.communications.update',
+            'core.communications.delete',
+            'core.settings.manage',
+            'core.api-keys.manage',
         ]);
     }
 
-    /**
-     * Set organization superadmin permissions
-     */
     public static function setOrganizationSuperadminPermissions(): void
     {
         $organizationSuperadmin = Role::findByName('Org Superadmin');
 
         $organizationSuperadmin->givePermissionTo([
-            'create communication',
-            'read communication',
-            'update communication',
-            'delete communication',
-            'access dashboard',
-            'create user',
-            'read user',
-            'update user',
-            'delete user',
-            'manage organization settings',
-            'manage api keys',
-            'create role',
-            'read role',
-            'update role',
-            'delete role',
+            'core.dashboard.access',
+            'core.users.create',
+            'core.users.read',
+            'core.users.update',
+            'core.users.delete',
+            'core.roles.create',
+            'core.roles.read',
+            'core.roles.update',
+            'core.roles.delete',
+            'core.communications.create',
+            'core.communications.read',
+            'core.communications.update',
+            'core.communications.delete',
+            'core.settings.manage',
+            'core.api-keys.manage',
         ]);
     }
 
-    /**
-     * Set organization admin permissions
-     */
     public static function setOrganizationAdminPermissions(): void
     {
         $organizationAdmin = Role::findByName('Org Admin');
 
         $organizationAdmin->givePermissionTo([
-            'create communication',
-            'read communication',
-            'update communication',
-            'delete communication',
-            'access dashboard',
-            'manage organization settings',
-            'manage api keys',
-            'create role',
-            'read role',
-            'update role',
-            'delete role',
-            'create user',
-            'read user',
-            'update user',
-            'delete user',
+            'core.dashboard.access',
+            'core.users.create',
+            'core.users.read',
+            'core.users.update',
+            'core.users.delete',
+            'core.roles.create',
+            'core.roles.read',
+            'core.roles.update',
+            'core.roles.delete',
+            'core.communications.create',
+            'core.communications.read',
+            'core.communications.update',
+            'core.communications.delete',
+            'core.settings.manage',
+            'core.api-keys.manage',
         ]);
     }
 }

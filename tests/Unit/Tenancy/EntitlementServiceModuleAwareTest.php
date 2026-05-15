@@ -45,9 +45,9 @@ test('baseline list still exposed via TENANT_SAFE for backwards compatibility', 
     expect(Permission::TENANT_SAFE)->toBe(Permission::BASELINE_TENANT_PERMISSIONS);
 });
 
-test('baseline includes the core tenant operations', function (): void {
+test('baseline includes the core tenant operations under module.action.scope naming', function (): void {
     expect(Permission::BASELINE_TENANT_PERMISSIONS)
-        ->toContain('access dashboard')
-        ->toContain('read user')
-        ->toContain('manage organization settings');
+        ->toContain('core.dashboard.access')
+        ->toContain('core.users.read')
+        ->toContain('core.settings.manage');
 });
