@@ -334,11 +334,21 @@ final class TenantController extends Controller
         $availableModels = array_keys(config('llm.models', []));
         $metrics = UsageMetric::cases();
 
+        // Candidates for parent_id: every other non-banned tenant, EXCLUDING
+        // this tenant's own descendants (to avoid cycles) and itself.
+        $descendantIds = $tenant->descendants()->pluck('id')->push($tenant->id)->all();
+        $parentCandidates = Tenant::query()
+            ->where('status', '!=', TenantStatusEnum::BANNED)
+            ->whereNotIn('id', $descendantIds)
+            ->orderBy('name')
+            ->get(['id', 'name', 'slug']);
+
         return view('admin.tenants.edit', [
             'breadcrumbs' => $breadcrumbs,
             'statuses' => $statuses,
             'tenant' => $tenant,
             'packages' => $packages,
+            'parentCandidates' => $parentCandidates,
             'availableModels' => $availableModels,
             'metrics' => $metrics,
         ]);
@@ -355,6 +365,24 @@ final class TenantController extends Controller
             'name' => 'required',
             'email' => 'required|email|unique:landlord.tenants,email,'.$tenant->id,
             'package_id' => 'nullable|exists:packages,id',
+            'parent_id' => [
+                'nullable',
+                'exists:landlord.tenants,id',
+                function ($attribute, $value, $fail) use ($tenant): void {
+                    if ($value === null) {
+                        return;
+                    }
+                    if ($value === $tenant->id) {
+                        $fail('A tenant cannot be its own parent.');
+
+                        return;
+                    }
+                    $descendantIds = $tenant->descendants()->pluck('id')->all();
+                    if (in_array($value, $descendantIds, true)) {
+                        $fail('Parent cannot be one of this tenant\'s descendants (would create a cycle).');
+                    }
+                },
+            ],
             'markup_percentage' => 'nullable|numeric|min:0',
             'usage_prices' => 'nullable|array',
             'usage_prices.*.unit_price' => 'nullable|numeric|min:0',
@@ -371,6 +399,7 @@ final class TenantController extends Controller
         $tenant->zipcode = $request->input('zipcode');
         $tenant->status = $request->input('status');
         $tenant->package_id = $request->input('package_id');
+        $tenant->parent_id = $request->input('parent_id') ?: null;
         $tenant->slug = $request->input('subdomain');
         $tenant->isolation_mode = $request->input('isolation_mode');
         $tenant->db_driver = $request->input('db_driver');

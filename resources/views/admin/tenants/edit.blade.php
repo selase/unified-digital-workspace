@@ -159,6 +159,26 @@
                             </div>
                         </div>
 
+                        @isset($parentCandidates)
+                            <div class="kt-form-item lg:col-span-2">
+                                <label class="kt-form-label">Parent Tenant</label>
+                                <div class="kt-form-control">
+                                    <select name="parent_id" id="parent_id" class="kt-select" @error('parent_id') aria-invalid="true" @enderror>
+                                        <option value="">None (root tenant)</option>
+                                        @foreach ($parentCandidates as $candidate)
+                                            <option value="{{ $candidate->id }}" {{ old('parent_id', $tenant->parent_id) == $candidate->id ? 'selected' : '' }}>
+                                                {{ $candidate->name }} ({{ $candidate->slug }})
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    <p class="mt-1 text-xs text-muted-foreground">Optional. Sets this tenant as a child branch. Admins of the parent inherit access to this tenant.</p>
+                                    @error('parent_id')
+                                        <p class="mt-2 text-xs text-destructive">{{ $message }}</p>
+                                    @enderror
+                                </div>
+                            </div>
+                        @endisset
+
                         <div class="lg:col-span-2">
                             <label class="flex items-center justify-between gap-4 rounded-lg border border-border p-3 text-sm text-foreground">
                                 <span>{{ __('Enable Bring Your Own Key (BYOK)') }}</span>
