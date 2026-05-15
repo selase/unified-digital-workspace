@@ -18,7 +18,7 @@ final class UpdateTenantRequest extends FormRequest
      */
     public function authorize()
     {
-        return $this->user()->can('update tenant');
+        return $this->user()->can('admin.tenants.update');
     }
 
     /**

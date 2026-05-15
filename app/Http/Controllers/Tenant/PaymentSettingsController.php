@@ -20,12 +20,12 @@ final class PaymentSettingsController extends Controller
      */
     public function index(): View
     {
-        $this->authorize('manage organization settings');
+        $this->authorize('core.settings.manage');
         $tenant = $this->tenantContext->getTenant();
 
         // Check if commerce feature is enabled
-        if (!$tenant->featureEnabled('commerce')) {
-           abort(403, 'The Commerce feature is not enabled for your organization.');
+        if (! $tenant->featureEnabled('commerce')) {
+            abort(403, 'The Commerce feature is not enabled for your organization.');
         }
 
         $gateways = TenantPaymentGateway::where('tenant_id', $tenant->id)->get();
@@ -51,10 +51,10 @@ final class PaymentSettingsController extends Controller
      */
     public function update(Request $request): RedirectResponse
     {
-        $this->authorize('manage organization settings');
+        $this->authorize('core.settings.manage');
         $tenant = $this->tenantContext->getTenant();
 
-        if (!$tenant->featureEnabled('commerce')) {
+        if (! $tenant->featureEnabled('commerce')) {
             abort(403);
         }
 

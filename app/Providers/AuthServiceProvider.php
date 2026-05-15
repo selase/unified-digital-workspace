@@ -69,12 +69,18 @@ final class AuthServiceProvider extends ServiceProvider
 
             $legacy = \App\Services\Auth\AbilityAliasService::toLegacy($ability);
 
-            if ($legacy === null) {
+            if ($legacy === null || ! $user || ! method_exists($user, 'hasPermissionTo')) {
                 return null;
             }
 
-            if ($user && method_exists($user, 'hasPermissionTo') && $user->hasPermissionTo($legacy)) {
-                return true;
+            try {
+                if ($user->hasPermissionTo($legacy)) {
+                    return true;
+                }
+            } catch (\Spatie\Permission\Exceptions\PermissionDoesNotExist) {
+                // Legacy row was dropped (Phase 3.4) or never seeded — fall
+                // through so Spatie's own Gate::before can resolve the
+                // new-style ability via its own permission row.
             }
 
             return null;

@@ -58,3 +58,20 @@ test('user without legacy permission fails both names', function (): void {
     expect($user->can('core.users.read'))->toBeFalse();
     expect($user->can('read user'))->toBeFalse();
 });
+
+test('gate resolves new-style ability when legacy row is absent', function (): void {
+    // Phase 3.4 will delete legacy rows. The Gate::before alias bridge must
+    // not throw PermissionDoesNotExist when the legacy row no longer exists —
+    // it should fall through to Spatie's normal check against the new-style
+    // permission row.
+    app()->make(PermissionRegistrar::class)->forgetCachedPermissions();
+    Permission::query()->firstOrCreate(
+        ['name' => 'core.users.read'],
+        ['uuid' => (string) Illuminate\Support\Str::uuid(), 'category' => 'users']
+    );
+
+    $user = User::factory()->create();
+    $user->givePermissionTo('core.users.read');
+
+    expect($user->can('core.users.read'))->toBeTrue();
+});

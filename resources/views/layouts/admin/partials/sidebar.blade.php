@@ -212,7 +212,7 @@
                     </div>
                 @endif
 
-                @if(auth()->user()->isGlobalSuperAdmin() || auth()->user()->can('read tenant'))
+                @if(auth()->user()->isGlobalSuperAdmin() || auth()->user()->can('admin.tenants.read'))
                     <div data-kt-menu-trigger="click"
                         class="menu-item menu-accordion {{ request()->is('tenants') || request()->is('tenants/*') ? 'show' : '' }}">
                         <span class="menu-link">
@@ -235,7 +235,7 @@
                             <span class="menu-title">{{ __('locale.menu.tenants') }}</span>
                             <span class="menu-arrow"></span>
                         </span>
-                        @if(auth()->user()->isGlobalSuperAdmin() || auth()->user()->can('create tenant'))
+                        @if(auth()->user()->isGlobalSuperAdmin() || auth()->user()->can('admin.tenants.create'))
                             <div class="menu-sub menu-sub-accordion">
                                 <div class="menu-item">
                                     <a class="menu-link {{ request()->routeIs('tenants.index') || request()->routeIs('tenants.edit') || request()->routeIs('tenants.show') ? 'active' : '' }}"
@@ -279,7 +279,7 @@
                     </div>
                 @endif
 
-                @can('read user')
+                @can('core.users.read')
                     <div data-kt-menu-trigger="click"
                         class="menu-item menu-accordion {{ request()->is('user-management/*') ? 'show' : '' }}">
                         <span class="menu-link">
@@ -303,7 +303,7 @@
                             <span class="menu-title">{{ __('locale.menu.user_management') }}</span>
                             <span class="menu-arrow"></span>
                         </span>
-                        @can('read user')
+                        @can('core.users.read')
                             <div class="menu-sub menu-sub-accordion">
                                 <div class="menu-item">
                                     <a class="menu-link {{ request()->segment(2) == 'users' ? 'active' : '' }}"
@@ -317,7 +317,7 @@
                             </div>
                         @endcan
 
-                        @can('read role')
+                        @can('core.roles.read')
                             <div class="menu-sub menu-sub-accordion">
                                 <div class="menu-item">
                                     <a class="menu-link {{ request()->segment(2) == 'roles' || request()->segment(1) == 'roles' ? 'active' : '' }}"
@@ -333,7 +333,7 @@
                     </div>
                 @endcan
 
-                @can('read setting')
+                @can('admin.settings.read')
                     <div data-kt-menu-trigger="click" class="menu-item menu-accordion">
                         <span class="menu-link">
                             <span class="menu-icon">
@@ -377,7 +377,7 @@
                 @endcan
 
 
-                @can('read audit-trail')
+                @can('admin.audit-trail.read')
                     <div data-kt-menu-trigger="click"
                         class="menu-item menu-accordion {{ request()->is('audit-trail/*') ? 'show' : '' }}">
                         <span class="menu-link">
@@ -527,7 +527,7 @@
                     </div>
                 @endif
 
-                @if(auth()->user()->isGlobalSuperAdmin() || auth()->user()->can('read application health'))
+                @if(auth()->user()->isGlobalSuperAdmin() || auth()->user()->can('admin.health.read'))
                     <div class="menu-item">
                         <a class="menu-link" href="{{ route('application.health') }}" target="_blank">
                             <span class="menu-icon">

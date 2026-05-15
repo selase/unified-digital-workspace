@@ -13,7 +13,7 @@ beforeEach(function (): void {
     $this->tenant = setActiveTenantForTest($this->user);
 
     Permission::firstOrCreate([
-        'name' => 'access dashboard',
+        'name' => 'core.dashboard.access',
         'guard_name' => 'web',
     ], [
         'uuid' => (string) Str::uuid(),
@@ -21,7 +21,7 @@ beforeEach(function (): void {
     ]);
 
     setPermissionsTeamId($this->tenant->id);
-    $this->user->givePermissionTo('access dashboard');
+    $this->user->givePermissionTo('core.dashboard.access');
 });
 
 test('shell renders sidebar with metronic classes for authenticated user', function (): void {

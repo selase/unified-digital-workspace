@@ -47,7 +47,7 @@ final class TenantController extends Controller
 
     public function getAllTenants(Request $request): JsonResponse
     {
-        $this->authorize('read user');
+        $this->authorize('core.users.read');
 
         $columns = [
             0 => 'uuid',
@@ -109,7 +109,7 @@ final class TenantController extends Controller
             foreach ($tenants as $tenant) {
                 $action = '';
 
-                if (Auth::user()->can('read tenant')) {
+                if (Auth::user()->can('admin.tenants.read')) {
                     $action .= '<a href="'.route('tenants.show', $tenant->uuid).'"  class="btn btn-icon btn-active-light-primary w-30px h-30px me-3"
                                     data-kt-permissions-table-filter="delete_row" data-toggle="tooltip" data-placement="top"  title="View Details">
                                     <i class="fas fa-eye fs-5"></i>
@@ -122,13 +122,13 @@ final class TenantController extends Controller
                                     <i class="fas fa-random fs-5"></i>
                                 </a>';
                 }
-                if (Auth::user()->can('update tenant')) {
+                if (Auth::user()->can('admin.tenants.update')) {
                     $action .= '<a href="'.route('tenants.edit', $tenant->uuid).'"  class="btn btn-icon btn-active-light-info w-30px h-30px"
                                     data-kt-permissions-table-filter="delete_row" data-toggle="tooltip" data-placement="top"  title="Edit Tenant">
                                     <i class="fas fa-edit fs-5"></i>
                                 </a>';
                 }
-                if (Auth::user()->can('delete tenant')) {
+                if (Auth::user()->can('admin.tenants.delete')) {
                     $action .= '<a href="javascript:void(0)" onclick="deleteData(\''.$tenant->uuid.'\', \'/tenants/\')" class="btn btn-icon btn-active-light-danger w-30px h-30px"
                                     data-kt-permissions-table-filter="delete_row" data-toggle="tooltip" data-placement="top"  title="Delete Tenant">
                                     <i class="fas fa-trash fs-4"></i>
@@ -174,7 +174,7 @@ final class TenantController extends Controller
      */
     public function create(): View
     {
-        $this->authorize('create tenant');
+        $this->authorize('admin.tenants.create');
 
         $breadcrumbs = [
             ['link' => route('dashboard'), 'name' => __('Home')],
@@ -251,7 +251,7 @@ final class TenantController extends Controller
      */
     public function show(Request $request, $id): View
     {
-        $this->authorize('read tenant');
+        $this->authorize('admin.tenants.read');
 
         $tenant = Tenant::findByUuid($id);
 

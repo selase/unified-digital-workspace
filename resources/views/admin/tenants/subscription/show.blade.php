@@ -35,7 +35,7 @@
                     </div>
                 </div>
                 <div class="flex flex-wrap items-center gap-3">
-                    @can('update tenant')
+                    @can('admin.tenants.update')
                         @if($topupRoute)
                             <button type="button" class="kt-btn kt-btn-primary" data-kt-modal-toggle="#admin_topup_tenant_credit">
                                 <i class="ki-filled ki-plus text-base"></i>

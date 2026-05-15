@@ -16,7 +16,7 @@ beforeEach(function () {
 
     // Reset Team ID to ensure we find the global roles for assignment
     setPermissionsTeamId(null);
-    Role::findByName('Org Superadmin')->givePermissionTo(['read user', 'access dashboard']);
+    Role::findByName('Org Superadmin')->givePermissionTo(['core.users.read', 'core.dashboard.access']);
 
     // Verify seeding
     if (Role::count() === 0) {
@@ -43,7 +43,7 @@ test('org superadmin can create a custom role scoped to their tenant', function 
 
     $response = $this->postJson(route('tenant.roles.store', ['subdomain' => $this->tenant->slug]), [
         'name' => $roleName,
-        'permissions' => ['read user', 'access dashboard'],
+        'permissions' => ['core.users.read', 'core.dashboard.access'],
     ]);
 
     $response->assertStatus(200);
@@ -55,8 +55,8 @@ test('org superadmin can create a custom role scoped to their tenant', function 
     ], 'landlord');
 
     $role = Role::where('name', $roleName)->where('tenant_id', $this->tenant->id)->first();
-    expect($role->hasPermissionTo('read user'))->toBeTrue();
-    expect($role->hasPermissionTo('access dashboard'))->toBeTrue();
+    expect($role->hasPermissionTo('core.users.read'))->toBeTrue();
+    expect($role->hasPermissionTo('core.dashboard.access'))->toBeTrue();
 });
 
 test('org superadmin cannot assign non-whitelisted permissions', function () {
@@ -64,7 +64,7 @@ test('org superadmin cannot assign non-whitelisted permissions', function () {
 
     $response = $this->postJson(route('tenant.roles.store', ['subdomain' => $this->tenant->slug]), [
         'name' => 'Hacker Role',
-        'permissions' => ['delete tenant', 'create setting'],
+        'permissions' => ['admin.tenants.delete', 'admin.settings.create'],
     ]);
 
     $response->assertStatus(422); // Validation error
@@ -118,7 +118,7 @@ test('global superadmin can create a role for a specific tenant', function () {
     $response = $this->postJson(route('roles.store'), [
         'name' => $roleName,
         'tenant_id' => $this->tenant->id,
-        'permissions' => ['read user'],
+        'permissions' => ['core.users.read'],
     ]);
 
     $response->assertStatus(200);

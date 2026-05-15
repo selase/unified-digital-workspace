@@ -31,7 +31,7 @@ final class UsersController extends Controller
      */
     public function index(): Factory|View
     {
-        $this->authorize('read user');
+        $this->authorize('core.users.read');
 
         $breadcrumbs = [
             ['link' => url('dashboard'), 'name' => __('Home')],
@@ -52,7 +52,7 @@ final class UsersController extends Controller
 
     public function getAllUsers(Request $request): JsonResponse
     {
-        $this->authorize('read user');
+        $this->authorize('core.users.read');
 
         $columns = [
             0 => 'uuid',
@@ -123,7 +123,7 @@ final class UsersController extends Controller
             foreach ($users as $user) {
                 $action = '';
 
-                if (Auth::user()->can('update user')) {
+                if (Auth::user()->can('core.users.update')) {
                     $action .= '<a href="javascript:void(0)" onclick="updateUser(\''.$user->uuid.'\')" class="btn btn-icon btn-active-light-primary w-30px h-30px me-3"
                                     data-toggle="tooltip" data-placement="top" title="Edit User">
                                     <i class="fas fa-edit fs-4"></i>
@@ -135,14 +135,14 @@ final class UsersController extends Controller
                                 </a>';
                 }
 
-                if (Auth::user()->can('impersonate user') && $user->roles->pluck('name')->first() !== 'Superadmin') {
+                if (Auth::user()->can('admin.users.impersonate') && $user->roles->pluck('name')->first() !== 'Superadmin') {
                     $action .= '<a href="'.route('impersonation.impersonate', $user->id).'" class="btn btn-icon btn-active-light-warning w-30px h-30px me-3"
                                         data-kt-permissions-table-filter="delete_row" data-toggle="tooltip" data-placement="top"  title="Login as '.$user->displayName().'">
                                         <i class="fas fa-user-tag fs-4"></i>
                                     </a>';
                 }
 
-                if (Auth::user()->can('delete user') && $user->roles->pluck('name')->first() !== 'Superadmin') {
+                if (Auth::user()->can('core.users.delete') && $user->roles->pluck('name')->first() !== 'Superadmin') {
                     $action .= '<a href="javascript:void(0)" onclick="deleteData(\''.$user->uuid.'\', \'/user-management/users/\')" class="btn btn-icon btn-active-light-danger w-30px h-30px"
                                         data-kt-permissions-table-filter="delete_row" data-toggle="tooltip" data-placement="top"  title="Delete User">
                                         <i class="fas fa-trash fs-4"></i>
@@ -198,7 +198,7 @@ final class UsersController extends Controller
      */
     public function store(StoreUserRequest $request)
     {
-        $this->authorize('create user');
+        $this->authorize('core.users.create');
 
         $validatedData = $request->validated();
 
@@ -241,7 +241,7 @@ final class UsersController extends Controller
      */
     public function show($id): Factory|View
     {
-        $this->authorize('read user');
+        $this->authorize('core.users.read');
 
         $breadcrumbs = [
             ['link' => url('dashboard'), 'name' => __('Home')],
@@ -273,7 +273,7 @@ final class UsersController extends Controller
      */
     public function update(UpdateUserRequest $request, User $user)
     {
-        $this->authorize('update user');
+        $this->authorize('core.users.update');
 
         $validatedData = $request->validated();
 

@@ -18,7 +18,7 @@ final class CreateTenantRequest extends FormRequest
      */
     public function authorize()
     {
-        return $this->user()->can('create tenant');
+        return $this->user()->can('admin.tenants.create');
     }
 
     /**

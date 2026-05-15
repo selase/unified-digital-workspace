@@ -26,7 +26,7 @@
                     </div>
                 </div>
                 <div class="flex flex-wrap items-center gap-3">
-                    @can('update tenant')
+                    @can('admin.tenants.update')
                         <a href="{{ route('tenants.edit', $tenant->uuid) }}" class="kt-btn kt-btn-outline">Edit Tenant</a>
                     @endcan
                 </div>
@@ -153,7 +153,7 @@
                             <h2 class="text-lg font-semibold text-foreground">Team Members</h2>
                             <p class="mt-1 text-xs text-muted-foreground">Manage tenant users and role assignments.</p>
                         </div>
-                        @can('create team')
+                        @can('core.teams.create')
                             <a href="{{ route('tenants.team.create', $tenant->uuid) }}" class="kt-btn kt-btn-primary">
                                 <i class="ki-filled ki-plus text-base"></i>
                                 Add Team Member

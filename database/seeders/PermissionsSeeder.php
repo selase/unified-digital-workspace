@@ -5,11 +5,22 @@ declare(strict_types=1);
 namespace Database\Seeders;
 
 use App\Libraries\RolePermissions;
+use App\Services\Auth\AbilityAliasService;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
 
+/**
+ * Seeds the canonical permission rows using the module.action.scope naming
+ * convention (e.g. core.users.read, admin.tenants.create).
+ *
+ * The legacy "verb noun" names (e.g. "read user", "create tenant") that this
+ * seeder previously created live on as DB rows produced by the mirror
+ * migration `2026_05_15_063932_insert_module_style_permission_names` for
+ * backward compatibility. The cutover migration in Phase 3.4 will drop those
+ * legacy rows; until then, AbilityAliasService bridges any straggling caller.
+ */
 final class PermissionsSeeder extends Seeder
 {
     /**
@@ -19,9 +30,7 @@ final class PermissionsSeeder extends Seeder
     {
         app()->make(PermissionRegistrar::class)->forgetCachedPermissions();
 
-        $permissions = array_merge($this->modelPermissions(), $this->defaultPermissions());
-
-        foreach ($permissions as $permission) {
+        foreach ($this->permissions() as $permission) {
             Permission::query()->updateOrCreate([
                 'name' => $permission['name'],
             ], [
@@ -36,92 +45,31 @@ final class PermissionsSeeder extends Seeder
     }
 
     /**
-     * @return string[]
+     * @return array<int, array{name: string, category: string}>
      */
-    public function crudActions(string $name): array
+    private function permissions(): array
     {
-        $action = [];
-
-        $crud = [
-            'create',
-            'read',
-            'update',
-            'delete',
-        ];
-
-        foreach ($crud as $value) {
-            $action[] = $value.' '.$name;
-        }
-
-        return $action;
-    }
-
-    public function defaultPermissions(): array
-    {
-        return [
-            [
-                'uuid' => Str::uuid(),
-                'name' => 'access dashboard',
-                'guard_name' => 'web',
-                'category' => 'dashboard',
+        return array_map(
+            fn (string $name): array => [
+                'name' => $name,
+                'category' => $this->categoryFor($name),
             ],
-            [
-                'uuid' => Str::uuid(),
-                'name' => 'user analytics',
-                'guard_name' => 'web',
-                'category' => 'analytics',
-            ],
-            [
-                'uuid' => Str::uuid(),
-                'name' => 'read audit-trail',
-                'guard_name' => 'web',
-                'category' => 'audit-trail',
-            ],
-            [
-                'uuid' => Str::uuid(),
-                'name' => 'impersonate user',
-                'guard_name' => 'web',
-                'category' => 'user',
-            ],
-            [
-                'uuid' => Str::uuid(),
-                'name' => 'read application health',
-                'guard_name' => 'web',
-                'category' => 'application-health',
-            ],
-            [
-                'uuid' => Str::uuid(),
-                'name' => 'manage organization settings',
-                'guard_name' => 'web',
-                'category' => 'tenant',
-            ],
-            [
-                'uuid' => Str::uuid(),
-                'name' => 'manage api keys',
-                'guard_name' => 'web',
-                'category' => 'api',
-            ],
-        ];
+            array_keys(AbilityAliasService::all()),
+        );
     }
 
     /**
-     * @return array{name: mixed, category: ('communication' | 'permission' | 'role' | 'setting' | 'team' | 'tenant' | 'user')}[]
+     * Derive a category from a module.action.scope ability name.
+     *
+     * Examples:
+     *   core.users.read       -> users
+     *   admin.audit-trail.read -> audit-trail
+     *   core.settings.manage  -> settings
      */
-    public function modelPermissions(): array
+    private function categoryFor(string $ability): string
     {
-        $data = [];
+        $parts = explode('.', $ability);
 
-        $models = ['setting', 'role', 'permission', 'user', 'communication', 'tenant', 'team'];
-
-        foreach ($models as $value) {
-            foreach ($this->crudActions($value) as $action) {
-                $data[] = [
-                    'name' => $action,
-                    'category' => $value,
-                ];
-            }
-        }
-
-        return $data;
+        return $parts[1] ?? $ability;
     }
 }

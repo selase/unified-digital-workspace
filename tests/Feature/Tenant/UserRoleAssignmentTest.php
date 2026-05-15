@@ -30,8 +30,8 @@ test('tenant administrator cannot assign superadmin role', function () {
 
     // Give permission to create user (otherwise it's 403 anyway)
     // Using the Gate::before bypass won't work for tenant admin as they aren't Superadmin
-    // We need to give them 'create user' permission
-    $permission = Permission::firstOrCreate(['name' => 'create user', 'guard_name' => 'web', 'category' => 'user']);
+    // We need to give them 'core.users.create' permission
+    $permission = Permission::firstOrCreate(['name' => 'core.users.create', 'guard_name' => 'web', 'category' => 'users']);
     $orgAdminRole->givePermissionTo($permission);
 
     // Attempt to create a user with Superadmin role
@@ -67,7 +67,7 @@ test('tenant administrator can assign org member role', function () {
     $tenantAdmin->assignRole($orgAdminRole);
     $tenantAdmin->tenants()->attach($tenant->id);
 
-    $permission = Permission::firstOrCreate(['name' => 'create user', 'guard_name' => 'web', 'category' => 'user']);
+    $permission = Permission::firstOrCreate(['name' => 'core.users.create', 'guard_name' => 'web', 'category' => 'users']);
     $orgAdminRole->givePermissionTo($permission);
 
     $response = $this->actingAs($tenantAdmin)->post(route('users.store'), [

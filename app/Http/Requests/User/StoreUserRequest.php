@@ -20,7 +20,7 @@ final class StoreUserRequest extends FormRequest
         // The provided code snippet for the authorize method appears to be a test assertion
         // and is not suitable for a FormRequest's authorization logic.
         // Retaining the original authorization logic.
-        return $this->user()->can('create user');
+        return $this->user()->can('core.users.create');
     }
 
     /**
