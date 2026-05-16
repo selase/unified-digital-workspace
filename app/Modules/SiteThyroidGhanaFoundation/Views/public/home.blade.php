@@ -42,12 +42,34 @@
                     $bgImage = $slide->featuredMedia ? $slide->featuredMedia->url() : null;
                     $videoUrl = $getMeta($slide, 'video_url');
 
-                    // Detect direct mp4/webm vs hosted (YouTube/Vimeo). Only direct files
-                    // can run as a silent background; hosted embeds fall back to image.
-                    $isFileVideo = $videoUrl && preg_match('/\.(mp4|webm|ogg)(\?.*)?$/i', $videoUrl);
+                    // Identify the video source type so we render the right element.
+                    //   - file:    a direct .mp4/.webm/.ogg URL (media library upload)
+                    //   - youtube: a youtu.be / youtube.com URL → background iframe
+                    //   - vimeo:   a vimeo.com URL → background iframe with background=1
+                    $videoKind = null;
+                    $videoEmbedSrc = null;
 
-                    if ($isFileVideo) {
-                        // Video paints itself; the wrapper just needs the dark base.
+                    if ($videoUrl) {
+                        if (preg_match('/\.(mp4|webm|ogg)(\?.*)?$/i', $videoUrl)) {
+                            $videoKind = 'file';
+                        } elseif (preg_match('#(?:youtu\.be/|youtube\.com/(?:watch\?v=|embed/|shorts/))([A-Za-z0-9_-]{11})#', $videoUrl, $m)) {
+                            $videoKind = 'youtube';
+                            // playlist=ID is required for loop=1 on a single video.
+                            $videoEmbedSrc = 'https://www.youtube.com/embed/'.$m[1]
+                                .'?autoplay=1&mute=1&loop=1&playlist='.$m[1]
+                                .'&controls=0&showinfo=0&modestbranding=1&rel=0&iv_load_policy=3&playsinline=1';
+                        } elseif (preg_match('#vimeo\.com/(?:video/)?(\d+)#', $videoUrl, $m)) {
+                            $videoKind = 'vimeo';
+                            // background=1 hides controls and triggers autoplay+loop+mute.
+                            $videoEmbedSrc = 'https://player.vimeo.com/video/'.$m[1].'?background=1&autoplay=1&loop=1&muted=1';
+                        }
+                    }
+
+                    $hasVideo = $videoKind !== null;
+
+                    if ($hasVideo) {
+                        // Video paints itself; the wrapper just needs the dark base
+                        // (visible while the video buffers or if it fails to load).
                         $bgStyle = 'background: var(--tgf-dark);';
                     } elseif ($bgImage) {
                         $bgStyle = "background: linear-gradient(rgba(15,23,42,0.7), rgba(15,23,42,0.7)), url('{$bgImage}') center/cover no-repeat;";
@@ -67,7 +89,7 @@
                     class="absolute inset-0 flex items-center"
                     style="{{ $bgStyle }}"
                 >
-                    @if($isFileVideo)
+                    @if($videoKind === 'file')
                         <video
                             class="absolute inset-0 h-full w-full object-cover"
                             autoplay muted loop playsinline preload="metadata"
@@ -75,7 +97,22 @@
                         >
                             <source src="{{ $videoUrl }}" />
                         </video>
-                        {{-- Dim overlay so text stays readable. --}}
+                        <div class="absolute inset-0" style="background: rgba(15,23,42,0.55);"></div>
+                    @elseif($hasVideo)
+                        {{-- YouTube/Vimeo background embed. The wrapper hides overflow and the
+                             iframe is over-sized + centered so 16:9 video crops to fill the slide
+                             without letterboxing on either dimension. --}}
+                        <div class="pointer-events-none absolute inset-0 overflow-hidden">
+                            <iframe
+                                src="{{ $videoEmbedSrc }}"
+                                title="Slide background video"
+                                allow="autoplay; encrypted-media; picture-in-picture"
+                                allowfullscreen
+                                frameborder="0"
+                                class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+                                style="width: 100vw; height: 56.25vw; min-height: 100%; min-width: 177.78vh;"
+                            ></iframe>
+                        </div>
                         <div class="absolute inset-0" style="background: rgba(15,23,42,0.55);"></div>
                     @endif
                     <div class="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
