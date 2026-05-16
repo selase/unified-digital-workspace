@@ -57,10 +57,11 @@
                 @endphp
                 <div
                     x-show="current === {{ $i }}"
-                    x-transition:enter="transition ease-out duration-700"
-                    x-transition:enter-start="opacity-0 translate-x-8"
-                    x-transition:enter-end="opacity-100 translate-x-0"
-                    x-transition:leave="transition ease-in duration-500"
+                    x-cloak
+                    x-transition:enter="transition-opacity duration-700 ease-out"
+                    x-transition:enter-start="opacity-0"
+                    x-transition:enter-end="opacity-100"
+                    x-transition:leave="transition-opacity duration-700 ease-in"
                     x-transition:leave-start="opacity-100"
                     x-transition:leave-end="opacity-0"
                     class="absolute inset-0 flex items-center"

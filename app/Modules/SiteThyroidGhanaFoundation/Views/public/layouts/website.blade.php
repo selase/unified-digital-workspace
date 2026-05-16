@@ -42,6 +42,8 @@
         .tgf-dropdown:hover .tgf-dropdown-menu { display: block; }
         .tgf-dropdown-menu a { display: block; padding: 0.5rem 1.25rem; font-size: 0.875rem; color: var(--tgf-text); transition: all 0.15s; }
         .tgf-dropdown-menu a:hover { background: var(--tgf-light); color: var(--tgf-primary); }
+        /* Hide Alpine-cloaked elements until Alpine evaluates x-show. */
+        [x-cloak] { display: none !important; }
         {!! $theme->customCss() !!}
     </style>
 
