@@ -213,11 +213,24 @@ final class PackageController extends Controller
         return redirect()->route('packages.index')->with('success', 'Package updated successfully');
     }
 
+    /**
+     * Remove the specified resource from storage.
+     */
+    public function destroy(string $id)
+    {
+        $package = \App\Models\Package::findOrFail($id);
+        $package->usagePrices()->delete();
+        $package->delete();
+
+        return response()->json(['message' => 'Package deleted successfully']);
+    }
+
     private function syncUsagePrices($target, array $prices): void
     {
         foreach ($prices as $metricValue => $data) {
             if (empty($data['unit_price']) && empty($data['unit_quantity'])) {
                 $target->usagePrices()->where('metric', $metricValue)->delete();
+
                 continue;
             }
 
@@ -230,17 +243,5 @@ final class PackageController extends Controller
                 ]
             );
         }
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
-    {
-        $package = \App\Models\Package::findOrFail($id);
-        $package->usagePrices()->delete();
-        $package->delete();
-
-        return response()->json(['message' => 'Package deleted successfully']);
     }
 }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use App\Traits\BelongsToTenant;
@@ -10,8 +12,8 @@ use Illuminate\Database\Eloquent\Model;
 
 final class WebhookCall extends Model
 {
-    use HasFactory, HasUuids;
     use BelongsToTenant;
+    use HasFactory, HasUuids;
     use SpatieActivityLogs;
 
     protected $guarded = [];

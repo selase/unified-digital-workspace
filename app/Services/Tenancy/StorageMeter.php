@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace App\Services\Tenancy;
 
 use App\Models\Tenant;
+use Exception;
 use Illuminate\Support\Facades\Storage;
 
-class StorageMeter
+final class StorageMeter
 {
     /**
      * Calculate the total storage usage for a tenant in bytes.
@@ -17,7 +18,7 @@ class StorageMeter
         // We use the 'tenant' disk which is already scoped to the tenant's root/prefix
         // by the TenantStorageManager
         app(TenantStorageManager::class)->configure($tenant);
-        
+
         $disk = Storage::disk('tenant');
         $totalSize = 0;
 
@@ -26,9 +27,9 @@ class StorageMeter
             foreach ($files as $file) {
                 $totalSize += $disk->size($file);
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             \Illuminate\Support\Facades\Log::error("Failed to calculate storage for tenant {$tenant->id}", [
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
         }
 

@@ -11,7 +11,7 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class InvoiceGenerated extends Mailable
+final class InvoiceGenerated extends Mailable
 {
     use Queueable, SerializesModels;
 
@@ -28,7 +28,7 @@ class InvoiceGenerated extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Your Invoice ' . $this->invoice->number . ' is ready',
+            subject: 'Your Invoice '.$this->invoice->number.' is ready',
         );
     }
 

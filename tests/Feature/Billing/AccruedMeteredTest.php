@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Enum\UsageMetric;
 use App\Models\Package;
 use App\Models\Tenant;
@@ -51,7 +53,7 @@ test('accrued metered charges are calculated from usage rollups', function () {
     ]);
 
     // Call the private method via reflection
-    $controller = new \App\Http\Controllers\Billing\BillingController();
+    $controller = new App\Http\Controllers\Billing\BillingController();
     $method = new ReflectionMethod($controller, 'calculateAccruedMetered');
 
     $total = $method->invoke($controller, $tenant);
@@ -73,7 +75,7 @@ test('pricing service calculates cost correctly per tenant', function () {
         'unit_price' => 0.10,
     ]);
 
-    $pricingService = new \App\Services\Tenancy\PricingService();
+    $pricingService = new App\Services\Tenancy\PricingService();
 
     // 500 requests at $0.10 each = $50.00
     $cost = $pricingService->calculateCost($tenant, UsageMetric::REQUEST_COUNT, 500);

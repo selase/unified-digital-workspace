@@ -12,7 +12,7 @@ uses()->group('admin', 'tenant');
 test('updating tenant handles null allowed_ips gracefully', function () {
     Artisan::call('db:seed', ['--class' => 'RoleSeeder']);
     Artisan::call('db:seed', ['--class' => 'PermissionsSeeder']);
-    
+
     $admin = User::factory()->create();
     $admin->assignRole('Superadmin');
 

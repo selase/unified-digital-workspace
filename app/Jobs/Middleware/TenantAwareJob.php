@@ -8,6 +8,7 @@ use App\Models\Tenant;
 use App\Services\Tenancy\TenantContext;
 use App\Services\Tenancy\TenantDatabaseManager;
 use Closure;
+use Throwable;
 
 final class TenantAwareJob
 {
@@ -36,7 +37,7 @@ final class TenantAwareJob
 
         try {
             $next($job);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             $exception = $e;
             throw $e;
         } finally {

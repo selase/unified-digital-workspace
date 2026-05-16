@@ -40,14 +40,14 @@ enum UsageMetric: string
     public function unit(): string
     {
         return match ($this) {
-            self::REQUEST_COUNT, self::JOB_COUNT, self::JOB_FAILED_COUNT, 
-            self::STORAGE_UPLOAD_COUNT, self::USER_ACTIVE_DAILY, self::USER_ACTIVE_MONTHLY, 
+            self::REQUEST_COUNT, self::JOB_COUNT, self::JOB_FAILED_COUNT,
+            self::STORAGE_UPLOAD_COUNT, self::USER_ACTIVE_DAILY, self::USER_ACTIVE_MONTHLY,
             self::EMAIL_COUNT, self::NOTIFICATION_COUNT, self::WEBHOOK_COUNT,
             self::DB_ROW_COUNT => 'count',
-            
+
             self::REQUEST_DURATION_MS, self::JOB_RUNTIME_MS => 'ms',
-            
-            self::REQUEST_SIZE_BYTES, self::RESPONSE_SIZE_BYTES, 
+
+            self::REQUEST_SIZE_BYTES, self::RESPONSE_SIZE_BYTES,
             self::STORAGE_BYTES, self::DB_BYTES => 'bytes',
         };
     }

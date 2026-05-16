@@ -13,6 +13,18 @@ enum GoalStatus: string
     case Cancelled = 'cancelled';
 
     /**
+     * Get all statuses as options for forms.
+     *
+     * @return array<string, string>
+     */
+    public static function options(): array
+    {
+        return collect(self::cases())
+            ->mapWithKeys(fn (self $status): array => [$status->value => $status->label()])
+            ->all();
+    }
+
+    /**
      * Get the display label for this status.
      */
     public function label(): string
@@ -50,17 +62,5 @@ enum GoalStatus: string
             self::Deferred,
             self::Cancelled,
         ], true);
-    }
-
-    /**
-     * Get all statuses as options for forms.
-     *
-     * @return array<string, string>
-     */
-    public static function options(): array
-    {
-        return collect(self::cases())
-            ->mapWithKeys(fn (self $status): array => [$status->value => $status->label()])
-            ->all();
     }
 }

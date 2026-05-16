@@ -8,8 +8,6 @@ use App\Modules\HrmsCore\Enums\AppraisalStatus;
 use App\Modules\HrmsCore\Enums\GoalStatus;
 use App\Modules\HrmsCore\Enums\RecommendationType;
 use App\Modules\HrmsCore\Models\Appraisal\Appraisal;
-use App\Modules\HrmsCore\Models\Appraisal\AppraisalComment;
-use App\Modules\HrmsCore\Models\Appraisal\AppraisalCompetency;
 use App\Modules\HrmsCore\Models\Appraisal\AppraisalCriterion;
 use App\Modules\HrmsCore\Models\Appraisal\AppraisalGoal;
 use App\Modules\HrmsCore\Models\Appraisal\AppraisalPeriod;
@@ -17,7 +15,6 @@ use App\Modules\HrmsCore\Models\Appraisal\AppraisalRatingScale;
 use App\Modules\HrmsCore\Models\Appraisal\AppraisalRecommendation;
 use App\Modules\HrmsCore\Models\Appraisal\AppraisalResponse;
 use App\Modules\HrmsCore\Models\Appraisal\AppraisalReview;
-use App\Modules\HrmsCore\Models\Appraisal\AppraisalScore;
 use App\Modules\HrmsCore\Models\Appraisal\AppraisalSection;
 use App\Modules\HrmsCore\Models\Appraisal\AppraisalTemplate;
 use App\Modules\HrmsCore\Models\Employees\Employee;
@@ -663,9 +660,9 @@ describe('Appraisal Enums', function (): void {
     });
 
     test('AppraisalRating has correct labels and values', function (): void {
-        expect(\App\Modules\HrmsCore\Enums\AppraisalRating::Outstanding->value)->toBe(5)
-            ->and(\App\Modules\HrmsCore\Enums\AppraisalRating::Outstanding->label())->toBe('Outstanding')
-            ->and(\App\Modules\HrmsCore\Enums\AppraisalRating::options())->toHaveCount(5);
+        expect(App\Modules\HrmsCore\Enums\AppraisalRating::Outstanding->value)->toBe(5)
+            ->and(App\Modules\HrmsCore\Enums\AppraisalRating::Outstanding->label())->toBe('Outstanding')
+            ->and(App\Modules\HrmsCore\Enums\AppraisalRating::options())->toHaveCount(5);
     });
 
     test('AppraisalCycle has correct duration months', function (): void {

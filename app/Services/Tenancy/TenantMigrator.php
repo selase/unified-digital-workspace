@@ -6,7 +6,7 @@ namespace App\Services\Tenancy;
 
 use Illuminate\Support\Facades\Artisan;
 
-class TenantMigrator
+final class TenantMigrator
 {
     /**
      * @return array{exitCode: int, output: string}

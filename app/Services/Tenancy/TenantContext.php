@@ -6,7 +6,7 @@ namespace App\Services\Tenancy;
 
 use App\Models\Tenant;
 
-class TenantContext
+final class TenantContext
 {
     private ?Tenant $tenant = null;
 

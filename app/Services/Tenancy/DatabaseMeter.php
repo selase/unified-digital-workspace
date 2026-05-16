@@ -8,7 +8,7 @@ use App\Models\Tenant;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
-class DatabaseMeter
+final class DatabaseMeter
 {
     /**
      * Calculate the database footprint for a tenant in bytes.
@@ -32,8 +32,8 @@ class DatabaseMeter
         $driver = $connection->getDriverName();
 
         return match ($driver) {
-            'pgsql' => (int) $connection->selectOne("SELECT pg_database_size(current_database()) as size")->size,
-            'mysql' => (int) $connection->selectOne("SELECT SUM(data_length + index_length) as size FROM information_schema.TABLES WHERE table_schema = DATABASE()")->size,
+            'pgsql' => (int) $connection->selectOne('SELECT pg_database_size(current_database()) as size')->size,
+            'mysql' => (int) $connection->selectOne('SELECT SUM(data_length + index_length) as size FROM information_schema.TABLES WHERE table_schema = DATABASE()')->size,
             'sqlite' => (int) filesize($connection->getDatabaseName()),
             default => 0,
         };
@@ -47,7 +47,7 @@ class DatabaseMeter
         // For shared DB, we estimate based on row counts of tables with tenant_id
         // This is an approximation.
         $totalRows = 0;
-        
+
         // List of major tenant-scoped tables
         $tables = [
             'users',

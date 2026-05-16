@@ -12,6 +12,18 @@ enum AppraisalCycle: string
     case Probation = 'probation';
 
     /**
+     * Get all cycles as options for forms.
+     *
+     * @return array<string, string>
+     */
+    public static function options(): array
+    {
+        return collect(self::cases())
+            ->mapWithKeys(fn (self $cycle): array => [$cycle->value => $cycle->label()])
+            ->all();
+    }
+
+    /**
      * Get the display label for this cycle.
      */
     public function label(): string
@@ -48,17 +60,5 @@ enum AppraisalCycle: string
             self::Quarterly => 3,
             self::Probation => 3, // Typically 3 months, can vary
         };
-    }
-
-    /**
-     * Get all cycles as options for forms.
-     *
-     * @return array<string, string>
-     */
-    public static function options(): array
-    {
-        return collect(self::cases())
-            ->mapWithKeys(fn (self $cycle): array => [$cycle->value => $cycle->label()])
-            ->all();
     }
 }

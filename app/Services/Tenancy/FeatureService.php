@@ -7,7 +7,7 @@ namespace App\Services\Tenancy;
 use App\Models\TenantFeature;
 use Illuminate\Support\Facades\Cache;
 
-class FeatureService
+final class FeatureService
 {
     public const string FEATURE_CUSTOM_DOMAINS = 'custom-domains';
 

@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
+use App\Enum\UsageMetric;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Tax;
 use App\Models\Tenant;
-use App\Enum\UsageMetric;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
-class SampleInvoiceSeeder extends Seeder
+final class SampleInvoiceSeeder extends Seeder
 {
     public function run(): void
     {
@@ -21,16 +21,17 @@ class SampleInvoiceSeeder extends Seeder
 
         if ($tenants->isEmpty()) {
             $this->command->warn('No active tenants found. Run TenantSeeder first.');
+
             return;
         }
 
         foreach ($tenants as $tenant) {
             // 1. Create a PAID invoice for 2 months ago
             $this->createInvoice($tenant, Carbon::now()->subMonths(2)->startOfMonth(), Carbon::now()->subMonths(2)->endOfMonth(), Invoice::STATUS_PAID);
-            
+
             // 2. Create an ISSUED invoice for last month
             $this->createInvoice($tenant, Carbon::now()->subMonth()->startOfMonth(), Carbon::now()->subMonth()->endOfMonth(), Invoice::STATUS_ISSUED);
-            
+
             // 3. Create a DRAFT invoice for the "current" month (though usually generated at end of month, good for testing adjustments)
             $this->createInvoice($tenant, Carbon::now()->startOfMonth(), Carbon::now()->endOfMonth(), Invoice::STATUS_DRAFT);
         }
@@ -40,7 +41,7 @@ class SampleInvoiceSeeder extends Seeder
     {
         $invoice = Invoice::create([
             'tenant_id' => $tenant->id,
-            'number' => 'INV-' . $start->format('Ym') . '-' . strtoupper(Str::random(4)),
+            'number' => 'INV-'.$start->format('Ym').'-'.mb_strtoupper(Str::random(4)),
             'period_start' => $start,
             'period_end' => $end,
             'due_at' => $end->copy()->addDays(14),
@@ -102,7 +103,7 @@ class SampleInvoiceSeeder extends Seeder
             $subtotal -= 10.00;
         }
 
-        $taxCalc = Tax::calculateFor((float)$subtotal);
+        $taxCalc = Tax::calculateFor((float) $subtotal);
 
         $invoice->update([
             'subtotal' => $subtotal,

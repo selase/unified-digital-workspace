@@ -1,10 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Enum\UsageMetric;
 use App\Models\Package;
+use App\Models\Tax;
 use App\Models\Tenant;
 use App\Models\UsagePrice;
-use App\Models\Tax;
 use App\Services\Tenancy\PricingService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -36,7 +38,7 @@ test('it resolves unit price from package', function () {
     ]);
 
     $price = $this->pricingService->getUnitPrice($this->tenant, UsageMetric::REQUEST_COUNT);
-    
+
     expect($price)->not->toBeNull();
     expect((float) $price->unit_price)->toEqual(0.10);
 });
@@ -61,7 +63,7 @@ test('it resolves unit price from tenant (override)', function () {
     ]);
 
     $price = $this->pricingService->getUnitPrice($this->tenant, UsageMetric::REQUEST_COUNT);
-    
+
     expect((float) $price->unit_price)->toEqual(0.08);
 });
 
@@ -69,7 +71,7 @@ test('it calculates markups correctly', function () {
     config(['billing.global_markup' => 2.0]); // 2% global
 
     $markup = $this->pricingService->getEffectiveMarkup($this->tenant);
-    
+
     // 2 (global) + 10 (package) + 5 (tenant) = 17%
     expect($markup)->toEqual(17.0);
 });
@@ -86,9 +88,9 @@ test('it calculates cost with markups', function () {
     // 100 units * $1.00 = $100.
     // Markups: 10% (package) + 5% (tenant) = 15%.
     // Total: $115.
-    
+
     $cost = $this->pricingService->calculateCost($this->tenant, UsageMetric::REQUEST_COUNT, 100);
-    
+
     expect($cost)->toEqual(115.0);
 });
 

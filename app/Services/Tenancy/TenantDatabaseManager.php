@@ -8,7 +8,7 @@ use App\Contracts\Secrets\SecretsProvider;
 use App\Models\Tenant;
 use Illuminate\Support\Facades\Config;
 
-class TenantDatabaseManager
+final class TenantDatabaseManager
 {
     public function __construct(private readonly SecretsProvider $secrets) {}
 

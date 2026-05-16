@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Models\MerchantTransaction;
 use App\Models\Tenant;
 use App\Models\TenantPaymentGateway;
+use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -23,7 +24,7 @@ final class WebhookController extends Controller
             ->where('is_active', true)
             ->first();
 
-        if (!$gateway) {
+        if (! $gateway) {
             return response()->json(['error' => 'Gateway not configured'], 404);
         }
 
@@ -35,8 +36,9 @@ final class WebhookController extends Controller
             $event = \Stripe\Webhook::constructEvent(
                 $payload, $sigHeader, $webhookSecret
             );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Merchant Stripe webhook verification failed', ['tenant' => $tenant->id, 'error' => $e->getMessage()]);
+
             return response()->json(['error' => 'Invalid signature'], 400);
         }
 
@@ -45,7 +47,7 @@ final class WebhookController extends Controller
                 $session = $event->data->object;
                 $this->recordTransaction($tenant, 'stripe', $session);
                 break;
-            
+
             case 'payment_intent.succeeded':
                 $paymentIntent = $event->data->object;
                 // Avoid double counting if using both
@@ -65,14 +67,14 @@ final class WebhookController extends Controller
             ->where('is_active', true)
             ->first();
 
-        if (!$gateway) {
+        if (! $gateway) {
             return response()->json(['error' => 'Gateway not configured'], 404);
         }
 
         $signature = $request->header('x-paystack-signature');
         $secret = $gateway->api_key_encrypted; // Paystack uses secret key for hashing
 
-        if (!$signature || $signature !== hash_hmac('sha512', $request->getContent(), $secret)) {
+        if (! $signature || $signature !== hash_hmac('sha512', $request->getContent(), $secret)) {
             return response()->json(['error' => 'Invalid signature'], 400);
         }
 
@@ -80,7 +82,7 @@ final class WebhookController extends Controller
         $data = $request->input('data');
 
         if ($event === 'charge.success') {
-            $this->recordTransaction($tenant, 'paystack', (object)$data);
+            $this->recordTransaction($tenant, 'paystack', (object) $data);
         }
 
         return response()->json(['status' => 'success']);
@@ -96,13 +98,13 @@ final class WebhookController extends Controller
             ],
             [
                 'amount' => $provider === 'stripe' ? $data->amount_total : ($data->amount),
-                'currency' => strtoupper($provider === 'stripe' ? $data->currency : ($data->currency ?? 'NGN')),
+                'currency' => mb_strtoupper($provider === 'stripe' ? $data->currency : ($data->currency ?? 'NGN')),
                 'status' => 'succeeded',
                 'type' => 'payment',
                 'customer_email' => $provider === 'stripe' ? ($data->customer_details->email ?? null) : ($data->customer->email ?? null),
-                'customer_name' => $provider === 'stripe' ? ($data->customer_details->name ?? null) : ($data->customer->first_name . ' ' . $data->customer->last_name),
+                'customer_name' => $provider === 'stripe' ? ($data->customer_details->name ?? null) : ($data->customer->first_name.' '.$data->customer->last_name),
                 'description' => $provider === 'stripe' ? 'Stripe Checkout' : 'Paystack Charge',
-                'meta' => (array)$data,
+                'meta' => (array) $data,
             ]
         );
     }

@@ -17,7 +17,6 @@ use App\Modules\HrmsCore\Models\Recruitment\CandidateReference;
 use App\Modules\HrmsCore\Models\Recruitment\Interview;
 use App\Modules\HrmsCore\Models\Recruitment\InterviewEvaluation;
 use App\Modules\HrmsCore\Models\Recruitment\InterviewPanel;
-use App\Modules\HrmsCore\Models\Recruitment\InterviewStage;
 use App\Modules\HrmsCore\Models\Recruitment\JobOffer;
 use App\Modules\HrmsCore\Models\Recruitment\JobPosting;
 use App\Modules\HrmsCore\Models\Recruitment\JobRequisition;

@@ -8,7 +8,7 @@ use App\Models\Tenant;
 use App\Services\Tenancy\UsageLimitService;
 use Illuminate\Console\Command;
 
-class CheckUsageAlerts extends Command
+final class CheckUsageAlerts extends Command
 {
     /**
      * The name and signature of the console command.

@@ -27,7 +27,7 @@ final class PdfInvoiceService
     {
         $pdf = $this->generate($invoice);
         $filename = "Invoice-{$invoice->number}.pdf";
-        
+
         return $pdf->stream($filename);
     }
 
@@ -38,7 +38,7 @@ final class PdfInvoiceService
     {
         $pdf = $this->generate($invoice);
         $filename = "Invoice-{$invoice->number}.pdf";
-        
+
         return $pdf->download($filename);
     }
 

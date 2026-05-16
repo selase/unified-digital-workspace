@@ -93,7 +93,7 @@ final class AbilityAliasService
     }
 
     /**
-     * @return array<string, string>  new -> legacy
+     * @return array<string, string> new -> legacy
      */
     public static function all(): array
     {

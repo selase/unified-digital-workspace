@@ -6,7 +6,7 @@ namespace App\Services\Tenancy;
 
 use App\Models\Tenant;
 
-class FeatureMeteringService
+final class FeatureMeteringService
 {
     /**
      * Check if the tenant can use the feature.

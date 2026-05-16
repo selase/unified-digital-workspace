@@ -10,7 +10,7 @@ use App\Services\Tenancy\DatabaseMeter;
 use App\Services\Tenancy\UsageService;
 use Illuminate\Console\Command;
 
-class AuditTenantDatabase extends Command
+final class AuditTenantDatabase extends Command
 {
     /**
      * The name and signature of the console command.
@@ -37,9 +37,9 @@ class AuditTenantDatabase extends Command
 
         foreach ($tenants as $tenant) {
             $this->comment("Auditing Tenant: {$tenant->name} ({$tenant->id})");
-            
+
             $bytes = $meter->calculateUsage($tenant);
-            
+
             $usageService->updateRollup(
                 $tenant,
                 'day',
@@ -48,9 +48,9 @@ class AuditTenantDatabase extends Command
                 $bytes
             );
 
-            $this->line(" - Footprint: " . number_format($bytes / 1024 / 1024, 2) . " MB");
+            $this->line(' - Footprint: '.number_format($bytes / 1024 / 1024, 2).' MB');
         }
 
-        $this->info("Database audit completed.");
+        $this->info('Database audit completed.');
     }
 }

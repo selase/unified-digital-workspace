@@ -34,7 +34,7 @@ final class PricingService
                     ->where('target_id', $tenant->package_id)
                     ->where('metric', $metric)
                     ->first();
-                
+
                 if ($price) {
                     return $price;
                 }
@@ -66,7 +66,7 @@ final class PricingService
     public function calculateCost(Tenant $tenant, UsageMetric $metric, float $quantity): float
     {
         $price = $this->getUnitPrice($tenant, $metric);
-        
+
         if (! $price || $price->unit_price <= 0) {
             return 0.0;
         }

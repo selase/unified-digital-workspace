@@ -4,12 +4,10 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
-use App\Models\UsageRollup;
-use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
-class ProcessUsageRollups extends Command
+final class ProcessUsageRollups extends Command
 {
     /**
      * The name and signature of the console command.
@@ -37,12 +35,12 @@ class ProcessUsageRollups extends Command
 
         // We aggregate the previous completed period
         $now = now();
-        $startTime = $targetPeriod === 'hour' 
-            ? $now->copy()->subHour()->startOfHour() 
+        $startTime = $targetPeriod === 'hour'
+            ? $now->copy()->subHour()->startOfHour()
             : $now->copy()->subDay()->startOfDay();
-            
-        $endTime = $targetPeriod === 'hour' 
-            ? $now->copy()->subHour()->endOfHour() 
+
+        $endTime = $targetPeriod === 'hour'
+            ? $now->copy()->subHour()->endOfHour()
             : $now->copy()->subDay()->endOfDay();
 
         $this->comment("Processing period: {$startTime} to {$endTime}");
@@ -53,7 +51,7 @@ class ProcessUsageRollups extends Command
                 'metric',
                 'dimensions_hash',
                 'dimensions',
-                DB::raw('SUM(value) as total_value')
+                DB::raw('SUM(value) as total_value'),
             ])
             ->where('period', $sourcePeriod)
             ->whereBetween('period_start', [$startTime, $endTime])
@@ -78,6 +76,6 @@ class ProcessUsageRollups extends Command
             );
         }
 
-        $this->info("Aggregation completed for " . $results->count() . " records.");
+        $this->info('Aggregation completed for '.$results->count().' records.');
     }
 }

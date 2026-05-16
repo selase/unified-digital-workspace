@@ -46,9 +46,13 @@ final class Memo extends Model
     use HasUuid;
 
     public const string STATUS_DRAFT = 'draft';
+
     public const string STATUS_PENDING = 'pending_verification';
+
     public const string STATUS_SENT = 'sent';
+
     public const string STATUS_ACKNOWLEDGED = 'acknowledged';
+
     public const string STATUS_CLOSED = 'closed';
 
     protected $table = 'memos';

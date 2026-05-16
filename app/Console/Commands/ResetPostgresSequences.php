@@ -8,7 +8,7 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
-class ResetPostgresSequences extends Command
+final class ResetPostgresSequences extends Command
 {
     /**
      * The name and signature of the console command.
@@ -34,6 +34,7 @@ class ResetPostgresSequences extends Command
 
         if ($connection->getDriverName() !== 'pgsql') {
             $this->error("Connection '{$connectionName}' is not a PostgreSQL connection (Driver: {$connection->getDriverName()}).");
+
             return 1;
         }
 
@@ -53,7 +54,7 @@ class ResetPostgresSequences extends Command
             // Find the primary key column (usually 'id')
             $primaryKey = $this->getPrimaryKey($connectionName, $tableName);
 
-            if (!$primaryKey) {
+            if (! $primaryKey) {
                 continue;
             }
 
@@ -62,7 +63,7 @@ class ResetPostgresSequences extends Command
                 SELECT pg_get_serial_sequence('\"{$tableName}\"', '{$primaryKey}') as seq
             ");
 
-            if (!$sequence || !$sequence->seq) {
+            if (! $sequence || ! $sequence->seq) {
                 continue;
             }
 
@@ -70,7 +71,7 @@ class ResetPostgresSequences extends Command
 
             // Reset the sequence to the MAX(id)
             $this->comment("Restoring sequence for {$tableName}.{$primaryKey} ({$seqName})...");
-            
+
             $connection->statement("
                 SELECT setval('{$seqName}', COALESCE((SELECT MAX(\"{$primaryKey}\") FROM \"{$tableName}\"), 1) + 1, false)
             ");

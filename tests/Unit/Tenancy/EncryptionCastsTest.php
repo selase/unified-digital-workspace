@@ -2,8 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Casts\EncryptedJson;
-use App\Casts\EncryptedString;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Crypt;

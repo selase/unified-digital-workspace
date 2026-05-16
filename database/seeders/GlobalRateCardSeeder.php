@@ -1,12 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Seeders;
 
 use App\Enum\UsageMetric;
 use App\Models\UsagePrice;
 use Illuminate\Database\Seeder;
 
-class GlobalRateCardSeeder extends Seeder
+final class GlobalRateCardSeeder extends Seeder
 {
     /**
      * Run the database seeds.

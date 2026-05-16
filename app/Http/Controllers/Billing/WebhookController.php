@@ -65,7 +65,7 @@ final class WebhookController extends Controller
 
             case 'checkout.session.completed':
                 $session = $event->data->object;
-                
+
                 // If it's an invoice payment
                 if (isset($session->metadata->invoice_id)) {
                     $invoice = \App\Models\Invoice::find($session->metadata->invoice_id);

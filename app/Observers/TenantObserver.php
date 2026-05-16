@@ -7,6 +7,7 @@ namespace App\Observers;
 use App\Models\Tenant;
 use App\Services\ModuleManager;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 /**
  * Tenants are barely useful until their fundamental modules are wired up.
@@ -44,7 +45,7 @@ final class TenantObserver
 
             try {
                 $this->moduleManager->enableForTenant($slug, $tenant);
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 Log::warning('TenantObserver: failed to enable fundamental module', [
                     'tenant_id' => $tenant->id,
                     'module' => $slug,
