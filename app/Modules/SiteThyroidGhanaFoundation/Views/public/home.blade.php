@@ -12,7 +12,14 @@
 
 @section('content')
     {{-- Hero Carousel --}}
-    <section x-data="carousel()" x-init="start()" class="relative overflow-hidden" style="background: var(--tgf-dark);">
+    <section
+        x-data="carousel()"
+        x-init="start()"
+        @mouseenter="pause()"
+        @mouseleave="resume()"
+        class="relative overflow-hidden"
+        style="background: var(--tgf-dark);"
+    >
         <div class="relative" style="min-height: 520px;">
             @php
                 // Load slider posts — managed via CMS as PostType "slider"
@@ -368,27 +375,50 @@
     @push('scripts')
     <script>
         function carousel() {
+            // Hero rotation cadence. 10s gives video slides time to actually
+            // play and reading slides time to be read. Hover pauses the timer
+            // so a visitor reading the headline doesn't get yanked away.
+            const INTERVAL_MS = 10000;
+
             return {
                 current: 0,
                 total: {{ $sliderPosts->count() }},
                 timer: null,
+                startedAt: null,
                 start() {
-                    // No auto-advance when there's nothing to advance to. Stops the
-                    // setInterval from running a no-op every 6 seconds — and surfaces
-                    // the underlying "only one published slider post" cause to anyone
-                    // checking the console.
+                    // Guard against a double-start (defensive — Alpine init
+                    // should fire only once, but if it ever doesn't, the
+                    // existing interval is cleared before scheduling a new one).
+                    if (this.timer) { clearInterval(this.timer); this.timer = null; }
+
                     if (this.total <= 1) {
                         console.info('[hero] auto-advance disabled: only ' + this.total + ' slide(s).');
                         return;
                     }
-                    this.timer = setInterval(() => this.next(), 6000);
+
+                    this.startedAt = Date.now();
+                    this.timer = setInterval(() => this.next(), INTERVAL_MS);
+                    console.info('[hero] auto-advance ON (' + this.total + ' slides, every ' + (INTERVAL_MS / 1000) + 's)');
                 },
-                next() { this.current = (this.current + 1) % this.total; },
-                prev() { this.current = (this.current - 1 + this.total) % this.total; },
+                next() {
+                    this.current = (this.current + 1) % this.total;
+                    console.debug('[hero] -> slide', this.current);
+                },
+                prev() {
+                    this.current = (this.current - 1 + this.total) % this.total;
+                    console.debug('[hero] <- slide', this.current);
+                },
                 goTo(i) {
                     this.current = i;
-                    if (this.timer) { clearInterval(this.timer); }
                     this.start();
+                },
+                pause() {
+                    if (this.timer) { clearInterval(this.timer); this.timer = null; }
+                },
+                resume() {
+                    if (!this.timer && this.total > 1) {
+                        this.timer = setInterval(() => this.next(), INTERVAL_MS);
+                    }
                 },
             };
         }
