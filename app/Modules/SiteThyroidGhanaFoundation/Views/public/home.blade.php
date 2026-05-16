@@ -40,22 +40,82 @@
             @foreach($sliderPosts as $i => $slide)
                 @php
                     $bgImage = $slide->featuredMedia ? $slide->featuredMedia->url() : null;
-                    $bgStyle = $bgImage
-                        ? "background: linear-gradient(rgba(15,23,42,0.7), rgba(15,23,42,0.7)), url('{$bgImage}') center/cover no-repeat;"
-                        : 'background: ' . $gradients[$i % count($gradients)] . ';';
+                    $videoUrl = $getMeta($slide, 'video_url');
+
+                    // Identify the video source type so we render the right element.
+                    //   - file:    a direct .mp4/.webm/.ogg URL (media library upload)
+                    //   - youtube: a youtu.be / youtube.com URL → background iframe
+                    //   - vimeo:   a vimeo.com URL → background iframe with background=1
+                    $videoKind = null;
+                    $videoEmbedSrc = null;
+
+                    if ($videoUrl) {
+                        if (preg_match('/\.(mp4|webm|ogg)(\?.*)?$/i', $videoUrl)) {
+                            $videoKind = 'file';
+                        } elseif (preg_match('#(?:youtu\.be/|youtube\.com/(?:watch\?v=|embed/|shorts/))([A-Za-z0-9_-]{11})#', $videoUrl, $m)) {
+                            $videoKind = 'youtube';
+                            // playlist=ID is required for loop=1 on a single video.
+                            $videoEmbedSrc = 'https://www.youtube.com/embed/'.$m[1]
+                                .'?autoplay=1&mute=1&loop=1&playlist='.$m[1]
+                                .'&controls=0&showinfo=0&modestbranding=1&rel=0&iv_load_policy=3&playsinline=1';
+                        } elseif (preg_match('#vimeo\.com/(?:video/)?(\d+)#', $videoUrl, $m)) {
+                            $videoKind = 'vimeo';
+                            // background=1 hides controls and triggers autoplay+loop+mute.
+                            $videoEmbedSrc = 'https://player.vimeo.com/video/'.$m[1].'?background=1&autoplay=1&loop=1&muted=1';
+                        }
+                    }
+
+                    $hasVideo = $videoKind !== null;
+
+                    if ($hasVideo) {
+                        // Video paints itself; the wrapper just needs the dark base
+                        // (visible while the video buffers or if it fails to load).
+                        $bgStyle = 'background: var(--tgf-dark);';
+                    } elseif ($bgImage) {
+                        $bgStyle = "background: linear-gradient(rgba(15,23,42,0.7), rgba(15,23,42,0.7)), url('{$bgImage}') center/cover no-repeat;";
+                    } else {
+                        $bgStyle = 'background: '.$gradients[$i % count($gradients)].';';
+                    }
                 @endphp
                 <div
                     x-show="current === {{ $i }}"
-                    x-transition:enter="transition ease-out duration-700"
-                    x-transition:enter-start="opacity-0 translate-x-8"
-                    x-transition:enter-end="opacity-100 translate-x-0"
-                    x-transition:leave="transition ease-in duration-500"
+                    x-cloak
+                    x-transition:enter="transition-opacity duration-700 ease-out"
+                    x-transition:enter-start="opacity-0"
+                    x-transition:enter-end="opacity-100"
+                    x-transition:leave="transition-opacity duration-700 ease-in"
                     x-transition:leave-start="opacity-100"
                     x-transition:leave-end="opacity-0"
                     class="absolute inset-0 flex items-center"
                     style="{{ $bgStyle }}"
                 >
-                    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                    @if($videoKind === 'file')
+                        <video
+                            class="absolute inset-0 h-full w-full object-cover"
+                            autoplay muted loop playsinline preload="metadata"
+                            @if($bgImage) poster="{{ $bgImage }}" @endif
+                        >
+                            <source src="{{ $videoUrl }}" />
+                        </video>
+                        <div class="absolute inset-0" style="background: rgba(15,23,42,0.55);"></div>
+                    @elseif($hasVideo)
+                        {{-- YouTube/Vimeo background embed. The wrapper hides overflow and the
+                             iframe is over-sized + centered so 16:9 video crops to fill the slide
+                             without letterboxing on either dimension. --}}
+                        <div class="pointer-events-none absolute inset-0 overflow-hidden">
+                            <iframe
+                                src="{{ $videoEmbedSrc }}"
+                                title="Slide background video"
+                                allow="autoplay; encrypted-media; picture-in-picture"
+                                allowfullscreen
+                                frameborder="0"
+                                class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2"
+                                style="width: 100vw; height: 56.25vw; min-height: 100%; min-width: 177.78vh;"
+                            ></iframe>
+                        </div>
+                        <div class="absolute inset-0" style="background: rgba(15,23,42,0.55);"></div>
+                    @endif
+                    <div class="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                         <div class="max-w-2xl">
                             @if($slide->body)
                                 <p class="text-sm font-semibold uppercase tracking-widest" style="color: var(--tgf-accent-light);">{{ strip_tags($slide->body) }}</p>
@@ -312,10 +372,24 @@
                 current: 0,
                 total: {{ $sliderPosts->count() }},
                 timer: null,
-                start() { this.timer = setInterval(() => this.next(), 6000); },
+                start() {
+                    // No auto-advance when there's nothing to advance to. Stops the
+                    // setInterval from running a no-op every 6 seconds — and surfaces
+                    // the underlying "only one published slider post" cause to anyone
+                    // checking the console.
+                    if (this.total <= 1) {
+                        console.info('[hero] auto-advance disabled: only ' + this.total + ' slide(s).');
+                        return;
+                    }
+                    this.timer = setInterval(() => this.next(), 6000);
+                },
                 next() { this.current = (this.current + 1) % this.total; },
                 prev() { this.current = (this.current - 1 + this.total) % this.total; },
-                goTo(i) { this.current = i; clearInterval(this.timer); this.start(); },
+                goTo(i) {
+                    this.current = i;
+                    if (this.timer) { clearInterval(this.timer); }
+                    this.start();
+                },
             };
         }
     </script>
