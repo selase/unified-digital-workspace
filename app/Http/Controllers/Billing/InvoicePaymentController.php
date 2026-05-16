@@ -15,7 +15,7 @@ final class InvoicePaymentController extends Controller
     public function checkout(Request $request, PaymentGateway $gateway, TenantContext $tenantContext)
     {
         $tenant = $tenantContext->getTenant();
-        if (!$tenant) {
+        if (! $tenant) {
             abort(404, 'Tenant context not found.');
         }
 
@@ -28,18 +28,18 @@ final class InvoicePaymentController extends Controller
         $metaKey = "{$driver}_id";
         $customerId = $tenant->meta[$metaKey] ?? null;
 
-        if (!$customerId) {
+        if (! $customerId) {
             // Use the email of the person paying (current user) or tenant default
             $customerId = $gateway->createCustomer($request->user()->email, $tenant->name);
-            
+
             $meta = $tenant->meta ?? [];
             $meta[$metaKey] = $customerId;
             $tenant->update(['meta' => $meta]);
         }
 
         // Convert to cents/kobo (Laravel stores as float/decimal in DB)
-        $amount = (int) round((float)$invoice->total * 100);
-        
+        $amount = (int) round((float) $invoice->total * 100);
+
         $redirectUrl = route('billing.invoices.show', $invoice->id);
 
         $checkoutUrl = $gateway->createOneTimeCheckoutSession(

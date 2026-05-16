@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Throwable;
 
-class TenantHealthService
+final class TenantHealthService
 {
     public function __construct(
         private TenantDatabaseManager $dbManager,

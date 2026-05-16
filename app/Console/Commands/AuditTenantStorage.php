@@ -10,7 +10,7 @@ use App\Services\Tenancy\StorageMeter;
 use App\Services\Tenancy\UsageService;
 use Illuminate\Console\Command;
 
-class AuditTenantStorage extends Command
+final class AuditTenantStorage extends Command
 {
     /**
      * The name and signature of the console command.
@@ -37,9 +37,9 @@ class AuditTenantStorage extends Command
 
         foreach ($tenants as $tenant) {
             $this->comment("Auditing Tenant: {$tenant->name} ({$tenant->id})");
-            
+
             $bytes = $meter->calculateUsage($tenant);
-            
+
             $usageService->updateRollup(
                 $tenant,
                 'day',
@@ -48,9 +48,9 @@ class AuditTenantStorage extends Command
                 $bytes
             );
 
-            $this->line(" - Usage: " . number_format($bytes / 1024 / 1024, 2) . " MB");
+            $this->line(' - Usage: '.number_format($bytes / 1024 / 1024, 2).' MB');
         }
 
-        $this->info("Storage audit completed.");
+        $this->info('Storage audit completed.');
     }
 }

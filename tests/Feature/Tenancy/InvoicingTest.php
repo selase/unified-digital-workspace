@@ -1,12 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Enum\UsageMetric;
 use App\Models\Invoice;
 use App\Models\Package;
+use App\Models\Tax;
 use App\Models\Tenant;
 use App\Models\UsagePrice;
 use App\Models\UsageRollup;
-use App\Models\Tax;
 use App\Models\User;
 use App\Services\Tenancy\InvoicingService;
 use App\Services\Tenancy\PricingService;
@@ -59,16 +61,16 @@ test('it generates invoice with base plan and metered usage', function () {
 
     expect($invoice)->not->toBeNull();
     expect($invoice->status)->toBe('draft');
-    
+
     // Total should be:
     // Base Plan: $50.00
     // Requests: 100 * $0.01 = $1.00
     // Subtotal: $51.00
     // Tax: 0 (default)
     // Total: $51.00
-    
-    expect((float)$invoice->subtotal)->toEqual(51.0);
-    expect((float)$invoice->total)->toEqual(51.0);
+
+    expect((float) $invoice->subtotal)->toEqual(51.0);
+    expect((float) $invoice->total)->toEqual(51.0);
     expect($invoice->items)->toHaveCount(2);
 });
 
@@ -78,9 +80,9 @@ test('it calculates per-seat billing correctly', function () {
         'price' => 10.00,
         'billing_model' => Package::BILLING_MODEL_PER_SEAT,
     ]);
-    
+
     $tenant = Tenant::factory()->create(['package_id' => $package->id]);
-    
+
     // Add 5 users
     User::factory()->count(5)->create();
     $tenant->users()->attach(User::all()->pluck('id'));
@@ -91,9 +93,9 @@ test('it calculates per-seat billing correctly', function () {
     $invoice = $this->invoicingService->generate($tenant, $start, $end);
 
     // 5 users * $10.00 = $50.00
-    expect((float)$invoice->subtotal)->toEqual(50.0);
+    expect((float) $invoice->subtotal)->toEqual(50.0);
     $item = $invoice->items()->where('meta->type', 'base_plan')->first();
-    expect((float)$item->quantity)->toEqual(5.0);
+    expect((float) $item->quantity)->toEqual(5.0);
 });
 
 test('it applies taxes to invoice', function () {
@@ -107,7 +109,7 @@ test('it applies taxes to invoice', function () {
     // Subtotal: $50 (no usage seeded here)
     // Tax 10%: $5
     // Total: $55
-    expect((float)$invoice->subtotal)->toEqual(50.0);
-    expect((float)$invoice->tax_total)->toEqual(5.0);
-    expect((float)$invoice->total)->toEqual(55.0);
+    expect((float) $invoice->subtotal)->toEqual(50.0);
+    expect((float) $invoice->tax_total)->toEqual(5.0);
+    expect((float) $invoice->total)->toEqual(55.0);
 });

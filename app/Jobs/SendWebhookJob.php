@@ -1,9 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Jobs;
 
+use Exception;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
@@ -50,14 +52,14 @@ final class SendWebhookJob implements ShouldQueue
                 // throw new \Exception('Webhook failed with status: ' . $response->status());
             }
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $call->update([
                 'exception' => $e->getMessage(),
                 'status' => 500, // Internal error representation
             ]);
-            
+
             // Re-throw to trigger queue validation retry logic if desired
-            // throw $e; 
+            // throw $e;
         }
     }
 }

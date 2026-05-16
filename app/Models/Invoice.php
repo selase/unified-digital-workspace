@@ -7,17 +7,21 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Invoice extends Model
+final class Invoice extends Model
 {
     use HasFactory, HasUuids;
 
     public const STATUS_DRAFT = 'draft';
+
     public const STATUS_ISSUED = 'issued';
+
     public const STATUS_PAID = 'paid';
+
     public const STATUS_VOID = 'void';
+
     public const STATUS_OVERDUE = 'overdue';
 
     protected $connection = 'landlord';

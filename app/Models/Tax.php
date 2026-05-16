@@ -7,7 +7,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Tax extends Model
+final class Tax extends Model
 {
     use HasFactory;
 
@@ -27,11 +27,6 @@ class Tax extends Model
         'is_active' => 'boolean',
     ];
 
-    public function scopeActive($query)
-    {
-        return $query->where('is_active', true)->orderBy('priority');
-    }
-
     /**
      * Calculate tax for a given amount.
      */
@@ -43,10 +38,10 @@ class Tax extends Model
         $totalTax = 0;
 
         foreach ($activeTaxes as $tax) {
-            $taxAmount = $tax->is_compound 
+            $taxAmount = $tax->is_compound
                 ? $runningTotal * ($tax->rate / 100)
                 : $amount * ($tax->rate / 100);
-            
+
             $results[] = [
                 'id' => $tax->id,
                 'name' => $tax->name,
@@ -62,5 +57,10 @@ class Tax extends Model
             'taxes' => $results,
             'total_tax' => $totalTax,
         ];
+    }
+
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true)->orderBy('priority');
     }
 }

@@ -7,9 +7,10 @@ namespace App\Console\Commands;
 use App\Models\Tenant;
 use App\Services\Tenancy\InvoicingService;
 use Carbon\Carbon;
+use Exception;
 use Illuminate\Console\Command;
 
-class GenerateMonthlyInvoices extends Command
+final class GenerateMonthlyInvoices extends Command
 {
     /**
      * The name and signature of the console command.
@@ -44,7 +45,7 @@ class GenerateMonthlyInvoices extends Command
                 $invoice = $invoicingService->generate($tenant, $start, $end);
                 $this->line(" - Generated Invoice {$invoice->number} for {$tenant->name} (Total: {$invoice->total})");
                 $count++;
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $this->error("Failed to generate invoice for {$tenant->name}: {$e->getMessage()}");
             }
         }

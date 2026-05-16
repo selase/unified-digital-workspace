@@ -45,6 +45,7 @@ final class RateCardController extends Controller
         foreach ($request->input('usage_prices', []) as $metricValue => $data) {
             if (empty($data['unit_price']) && empty($data['unit_quantity'])) {
                 UsagePrice::whereNull('target_type')->where('metric', $metricValue)->delete();
+
                 continue;
             }
 

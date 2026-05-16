@@ -33,7 +33,7 @@ return new class extends Migration
             $table->enum('period', ['minute', 'hour', 'day']);
             $table->timestamp('period_start');
             $table->string('metric'); // UsageMetric enum value
-            $table->jsonb('dimensions')->nullable(); 
+            $table->jsonb('dimensions')->nullable();
             $table->string('dimensions_hash')->nullable(); // For unique constraint
             $table->decimal('value', 20, 4);
             $table->timestamps();

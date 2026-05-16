@@ -151,7 +151,7 @@ describe('StaffPromotion Model', function (): void {
             'requested_date' => '2024-06-15',
         ]);
 
-        expect($promotion->effective_date)->toBeInstanceOf(\DateTimeInterface::class)
+        expect($promotion->effective_date)->toBeInstanceOf(DateTimeInterface::class)
             ->and($promotion->effective_date->format('Y-m-d'))->toBe('2024-07-01')
             ->and($promotion->requested_date->format('Y-m-d'))->toBe('2024-06-15');
     });

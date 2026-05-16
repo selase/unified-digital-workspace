@@ -11,7 +11,7 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class EnforceUsageLimits
+final class EnforceUsageLimits
 {
     public function __construct(
         private readonly TenantContext $context,

@@ -8,10 +8,8 @@ use App\Enum\UsageMetric;
 use App\Models\Tenant;
 use App\Models\UsageEvent;
 use App\Models\UsageRollup;
-use Carbon\Carbon;
-use Illuminate\Support\Facades\DB;
 
-class UsageService
+final class UsageService
 {
     /**
      * Record an HTTP request.
@@ -48,7 +46,7 @@ class UsageService
     {
         $now = now();
         $metric = $success ? UsageMetric::JOB_COUNT : UsageMetric::JOB_FAILED_COUNT;
-        
+
         $this->recordEvent($tenant, $metric, $jobClass, 1, 'count');
         $this->recordEvent($tenant, UsageMetric::JOB_RUNTIME_MS, $jobClass, $runtimeMs, 'ms');
 
@@ -67,22 +65,6 @@ class UsageService
 
         // Update Daily Rollup
         $this->updateRollup($tenant, 'day', $now, UsageMetric::USER_ACTIVE_DAILY, 1);
-    }
-
-    /**
-     * Internal: Record a raw event.
-     */
-    private function recordEvent(Tenant $tenant, UsageMetric $type, ?string $key, $quantity, string $unit, array $meta = []): void
-    {
-        UsageEvent::create([
-            'tenant_id' => $tenant->id,
-            'occurred_at' => now(),
-            'type' => $type,
-            'key' => $key,
-            'quantity' => $quantity,
-            'unit' => $unit,
-            'meta' => $meta,
-        ]);
     }
 
     /**
@@ -116,5 +98,21 @@ class UsageService
 
         // Perform atomic increment
         UsageRollup::where('id', $rollup->id)->increment('value', $value);
+    }
+
+    /**
+     * Internal: Record a raw event.
+     */
+    private function recordEvent(Tenant $tenant, UsageMetric $type, ?string $key, $quantity, string $unit, array $meta = []): void
+    {
+        UsageEvent::create([
+            'tenant_id' => $tenant->id,
+            'occurred_at' => now(),
+            'type' => $type,
+            'key' => $key,
+            'quantity' => $quantity,
+            'unit' => $unit,
+            'meta' => $meta,
+        ]);
     }
 }

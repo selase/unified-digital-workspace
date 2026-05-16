@@ -10,7 +10,7 @@ use App\Models\UsageRollup;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 
-class UsageAnalyticsSeeder extends Seeder
+final class UsageAnalyticsSeeder extends Seeder
 {
     public function run(): void
     {
@@ -28,15 +28,15 @@ class UsageAnalyticsSeeder extends Seeder
     private function seedTenantResourceSnapshots(Tenant $tenant): void
     {
         $now = Carbon::now();
-        
+
         // Seed last 30 days of daily snapshots for resources
         for ($i = 0; $i < 30; $i++) {
             $time = $now->copy()->subDays($i)->startOfDay();
-            
+
             // Storage: Gradual growth
             $storageBase = 500 * 1024 * 1024; // 500MB
             $growth = (30 - $i) * 15 * 1024 * 1024; // 15MB growth per day
-            
+
             UsageRollup::create([
                 'tenant_id' => $tenant->id,
                 'period' => 'day',
@@ -50,7 +50,7 @@ class UsageAnalyticsSeeder extends Seeder
             // Database: Gradual growth
             $dbBase = 50 * 1024 * 1024; // 50MB
             $dbGrowth = (30 - $i) * 2 * 1024 * 1024; // 2MB growth per day
-            
+
             UsageRollup::create([
                 'tenant_id' => $tenant->id,
                 'period' => 'day',
@@ -66,7 +66,7 @@ class UsageAnalyticsSeeder extends Seeder
     private function seedTenantUsage(Tenant $tenant): void
     {
         $now = Carbon::now();
-        
+
         // Seed last 7 days of hourly rollups
         for ($i = 0; $i < 168; $i++) {
             $time = $now->copy()->subHours($i)->minute(0)->second(0);

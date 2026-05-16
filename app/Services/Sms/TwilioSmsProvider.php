@@ -27,7 +27,7 @@ final class TwilioSmsProvider implements SmsProvider
 
         Http::withBasicAuth($sid, $token)
             ->asForm()
-            ->post(rtrim($endpoint, '/')."/Accounts/{$sid}/Messages.json", [
+            ->post(mb_rtrim($endpoint, '/')."/Accounts/{$sid}/Messages.json", [
                 'To' => $to,
                 'From' => $sender,
                 'Body' => $message,

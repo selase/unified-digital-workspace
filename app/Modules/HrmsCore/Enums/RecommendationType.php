@@ -16,6 +16,18 @@ enum RecommendationType: string
     case NoAction = 'no_action';
 
     /**
+     * Get all types as options for forms.
+     *
+     * @return array<string, string>
+     */
+    public static function options(): array
+    {
+        return collect(self::cases())
+            ->mapWithKeys(fn (self $type): array => [$type->value => $type->label()])
+            ->all();
+    }
+
+    /**
      * Get the display label for this type.
      */
     public function label(): string
@@ -70,17 +82,5 @@ enum RecommendationType: string
             self::PerformanceImprovement,
             self::Termination,
         ], true);
-    }
-
-    /**
-     * Get all types as options for forms.
-     *
-     * @return array<string, string>
-     */
-    public static function options(): array
-    {
-        return collect(self::cases())
-            ->mapWithKeys(fn (self $type): array => [$type->value => $type->label()])
-            ->all();
     }
 }

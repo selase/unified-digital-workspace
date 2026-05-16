@@ -10,7 +10,6 @@ use App\Models\InvoiceItem;
 use App\Models\Tax;
 use App\Models\Tenant;
 use App\Models\UsageRollup;
-use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -64,7 +63,7 @@ final class InvoicingService
 
             // 5. Calculate Taxes
             $taxCalc = Tax::calculateFor($subtotal);
-            
+
             // 6. Update Invoice Totals
             $invoice->update([
                 'subtotal' => $subtotal,
@@ -82,8 +81,9 @@ final class InvoicingService
      */
     private function generateInvoiceNumber(\Carbon\CarbonInterface $date): string
     {
-        $prefix = 'INV-' . $date->format('Ym');
-        $random = strtoupper(Str::random(4));
+        $prefix = 'INV-'.$date->format('Ym');
+        $random = mb_strtoupper(Str::random(4));
+
         return "{$prefix}-{$random}";
     }
 
@@ -97,14 +97,14 @@ final class InvoicingService
         }
 
         $package = $tenant->package;
-        $description = "{$package->name} - Base Plan (" . ucfirst($package->interval) . ")";
+        $description = "{$package->name} - Base Plan (".ucfirst($package->interval).')';
         $quantity = 1.0;
         $unitPrice = (float) $package->price;
 
         // If per-seat billing, quantity is user count
         if ($package->billing_model === \App\Models\Package::BILLING_MODEL_PER_SEAT) {
             $quantity = (float) $tenant->users()->count();
-            $description = "{$package->name} - Per Seat License (" . (int)$quantity . " users)";
+            $description = "{$package->name} - Per Seat License (".(int) $quantity.' users)';
         }
 
         $subtotal = $quantity * $unitPrice;
@@ -139,7 +139,9 @@ final class InvoicingService
             $metric = $rollup->metric;
             $quantity = (float) $rollup->total_value;
 
-            if ($quantity <= 0) continue;
+            if ($quantity <= 0) {
+                continue;
+            }
 
             $unitPriceObj = $this->pricingService->getUnitPrice($tenant, $metric);
             $cost = $this->pricingService->calculateCost($tenant, $metric, $quantity);
@@ -151,14 +153,14 @@ final class InvoicingService
             $items[] = InvoiceItem::create([
                 'invoice_id' => $invoice->id,
                 'metric' => $metric,
-                'description' => "Metered Usage: " . $this->getMetricLabel($metric),
+                'description' => 'Metered Usage: '.$this->getMetricLabel($metric),
                 'quantity' => $quantity,
                 'unit_price' => $unitPriceObj ? $unitPriceObj->unit_price : 0,
                 'subtotal' => $cost,
                 'meta' => [
                     'type' => 'metered',
                     'unit_quantity' => $unitPriceObj ? $unitPriceObj->unit_quantity : 1,
-                    'markup_applied' => $this->pricingService->getEffectiveMarkup($tenant)
+                    'markup_applied' => $this->pricingService->getEffectiveMarkup($tenant),
                 ],
             ]);
         }
@@ -168,7 +170,7 @@ final class InvoicingService
 
     private function getMetricLabel(UsageMetric $metric): string
     {
-        return match($metric) {
+        return match ($metric) {
             UsageMetric::REQUEST_COUNT => 'HTTP Requests',
             UsageMetric::JOB_COUNT => 'Background Jobs',
             UsageMetric::STORAGE_BYTES => 'Cloud Storage (Average Bytes)',

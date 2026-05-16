@@ -10,13 +10,6 @@ use Illuminate\Support\Facades\DB;
 
 final class TenantStatsService
 {
-    private function getDateExpression(string $column): string
-    {
-        $driver = \Illuminate\Support\Facades\DB::connection()->getDriverName();
-        
-        return $driver === 'pgsql' ? "CAST($column AS DATE)" : "DATE($column)";
-    }
-
     public function getTotalActiveUsers(): int
     {
         return \Illuminate\Support\Facades\Cache::remember('tenant_stats.active_users', 300, function () {
@@ -170,6 +163,7 @@ final class TenantStatsService
             'data' => [45, 52, 38, 65, 48, 23, 15],
         ];
     }
+
     public function getTransactionVolumeTrend(int $days = 7): array
     {
         $startDate = Carbon::now()->subDays($days - 1)->startOfDay();
@@ -197,5 +191,12 @@ final class TenantStatsService
         }
 
         return ['labels' => $labels, 'data' => $counts];
+    }
+
+    private function getDateExpression(string $column): string
+    {
+        $driver = DB::connection()->getDriverName();
+
+        return $driver === 'pgsql' ? "CAST($column AS DATE)" : "DATE($column)";
     }
 }

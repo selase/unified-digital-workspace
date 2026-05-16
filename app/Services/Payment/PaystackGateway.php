@@ -88,8 +88,8 @@ final class PaystackGateway implements PaymentGateway
         $response = Http::withToken($this->secret)->get("{$this->baseUrl}/subscription/{$subscriptionId}")->throw();
 
         return [
-            'status' => $response->json('data.status'), 
-            'current_period_end' => strtotime($response->json('data.next_payment_date')), 
+            'status' => $response->json('data.status'),
+            'current_period_end' => strtotime($response->json('data.next_payment_date')),
         ];
     }
 

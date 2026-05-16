@@ -16,7 +16,7 @@ final class PackageFactory extends Factory
     {
         return [
             'name' => 'Premium Plan',
-            'slug' => 'premium-plan-' . Str::random(5),
+            'slug' => 'premium-plan-'.Str::random(5),
             'price' => 29.99,
             'interval' => 'month',
             'billing_model' => Package::BILLING_MODEL_FLAT_RATE,

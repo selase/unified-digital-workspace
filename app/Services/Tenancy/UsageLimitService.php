@@ -8,7 +8,6 @@ use App\Enum\UsageMetric;
 use App\Models\Tenant;
 use App\Models\UsageLimit;
 use App\Models\UsageRollup;
-use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
 
 final class UsageLimitService
@@ -39,25 +38,6 @@ final class UsageLimitService
     }
 
     /**
-     * Get aggregated usage for a tenant for a metric and period.
-     */
-    private function getCurrentUsage(Tenant $tenant, UsageMetric $metric, string $periodType): float
-    {
-        $start = match($periodType) {
-            'daily' => now()->startOfDay(),
-            'monthly' => now()->startOfMonth(),
-            default => now()->startOfMonth(),
-        };
-
-        // We use 'day' rollups to sum up to the month/day
-        return (float) UsageRollup::where('tenant_id', $tenant->id)
-            ->where('metric', $metric)
-            ->where('period', 'day')
-            ->where('period_start', '>=', $start)
-            ->sum('value');
-    }
-
-    /**
      * Evaluate all active limits and trigger alerts if needed.
      */
     public function evaluateAlerts(Tenant $tenant): void
@@ -78,10 +58,29 @@ final class UsageLimitService
         }
     }
 
+    /**
+     * Get aggregated usage for a tenant for a metric and period.
+     */
+    private function getCurrentUsage(Tenant $tenant, UsageMetric $metric, string $periodType): float
+    {
+        $start = match ($periodType) {
+            'daily' => now()->startOfDay(),
+            'monthly' => now()->startOfMonth(),
+            default => now()->startOfMonth(),
+        };
+
+        // We use 'day' rollups to sum up to the month/day
+        return (float) UsageRollup::where('tenant_id', $tenant->id)
+            ->where('metric', $metric)
+            ->where('period', 'day')
+            ->where('period_start', '>=', $start)
+            ->sum('value');
+    }
+
     private function triggerAlert(Tenant $tenant, UsageLimit $limit, float $percent): void
     {
-        Log::warning("Usage Alert for Tenant {$tenant->name}: {$limit->metric->value} is at " . round($percent, 2) . "% capacity.");
-        
+        Log::warning("Usage Alert for Tenant {$tenant->name}: {$limit->metric->value} is at ".round($percent, 2).'% capacity.');
+
         // TODO: Send Email / Slack Notification
     }
 }

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use App\Models\Tenant;
 use App\Services\Tenancy\TenantContext;
-use App\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Config;
 use Tests\Unit\Tenancy\TestTenantModel;

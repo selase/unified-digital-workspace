@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Enum\UsageMetric;
 use App\Models\Tenant;
 use App\Models\UsageLimit;
@@ -13,9 +15,9 @@ uses(RefreshDatabase::class);
 
 beforeEach(function () {
     $this->service = new UsageLimitService();
-    
+
     $this->tenant = Tenant::factory()->create();
-    
+
     // Seed some usage
     UsageRollup::create([
         'tenant_id' => $this->tenant->id,
@@ -54,7 +56,7 @@ test('middleware enforces blocking limits', function () {
 
     Route::get('/test-limit', function () {
         return 'ok';
-    })->middleware([\App\Http\Middleware\ResolveTenant::class, \App\Http\Middleware\EnforceUsageLimits::class]);
+    })->middleware([App\Http\Middleware\ResolveTenant::class, App\Http\Middleware\EnforceUsageLimits::class]);
 
     $this->get('/test-limit', ['X-Tenant' => $this->tenant->id])
         ->assertStatus(429)
@@ -71,7 +73,7 @@ test('middleware allows if blocking is disabled', function () {
 
     Route::get('/test-limit-nonblocking', function () {
         return 'ok';
-    })->middleware([\App\Http\Middleware\ResolveTenant::class, \App\Http\Middleware\EnforceUsageLimits::class]);
+    })->middleware([App\Http\Middleware\ResolveTenant::class, App\Http\Middleware\EnforceUsageLimits::class]);
 
     $this->get('/test-limit-nonblocking', ['X-Tenant' => $this->tenant->id])
         ->assertStatus(200);

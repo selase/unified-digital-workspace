@@ -8,6 +8,7 @@ use App\Modules\HrmsCore\Enums\LeaveStatus;
 use App\Modules\HrmsCore\Models\Employees\Employee;
 use App\Modules\HrmsCore\Models\Leave\LeaveCategory;
 use App\Modules\HrmsCore\Models\Leave\LeaveRequest;
+use DateTimeInterface;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -156,7 +157,7 @@ final class LeaveRequestFactory extends Factory
     /**
      * Set specific dates for the request.
      */
-    public function withDates(\DateTimeInterface $startDate, \DateTimeInterface $endDate): static
+    public function withDates(DateTimeInterface $startDate, DateTimeInterface $endDate): static
     {
         return $this->state(fn (array $attributes): array => [
             'proposed_start_date' => $startDate,

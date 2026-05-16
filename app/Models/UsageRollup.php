@@ -8,7 +8,7 @@ use App\Enum\UsageMetric;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class UsageRollup extends Model
+final class UsageRollup extends Model
 {
     use HasFactory;
 
@@ -23,13 +23,6 @@ class UsageRollup extends Model
         'value' => 'decimal:4',
     ];
 
-    protected static function booted()
-    {
-        static::saving(function ($rollup) {
-            $rollup->dimensions_hash = self::hashDimensions($rollup->dimensions);
-        });
-    }
-
     public static function hashDimensions(?array $dimensions): string
     {
         if (empty($dimensions)) {
@@ -37,11 +30,19 @@ class UsageRollup extends Model
         }
 
         ksort($dimensions);
+
         return md5(json_encode($dimensions));
     }
 
     public function tenant()
     {
         return $this->belongsTo(Tenant::class);
+    }
+
+    protected static function booted()
+    {
+        self::saving(function ($rollup) {
+            $rollup->dimensions_hash = self::hashDimensions($rollup->dimensions);
+        });
     }
 }

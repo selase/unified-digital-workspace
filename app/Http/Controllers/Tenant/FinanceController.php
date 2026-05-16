@@ -23,8 +23,8 @@ final class FinanceController extends Controller
     public function index(Request $request): View
     {
         $tenant = $this->tenantContext->getTenant();
-        
-        if (!$tenant->featureEnabled('commerce')) {
+
+        if (! $tenant->featureEnabled('commerce')) {
             abort(403);
         }
 
@@ -32,10 +32,10 @@ final class FinanceController extends Controller
 
         if ($request->filled('search')) {
             $search = $request->input('search');
-            $query->where(function($q) use ($search) {
+            $query->where(function ($q) use ($search) {
                 $q->where('provider_transaction_id', 'like', "%{$search}%")
-                  ->orWhere('customer_email', 'like', "%{$search}%")
-                  ->orWhere('customer_name', 'like', "%{$search}%");
+                    ->orWhere('customer_email', 'like', "%{$search}%")
+                    ->orWhere('customer_name', 'like', "%{$search}%");
             });
         }
 
@@ -59,7 +59,7 @@ final class FinanceController extends Controller
             ->where('type', 'payment')
             ->where('created_at', '>=', $sixMonthsAgo)
             ->get()
-            ->groupBy(fn($val) => \Carbon\Carbon::parse($val->created_at)->format('M'));
+            ->groupBy(fn ($val) => \Carbon\Carbon::parse($val->created_at)->format('M'));
 
         $monthlyStats = [];
         for ($i = 5; $i >= 0; $i--) {
@@ -87,7 +87,7 @@ final class FinanceController extends Controller
     public function refund(Request $request, MerchantTransaction $transaction, PaymentGateway $gateway)
     {
         $tenant = $this->tenantContext->getTenant();
-        
+
         if ($transaction->tenant_id !== $tenant->id) {
             abort(403);
         }
@@ -96,7 +96,7 @@ final class FinanceController extends Controller
         $request->attributes->set('payment_context', 'commerce');
         // Re-resolve or let Laravel handle it if it wasn't instantiated yet.
         // Actually, since $gateway is injected, we need to make sure the resolve happened WITH the attribute set.
-        // Usually, method injection happens during call. 
+        // Usually, method injection happens during call.
         // If we want to be SURE, we pull it from app() AFTER setting the attribute.
         $merchantGateway = app(PaymentGateway::class);
 
@@ -107,12 +107,12 @@ final class FinanceController extends Controller
             MerchantTransaction::create([
                 'tenant_id' => $tenant->id,
                 'provider' => $transaction->provider,
-                'provider_transaction_id' => $result['id'] ?? 'REF_' . $transaction->provider_transaction_id,
+                'provider_transaction_id' => $result['id'] ?? 'REF_'.$transaction->provider_transaction_id,
                 'amount' => $transaction->amount,
                 'currency' => $transaction->currency,
                 'status' => 'succeeded',
                 'type' => 'refund',
-                'description' => "Refund for " . $transaction->provider_transaction_id,
+                'description' => 'Refund for '.$transaction->provider_transaction_id,
                 'customer_email' => $transaction->customer_email,
                 'meta' => $result,
             ]);
@@ -123,7 +123,8 @@ final class FinanceController extends Controller
 
         } catch (Exception $e) {
             Log::error('Merchant refund failed', ['tenant' => $tenant->id, 'error' => $e->getMessage()]);
-            return back()->with('error', 'Refund failed: ' . $e->getMessage());
+
+            return back()->with('error', 'Refund failed: '.$e->getMessage());
         }
     }
 }

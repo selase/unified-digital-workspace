@@ -7,7 +7,7 @@ namespace App\Console\Commands;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
-class PruneUsageData extends Command
+final class PruneUsageData extends Command
 {
     /**
      * The name and signature of the console command.
@@ -28,7 +28,7 @@ class PruneUsageData extends Command
      */
     public function handle()
     {
-        $this->info("Pruning old usage data...");
+        $this->info('Pruning old usage data...');
 
         // 1. Retention for raw events: 7 days
         $eventsDeleted = DB::connection('landlord')->table('usage_events')
@@ -50,6 +50,6 @@ class PruneUsageData extends Command
             ->delete();
         $this->line(" - Deleted {$hoursDeleted} hourly rollups (Older than 3 months)");
 
-        $this->info("Pruning completed.");
+        $this->info('Pruning completed.');
     }
 }

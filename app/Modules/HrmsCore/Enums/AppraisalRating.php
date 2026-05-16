@@ -13,6 +13,18 @@ enum AppraisalRating: int
     case Outstanding = 5;
 
     /**
+     * Get all ratings as options for forms.
+     *
+     * @return array<int, string>
+     */
+    public static function options(): array
+    {
+        return collect(self::cases())
+            ->mapWithKeys(fn (self $rating): array => [$rating->value => $rating->label()])
+            ->all();
+    }
+
+    /**
      * Get the display label for this rating.
      */
     public function label(): string
@@ -66,17 +78,5 @@ enum AppraisalRating: int
             self::ExceedsExpectations => 'Performance frequently exceeds job requirements.',
             self::Outstanding => 'Performance consistently exceeds all job requirements with exceptional results.',
         };
-    }
-
-    /**
-     * Get all ratings as options for forms.
-     *
-     * @return array<int, string>
-     */
-    public static function options(): array
-    {
-        return collect(self::cases())
-            ->mapWithKeys(fn (self $rating): array => [$rating->value => $rating->label()])
-            ->all();
     }
 }
