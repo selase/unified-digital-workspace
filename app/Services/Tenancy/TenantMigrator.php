@@ -6,7 +6,12 @@ namespace App\Services\Tenancy;
 
 use Illuminate\Support\Facades\Artisan;
 
-final class TenantMigrator
+/**
+ * Intentionally not declared final. TenantsMigrateCommandTest mocks this
+ * via Mockery::mock(TenantMigrator::class); Pint's final_class rule
+ * skips this file via pint.json.
+ */
+class TenantMigrator
 {
     /**
      * @return array{exitCode: int, output: string}
