@@ -17,6 +17,7 @@
         x-init="start()"
         @mouseenter="pause()"
         @mouseleave="resume()"
+        @keydown.escape.window="closeVideo()"
         class="relative overflow-hidden"
         style="background: var(--tgf-dark);"
     >
@@ -53,26 +54,9 @@
                     //   - file:    a direct .mp4/.webm/.ogg URL (media library upload)
                     //   - youtube: a youtu.be / youtube.com URL → background iframe
                     //   - vimeo:   a vimeo.com URL → background iframe with background=1
-                    $videoKind = null;
-                    $videoEmbedSrc = null;
-
-                    if ($videoUrl) {
-                        if (preg_match('/\.(mp4|webm|ogg)(\?.*)?$/i', $videoUrl)) {
-                            $videoKind = 'file';
-                        } elseif (preg_match('#(?:youtu\.be/|youtube\.com/(?:watch\?v=|embed/|shorts/))([A-Za-z0-9_-]{11})#', $videoUrl, $m)) {
-                            $videoKind = 'youtube';
-                            // playlist=ID is required for loop=1 on a single video.
-                            $videoEmbedSrc = 'https://www.youtube.com/embed/'.$m[1]
-                                .'?autoplay=1&mute=1&loop=1&playlist='.$m[1]
-                                .'&controls=0&showinfo=0&modestbranding=1&rel=0&iv_load_policy=3&playsinline=1';
-                        } elseif (preg_match('#vimeo\.com/(?:video/)?(\d+)#', $videoUrl, $m)) {
-                            $videoKind = 'vimeo';
-                            // background=1 hides controls and triggers autoplay+loop+mute.
-                            $videoEmbedSrc = 'https://player.vimeo.com/video/'.$m[1].'?background=1&autoplay=1&loop=1&muted=1';
-                        }
-                    }
-
-                    $hasVideo = $videoKind !== null;
+                    $videoEmbed = \App\Modules\CmsCore\Support\VideoEmbed::fromUrl($videoUrl);
+                    $hasVideo = $videoEmbed !== null;
+                    $videoKind = $videoEmbed?->kind;
 
                     if ($hasVideo) {
                         // Video paints itself; the wrapper just needs the dark base
@@ -105,7 +89,7 @@
                              without letterboxing on either dimension. --}}
                         <div class="pointer-events-none absolute inset-0 overflow-hidden">
                             <iframe
-                                src="{{ $videoEmbedSrc }}"
+                                src="{{ $videoEmbed->backgroundSrc() }}"
                                 title="Slide background video"
                                 allow="autoplay; encrypted-media; picture-in-picture"
                                 allowfullscreen
@@ -132,6 +116,15 @@
                                 @if($getMeta($slide, 'cta2_label'))
                                     <a href="{{ $getMeta($slide, 'cta2_url') ?: '#' }}" class="tgf-btn-accent">{{ $getMeta($slide, 'cta2_label') }}</a>
                                 @endif
+                                @if($hasVideo)
+                                    <button
+                                        type="button"
+                                        @click="openVideo({{ \Illuminate\Support\Js::from($videoEmbed->watchSrc()) }}, {{ \Illuminate\Support\Js::from($videoKind) }})"
+                                        class="rounded-md border-2 border-white px-8 py-3 text-sm font-semibold text-white transition hover:bg-white hover:text-teal-700"
+                                    >
+                                        Watch Video
+                                    </button>
+                                @endif
                             </div>
                         </div>
                     </div>
@@ -157,6 +150,42 @@
             <button @click="next()" class="absolute right-4 top-1/2 -translate-y-1/2 rounded-full bg-white/10 p-2 text-white/70 transition hover:bg-white/20 hover:text-white" aria-label="Next">
                 <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
             </button>
+        </div>
+
+        <div
+            x-show="videoModalOpen"
+            x-transition.opacity
+            class="fixed inset-0 flex items-center justify-center px-4 py-6"
+            style="display: none; background: rgba(15, 23, 42, 0.86); z-index: 100;"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Watch hero video"
+            @click.self="closeVideo()"
+        >
+            <div class="relative w-full max-w-5xl overflow-hidden rounded-xl bg-black shadow-2xl">
+                <button
+                    type="button"
+                    @click="closeVideo()"
+                    class="absolute right-3 top-3 z-10 rounded-full bg-black/70 p-2 text-white transition hover:bg-black"
+                    aria-label="Close video"
+                >
+                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+                <div class="aspect-video w-full">
+                    <template x-if="videoModalOpen && videoModalKind === 'file'">
+                        <video :src="videoModalSrc" class="h-full w-full" controls autoplay playsinline></video>
+                    </template>
+                    <template x-if="videoModalOpen && videoModalKind !== 'file'">
+                        <iframe
+                            :src="videoModalSrc"
+                            class="h-full w-full"
+                            frameborder="0"
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+                            allowfullscreen
+                        ></iframe>
+                    </template>
+                </div>
+            </div>
         </div>
     </section>
 
@@ -379,6 +408,9 @@
                 total: {{ $sliderPosts->count() }},
                 timer: null,
                 startedAt: null,
+                videoModalOpen: false,
+                videoModalSrc: '',
+                videoModalKind: '',
                 start() {
                     // Guard against a double-start (defensive — Alpine init
                     // should fire only once, but if it ever doesn't, the
@@ -404,9 +436,21 @@
                     if (this.timer) { clearInterval(this.timer); this.timer = null; }
                 },
                 resume() {
-                    if (!this.timer && this.total > 1) {
+                    if (!this.videoModalOpen && !this.timer && this.total > 1) {
                         this.timer = setInterval(() => this.next(), INTERVAL_MS);
                     }
+                },
+                openVideo(src, kind) {
+                    this.pause();
+                    this.videoModalSrc = src;
+                    this.videoModalKind = kind;
+                    this.videoModalOpen = true;
+                },
+                closeVideo() {
+                    this.videoModalOpen = false;
+                    this.videoModalSrc = '';
+                    this.videoModalKind = '';
+                    this.resume();
                 },
             };
         }

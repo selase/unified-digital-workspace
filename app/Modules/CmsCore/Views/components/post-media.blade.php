@@ -10,47 +10,26 @@
     $audioUrl = is_array($audioUrl) ? ($audioUrl[0] ?? null) : $audioUrl;
     $posterMediaId = is_array($posterMediaId) ? ($posterMediaId[0] ?? null) : $posterMediaId;
 
-    $hasMedia = $videoUrl || $audioUrl;
+    $videoEmbed = \App\Modules\CmsCore\Support\VideoEmbed::fromUrl($videoUrl);
+    $hasMedia = $videoEmbed || $audioUrl;
 @endphp
 
 @if($hasMedia)
     <div {{ $attributes->merge(['class' => 'post-embedded-media']) }}>
-        @if($videoUrl)
-            @php
-                // Extract YouTube video ID
-                $ytId = null;
-                if (preg_match('/(?:youtube\.com\/(?:watch\?v=|embed\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})/', $videoUrl, $m)) {
-                    $ytId = $m[1];
-                }
-                // Extract Vimeo ID
-                $vimeoId = null;
-                if (preg_match('/vimeo\.com\/(\d+)/', $videoUrl, $m)) {
-                    $vimeoId = $m[1];
-                }
-            @endphp
-
+        @if($videoEmbed)
             <div class="aspect-video w-full overflow-hidden rounded-lg bg-slate-900">
-                @if($ytId)
+                @if($videoEmbed->usesIframe())
                     <iframe
-                        src="https://www.youtube-nocookie.com/embed/{{ $ytId }}"
+                        src="{{ $videoEmbed->watchSrc() }}"
                         class="h-full w-full"
                         frameborder="0"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowfullscreen
-                        loading="lazy"
-                    ></iframe>
-                @elseif($vimeoId)
-                    <iframe
-                        src="https://player.vimeo.com/video/{{ $vimeoId }}"
-                        class="h-full w-full"
-                        frameborder="0"
-                        allow="autoplay; fullscreen; picture-in-picture"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
                         allowfullscreen
                         loading="lazy"
                     ></iframe>
                 @else
                     <video controls class="h-full w-full" preload="metadata">
-                        <source src="{{ $videoUrl }}">
+                        <source src="{{ $videoEmbed->watchSrc() }}">
                     </video>
                 @endif
             </div>
