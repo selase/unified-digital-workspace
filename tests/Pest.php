@@ -40,7 +40,7 @@ beforeEach(function () {
     }
 
     refreshTenantDatabases();
-});
+})->in('Feature', 'Unit');
 
 /*
 |--------------------------------------------------------------------------
@@ -86,6 +86,12 @@ function setActiveTenantForTest(?User $user = null, array $overrides = []): Tena
     Session::put('active_tenant_id', $tenant->id);
     setPermissionsTeamId($tenant->id);
     app(App\Services\Tenancy\TenantContext::class)->setTenant($tenant);
+
+    // Configure the `tenant` DB connection — without this, models that use
+    // the BelongsToTenant trait blow up with "Unsupported driver []" because
+    // config('database.connections.tenant.driver') is null until
+    // TenantDatabaseManager::configure() is called.
+    app(App\Services\Tenancy\TenantDatabaseManager::class)->configure($tenant);
 
     return $tenant;
 }
