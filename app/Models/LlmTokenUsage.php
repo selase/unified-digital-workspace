@@ -12,6 +12,19 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * Aggregate-only properties exposed when this model is hydrated from
+ * AggregateLlmUsage's GROUP BY query (see app/Console/Commands/AggregateLlmUsage.php).
+ * They are not schema columns — listing them here lets static analysis verify
+ * the aggregation pipeline without suppressing real undefined-property bugs.
+ *
+ * @property-read string|null $day                       CAST(created_at AS DATE)
+ * @property-read int|null    $total_prompt_tokens      SUM(prompt_tokens)
+ * @property-read int|null    $total_completion_tokens  SUM(completion_tokens)
+ * @property-read int|null    $total_total_tokens       SUM(total_tokens)
+ * @property-read float|null  $total_cost_usd           SUM(cost_usd)
+ * @property-read int|null    $request_count            COUNT(*)
+ */
 final class LlmTokenUsage extends Model
 {
     use BelongsToTenant;
