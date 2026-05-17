@@ -10,20 +10,25 @@
   </testsuites>
   <php>
     <!--
-      Tests run against PostgreSQL to match the production environment.
-      The dedicated test DB `unified_digital_workspace_testing` is wiped
-      between tests by RefreshDatabase/refreshTenantDatabases helpers.
-      Never point this at the dev DB `unified_digital_workspace`.
+      Tests run against PostgreSQL to match production. The dedicated test DB
+      (default name `unified_digital_workspace_testing` locally, `testing` in
+      CI) is wiped between tests by RefreshDatabase / refreshTenantDatabases.
+
+      Non-DB env vars use force="true" so a cached Laravel config can't
+      silently override them. DB credentials are NOT forced — CI overrides
+      them via job env (different user/host/db name on GitHub runners) and
+      tests/TestCase.php still refuses to run against any DB whose name
+      isn't a clear test DB.
     -->
     <env name="APP_ENV" value="testing" force="true"/>
     <env name="APP_URL" value="http://unified-digital-workspace.test" force="true"/>
     <env name="BCRYPT_ROUNDS" value="4" force="true"/>
-    <env name="DB_CONNECTION" value="pgsql" force="true"/>
-    <env name="DB_HOST" value="127.0.0.1" force="true"/>
-    <env name="DB_PORT" value="5432" force="true"/>
-    <env name="DB_DATABASE" value="unified_digital_workspace_testing" force="true"/>
-    <env name="DB_USERNAME" value="selase" force="true"/>
-    <env name="DB_PASSWORD" value="root" force="true"/>
+    <env name="DB_CONNECTION" value="pgsql"/>
+    <env name="DB_HOST" value="127.0.0.1"/>
+    <env name="DB_PORT" value="5432"/>
+    <env name="DB_DATABASE" value="unified_digital_workspace_testing"/>
+    <env name="DB_USERNAME" value="selase"/>
+    <env name="DB_PASSWORD" value="root"/>
     <env name="TEST_TARGET_DB" value="pgsql" force="true"/>
     <env name="CACHE_DRIVER" value="array" force="true"/>
     <env name="MAIL_MAILER" value="array" force="true"/>

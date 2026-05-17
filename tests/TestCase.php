@@ -39,11 +39,19 @@ abstract class TestCase extends BaseTestCase
             return;
         }
 
-        if (! str_ends_with($database, '_testing') && ! str_contains($database, '_testing_')) {
+        // Accept any of:
+        //   - the bare `testing` name (used by GitHub Actions services)
+        //   - a name ending in `_testing` (local convention, e.g. `unified_digital_workspace_testing`)
+        //   - a name containing `_testing_` (parallel test suites)
+        $isTestDb = $database === 'testing'
+            || str_ends_with($database, '_testing')
+            || str_contains($database, '_testing_');
+
+        if (! $isTestDb) {
             throw new RuntimeException(
                 "Refusing to run tests against landlord database [{$database}]: "
-                .'name must end in "_testing" (or contain "_testing_" for parallel suites). '
-                .'Check phpunit.xml / .env.testing.'
+                .'name must be "testing", end in "_testing", or contain "_testing_". '
+                .'Check phpunit.xml / .env.testing / CI env vars.'
             );
         }
     }
