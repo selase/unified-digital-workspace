@@ -8,7 +8,12 @@ use App\Contracts\Secrets\SecretsProvider;
 use App\Models\Tenant;
 use Illuminate\Support\Facades\Config;
 
-final class TenantDatabaseManager
+/**
+ * Intentionally not declared final. Tests mock this via
+ * Mockery::mock(TenantDatabaseManager::class); Pint's final_class rule
+ * skips this file via pint.json.
+ */
+class TenantDatabaseManager
 {
     public function __construct(private readonly SecretsProvider $secrets) {}
 

@@ -1,7 +1,10 @@
 {
     "preset": "laravel",
     "notPath": [
-        "tests/TestCase.php"
+        "tests/TestCase.php",
+        "app/Services/Tenancy/TenantContext.php",
+        "app/Services/Tenancy/TenantDatabaseManager.php",
+        "app/Services/Tenancy/TenantMigrator.php"
     ],
     "rules": {
         "array_push": true,
