@@ -34,13 +34,13 @@ afterEach(function () {
     Mockery::close();
 });
 
-beforeEach(function () {
-    if (! config('session.domain')) {
-        config(['session.domain' => '.unified-digital-workspace.test']);
-    }
-
-    refreshTenantDatabases();
-})->in('Feature', 'Unit');
+// Note: global per-test setup that needs to run for every Feature/Unit test
+// belongs in tests/TestCase::setUp(), NOT here. Pest's beforeEach() in this
+// file is keyed on tests/Pest.php as its filename — Pest's TestSuite looks
+// up beforeEach hooks by the test's own filename, so a beforeEach here only
+// applies to tests defined inside this file (none). The `->in('Feature', 'Unit')`
+// qualifier works for uses() but silently no-ops on beforeEach (it falls
+// through __call and lands on TestCall::__call() which doesn't change scope).
 
 /*
 |--------------------------------------------------------------------------
