@@ -400,29 +400,18 @@
                     this.timer = setInterval(() => this.next(), INTERVAL_MS);
                     console.info('[hero] auto-advance ON (' + this.total + ' slides, every ' + (INTERVAL_MS / 1000) + 's)');
                 },
-                next() {
-                    this.current = (this.current + 1) % this.total;
-                    console.log('[hero] -> slide', this.current, '@', new Date().toLocaleTimeString());
-                },
-                prev() {
-                    this.current = (this.current - 1 + this.total) % this.total;
-                    console.log('[hero] <- slide', this.current, '@', new Date().toLocaleTimeString());
-                },
+                next() { this.current = (this.current + 1) % this.total; },
+                prev() { this.current = (this.current - 1 + this.total) % this.total; },
                 goTo(i) {
                     this.current = i;
                     this.start();
                 },
                 pause() {
-                    if (this.timer) {
-                        clearInterval(this.timer);
-                        this.timer = null;
-                        console.log('[hero] paused (hover) @', new Date().toLocaleTimeString());
-                    }
+                    if (this.timer) { clearInterval(this.timer); this.timer = null; }
                 },
                 resume() {
                     if (!this.timer && this.total > 1) {
                         this.timer = setInterval(() => this.next(), INTERVAL_MS);
-                        console.log('[hero] resumed @', new Date().toLocaleTimeString());
                     }
                 },
             };
