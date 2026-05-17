@@ -87,10 +87,10 @@
                 <div
                     x-show="current === {{ $i }}"
                     x-cloak
-                    x-transition:enter="transition-opacity duration-700 ease-out"
+                    x-transition:enter="transition-opacity duration-300 ease-out"
                     x-transition:enter-start="opacity-0"
                     x-transition:enter-end="opacity-100"
-                    x-transition:leave="transition-opacity duration-700 ease-in"
+                    x-transition:leave="transition-opacity duration-300 ease-in"
                     x-transition:leave-start="opacity-100"
                     x-transition:leave-end="opacity-0"
                     class="absolute inset-0 flex items-center"
@@ -400,14 +400,8 @@
                     this.timer = setInterval(() => this.next(), INTERVAL_MS);
                     console.info('[hero] auto-advance ON (' + this.total + ' slides, every ' + (INTERVAL_MS / 1000) + 's)');
                 },
-                next() {
-                    this.current = (this.current + 1) % this.total;
-                    console.log('[hero] -> slide', this.current, '@', new Date().toLocaleTimeString());
-                },
-                prev() {
-                    this.current = (this.current - 1 + this.total) % this.total;
-                    console.log('[hero] <- slide', this.current, '@', new Date().toLocaleTimeString());
-                },
+                next() { this.current = (this.current + 1) % this.total; },
+                prev() { this.current = (this.current - 1 + this.total) % this.total; },
                 goTo(i) {
                     this.current = i;
                     this.start();
