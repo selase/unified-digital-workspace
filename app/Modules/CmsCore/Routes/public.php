@@ -20,7 +20,21 @@ Route::get('/newsletters/{slug}', [CmsPublicNewsletterController::class, 'show']
 
 Route::get('/sitemap.xml', [CmsPublicSitemapController::class, 'index'])->name('sitemap');
 
-// Catch-all for static pages — must be last in this file.
-// Site module routes registered via CmsSiteServiceProvider take priority
-// because they use explicit paths that match before this wildcard.
-Route::get('/{slug}', [App\Modules\CmsCore\Http\Controllers\Web\CmsPublicPageController::class, 'show'])->name('pages.show');
+// Catch-all for static pages. Registered as Route::fallback() so it only
+// matches when no other route does — this prevents the /{slug} pattern
+// from shadowing tenant subdomain routes, app routes, or routes that
+// tests register via Route::get(...) inside beforeEach hooks.
+//
+// Wraps the controller in a closure because Route::fallback() doesn't bind
+// URL params (no pattern); we pull the slug from the request's first
+// segment. A request with more than one segment falls through to a true
+// 404, matching the original behaviour of the /{slug} pattern.
+Route::fallback(function (\Illuminate\Http\Request $request) {
+    $segments = $request->segments();
+    if (count($segments) !== 1) {
+        abort(404);
+    }
+
+    return app(App\Modules\CmsCore\Http\Controllers\Web\CmsPublicPageController::class)
+        ->show($segments[0]);
+})->name('pages.show');
