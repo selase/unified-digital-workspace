@@ -402,11 +402,11 @@
                 },
                 next() {
                     this.current = (this.current + 1) % this.total;
-                    console.debug('[hero] -> slide', this.current);
+                    console.log('[hero] -> slide', this.current, '@', new Date().toLocaleTimeString());
                 },
                 prev() {
                     this.current = (this.current - 1 + this.total) % this.total;
-                    console.debug('[hero] <- slide', this.current);
+                    console.log('[hero] <- slide', this.current, '@', new Date().toLocaleTimeString());
                 },
                 goTo(i) {
                     this.current = i;
