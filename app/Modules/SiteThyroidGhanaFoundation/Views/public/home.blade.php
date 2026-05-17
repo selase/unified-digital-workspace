@@ -85,15 +85,9 @@
                     }
                 @endphp
                 <div
-                    x-show="current === {{ $i }}"
-                    x-cloak
-                    x-transition:enter="transition-opacity duration-500 ease-out"
-                    x-transition:enter-start="opacity-0"
-                    x-transition:enter-end="opacity-100"
-                    x-transition:leave="transition-opacity duration-500 ease-in"
-                    x-transition:leave-start="opacity-100"
-                    x-transition:leave-end="opacity-0"
-                    class="absolute inset-0 flex items-center"
+                    :class="current === {{ $i }} ? 'z-10 opacity-100' : 'z-0 opacity-0 pointer-events-none'"
+                    :aria-hidden="current === {{ $i }} ? 'false' : 'true'"
+                    class="absolute inset-0 flex items-center transition-opacity duration-500 ease-in-out {{ $i === 0 ? 'z-10 opacity-100' : 'z-0 opacity-0 pointer-events-none' }}"
                     style="{{ $bgStyle }}"
                 >
                     @if($videoKind === 'file')
