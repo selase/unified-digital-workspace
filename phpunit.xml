@@ -9,17 +9,28 @@
     </testsuite>
   </testsuites>
   <php>
-    <env name="APP_ENV" value="testing"/>
-    <env name="APP_URL" value="http://starterkit-v2.test"/>
-    <env name="BCRYPT_ROUNDS" value="4"/>
-    <env name="DB_CONNECTION" value="sqlite"/>
-    <env name="DB_DATABASE" value=":memory:"/>
-    <env name="CACHE_DRIVER" value="array"/>
-    <env name="MAIL_MAILER" value="array"/>
-    <env name="QUEUE_CONNECTION" value="sync"/>
-    <env name="SESSION_DRIVER" value="array"/>
-    <env name="SESSION_DOMAIN" value=".starterkit-v2.test"/>
-    <env name="TELESCOPE_ENABLED" value="false"/>
+    <!--
+      Tests run against PostgreSQL to match the production environment.
+      The dedicated test DB `unified_digital_workspace_testing` is wiped
+      between tests by RefreshDatabase/refreshTenantDatabases helpers.
+      Never point this at the dev DB `unified_digital_workspace`.
+    -->
+    <env name="APP_ENV" value="testing" force="true"/>
+    <env name="APP_URL" value="http://unified-digital-workspace.test" force="true"/>
+    <env name="BCRYPT_ROUNDS" value="4" force="true"/>
+    <env name="DB_CONNECTION" value="pgsql" force="true"/>
+    <env name="DB_HOST" value="127.0.0.1" force="true"/>
+    <env name="DB_PORT" value="5432" force="true"/>
+    <env name="DB_DATABASE" value="unified_digital_workspace_testing" force="true"/>
+    <env name="DB_USERNAME" value="selase" force="true"/>
+    <env name="DB_PASSWORD" value="root" force="true"/>
+    <env name="TEST_TARGET_DB" value="pgsql" force="true"/>
+    <env name="CACHE_DRIVER" value="array" force="true"/>
+    <env name="MAIL_MAILER" value="array" force="true"/>
+    <env name="QUEUE_CONNECTION" value="sync" force="true"/>
+    <env name="SESSION_DRIVER" value="array" force="true"/>
+    <env name="SESSION_DOMAIN" value=".unified-digital-workspace.test" force="true"/>
+    <env name="TELESCOPE_ENABLED" value="false" force="true"/>
   </php>
   <source>
     <include>
