@@ -17,6 +17,7 @@ it('lets visitors open hero background videos with controls', function () {
     expect($blade)
         ->toContain('openVideo(')
         ->toContain('Watch Video')
+        ->toContain('x-show.important="videoModalOpen"')
         ->toContain('videoModalOpen')
         ->toContain('videoModalKind')
         ->toContain("videoModalOpen && videoModalKind !== 'file'")

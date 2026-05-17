@@ -153,7 +153,7 @@
         </div>
 
         <div
-            x-show="videoModalOpen"
+            x-show.important="videoModalOpen"
             x-transition.opacity
             class="fixed inset-0 flex items-center justify-center px-4 py-6"
             style="display: none; background: rgba(15, 23, 42, 0.86); z-index: 100;"
