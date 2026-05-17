@@ -16,6 +16,14 @@ final class TenantContext
     {
         $this->tenant = $tenant;
         $this->activeTenantId = (string) $tenant->id;
+
+        // Configure the `tenant` DB connection so callers can immediately
+        // query BelongsToTenant models without "Unsupported driver []".
+        // Production middleware (ResolveTenant, TenantAwareJob, etc.) already
+        // does this explicitly after setTenant; doing it here is idempotent
+        // and removes the footgun for tests, seeders, and one-off scripts
+        // that call setTenant without remembering the second step.
+        app(TenantDatabaseManager::class)->configure($tenant);
     }
 
     public function getTenant(): ?Tenant
