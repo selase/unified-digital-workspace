@@ -24,7 +24,7 @@ final class ForumModerationQueueController extends Controller
             ->paginate(20);
 
         $latestLogs = ForumModerationLog::query()
-            ->with(['thread:id,title', 'moderator:id,first_name,last_name'])
+            ->with(['thread:id,title', 'moderator:uuid,first_name,last_name'])
             ->latest('created_at')
             ->limit(10)
             ->get();

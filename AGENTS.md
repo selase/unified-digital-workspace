@@ -172,6 +172,14 @@ protected function isAccessible(User $user, ?string $path = null): bool
 
 - When creating new models, create useful factories and seeders for them too. Ask the user if they need any other things, using `list-artisan-commands` to check the available options to `php artisan make:model`.
 
+### User foreign keys in modules
+
+- `users.id` is bigint, `users.uuid` is a parallel UUID column. Module tables conventionally store user FKs (`user_id`, `author_id`, `owner_id`, `sender_id`, `moderator_id`, `assigned_by_id`, `uploaded_by_id`, etc.) as `$table->uuid(...)` — referencing `users.uuid`, not the bigint PK.
+- When defining a `belongsTo(User::class, ...)` against such a column, you **must** pass `'uuid'` as the third argument: `$this->belongsTo(User::class, 'user_id', 'uuid')`. Omitting the third arg defaults the owner key to `users.id` (bigint) and produces a hidden 500 (postgres) or silent join failure (sqlite).
+- When writing user FK values from controllers, use `$request->user()?->uuid`, not `?->id`.
+- When eager-loading with partial column selects (`->with(['author:uuid,first_name,last_name'])`), include `uuid` in the column list so Eloquent can map results back. `id` alone won't work.
+- `HrmsCore::Employee` is the lone exception — its `user_id` is a bigint via `foreignId('user_id')`, so its `belongsTo(User::class)` correctly uses the default.
+
 ### APIs & Eloquent Resources
 
 - For APIs, default to using Eloquent API Resources and API versioning unless existing API routes do not, then you should follow existing application convention.

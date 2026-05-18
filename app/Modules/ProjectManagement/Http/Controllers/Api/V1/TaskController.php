@@ -96,7 +96,7 @@ final class TaskController extends Controller
         $assignment = TaskAssignment::updateOrCreate(
             ['task_id' => $task->id, 'user_id' => $request->string('user_id')],
             [
-                'assigned_by_id' => $request->user()?->id,
+                'assigned_by_id' => $request->user()?->uuid,
                 'assigned_at' => now(),
             ],
         );
@@ -150,7 +150,7 @@ final class TaskController extends Controller
     {
         $comment = TaskComment::create([
             'task_id' => $task->id,
-            'user_id' => $request->user()?->id,
+            'user_id' => $request->user()?->uuid,
             'body' => $request->string('body'),
         ]);
 
@@ -176,7 +176,7 @@ final class TaskController extends Controller
             'filename' => $file?->getClientOriginalName(),
             'mime_type' => $file?->getClientMimeType(),
             'size_bytes' => $file?->getSize() ?? 0,
-            'uploaded_by_id' => $request->user()?->id,
+            'uploaded_by_id' => $request->user()?->uuid,
         ]);
 
         Activity::getFacadeRoot()
@@ -193,7 +193,7 @@ final class TaskController extends Controller
     {
         $entry = TimeEntry::create([
             'task_id' => $task->id,
-            'user_id' => $request->user()?->id,
+            'user_id' => $request->user()?->uuid,
             'entry_date' => $request->date('entry_date'),
             'minutes' => $request->integer('minutes'),
             'note' => $request->input('note'),

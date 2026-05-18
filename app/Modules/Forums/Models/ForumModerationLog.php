@@ -66,7 +66,7 @@ final class ForumModerationLog extends Model
      */
     public function moderator(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'moderator_id');
+        return $this->belongsTo(User::class, 'moderator_id', 'uuid');
     }
 
     /**
