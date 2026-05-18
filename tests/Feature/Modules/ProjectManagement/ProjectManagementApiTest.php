@@ -142,7 +142,7 @@ it('prevents allocation overlaps', function (): void {
 
     ResourceAllocation::create([
         'project_id' => $project->id,
-        'user_id' => $user->id,
+        'user_id' => $user->uuid,
         'start_date' => now()->toDateString(),
         'end_date' => now()->addDays(5)->toDateString(),
         'allocation_percent' => 50,
@@ -150,7 +150,7 @@ it('prevents allocation overlaps', function (): void {
 
     actingAs($user, 'sanctum')
         ->postJson("/api/project-management/v1/projects/{$project->id}/allocations", [
-            'user_id' => $user->id,
+            'user_id' => $user->uuid,
             'start_date' => now()->addDays(1)->toDateString(),
             'end_date' => now()->addDays(3)->toDateString(),
             'allocation_percent' => 40,
