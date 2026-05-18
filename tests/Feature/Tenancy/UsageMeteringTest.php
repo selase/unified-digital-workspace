@@ -61,6 +61,19 @@ test('it records http request usage', function () {
     expect($landlordRollup->dimensions)->toHaveKey('route', 'GET test-usage');
 });
 
+test('it skips metering on 5xx responses', function () {
+    Route::get('/test-usage-fail', function () {
+        return response('boom', 500);
+    })->middleware([App\Http\Middleware\ResolveTenant::class, App\Http\Middleware\MeterRequestUsage::class]);
+
+    $this->get('/test-usage-fail', [
+        'X-Tenant' => $this->landlordTenant->id,
+    ])->assertStatus(500);
+
+    expect(UsageEvent::where('tenant_id', $this->landlordTenant->id)->count())->toBe(0);
+    expect(UsageRollup::where('tenant_id', $this->landlordTenant->id)->count())->toBe(0);
+});
+
 test('it records job usage with TenantAwareJob middleware', function () {
     // We'll create a simple job class at the bottom or use an existing one
     $job = new Tests\Fixtures\TestTenantJob($this->landlordTenant->id);
