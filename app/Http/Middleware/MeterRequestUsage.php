@@ -26,6 +26,13 @@ final class MeterRequestUsage
 
         $response = $next($request);
 
+        // Skip metering on 5xx — the request already aborted any in-flight
+        // transaction, so inserting a usage row here would just raise a
+        // secondary "in failed sql transaction" and mask the real exception.
+        if ($response->getStatusCode() >= 500) {
+            return $response;
+        }
+
         $tenant = $this->context->getTenant();
 
         if ($tenant) {
