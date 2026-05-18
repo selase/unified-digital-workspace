@@ -61,7 +61,7 @@
             </div>
             <div class="kt-card-content">
                 <div class="kt-scrollable-x-auto">
-                    <table class="kt-table kt-table-border align-middle">
+                    <table class="kt-table table-auto kt-table-border align-middle">
                         <thead>
                             <tr>
                                 <th class="min-w-[320px]">

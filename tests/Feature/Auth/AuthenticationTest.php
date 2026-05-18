@@ -33,7 +33,7 @@ test('users can authenticate using the login screen', function () {
             'password' => 'password',
         ]);
 
-    $expectedUrl = 'http://'.$tenant->slug.'.starterkit-v2.test/dashboard';
+    $expectedUrl = 'http://'.$tenant->slug.'.unified-digital-workspace.test/dashboard';
     $response->assertRedirect($expectedUrl);
 });
 
