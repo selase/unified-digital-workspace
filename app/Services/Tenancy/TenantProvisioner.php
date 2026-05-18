@@ -10,6 +10,7 @@ use Exception;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use PDO;
 use RuntimeException;
 
 final class TenantProvisioner
@@ -62,12 +63,25 @@ final class TenantProvisioner
                 }
                 $dbName = $dbPath;
             } elseif ($tenant->db_driver === 'pgsql') {
-                // PostgreSQL doesn't allow CREATE DATABASE in a transaction, and Laravel often wraps statements.
-                // We'll try to run it on the landlord connection.
-                // We also need to make sure the database doesn't already exist.
-                $exists = DB::connection('landlord')->select('SELECT 1 FROM pg_database WHERE datname = ?', [$dbName]);
-                if (empty($exists)) {
-                    DB::connection('landlord')->statement("CREATE DATABASE \"{$dbName}\"");
+                // PostgreSQL forbids CREATE DATABASE inside a transaction block, and
+                // Laravel's connection manager + test framework's RefreshDatabase both
+                // wrap operations in transactions. Open a dedicated PDO bound to the
+                // landlord credentials so the DDL runs outside whatever transaction
+                // the caller may be in.
+                $landlord = config('database.connections.landlord');
+                $dsn = sprintf(
+                    'pgsql:host=%s;port=%s;dbname=%s',
+                    $landlord['host'] ?? '127.0.0.1',
+                    $landlord['port'] ?? 5432,
+                    $landlord['database']
+                );
+                $rawPdo = new PDO($dsn, $landlord['username'] ?? null, $landlord['password'] ?? null);
+                $rawPdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+                $check = $rawPdo->prepare('SELECT 1 FROM pg_database WHERE datname = ?');
+                $check->execute([$dbName]);
+                if ($check->fetch() === false) {
+                    $rawPdo->exec(sprintf('CREATE DATABASE "%s"', $dbName));
                 }
             } else {
                 DB::connection('landlord')->statement("CREATE DATABASE IF NOT EXISTS `{$dbName}`");

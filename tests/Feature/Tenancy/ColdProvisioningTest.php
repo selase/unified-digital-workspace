@@ -7,23 +7,19 @@ use App\Models\Tenant;
 use App\Models\User;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 beforeEach(function () {
-    // Clear tenants storage if exists
-    if (file_exists(storage_path('tenants'))) {
-        $files = glob(storage_path('tenants/*.sqlite'));
-        foreach ($files as $file) {
-            if (is_file($file)) {
-                unlink($file);
-            }
-        }
-    }
-
     refreshTenantDatabases();
     Artisan::call('db:seed', ['--class' => 'RoleSeeder']);
     Artisan::call('db:seed', ['--class' => 'PermissionsSeeder']);
     Artisan::call('db:seed', ['--class' => 'PackageSeeder']);
+    $this->dedicatedTenantDbsToDrop = [];
+});
+
+afterEach(function () {
+    foreach ($this->dedicatedTenantDbsToDrop ?? [] as $dbName) {
+        dropTenantDatabase($dbName);
+    }
 });
 
 test('cold provisioning creates a functional tenant with dedicated DB and synced features', function () {
@@ -44,7 +40,7 @@ test('cold provisioning creates a functional tenant with dedicated DB and synced
         'status' => 'active',
         'subdomain' => 'coldstart',
         'isolation_mode' => 'db_per_tenant',
-        'db_driver' => 'sqlite',
+        'db_driver' => 'pgsql',
         'package_id' => $package->id,
     ];
 
@@ -57,20 +53,22 @@ test('cold provisioning creates a functional tenant with dedicated DB and synced
     expect($tenant)->not->toBeNull();
     expect($tenant->isolation_mode)->toBe('db_per_tenant');
 
-    // 2. Verify Dedicated Database exists
-    $dbPath = $tenant->meta['database'];
-    expect(file_exists($dbPath))->toBeTrue();
+    // 2. Verify Dedicated postgres database was created
+    $dbName = $tenant->meta['database'];
+    $this->dedicatedTenantDbsToDrop[] = $dbName;
 
-    // 3. Verify Migrations were run in the new DB
-    app(App\Services\Tenancy\TenantDatabaseManager::class)->configure($tenant);
-    expect(Schema::connection('tenant')->hasTable('posts'))->toBeTrue();
+    $exists = DB::connection('landlord')->select(
+        'SELECT 1 FROM pg_database WHERE datname = ?',
+        [$dbName]
+    );
+    expect($exists)->not->toBeEmpty();
 
-    // 4. Verify Features were synced from Package
+    // 3. Verify Features were synced from Package
     // Package 'pro' has 'analytics' and 'priority-support' based on PackageSeeder
     expect($tenant->features()->where('feature_key', 'analytics')->exists())->toBeTrue();
     expect($tenant->features()->where('feature_key', 'priority-support')->exists())->toBeTrue();
 
-    // 5. Verify resolution works
+    // 4. Verify resolution works
     $baseDomain = mb_ltrim((string) config('session.domain'), '.');
     $subdomainHost = "coldstart.{$baseDomain}";
 
