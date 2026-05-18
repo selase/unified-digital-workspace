@@ -330,9 +330,12 @@ test('memos web hub renders for enabled tenant module', function (): void {
         'sent_at' => now(),
     ]);
 
+    // The /memos prefix bare URL 302-redirects to /memos/hub via
+    // Route::redirect('/', '/memos/hub') in the module's web routes;
+    // hit the resolved URL directly so we get the hub view.
     $this->actingAs($user)
         ->withSession(['active_tenant_id' => $tenant->id])
-        ->get('/memos')
+        ->get('/memos/hub')
         ->assertSuccessful()
         ->assertSee('Memos Hub')
         ->assertSee('Q1 Budget Memo')
