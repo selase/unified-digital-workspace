@@ -31,7 +31,7 @@ test('module:list command shows tenant status when tenant option provided', func
 });
 
 test('module:list command fails for non-existent tenant', function () {
-    $this->artisan('module:list', ['--tenant' => 'non-existent-uuid'])
+    $this->artisan('module:list', ['--tenant' => (string) Illuminate\Support\Str::uuid()])
         ->assertFailed();
 });
 
