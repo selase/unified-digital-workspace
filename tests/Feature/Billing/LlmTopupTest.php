@@ -37,8 +37,8 @@ beforeEach(function () {
     $this->actingAs($this->user);
 
     // Set up domain for subdomain routing
-    Config::set('app.url', 'http://starterkit-v2.test');
-    Config::set('session.domain', '.starterkit-v2.test');
+    Config::set('app.url', 'http://unified-digital-workspace.test');
+    Config::set('session.domain', '.unified-digital-workspace.test');
 });
 
 test('it initiates a checkout session for a token pack', function () {

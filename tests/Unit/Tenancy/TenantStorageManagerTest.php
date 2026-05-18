@@ -8,9 +8,10 @@ use App\Services\Tenancy\TenantStorageManager;
 use Illuminate\Support\Facades\Config;
 
 test('it configures shared storage', function () {
-    $tenantId = '019bb884-3060-70f0-906a-ed7cc8e994ef';
+    $tenantSlug = 'acme-co';
     $tenant = new Tenant([
-        'id' => $tenantId,
+        'id' => '019bb884-3060-70f0-906a-ed7cc8e994ef',
+        'slug' => $tenantSlug,
         's3_mode' => 'shared',
     ]);
 
@@ -28,7 +29,8 @@ test('it configures shared storage', function () {
 
     $config = Config::get('filesystems.disks.tenant');
     expect($config['bucket'])->toBe('shared_bucket');
-    expect($config['root'])->toBe("tenants/{$tenantId}");
+    // TenantStorageManager namespaces shared storage by tenant slug.
+    expect($config['root'])->toBe("tenants/{$tenantSlug}");
 });
 
 test('it configures byo storage', function () {
