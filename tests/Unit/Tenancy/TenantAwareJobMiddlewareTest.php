@@ -7,6 +7,7 @@ use App\Jobs\Middleware\TenantAwareJob;
 use App\Models\Tenant;
 use App\Services\Tenancy\TenantContext;
 use Illuminate\Support\Facades\Config;
+use Tests\Fixtures\TestTenantJob;
 
 beforeEach(function () {
     Config::set('database.connections.tenant', [
@@ -19,11 +20,7 @@ test('it restores tenant context', function () {
     $tenant = Tenant::create(['name' => 'Job Tenant', 'slug' => 'job-tenant', 'isolation_mode' => 'shared']);
     $tenantId = $tenant->id;
 
-    $job = new class
-    {
-        public $tenantId;
-    };
-    $job->tenantId = $tenantId;
+    $job = new TestTenantJob($tenantId);
 
     $middleware = new TenantAwareJob();
 
@@ -56,11 +53,7 @@ test('it configures database for dedicated tenant', function () {
         ]);
     });
 
-    $job = new class
-    {
-        public $tenantId;
-    };
-    $job->tenantId = $tenant->id;
+    $job = new TestTenantJob($tenant->id);
 
     $middleware = new TenantAwareJob();
 
