@@ -36,6 +36,8 @@ test('files are stored with tenant prefix in shared mode', function () {
     // Store a file on 'tenant' disk
     Storage::disk('tenant')->put('test.txt', 'content');
 
-    // Verify it exists on the base 's3' disk at the correct path
-    expect(Storage::disk('s3')->exists("tenants/{$tenant->id}/test.txt"))->toBeTrue();
+    // Verify it exists on the base 's3' disk at the correct path.
+    // TenantStorageManager prefixes the tenant disk root by `tenant->slug`,
+    // not `tenant->id` — keep the assertion aligned with production.
+    expect(Storage::disk('s3')->exists("tenants/{$tenant->slug}/test.txt"))->toBeTrue();
 });
