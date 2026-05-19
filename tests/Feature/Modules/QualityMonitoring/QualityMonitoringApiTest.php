@@ -12,9 +12,6 @@ use App\Modules\QualityMonitoring\Models\Objective;
 use App\Modules\QualityMonitoring\Models\Variance;
 use App\Modules\QualityMonitoring\Models\Workplan;
 use App\Services\ModuleManager;
-use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Spatie\Permission\Models\Permission;
 
@@ -25,30 +22,8 @@ use function Pest\Laravel\actingAs;
  */
 function createQualityApiContext(): array
 {
-    $tenantDb = database_path('tenant_quality_testing.sqlite');
-    if (file_exists($tenantDb)) {
-        unlink($tenantDb);
-    }
-    touch($tenantDb);
-
-    Config::set('database.connections.tenant', [
-        'driver' => 'sqlite',
-        'database' => $tenantDb,
-        'prefix' => '',
-        'foreign_key_constraints' => true,
-    ]);
-    Config::set('database.default_tenant_connection', 'tenant');
-    DB::purge('tenant');
-    DB::reconnect('tenant');
-
     $user = User::factory()->create();
-    $tenant = setActiveTenantForTest($user, [
-        'isolation_mode' => 'db_per_tenant',
-        'db_driver' => 'sqlite',
-        'meta' => [
-            'database' => $tenantDb,
-        ],
-    ]);
+    $tenant = setActiveTenantForTest($user);
 
     foreach (['qm.workplans.view', 'qm.workplans.manage', 'qm.approvals.manage', 'qm.variances.manage', 'qm.alerts.manage', 'qm.kpis.manage'] as $permission) {
         Permission::firstOrCreate([
@@ -62,12 +37,6 @@ function createQualityApiContext(): array
     $user->givePermissionTo(['qm.workplans.view', 'qm.workplans.manage', 'qm.approvals.manage', 'qm.variances.manage', 'qm.alerts.manage', 'qm.kpis.manage']);
 
     app(ModuleManager::class)->enableForTenant('quality-monitoring', $tenant);
-
-    Artisan::call('migrate', [
-        '--database' => 'tenant',
-        '--path' => app_path('Modules/QualityMonitoring/Database/Migrations'),
-        '--realpath' => true,
-    ]);
 
     return [$user, $tenant];
 }
@@ -209,7 +178,7 @@ it('returns workplan report summary and exports alerts', function (): void {
         'period_start' => now()->toDateString(),
         'period_end' => now()->addMonths(3)->toDateString(),
         'status' => 'draft',
-        'owner_id' => $user->id,
+        'owner_id' => $user->uuid,
     ]);
 
     $objective = Objective::create([

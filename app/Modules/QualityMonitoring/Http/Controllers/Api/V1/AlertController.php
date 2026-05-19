@@ -29,7 +29,7 @@ final class AlertController extends Controller
         $alert->status = 'acknowledged';
         $alert->metadata = array_merge($alert->metadata ?? [], [
             'notes' => $request->input('notes'),
-            'acknowledged_by' => $request->user()?->id,
+            'acknowledged_by' => $request->user()?->uuid,
             'acknowledged_at' => now()->toIso8601String(),
         ]);
         $alert->save();

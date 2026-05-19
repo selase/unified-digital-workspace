@@ -136,7 +136,7 @@ test('module:migrate command uses dedicated database configuration for dedicated
         'name' => 'Dedicated Tenant',
         'slug' => 'dedicated-tenant',
         'isolation_mode' => 'db_per_tenant',
-        'db_driver' => 'sqlite',
+        'db_driver' => 'pgsql',
     ]);
 
     $this->mock(TenantDatabaseManager::class, function ($mock) use ($dedicatedTenant): void {

@@ -12,9 +12,6 @@ use App\Modules\IncidentManagement\Database\Factories\IncidentPriorityFactory;
 use App\Modules\IncidentManagement\Database\Factories\IncidentStatusFactory;
 use App\Modules\IncidentManagement\Models\Incident;
 use App\Services\ModuleManager;
-use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Spatie\Permission\Models\Permission;
@@ -32,33 +29,10 @@ use function Pest\Laravel\actingAs;
 */
 
 beforeEach(function (): void {
-    $tenantDb = database_path('tenant_permission_testing.sqlite');
-    if (file_exists($tenantDb)) {
-        unlink($tenantDb);
-    }
-    touch($tenantDb);
-
-    Config::set('database.connections.tenant', [
-        'driver' => 'sqlite',
-        'database' => $tenantDb,
-        'prefix' => '',
-        'foreign_key_constraints' => true,
-    ]);
-    Config::set('database.default_tenant_connection', 'tenant');
-    DB::purge('tenant');
-    DB::reconnect('tenant');
-
     $this->user = User::factory()->create();
     $this->tenant = setActiveTenantForTest($this->user, [
         'slug' => 'perm-test-'.uniqid(),
-        'isolation_mode' => 'db_per_tenant',
-        'db_driver' => 'sqlite',
-        'meta' => [
-            'database' => $tenantDb,
-        ],
     ]);
-
-    migrateAllCrudModules();
 });
 
 // ==========================================================================
@@ -304,24 +278,6 @@ it('returns 403 for incident escalate without permission', function (): void {
 // ==========================================================================
 // Helpers
 // ==========================================================================
-
-function migrateAllCrudModules(): void
-{
-    $paths = [
-        app_path('Modules/HrmsCore/Database/Migrations'),
-        app_path('Modules/CmsCore/Database/Migrations'),
-        app_path('Modules/IncidentManagement/Database/Migrations'),
-    ];
-
-    foreach ($paths as $path) {
-        Artisan::call('migrate', [
-            '--database' => 'tenant',
-            '--path' => $path,
-            '--realpath' => true,
-            '--force' => true,
-        ]);
-    }
-}
 
 /**
  * @param  array<int, string>  $permissions

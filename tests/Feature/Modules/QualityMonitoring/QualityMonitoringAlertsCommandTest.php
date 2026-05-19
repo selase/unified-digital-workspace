@@ -9,44 +9,16 @@ use App\Modules\QualityMonitoring\Models\Alert;
 use App\Modules\QualityMonitoring\Models\Objective;
 use App\Modules\QualityMonitoring\Models\Workplan;
 use App\Services\ModuleManager;
-use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\Config;
 
 /**
  * @return array{0: User, 1: Tenant}
  */
 function createQualityAlertContext(): array
 {
-    $tenantDb = database_path('tenant_quality_alerts.sqlite');
-    if (file_exists($tenantDb)) {
-        unlink($tenantDb);
-    }
-    touch($tenantDb);
-
-    Config::set('database.connections.tenant', [
-        'driver' => 'sqlite',
-        'database' => $tenantDb,
-        'prefix' => '',
-        'foreign_key_constraints' => true,
-    ]);
-    Config::set('database.default_tenant_connection', 'tenant');
-
     $user = User::factory()->create();
-    $tenant = setActiveTenantForTest($user, [
-        'isolation_mode' => 'db_per_tenant',
-        'db_driver' => 'sqlite',
-        'meta' => [
-            'database' => $tenantDb,
-        ],
-    ]);
+    $tenant = setActiveTenantForTest($user);
 
     app(ModuleManager::class)->enableForTenant('quality-monitoring', $tenant);
-
-    Artisan::call('migrate', [
-        '--database' => 'tenant',
-        '--path' => app_path('Modules/QualityMonitoring/Database/Migrations'),
-        '--realpath' => true,
-    ]);
 
     return [$user, $tenant];
 }
@@ -71,7 +43,7 @@ it('generates overdue activity alerts', function (): void {
         'title' => 'Overdue Activity',
         'due_date' => now()->subDays(3)->toDateString(),
         'status' => 'in-progress',
-        'responsible_id' => $user->id,
+        'responsible_id' => $user->uuid,
     ]);
 
     Artisan::call('quality:generate-alerts', ['--tenant' => $tenant->id]);
@@ -87,7 +59,7 @@ it('escalates open alerts to workplan owners', function (): void {
         'period_start' => now()->toDateString(),
         'period_end' => now()->addMonths(3)->toDateString(),
         'status' => 'approved',
-        'owner_id' => $user->id,
+        'owner_id' => $user->uuid,
     ]);
 
     $alert = Alert::create([

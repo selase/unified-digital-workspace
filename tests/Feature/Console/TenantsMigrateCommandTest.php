@@ -7,14 +7,8 @@ use App\Models\Tenant;
 use App\Models\TenantModule;
 use App\Services\Tenancy\TenantMigrator;
 use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\Config;
 
 beforeEach(function () {
-    Config::set('database.connections.tenant', [
-        'driver' => 'sqlite',
-        'database' => ':memory:',
-    ]);
-
     Artisan::call('migrate', [
         '--path' => 'database/migrations/landlord',
         '--realpath' => true,

@@ -7,8 +7,6 @@ use App\Models\User;
 use App\Modules\DocumentManagement\Models\Document;
 use App\Services\ModuleManager;
 use App\Services\Tenancy\TenantContext;
-use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -24,33 +22,8 @@ use function Pest\Laravel\getJson;
  */
 function createDocumentApiContext(): array
 {
-    // Configure tenant connection for tests (sqlite file)
-    $tenantDb = database_path('tenant_testing.sqlite');
-    if (file_exists($tenantDb)) {
-        unlink($tenantDb);
-    }
-    // Create empty sqlite file so the connector finds it
-    touch($tenantDb);
-
-    Config::set('database.connections.tenant', [
-        'driver' => 'sqlite',
-        'database' => $tenantDb,
-        'prefix' => '',
-        'foreign_key_constraints' => true,
-    ]);
-    Config::set('database.default_tenant_connection', 'tenant');
-
-    Illuminate\Support\Facades\DB::purge('tenant');
-    Illuminate\Support\Facades\DB::reconnect('tenant');
-
     $user = User::factory()->create();
-    $tenant = setActiveTenantForTest($user, [
-        'isolation_mode' => 'db_per_tenant',
-        'db_driver' => 'sqlite',
-        'meta' => [
-            'database' => $tenantDb,
-        ],
-    ]);
+    $tenant = setActiveTenantForTest($user);
 
     switchToTenantContext($tenant);
 
@@ -78,13 +51,6 @@ function createDocumentApiContext(): array
     $user->givePermissionTo($permissions);
 
     app(ModuleManager::class)->enableForTenant('document-management', $tenant);
-
-    Artisan::call('migrate', [
-        '--database' => 'tenant',
-        '--path' => app_path('Modules/DocumentManagement/Database/Migrations'),
-        '--realpath' => true,
-        '--force' => true,
-    ]);
 
     return [$user, $tenant];
 }

@@ -80,7 +80,7 @@ final class QualityMonitoringEscalateAlerts extends Command
                 continue;
             }
 
-            $user = User::query()->find($ownerId);
+            $user = User::query()->where('uuid', $ownerId)->first();
             if (! $user) {
                 continue;
             }

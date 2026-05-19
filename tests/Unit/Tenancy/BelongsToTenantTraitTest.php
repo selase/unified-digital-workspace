@@ -5,15 +5,7 @@ declare(strict_types=1);
 use App\Models\Tenant;
 use App\Services\Tenancy\TenantContext;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Config;
 use Tests\Unit\Tenancy\TestTenantModel;
-
-beforeEach(function () {
-    Config::set('database.connections.tenant', [
-        'driver' => 'sqlite',
-        'database' => ':memory:',
-    ]);
-});
 
 test('model using trait uses tenant connection', function () {
     $model = new TestTenantModel();

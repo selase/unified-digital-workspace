@@ -10,9 +10,6 @@ use App\Notifications\Forums\ForumMentionedNotification;
 use App\Services\ModuleManager;
 use App\Services\Tenancy\TenantContext;
 use Illuminate\Notifications\DatabaseNotification;
-use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Str;
 use Spatie\Permission\Models\Permission;
@@ -24,33 +21,10 @@ use function Pest\Laravel\actingAs;
  */
 function createForumsApiContext(): array
 {
-    $tenantDb = database_path('tenant_forums_testing.sqlite');
-    if (file_exists($tenantDb)) {
-        unlink($tenantDb);
-    }
-    touch($tenantDb);
-
-    Config::set('database.connections.tenant', [
-        'driver' => 'sqlite',
-        'database' => $tenantDb,
-        'prefix' => '',
-        'foreign_key_constraints' => true,
-    ]);
-    Config::set('database.default_tenant_connection', 'tenant');
-
-    DB::purge('tenant');
-    DB::reconnect('tenant');
-
     $moderator = User::factory()->create();
     $recipient = User::factory()->create();
 
-    $tenant = setActiveTenantForTest($moderator, [
-        'isolation_mode' => 'db_per_tenant',
-        'db_driver' => 'sqlite',
-        'meta' => [
-            'database' => $tenantDb,
-        ],
-    ]);
+    $tenant = setActiveTenantForTest($moderator);
 
     $tenant->users()->syncWithoutDetaching([$recipient->id]);
 
@@ -78,13 +52,6 @@ function createForumsApiContext(): array
     $recipient->givePermissionTo(['forums.view']);
 
     app(ModuleManager::class)->enableForTenant('forums', $tenant);
-
-    Artisan::call('migrate', [
-        '--database' => 'tenant',
-        '--path' => app_path('Modules/Forums/Database/Migrations'),
-        '--realpath' => true,
-        '--force' => true,
-    ]);
 
     return [$moderator, $tenant, $recipient];
 }
