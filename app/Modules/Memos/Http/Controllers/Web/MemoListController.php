@@ -19,7 +19,7 @@ final class MemoListController extends Controller
         $status = (string) $request->string('status');
 
         $memos = Memo::query()
-            ->with('sender:id,first_name,last_name,email')
+            ->with('sender:uuid,first_name,last_name,email')
             ->withCount('recipients')
             ->when($search !== '', function ($query) use ($search): void {
                 $query->where('subject', 'like', "%{$search}%");

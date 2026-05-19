@@ -18,7 +18,7 @@ final class MemoHubController extends Controller
         abort_if(! $request->user()?->can('memos.view'), 403);
 
         $recentMemos = Memo::query()
-            ->with(['sender:id,first_name,last_name,email', 'recipients', 'actions'])
+            ->with(['sender:uuid,first_name,last_name,email', 'recipients', 'actions'])
             ->latest('updated_at')
             ->limit(10)
             ->get();
