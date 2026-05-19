@@ -29,7 +29,7 @@ Route::get('/sitemap.xml', [CmsPublicSitemapController::class, 'index'])->name('
 // URL params (no pattern); we pull the slug from the request's first
 // segment. A request with more than one segment falls through to a true
 // 404, matching the original behaviour of the /{slug} pattern.
-Route::fallback(function (\Illuminate\Http\Request $request) {
+Route::fallback(function (Illuminate\Http\Request $request) {
     $segments = $request->segments();
     if (count($segments) !== 1) {
         abort(404);

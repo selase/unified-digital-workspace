@@ -14,7 +14,7 @@ final readonly class VideoEmbed
 
     public static function fromUrl(?string $url): ?self
     {
-        $url = trim((string) $url);
+        $url = mb_trim((string) $url);
 
         if ($url === '') {
             return null;
