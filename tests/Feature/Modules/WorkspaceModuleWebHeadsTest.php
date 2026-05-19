@@ -519,12 +519,12 @@ test('cms core web hub renders for enabled tenant module', function (): void {
     app(ModuleManager::class)->enableForTenant('cms-core', $tenant);
 
     PostFactory::new()->forTenant($tenant->id)->create([
-        'author_id' => $user->id,
+        'author_id' => $user->uuid,
         'title' => 'Policy Update',
         'slug' => 'policy-update',
     ]);
     MediaFactory::new()->forTenant($tenant->id)->create([
-        'uploaded_by' => $user->id,
+        'uploaded_by' => $user->uuid,
         'filename' => 'policy-banner.jpg',
         'path' => 'media/policy-banner.jpg',
     ]);
@@ -582,7 +582,7 @@ test('project management web hub renders for enabled tenant module', function ()
 
     $this->actingAs($user)
         ->withSession(['active_tenant_id' => $tenant->id])
-        ->get('/project-management')
+        ->get('/project-management/hub')
         ->assertSuccessful()
         ->assertSee('Project Management Hub')
         ->assertSee('assets/metronic/css/styles.css');
@@ -607,7 +607,7 @@ test('quality monitoring web hub renders for enabled tenant module', function ()
 
     $this->actingAs($user)
         ->withSession(['active_tenant_id' => $tenant->id])
-        ->get('/quality-monitoring')
+        ->get('/quality-monitoring/hub')
         ->assertSuccessful()
         ->assertSee('Quality Monitoring Hub')
         ->assertSee('assets/metronic/css/styles.css');
