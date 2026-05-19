@@ -163,7 +163,7 @@ it('acknowledges required recipients and marks memo acknowledged', function (): 
     $memo = Memo::create([
         'subject' => 'Action Required',
         'body' => 'Please acknowledge receipt.',
-        'sender_id' => $sender->id,
+        'sender_id' => $sender->uuid,
         'status' => Memo::STATUS_SENT,
         'sent_at' => now(),
     ]);

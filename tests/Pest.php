@@ -140,92 +140,26 @@ function dropTenantDatabase(string $name): void
     $pdo->exec(sprintf('DROP DATABASE IF EXISTS "%s" WITH (FORCE)', $name));
 }
 
-function migrateIncidentManagementModule(): void
-{
-    Artisan::call('migrate', [
-        '--database' => 'tenant',
-        '--path' => app_path('Modules/IncidentManagement/Database/Migrations'),
-        '--realpath' => true,
-        '--force' => true,
-    ]);
-}
-
-function migrateMemosModule(): void
-{
-    Artisan::call('migrate', [
-        '--database' => 'tenant',
-        '--path' => app_path('Modules/Memos/Database/Migrations'),
-        '--realpath' => true,
-        '--force' => true,
-    ]);
-}
-
 /**
- * @return array{0: Tenant, 1: string}
+ * Set up a shared-isolation tenant for module integration tests. Module
+ * tables are already migrated onto the tenant connection (aliased to
+ * landlord postgres) by TestCase::setUp(), so no per-tenant DB or
+ * module-specific migrate call is needed.
+ *
+ * The second slot is kept as `null` for backwards compatibility with
+ * callers that destructure `[$tenant, $tenantDb]`.
+ *
+ * @return array{0: Tenant, 1: null}
  */
 function setupIncidentTenantConnection(?User $user = null): array
 {
-    $tenantDb = database_path('tenant_incident_testing.sqlite');
-    if (file_exists($tenantDb)) {
-        unlink($tenantDb);
-    }
-    touch($tenantDb);
-
-    Config::set('database.connections.tenant', [
-        'driver' => 'sqlite',
-        'database' => $tenantDb,
-        'prefix' => '',
-        'foreign_key_constraints' => true,
-    ]);
-    Config::set('database.default_tenant_connection', 'tenant');
-
-    DB::purge('tenant');
-    DB::reconnect('tenant');
-
-    $tenant = setActiveTenantForTest($user, [
-        'isolation_mode' => 'db_per_tenant',
-        'db_driver' => 'sqlite',
-        'meta' => [
-            'database' => $tenantDb,
-        ],
-    ]);
-
-    migrateIncidentManagementModule();
-
-    return [$tenant, $tenantDb];
+    return [setActiveTenantForTest($user), null];
 }
 
 /**
- * @return array{0: Tenant, 1: string}
+ * @return array{0: Tenant, 1: null}
  */
 function setupMemoTenantConnection(?User $user = null): array
 {
-    $tenantDb = database_path('tenant_memos_testing.sqlite');
-    if (file_exists($tenantDb)) {
-        unlink($tenantDb);
-    }
-    touch($tenantDb);
-
-    Config::set('database.connections.tenant', [
-        'driver' => 'sqlite',
-        'database' => $tenantDb,
-        'prefix' => '',
-        'foreign_key_constraints' => true,
-    ]);
-    Config::set('database.default_tenant_connection', 'tenant');
-
-    DB::purge('tenant');
-    DB::reconnect('tenant');
-
-    $tenant = setActiveTenantForTest($user, [
-        'isolation_mode' => 'db_per_tenant',
-        'db_driver' => 'sqlite',
-        'meta' => [
-            'database' => $tenantDb,
-        ],
-    ]);
-
-    migrateMemosModule();
-
-    return [$tenant, $tenantDb];
+    return [setActiveTenantForTest($user), null];
 }

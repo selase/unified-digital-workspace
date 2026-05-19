@@ -37,18 +37,19 @@ final class MemoController extends Controller
     {
         abort_if(! $request->user()?->can('memos.view'), 403);
 
-        $userId = (string) $request->user()?->id;
-        $scope = $this->resolveOrgScope($userId);
+        $senderUuid = (string) $request->user()?->uuid;
+        $polymorphicId = (string) $request->user()?->id;
+        $scope = $this->resolveOrgScope($polymorphicId);
 
         $query = Memo::query()
             ->with($this->memoRelations());
 
-        $query->where(function ($memoQuery) use ($userId, $scope): void {
-            $memoQuery->where('sender_id', $userId)
-                ->orWhereHas('recipients', function ($recipientQuery) use ($userId, $scope): void {
-                    $recipientQuery->where(function ($recipientSubQuery) use ($userId): void {
+        $query->where(function ($memoQuery) use ($senderUuid, $polymorphicId, $scope): void {
+            $memoQuery->where('sender_id', $senderUuid)
+                ->orWhereHas('recipients', function ($recipientQuery) use ($polymorphicId, $scope): void {
+                    $recipientQuery->where(function ($recipientSubQuery) use ($polymorphicId): void {
                         $recipientSubQuery->where('recipient_type', 'user')
-                            ->where('recipient_id', $userId);
+                            ->where('recipient_id', $polymorphicId);
                     })
                         ->orWhere(function ($recipientSubQuery) use ($scope): void {
                             if (! empty($scope['units'])) {
@@ -90,7 +91,7 @@ final class MemoController extends Controller
         $memo = Memo::create([
             'subject' => $data['subject'],
             'body' => $data['body'],
-            'sender_id' => $request->user()?->id,
+            'sender_id' => $request->user()?->uuid,
             'status' => Memo::STATUS_DRAFT,
         ]);
 
@@ -104,14 +105,14 @@ final class MemoController extends Controller
     public function show(Request $request, Memo $memo): MemoResource
     {
         abort_if(! $request->user()?->can('memos.view'), 403);
-        $this->ensureVisible($memo, (string) $request->user()?->id);
+        $this->ensureVisible($memo, (string) $request->user()?->uuid, (string) $request->user()?->id);
 
         return new MemoResource($memo->load($this->memoRelations()));
     }
 
     public function update(MemoUpdateRequest $request, Memo $memo): MemoResource
     {
-        $this->ensureSender($memo, (string) $request->user()?->id);
+        $this->ensureSender($memo, (string) $request->user()?->uuid);
         $this->ensureEditable($memo);
 
         $memo->fill($request->validated());
@@ -123,7 +124,7 @@ final class MemoController extends Controller
     public function destroy(Request $request, Memo $memo): JsonResponse
     {
         abort_if(! $request->user()?->can('memos.delete'), 403);
-        $this->ensureSender($memo, (string) $request->user()?->id);
+        $this->ensureSender($memo, (string) $request->user()?->uuid);
         $this->ensureEditable($memo);
 
         $memo->delete();
@@ -133,7 +134,7 @@ final class MemoController extends Controller
 
     public function storeSignature(MemoSignatureStoreRequest $request, Memo $memo): MemoResource
     {
-        $this->ensureSender($memo, (string) $request->user()?->id);
+        $this->ensureSender($memo, (string) $request->user()?->uuid);
         $this->ensureEditable($memo);
 
         $file = $request->file('signature');
@@ -166,7 +167,7 @@ final class MemoController extends Controller
 
     public function sendVerificationCode(MemoSendCodeRequest $request, Memo $memo, SmsManager $smsManager): JsonResponse
     {
-        $this->ensureSender($memo, (string) $request->user()?->id);
+        $this->ensureSender($memo, (string) $request->user()?->uuid);
         $this->ensureEditable($memo);
 
         if (! $memo->signature_path) {
@@ -211,7 +212,7 @@ final class MemoController extends Controller
 
     public function confirmSend(MemoConfirmSendRequest $request, Memo $memo): JsonResponse|MemoResource
     {
-        $this->ensureSender($memo, (string) $request->user()?->id);
+        $this->ensureSender($memo, (string) $request->user()?->uuid);
 
         if ($memo->status !== Memo::STATUS_PENDING) {
             return new MemoResource($memo->load($this->memoRelations()));
@@ -250,12 +251,13 @@ final class MemoController extends Controller
 
     public function acknowledge(MemoAcknowledgeRequest $request, Memo $memo): JsonResponse|MemoResource
     {
-        $userId = (string) $request->user()?->id;
-        $this->ensureVisible($memo, $userId);
+        $senderUuid = (string) $request->user()?->uuid;
+        $polymorphicId = (string) $request->user()?->id;
+        $this->ensureVisible($memo, $senderUuid, $polymorphicId);
 
         $recipient = $memo->recipients()
             ->where('recipient_type', 'user')
-            ->where('recipient_id', $userId)
+            ->where('recipient_id', $polymorphicId)
             ->first();
 
         if (! $recipient || ! $recipient->requires_ack) {
@@ -264,7 +266,7 @@ final class MemoController extends Controller
 
         $recipient->fill([
             'acknowledged_at' => now(),
-            'acknowledged_by_id' => $userId,
+            'acknowledged_by_id' => $senderUuid,
         ]);
         $recipient->save();
 
@@ -279,13 +281,14 @@ final class MemoController extends Controller
 
     public function storeMinute(MemoMinuteStoreRequest $request, Memo $memo): JsonResponse
     {
-        $userId = (string) $request->user()?->id;
-        $this->ensureVisible($memo, $userId);
+        $senderUuid = (string) $request->user()?->uuid;
+        $polymorphicId = (string) $request->user()?->id;
+        $this->ensureVisible($memo, $senderUuid, $polymorphicId);
 
         $minute = MemoMinute::create([
             'memo_id' => $memo->id,
             'tenant_id' => $memo->tenant_id,
-            'author_id' => $userId,
+            'author_id' => $senderUuid,
             'body' => $request->validated()['body'],
         ]);
 
@@ -296,18 +299,20 @@ final class MemoController extends Controller
 
     public function share(MemoShareRequest $request, Memo $memo): MemoResource
     {
-        $userId = (string) $request->user()?->id;
-        $this->ensureVisible($memo, $userId);
+        $senderUuid = (string) $request->user()?->uuid;
+        $polymorphicId = (string) $request->user()?->id;
+        $this->ensureVisible($memo, $senderUuid, $polymorphicId);
 
-        $this->syncRecipients($memo, $request->validated()['recipients'], $userId);
+        $this->syncRecipients($memo, $request->validated()['recipients'], $senderUuid);
 
         return new MemoResource($memo->load($this->memoRelations()));
     }
 
     public function storeAction(MemoActionStoreRequest $request, Memo $memo): JsonResponse
     {
-        $userId = (string) $request->user()?->id;
-        $this->ensureVisible($memo, $userId);
+        $senderUuid = (string) $request->user()?->uuid;
+        $polymorphicId = (string) $request->user()?->id;
+        $this->ensureVisible($memo, $senderUuid, $polymorphicId);
 
         $data = $request->validated();
 
@@ -328,8 +333,9 @@ final class MemoController extends Controller
 
     public function updateAction(MemoActionUpdateRequest $request, Memo $memo, MemoAction $action): MemoActionResource
     {
-        $userId = (string) $request->user()?->id;
-        $this->ensureVisible($memo, $userId);
+        $senderUuid = (string) $request->user()?->uuid;
+        $polymorphicId = (string) $request->user()?->id;
+        $this->ensureVisible($memo, $senderUuid, $polymorphicId);
 
         if ($action->memo_id !== $memo->id) {
             abort(404);
@@ -366,19 +372,26 @@ final class MemoController extends Controller
         }
     }
 
-    private function ensureVisible(Memo $memo, string $userId): void
+    /**
+     * The acting user is identified by two distinct keys:
+     *   - $senderUuid matches `memos.sender_id` (UUID column).
+     *   - $polymorphicId matches `memo_recipients.recipient_id` (string column
+     *     that stores bigint IDs for user recipients, alongside ints for
+     *     units/departments/directorates).
+     */
+    private function ensureVisible(Memo $memo, string $senderUuid, string $polymorphicId): void
     {
-        if ($memo->sender_id === $userId) {
+        if ($memo->sender_id === $senderUuid) {
             return;
         }
 
-        $scope = $this->resolveOrgScope($userId);
+        $scope = $this->resolveOrgScope($polymorphicId);
 
         $isRecipient = $memo->recipients()
-            ->where(function ($recipientQuery) use ($userId, $scope): void {
-                $recipientQuery->where(function ($recipientSubQuery) use ($userId): void {
+            ->where(function ($recipientQuery) use ($polymorphicId, $scope): void {
+                $recipientQuery->where(function ($recipientSubQuery) use ($polymorphicId): void {
                     $recipientSubQuery->where('recipient_type', 'user')
-                        ->where('recipient_id', $userId);
+                        ->where('recipient_id', $polymorphicId);
                 })
                     ->orWhere(function ($recipientSubQuery) use ($scope): void {
                         if (! empty($scope['units'])) {
@@ -407,9 +420,9 @@ final class MemoController extends Controller
         abort_if(! $isRecipient, 403);
     }
 
-    private function ensureSender(Memo $memo, string $userId): void
+    private function ensureSender(Memo $memo, string $senderUuid): void
     {
-        abort_if($memo->sender_id !== $userId, 403);
+        abort_if($memo->sender_id !== $senderUuid, 403);
     }
 
     private function ensureEditable(Memo $memo): void

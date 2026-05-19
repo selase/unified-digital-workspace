@@ -323,7 +323,7 @@ test('memos web hub renders for enabled tenant module', function (): void {
     app(ModuleManager::class)->enableForTenant('memos', $tenant);
 
     Memo::create([
-        'sender_id' => (string) $user->id,
+        'sender_id' => (string) $user->uuid,
         'subject' => 'Q1 Budget Memo',
         'body' => 'Please review the quarterly budget memo.',
         'status' => Memo::STATUS_SENT,
