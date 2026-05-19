@@ -94,7 +94,7 @@ final class QualityMonitoringGenerateAlerts extends Command
             ]);
 
             if ($activity->responsible_id) {
-                $user = User::query()->find($activity->responsible_id);
+                $user = User::query()->where('uuid', $activity->responsible_id)->first();
                 $this->sendAlertNotification($user, $alert);
             }
         }
@@ -141,7 +141,7 @@ final class QualityMonitoringGenerateAlerts extends Command
 
             $userId = $kpi->activity?->responsible_id;
             if ($userId) {
-                $user = User::query()->find($userId);
+                $user = User::query()->where('uuid', $userId)->first();
                 $this->sendAlertNotification($user, $alert);
             }
         }

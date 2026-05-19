@@ -11,9 +11,6 @@ use App\Modules\CmsCore\Database\Factories\PostTypeFactory;
 use App\Modules\CmsCore\Database\Factories\TagFactory;
 use App\Services\ModuleManager;
 use App\Services\Tenancy\TenantContext;
-use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Str;
 use Spatie\Permission\Models\Permission;
@@ -25,31 +22,8 @@ use function Pest\Laravel\actingAs;
  */
 function createCmsApiContext(): array
 {
-    $tenantDb = database_path('tenant_cms_testing.sqlite');
-    if (file_exists($tenantDb)) {
-        unlink($tenantDb);
-    }
-    touch($tenantDb);
-
-    Config::set('database.connections.tenant', [
-        'driver' => 'sqlite',
-        'database' => $tenantDb,
-        'prefix' => '',
-        'foreign_key_constraints' => true,
-    ]);
-    Config::set('database.default_tenant_connection', 'tenant');
-
-    DB::purge('tenant');
-    DB::reconnect('tenant');
-
     $user = User::factory()->create();
-    $tenant = setActiveTenantForTest($user, [
-        'isolation_mode' => 'db_per_tenant',
-        'db_driver' => 'sqlite',
-        'meta' => [
-            'database' => $tenantDb,
-        ],
-    ]);
+    $tenant = setActiveTenantForTest($user);
 
     switchToCmsTenantContext($tenant);
 
@@ -78,13 +52,6 @@ function createCmsApiContext(): array
 
     $user->givePermissionTo($permissions);
     app(ModuleManager::class)->enableForTenant('cms-core', $tenant);
-
-    Artisan::call('migrate', [
-        '--database' => 'tenant',
-        '--path' => app_path('Modules/CmsCore/Database/Migrations'),
-        '--realpath' => true,
-        '--force' => true,
-    ]);
 
     return [$user, $tenant];
 }

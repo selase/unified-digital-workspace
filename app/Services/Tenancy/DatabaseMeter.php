@@ -34,7 +34,6 @@ final class DatabaseMeter
         return match ($driver) {
             'pgsql' => (int) $connection->selectOne('SELECT pg_database_size(current_database()) as size')->size,
             'mysql' => (int) $connection->selectOne('SELECT SUM(data_length + index_length) as size FROM information_schema.TABLES WHERE table_schema = DATABASE()')->size,
-            'sqlite' => (int) filesize($connection->getDatabaseName()),
             default => 0,
         };
     }

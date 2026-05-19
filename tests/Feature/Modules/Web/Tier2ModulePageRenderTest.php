@@ -4,42 +4,16 @@ declare(strict_types=1);
 
 use App\Models\User;
 use App\Services\ModuleManager;
-use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Spatie\Permission\Models\Permission;
 
 use function Pest\Laravel\actingAs;
 
 beforeEach(function (): void {
-    $tenantDb = database_path('tenant_tier2_page_testing.sqlite');
-    if (file_exists($tenantDb)) {
-        unlink($tenantDb);
-    }
-    touch($tenantDb);
-
-    Config::set('database.connections.tenant', [
-        'driver' => 'sqlite',
-        'database' => $tenantDb,
-        'prefix' => '',
-        'foreign_key_constraints' => true,
-    ]);
-    Config::set('database.default_tenant_connection', 'tenant');
-    DB::purge('tenant');
-    DB::reconnect('tenant');
-
     $this->user = User::factory()->create();
     $this->tenant = setActiveTenantForTest($this->user, [
         'slug' => 'tier2-pages-'.uniqid(),
-        'isolation_mode' => 'db_per_tenant',
-        'db_driver' => 'sqlite',
-        'meta' => [
-            'database' => $tenantDb,
-        ],
     ]);
-
-    migrateTier2Modules();
 });
 
 // --- Document Management ---
@@ -214,26 +188,6 @@ it('renders alerts page with kt-card pattern and search form', function (): void
 });
 
 // --- Helpers ---
-
-function migrateTier2Modules(): void
-{
-    $paths = [
-        app_path('Modules/DocumentManagement/Database/Migrations'),
-        app_path('Modules/Forums/Database/Migrations'),
-        app_path('Modules/Memos/Database/Migrations'),
-        app_path('Modules/ProjectManagement/Database/Migrations'),
-        app_path('Modules/QualityMonitoring/Database/Migrations'),
-    ];
-
-    foreach ($paths as $path) {
-        Artisan::call('migrate', [
-            '--database' => 'tenant',
-            '--path' => $path,
-            '--realpath' => true,
-            '--force' => true,
-        ]);
-    }
-}
 
 /**
  * @param  array<int, string>  $permissions

@@ -5,26 +5,10 @@ declare(strict_types=1);
 use App\Models\Tenant;
 use App\Models\UserLoginHistory;
 use App\Services\Tenancy\TenantContext;
-use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Str;
 
 beforeEach(function () {
-    Config::set('database.connections.tenant', [
-        'driver' => 'sqlite',
-        'database' => ':memory:',
-    ]);
-
-    Artisan::call('migrate', [
-        '--path' => 'database/migrations/landlord',
-        '--realpath' => true,
-    ]);
-
-    Artisan::call('migrate', [
-        '--database' => 'tenant',
-        '--path' => 'database/migrations/tenant',
-        '--realpath' => true,
-    ]);
+    refreshTenantDatabases();
 });
 
 test('tenant data is strictly isolated in shared db', function () {

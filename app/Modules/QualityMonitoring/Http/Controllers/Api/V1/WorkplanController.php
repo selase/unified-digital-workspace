@@ -117,7 +117,7 @@ final class WorkplanController extends Controller
                 'status' => 'submitted',
                 'payload' => $payload,
                 'submitted_at' => now(),
-                'created_by' => $request->user()?->id,
+                'created_by' => $request->user()?->uuid,
             ]);
 
             $workplan->status = 'submitted';
@@ -133,7 +133,7 @@ final class WorkplanController extends Controller
 
         Review::create([
             'workplan_id' => $workplan->id,
-            'reviewer_id' => $request->user()?->id,
+            'reviewer_id' => $request->user()?->uuid,
             'status' => 'approved',
             'comments' => $request->input('comments'),
             'submitted_at' => now(),
@@ -158,7 +158,7 @@ final class WorkplanController extends Controller
 
         Review::create([
             'workplan_id' => $workplan->id,
-            'reviewer_id' => $request->user()?->id,
+            'reviewer_id' => $request->user()?->uuid,
             'status' => 'rejected',
             'comments' => $request->input('comments'),
             'submitted_at' => now(),

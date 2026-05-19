@@ -16,7 +16,7 @@ final class KpiUpdateController extends Controller
     {
         $update = KpiUpdate::create([
             'kpi_id' => $kpi->id,
-            'captured_by_id' => $request->user()?->id,
+            'captured_by_id' => $request->user()?->uuid,
             ...$request->validated(),
         ]);
 

@@ -19,130 +19,31 @@ use App\Modules\HrmsCore\Models\Recruitment\JobRequisition;
 use App\Modules\IncidentManagement\Models\Incident;
 use App\Modules\Memos\Models\Memo;
 use App\Services\ModuleManager;
-use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Spatie\Permission\Models\Permission;
 
 /**
- * @return array{0: Tenant, 1: string}
+ * @return array{0: Tenant, 1: null}
  */
 function setupDocumentWebTenant(User $user): array
 {
-    $tenantDb = database_path('tenant_documents_web_testing.sqlite');
-    if (file_exists($tenantDb)) {
-        unlink($tenantDb);
-    }
-    touch($tenantDb);
-
-    Config::set('database.connections.tenant', [
-        'driver' => 'sqlite',
-        'database' => $tenantDb,
-        'prefix' => '',
-        'foreign_key_constraints' => false,
-    ]);
-    Config::set('database.default_tenant_connection', 'tenant');
-
-    DB::purge('tenant');
-    DB::reconnect('tenant');
-
-    $tenant = setActiveTenantForTest($user, [
-        'isolation_mode' => 'db_per_tenant',
-        'db_driver' => 'sqlite',
-        'meta' => [
-            'database' => $tenantDb,
-        ],
-    ]);
-
-    Artisan::call('migrate', [
-        '--database' => 'tenant',
-        '--path' => app_path('Modules/DocumentManagement/Database/Migrations'),
-        '--realpath' => true,
-        '--force' => true,
-    ]);
-
-    return [$tenant, $tenantDb];
+    return [setActiveTenantForTest($user), null];
 }
 
 /**
- * @return array{0: Tenant, 1: string}
+ * @return array{0: Tenant, 1: null}
  */
 function setupHrmsWebTenant(User $user): array
 {
-    $tenantDb = database_path('tenant_hrms_web_testing.sqlite');
-    if (file_exists($tenantDb)) {
-        unlink($tenantDb);
-    }
-    touch($tenantDb);
-
-    Config::set('database.connections.tenant', [
-        'driver' => 'sqlite',
-        'database' => $tenantDb,
-        'prefix' => '',
-        'foreign_key_constraints' => false,
-    ]);
-    Config::set('database.default_tenant_connection', 'tenant');
-
-    DB::purge('tenant');
-    DB::reconnect('tenant');
-
-    $tenant = setActiveTenantForTest($user, [
-        'isolation_mode' => 'db_per_tenant',
-        'db_driver' => 'sqlite',
-        'meta' => [
-            'database' => $tenantDb,
-        ],
-    ]);
-
-    Artisan::call('migrate', [
-        '--database' => 'tenant',
-        '--path' => app_path('Modules/HrmsCore/Database/Migrations'),
-        '--realpath' => true,
-        '--force' => true,
-    ]);
-
-    return [$tenant, $tenantDb];
+    return [setActiveTenantForTest($user), null];
 }
 
 /**
- * @return array{0: Tenant, 1: string}
+ * @return array{0: Tenant, 1: null}
  */
 function setupCmsWebTenant(User $user): array
 {
-    $tenantDb = database_path('tenant_cms_web_testing.sqlite');
-    if (file_exists($tenantDb)) {
-        unlink($tenantDb);
-    }
-    touch($tenantDb);
-
-    Config::set('database.connections.tenant', [
-        'driver' => 'sqlite',
-        'database' => $tenantDb,
-        'prefix' => '',
-        'foreign_key_constraints' => true,
-    ]);
-    Config::set('database.default_tenant_connection', 'tenant');
-
-    DB::purge('tenant');
-    DB::reconnect('tenant');
-
-    $tenant = setActiveTenantForTest($user, [
-        'isolation_mode' => 'db_per_tenant',
-        'db_driver' => 'sqlite',
-        'meta' => [
-            'database' => $tenantDb,
-        ],
-    ]);
-
-    Artisan::call('migrate', [
-        '--database' => 'tenant',
-        '--path' => app_path('Modules/CmsCore/Database/Migrations'),
-        '--realpath' => true,
-        '--force' => true,
-    ]);
-
-    return [$tenant, $tenantDb];
+    return [setActiveTenantForTest($user), null];
 }
 
 test('document management web hub renders for enabled tenant module', function (): void {

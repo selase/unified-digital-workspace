@@ -9,13 +9,6 @@ use App\Services\Tenancy\TenantContext;
 use Illuminate\Support\Facades\Config;
 use Tests\Fixtures\TestTenantJob;
 
-beforeEach(function () {
-    Config::set('database.connections.tenant', [
-        'driver' => 'sqlite',
-        'database' => ':memory:',
-    ]);
-});
-
 test('it restores tenant context', function () {
     $tenant = Tenant::create(['name' => 'Job Tenant', 'slug' => 'job-tenant', 'isolation_mode' => 'shared']);
     $tenantId = $tenant->id;
