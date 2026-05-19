@@ -22,7 +22,7 @@ function invokeCandidateNames(string $tenantId): array
 }
 
 test('candidate names default to the baseline when tenant has no enabled modules', function (): void {
-    $names = invokeCandidateNames('not-a-real-tenant-id');
+    $names = invokeCandidateNames((string) Illuminate\Support\Str::uuid());
 
     expect($names)->toBe(Permission::BASELINE_TENANT_PERMISSIONS);
 });

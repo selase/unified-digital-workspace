@@ -58,8 +58,10 @@ test('it can migrate a specific tenant even when tenant is not active', function
 });
 
 test('it fails when tenant option references unknown tenant', function () {
-    $this->artisan('tenants:migrate', ['--tenant' => 'missing-tenant-id'])
-        ->expectsOutput("Tenant 'missing-tenant-id' not found.")
+    $missingId = (string) Illuminate\Support\Str::uuid();
+
+    $this->artisan('tenants:migrate', ['--tenant' => $missingId])
+        ->expectsOutput("Tenant '{$missingId}' not found.")
         ->assertExitCode(1);
 });
 
