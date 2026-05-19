@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use PDO;
+use PDOException;
 use RuntimeException;
 
 final class TenantProvisioner
@@ -67,15 +68,22 @@ final class TenantProvisioner
                 // Laravel's connection manager + test framework's RefreshDatabase both
                 // wrap operations in transactions. Open a dedicated PDO bound to the
                 // landlord credentials so the DDL runs outside whatever transaction
-                // the caller may be in.
+                // the caller may be in. Preserve sslmode from the landlord config so
+                // this still works against managed postgres that enforces TLS.
                 $landlord = config('database.connections.landlord');
                 $dsn = sprintf(
-                    'pgsql:host=%s;port=%s;dbname=%s',
+                    'pgsql:host=%s;port=%s;dbname=%s;sslmode=%s',
                     $landlord['host'] ?? '127.0.0.1',
                     $landlord['port'] ?? 5432,
-                    $landlord['database']
+                    $landlord['database'],
+                    $landlord['sslmode'] ?? 'prefer'
                 );
-                $rawPdo = new PDO($dsn, $landlord['username'] ?? null, $landlord['password'] ?? null);
+
+                try {
+                    $rawPdo = new PDO($dsn, $landlord['username'] ?? null, $landlord['password'] ?? null);
+                } catch (PDOException $e) {
+                    throw new RuntimeException("Failed to open landlord PDO for CREATE DATABASE ({$dbName}): ".$e->getMessage(), 0, $e);
+                }
                 $rawPdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
                 $check = $rawPdo->prepare('SELECT 1 FROM pg_database WHERE datname = ?');

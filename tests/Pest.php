@@ -124,11 +124,13 @@ function refreshTenantDatabases(): void
 function dropTenantDatabase(string $name): void
 {
     $landlord = config('database.connections.landlord');
+    // Preserve sslmode so this still works when the landlord requires TLS.
     $dsn = sprintf(
-        'pgsql:host=%s;port=%s;dbname=%s',
+        'pgsql:host=%s;port=%s;dbname=%s;sslmode=%s',
         $landlord['host'] ?? '127.0.0.1',
         $landlord['port'] ?? 5432,
-        $landlord['database']
+        $landlord['database'],
+        $landlord['sslmode'] ?? 'prefer'
     );
     $pdo = new PDO($dsn, $landlord['username'] ?? null, $landlord['password'] ?? null);
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
