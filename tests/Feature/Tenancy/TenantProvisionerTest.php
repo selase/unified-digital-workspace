@@ -9,23 +9,31 @@ use App\Services\Tenancy\TenantProvisioner;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Schema;
 
-it('migrates enabled module tables during provisioning', function (): void {
-    if (! file_exists(storage_path('tenants'))) {
-        mkdir(storage_path('tenants'), 0755, true);
-    }
+beforeEach(function () {
+    $this->dedicatedTenantDbsToDrop = [];
+});
 
+afterEach(function () {
+    foreach ($this->dedicatedTenantDbsToDrop ?? [] as $dbName) {
+        dropTenantDatabase($dbName);
+    }
+});
+
+it('migrates enabled module tables during provisioning', function (): void {
     $tenant = Tenant::factory()->create([
         'name' => 'Provisioned Tenant',
         'slug' => 'provisioned-tenant',
         'isolation_mode' => 'db_per_tenant',
-        'db_driver' => 'sqlite',
+        'db_driver' => 'pgsql',
     ]);
 
     app(ModuleManager::class)->enableForTenant('memos', $tenant);
 
     app(TenantProvisioner::class)->provision($tenant);
 
-    app(TenantDatabaseManager::class)->configure($tenant);
+    $this->dedicatedTenantDbsToDrop[] = $tenant->fresh()->meta['database'];
+
+    app(TenantDatabaseManager::class)->configure($tenant->fresh());
 
     expect(Schema::connection('tenant')->hasTable('memos'))->toBeTrue();
 });
@@ -42,13 +50,11 @@ it('configures shared tenant connections to match landlord settings', function (
 });
 
 it('configures dedicated tenant connections using tenant metadata', function (): void {
-    $tenantDatabasePath = database_path('tenant_config_testing.sqlite');
-
     $tenant = Tenant::factory()->create([
         'isolation_mode' => 'db_per_tenant',
-        'db_driver' => 'sqlite',
+        'db_driver' => 'pgsql',
         'meta' => [
-            'database' => $tenantDatabasePath,
+            'database' => 'tenant_config_test_db',
         ],
     ]);
 
@@ -56,8 +62,8 @@ it('configures dedicated tenant connections using tenant metadata', function ():
 
     $tenantConfig = Config::get('database.connections.tenant');
 
-    expect($tenantConfig['driver'])->toBe('sqlite');
-    expect($tenantConfig['database'])->toBe($tenantDatabasePath);
+    expect($tenantConfig['driver'])->toBe('pgsql');
+    expect($tenantConfig['database'])->toBe('tenant_config_test_db');
 
     Config::set('database.connections.tenant', Config::get('database.connections.landlord'));
 });
