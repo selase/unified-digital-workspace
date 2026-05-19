@@ -54,16 +54,7 @@ final class TenantProvisioner
         Log::info("Creating database: {$dbName} for tenant {$tenant->id}");
 
         try {
-            if ($tenant->db_driver === 'sqlite') {
-                $dbPath = storage_path('tenants/'.$tenant->id.'.sqlite');
-                if (! file_exists(dirname($dbPath))) {
-                    mkdir(dirname($dbPath), 0755, true);
-                }
-                if (! file_exists($dbPath)) {
-                    touch($dbPath);
-                }
-                $dbName = $dbPath;
-            } elseif ($tenant->db_driver === 'pgsql') {
+            if ($tenant->db_driver === 'pgsql') {
                 // PostgreSQL forbids CREATE DATABASE inside a transaction block, and
                 // Laravel's connection manager + test framework's RefreshDatabase both
                 // wrap operations in transactions. Open a dedicated PDO bound to the
