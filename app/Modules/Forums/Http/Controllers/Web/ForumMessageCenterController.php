@@ -20,7 +20,7 @@ final class ForumMessageCenterController extends Controller
         $userUuid = (string) $request->user()?->uuid;
 
         $messages = ForumMessage::query()
-            ->with(['sender:id,first_name,last_name'])
+            ->with(['sender:uuid,first_name,last_name'])
             ->withCount('recipients')
             ->where(function ($query) use ($userUuid): void {
                 $query
