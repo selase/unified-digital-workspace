@@ -116,6 +116,30 @@ function refreshTenantDatabases(): void
     ]);
 }
 
+/**
+ * Drop a dynamically-provisioned tenant postgres database. Uses a raw PDO
+ * because DROP DATABASE forbids running inside a transaction block, and
+ * RefreshDatabase keeps the landlord connection in one for the test lifetime.
+ */
+function dropTenantDatabase(string $name): void
+{
+    $landlord = config('database.connections.landlord');
+    // Preserve sslmode so this still works when the landlord requires TLS.
+    $dsn = sprintf(
+        'pgsql:host=%s;port=%s;dbname=%s;sslmode=%s',
+        $landlord['host'] ?? '127.0.0.1',
+        $landlord['port'] ?? 5432,
+        $landlord['database'],
+        $landlord['sslmode'] ?? 'prefer'
+    );
+    $pdo = new PDO($dsn, $landlord['username'] ?? null, $landlord['password'] ?? null);
+    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    // Purge Laravel's tracked tenant connection so its PDO releases the DB
+    // before we DROP, then use FORCE (pg13+) to evict any other holders.
+    DB::purge('tenant');
+    $pdo->exec(sprintf('DROP DATABASE IF EXISTS "%s" WITH (FORCE)', $name));
+}
+
 function migrateIncidentManagementModule(): void
 {
     Artisan::call('migrate', [
