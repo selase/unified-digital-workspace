@@ -27,7 +27,7 @@ final class CheckUsageAlerts extends Command
     /**
      * Execute the console command.
      */
-    public function handle(UsageLimitService $limitService)
+    public function handle(UsageLimitService $limitService): void
     {
         $this->info('Checking usage alerts for all tenants...');
 

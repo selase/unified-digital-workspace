@@ -26,7 +26,7 @@ final class ProcessUsageRollups extends Command
     /**
      * Execute the console command.
      */
-    public function handle()
+    public function handle(): void
     {
         $targetPeriod = $this->option('period');
         $sourcePeriod = $targetPeriod === 'hour' ? 'minute' : 'hour';

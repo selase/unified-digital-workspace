@@ -25,7 +25,7 @@ final class ResetTenantUsageCommand extends Command
     /**
      * Execute the console command.
      */
-    public function handle()
+    public function handle(): void
     {
         $service = app(\App\Services\Tenancy\FeatureMeteringService::class);
         $tenantQuery = \App\Models\Tenant::query();

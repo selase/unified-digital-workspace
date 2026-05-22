@@ -29,7 +29,7 @@ final class AuditTenantStorage extends Command
     /**
      * Execute the console command.
      */
-    public function handle(StorageMeter $meter, UsageService $usageService)
+    public function handle(StorageMeter $meter, UsageService $usageService): void
     {
         $tenants = Tenant::all();
 

@@ -29,7 +29,7 @@ final class AggregateLlmUsage extends Command
     /**
      * Execute the console command.
      */
-    public function handle()
+    public function handle(): void
     {
         $days = (int) $this->option('days');
         $startDate = Carbon::today()->subDays($days - 1);
