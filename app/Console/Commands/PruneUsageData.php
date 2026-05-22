@@ -26,7 +26,7 @@ final class PruneUsageData extends Command
     /**
      * Execute the console command.
      */
-    public function handle()
+    public function handle(): void
     {
         $this->info('Pruning old usage data...');
 

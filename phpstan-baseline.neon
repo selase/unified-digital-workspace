@@ -1,36 +1,6 @@
 parameters:
 	ignoreErrors:
 		-
-			rawMessage: 'Method App\Console\Commands\AggregateLlmUsage::handle() has no return type specified.'
-			identifier: missingType.return
-			count: 1
-			path: app/Console/Commands/AggregateLlmUsage.php
-
-		-
-			rawMessage: 'Method App\Console\Commands\AuditTenantDatabase::handle() has no return type specified.'
-			identifier: missingType.return
-			count: 1
-			path: app/Console/Commands/AuditTenantDatabase.php
-
-		-
-			rawMessage: 'Method App\Console\Commands\AuditTenantStorage::handle() has no return type specified.'
-			identifier: missingType.return
-			count: 1
-			path: app/Console/Commands/AuditTenantStorage.php
-
-		-
-			rawMessage: 'Method App\Console\Commands\CheckUsageAlerts::handle() has no return type specified.'
-			identifier: missingType.return
-			count: 1
-			path: app/Console/Commands/CheckUsageAlerts.php
-
-		-
-			rawMessage: 'Method App\Console\Commands\GenerateMonthlyInvoices::handle() has no return type specified.'
-			identifier: missingType.return
-			count: 1
-			path: app/Console/Commands/GenerateMonthlyInvoices.php
-
-		-
 			rawMessage: 'Property App\Modules\IncidentManagement\Models\IncidentReminder::$sent_at (Illuminate\Support\Carbon|null) does not accept Carbon\CarbonImmutable.'
 			identifier: assign.propertyType
 			count: 1
@@ -41,18 +11,6 @@ parameters:
 			identifier: argument.type
 			count: 1
 			path: app/Console/Commands/ModuleMigrateCommand.php
-
-		-
-			rawMessage: 'Method App\Console\Commands\ProcessUsageRollups::handle() has no return type specified.'
-			identifier: missingType.return
-			count: 1
-			path: app/Console/Commands/ProcessUsageRollups.php
-
-		-
-			rawMessage: 'Method App\Console\Commands\PruneUsageData::handle() has no return type specified.'
-			identifier: missingType.return
-			count: 1
-			path: app/Console/Commands/PruneUsageData.php
 
 		-
 			rawMessage: Access to an undefined property App\Modules\QualityMonitoring\Models\Alert::$escalated_at.
@@ -125,12 +83,6 @@ parameters:
 			identifier: nullsafe.neverNull
 			count: 1
 			path: app/Console/Commands/QualityMonitoringGenerateAlerts.php
-
-		-
-			rawMessage: 'Method App\Console\Commands\ResetTenantUsageCommand::handle() has no return type specified.'
-			identifier: missingType.return
-			count: 1
-			path: app/Console/Commands/ResetTenantUsageCommand.php
 
 		-
 			rawMessage: 'Strict comparison using === between int<0, max> and string will always evaluate to false.'
@@ -1909,24 +1861,6 @@ parameters:
 			path: app/Models/Tenant.php
 
 		-
-			rawMessage: 'Class App\Models\Tenant\Post uses generic trait Illuminate\Database\Eloquent\Factories\HasFactory but does not specify its types: TFactory'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/Tenant/Post.php
-
-		-
-			rawMessage: 'Method App\Models\Tenant\Post::generateUuid() has no return type specified.'
-			identifier: missingType.return
-			count: 1
-			path: app/Models/Tenant/Post.php
-
-		-
-			rawMessage: 'Method App\Models\Tenant\Post::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/Tenant/Post.php
-
-		-
 			rawMessage: 'Class App\Models\TenantApiKey uses generic trait Illuminate\Database\Eloquent\Factories\HasFactory but does not specify its types: TFactory'
 			identifier: missingType.generics
 			count: 1
@@ -3615,7 +3549,7 @@ parameters:
 		-
 			rawMessage: Using nullsafe property access on non-nullable type App\Models\User. Use -> instead.
 			identifier: nullsafe.neverNull
-			count: 3
+			count: 5
 			path: app/Modules/Memos/Http/Controllers/Api/V1/MemoController.php
 
 		-
@@ -5197,8 +5131,20 @@ parameters:
 			path: database/factories/SubscriptionFactory.php
 
 		-
+			rawMessage: Class App\Models\Tenant\Post not found.
+			identifier: class.notFound
+			count: 1
+			path: database/factories/Tenant/PostFactory.php
+
+		-
 			rawMessage: 'Class Database\Factories\Tenant\PostFactory extends generic class Illuminate\Database\Eloquent\Factories\Factory but does not specify its types: TModel'
 			identifier: missingType.generics
+			count: 1
+			path: database/factories/Tenant/PostFactory.php
+
+		-
+			rawMessage: 'Property Database\Factories\Tenant\PostFactory::$model (class-string<Illuminate\Database\Eloquent\Model>) does not accept default value of type string.'
+			identifier: property.defaultValue
 			count: 1
 			path: database/factories/Tenant/PostFactory.php
 
@@ -5225,6 +5171,12 @@ parameters:
 			identifier: nullsafe.neverNull
 			count: 3
 			path: database/seeders/CompletedModulesDemoSeeder.php
+
+		-
+			rawMessage: 'Call to static method create() on an unknown class App\Models\Tenant\Post.'
+			identifier: class.notFound
+			count: 2
+			path: database/seeders/PostSeeder.php
 
 		-
 			rawMessage: 'Method Database\Seeders\RoleSeeder::roles() return type has no value type specified in iterable type array.'

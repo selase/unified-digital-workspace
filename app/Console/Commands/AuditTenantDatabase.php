@@ -29,7 +29,7 @@ final class AuditTenantDatabase extends Command
     /**
      * Execute the console command.
      */
-    public function handle(DatabaseMeter $meter, UsageService $usageService)
+    public function handle(DatabaseMeter $meter, UsageService $usageService): void
     {
         $tenants = Tenant::all();
 

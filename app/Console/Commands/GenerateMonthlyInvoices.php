@@ -29,7 +29,7 @@ final class GenerateMonthlyInvoices extends Command
     /**
      * Execute the console command.
      */
-    public function handle(InvoicingService $invoicingService)
+    public function handle(InvoicingService $invoicingService): void
     {
         $monthStr = $this->option('month') ?: now()->subMonth()->format('Y-m');
         $start = Carbon::parse($monthStr)->startOfMonth();
