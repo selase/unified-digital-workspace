@@ -127,7 +127,21 @@ final class Media extends Model
             return \Illuminate\Support\Facades\Storage::disk('public')->url($this->path);
         }
 
-        return route('cms-core.media.serve', $this);
+        return $this->serveUrl();
+    }
+
+    /**
+     * URL of the media serve route, versioned with a short content hash.
+     *
+     * The route answers with a one-year immutable cache header, so a file that
+     * is replaced under the same URL would otherwise stay stale in browsers.
+     * The hash changes whenever the file does, giving it a fresh URL.
+     */
+    public function serveUrl(bool $absolute = true): string
+    {
+        $url = route('cms-core.media.serve', $this, $absolute);
+
+        return $this->checksum_sha256 ? $url.'?v='.mb_substr($this->checksum_sha256, 0, 12) : $url;
     }
 
     /**
