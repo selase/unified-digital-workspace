@@ -163,3 +163,11 @@ it('shows ampersands in slide eyebrows once-escaped, not double-escaped', functi
         ->toContain('Founder &amp; President</p>')
         ->not->toContain('&amp;amp;');
 });
+
+it('shows portrait photos in the story as a centred card instead of full width', function (): void {
+    $story = Post::query()->where('slug', ThyroidAwarenessWeek2026Seeder::STORY_SLUG)->firstOrFail();
+
+    expect($story->body)
+        ->toContain('<figure class="mx-auto max-w-md"><img src="/cms-media/')
+        ->toContain('<figure><img src="/cms-media/');
+});
