@@ -32,6 +32,8 @@ final class ThyroidAwarenessWeek2026Seeder extends Seeder
 {
     public const STORY_SLUG = 'international-thyroid-awareness-week-2026-thyroid-and-nutrition';
 
+    public const FOUNDER_PORTRAIT_PATH = 'cms/news/awareness-week-2026/founder-portrait.jpg';
+
     private const MEDIA_DIRECTORY = 'cms/news/awareness-week-2026';
 
     /**
@@ -90,6 +92,14 @@ final class ThyroidAwarenessWeek2026Seeder extends Seeder
             'title' => 'Dr. Nana Adwoa Konadu Dsane — International Thyroid Awareness Week 2026',
             'alt' => 'Dr. Nana Adwoa Konadu Dsane, Founder of Thyroid Ghana Foundation, in an International Thyroid Awareness Week t-shirt.',
         ],
+        'founder-portrait' => [
+            'title' => 'Dr. Nana Adwoa Konadu Dsane — Founder & President',
+            'alt' => 'Portrait of Dr. Nana Adwoa Konadu Dsane, Founder and President of Thyroid Ghana Foundation.',
+        ],
+        'founder-hero' => [
+            'title' => 'Dr. Nana Adwoa Konadu Dsane — hero banner',
+            'alt' => 'Dr. Nana Adwoa Konadu Dsane, Founder of Thyroid Ghana Foundation, smiling in an awareness-week t-shirt.',
+        ],
         'participants-group-photo' => [
             'title' => 'International Thyroid Awareness Week 2026 — participants group photo',
             'alt' => 'Group photo of participants, speakers and partners after the forum.',
@@ -124,7 +134,7 @@ final class ThyroidAwarenessWeek2026Seeder extends Seeder
         $story = $this->publishStory();
         $this->publishSlides($tenant, $story);
 
-        $this->call(ThyroidFounderTitleSeeder::class);
+        $this->call(ThyroidFounderDetailsSeeder::class);
 
         CmsSitemapService::forget((string) $tenant->id);
     }
@@ -204,7 +214,7 @@ final class ThyroidAwarenessWeek2026Seeder extends Seeder
                 'title' => 'International Thyroid Awareness Week 2026',
                 'body' => 'Thyroid and Nutrition',
                 'excerpt' => 'On 26 May 2026, we joined the University of Ghana Medical Centre to bring clinicians, dietitians, patients and the public together around one question: how does food shape thyroid health?',
-                'sort_order' => -2,
+                'sort_order' => -3,
                 'media' => 'vip-group-photo',
                 'meta' => [
                     'cta_label' => 'Read the Story',
@@ -218,13 +228,29 @@ final class ThyroidAwarenessWeek2026Seeder extends Seeder
                 'title' => 'Know Your Thyroid Health',
                 'body' => 'Screening, Symptoms & Nutrition',
                 'excerpt' => 'Patient testimonies, expert panels and live healthy-eating demonstrations — a full house learning how early detection and good nutrition support life with a thyroid condition.',
-                'sort_order' => -1,
+                'sort_order' => -2,
                 'media' => 'full-house-audience',
                 'meta' => [
                     'cta_label' => 'See the Highlights',
                     'cta_url' => $storyUrl,
                     'cta2_label' => 'Become an Ambassador',
                     'cta2_url' => '/site/volunteer',
+                ],
+            ],
+            [
+                'slug' => 'slide-meet-the-founder',
+                'title' => 'Dr. Nana Adwoa Konadu Dsane',
+                'body' => 'Founder & President',
+                'excerpt' => 'Founded in 2018 after her own battle with hyperthyroidism, Dr. Dsane leads our mission to bring thyroid awareness, early detection and affordable care to every Ghanaian.',
+                'sort_order' => -1,
+                'media' => 'founder-hero',
+                'meta' => [
+                    'cta_label' => 'Meet the Founder',
+                    'cta_url' => '/site/the-founder',
+                    'cta2_label' => 'Support Our Cause',
+                    'cta2_url' => '/site/donate',
+                    'bg_position' => '72% 35%',
+                    'bg_overlay' => '0.2',
                 ],
             ],
         ];

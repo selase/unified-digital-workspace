@@ -63,7 +63,9 @@
                         // (visible while the video buffers or if it fails to load).
                         $bgStyle = 'background: var(--tgf-dark);';
                     } elseif ($bgImage) {
-                        $bgStyle = "background: linear-gradient(rgba(15,23,42,0.7), rgba(15,23,42,0.7)), url('{$bgImage}') center/cover no-repeat;";
+                        $overlay = is_numeric($getMeta($slide, 'bg_overlay')) ? max(0, min(1, (float) $getMeta($slide, 'bg_overlay'))) : 0.7;
+                        $bgPosition = preg_match('/^[0-9a-z% .-]{1,24}$/i', (string) $getMeta($slide, 'bg_position')) === 1 ? $getMeta($slide, 'bg_position') : 'center';
+                        $bgStyle = "background: linear-gradient(rgba(15,23,42,{$overlay}), rgba(15,23,42,{$overlay})), url('{$bgImage}') {$bgPosition}/cover no-repeat;";
                     } else {
                         $bgStyle = 'background: '.$gradients[$i % count($gradients)].';';
                     }
@@ -272,11 +274,20 @@
                                 "We welcome you to the Thyroid Ghana Foundation and invite you to join us in our commitment to advancing thyroid health awareness, patient support, and research across Ghana and West Africa."
                             </p>
                             <footer class="mt-6 flex items-center gap-3">
-                                <div class="flex h-10 w-10 items-center justify-center rounded-full" style="background: var(--tgf-primary);">
-                                    <span class="text-sm font-bold text-white">NK</span>
-                                </div>
+                                @php
+                                    $founderPortrait = \App\Modules\CmsCore\Models\Media::query()
+                                        ->where('path', \App\Modules\SiteThyroidGhanaFoundation\Database\Seeders\ThyroidAwarenessWeek2026Seeder::FOUNDER_PORTRAIT_PATH)
+                                        ->first();
+                                @endphp
+                                @if($founderPortrait)
+                                    <img src="{{ $founderPortrait->url() }}" alt="{{ $founderPortrait->alt_text }}" class="h-12 w-12 rounded-full object-cover object-top" loading="lazy" />
+                                @else
+                                    <div class="flex h-10 w-10 items-center justify-center rounded-full" style="background: var(--tgf-primary);">
+                                        <span class="text-sm font-bold text-white">ND</span>
+                                    </div>
+                                @endif
                                 <div>
-                                    <p class="text-sm font-semibold" style="color: var(--tgf-dark);">Nana Adwoa Konadu Dsane</p>
+                                    <p class="text-sm font-semibold" style="color: var(--tgf-dark);">Dr. Nana Adwoa Konadu Dsane</p>
                                     <p class="text-xs" style="color: var(--tgf-muted);">Founder & President</p>
                                 </div>
                             </footer>

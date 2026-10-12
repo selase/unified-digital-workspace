@@ -7,7 +7,7 @@ use App\Models\User;
 use App\Modules\CmsCore\Models\Media;
 use App\Modules\CmsCore\Models\Post;
 use App\Modules\SiteThyroidGhanaFoundation\Database\Seeders\ThyroidAwarenessWeek2026Seeder;
-use App\Modules\SiteThyroidGhanaFoundation\Database\Seeders\ThyroidFounderTitleSeeder;
+use App\Modules\SiteThyroidGhanaFoundation\Database\Seeders\ThyroidFounderDetailsSeeder;
 use App\Modules\SiteThyroidGhanaFoundation\Database\Seeders\ThyroidGhanaSeeder;
 use Illuminate\Support\Facades\Storage;
 
@@ -49,7 +49,7 @@ it('publishes the story with its photos and featured image', function (): void {
         ->toContain(' width="')
         ->not->toContain('<script');
 
-    expect(Media::query()->where('path', 'like', 'cms/news/awareness-week-2026/%')->count())->toBe(14);
+    expect(Media::query()->where('path', 'like', 'cms/news/awareness-week-2026/%')->count())->toBe(16);
 
     foreach (Media::query()->where('path', 'like', 'cms/news/awareness-week-2026/%')->get() as $media) {
         expect(Storage::disk('tenant')->exists($media->path))->toBeTrue()
@@ -61,8 +61,8 @@ it('is safe to run again without duplicating anything', function (): void {
     app(ThyroidAwarenessWeek2026Seeder::class)->run();
 
     expect(Post::query()->where('slug', ThyroidAwarenessWeek2026Seeder::STORY_SLUG)->count())->toBe(1)
-        ->and(Post::query()->forType('slider')->count())->toBe(5)
-        ->and(Media::query()->where('path', 'like', 'cms/news/awareness-week-2026/%')->count())->toBe(14);
+        ->and(Post::query()->forType('slider')->count())->toBe(6)
+        ->and(Media::query()->where('path', 'like', 'cms/news/awareness-week-2026/%')->count())->toBe(16);
 });
 
 it('leads the home page hero with the event slides on the custom domain', function (): void {
@@ -77,6 +77,10 @@ it('leads the home page hero with the event slides on the custom domain', functi
 
     expect($position('>International Thyroid Awareness Week 2026</h2>'))
         ->toBeGreaterThan(0)
+        ->toBeLessThan($position('>Know Your Thyroid Health</h2>'))
+        ->and($position('>Know Your Thyroid Health</h2>'))
+        ->toBeLessThan($position('>Dr. Nana Adwoa Konadu Dsane</h2>'))
+        ->and($position('>Dr. Nana Adwoa Konadu Dsane</h2>'))
         ->toBeLessThan($position('>Advancing Thyroid Health Across Ghana</h2>'));
 });
 
@@ -105,11 +109,11 @@ it('writes the founder as Dr. in freshly seeded content', function (): void {
 it('corrects the founder honorific on existing content without touching other titles', function (): void {
     Post::query()->where('slug', 'the-founder')->update([
         'excerpt' => 'Mrs. Nana Adwoa Konadu Dsane — Founder.',
-        'body' => '<p>Mrs. Dsane founded it. Mrs Nana Adwoa Konadu Dsane spoke. Nana Adwoa Konadu Dsane (Mrs.) leads. '
+        'body' => '<p>She is pursuing a PhD in Human Resources at the University of South Africa, researching X. Mrs. Dsane founded it. Mrs Nana Adwoa Konadu Dsane spoke. Nana Adwoa Konadu Dsane (Mrs.) leads. '
             .'Reviewed by Dr. Mrs. Josephine Akpalu and Mrs. Beatrice Williams.</p>',
     ]);
 
-    app(ThyroidFounderTitleSeeder::class)->run();
+    app(ThyroidFounderDetailsSeeder::class)->run();
 
     $founder = Post::query()->where('slug', 'the-founder')->firstOrFail();
 
@@ -117,6 +121,35 @@ it('corrects the founder honorific on existing content without touching other ti
         ->and($founder->body)->toContain('Dr. Dsane founded it.')
         ->toContain('Dr. Nana Adwoa Konadu Dsane spoke.')
         ->toContain('Dr. Nana Adwoa Konadu Dsane leads.')
+        ->toContain('She holds a PhD in Human Resources from the University of South Africa, where her research examined X.')
+        ->not->toContain('pursuing')
         ->toContain('Dr. Mrs. Josephine Akpalu')
         ->toContain('Mrs. Beatrice Williams');
+});
+
+it('gives the founder a hero slide with a focal point and a light overlay', function (): void {
+    $html = $this->get('https://thyroidghanafoundation.org/')->assertOk()->getContent();
+
+    expect($html)->toContain('rgba(15,23,42,0.2)')->toContain('72% 35%/cover');
+});
+
+it('shows the founder portrait on the Founder page and home quote, and Dr. on the team page', function (): void {
+    $portrait = Media::query()->where('path', ThyroidAwarenessWeek2026Seeder::FOUNDER_PORTRAIT_PATH)->firstOrFail();
+    $portraitUrl = '/cms-media/'.$portrait->uuid;
+
+    expect(Post::query()->where('slug', 'the-founder')->firstOrFail()->featured_media_id)->toBe($portrait->id);
+
+    $this->get('https://thyroidghanafoundation.org/the-founder')
+        ->assertOk()
+        ->assertSee($portraitUrl, false)
+        ->assertSee('mx-auto max-w-sm', false);
+
+    $this->get('https://thyroidghanafoundation.org/our-team')
+        ->assertOk()
+        ->assertSee('Dr. Nana Adwoa Konadu Dsane')
+        ->assertDontSee('(Mrs.)', false);
+
+    $this->get('https://thyroidghanafoundation.org/')
+        ->assertOk()
+        ->assertSee($portraitUrl, false);
 });

@@ -35,7 +35,10 @@
             <div class="mx-auto max-w-4xl">
                 {{-- Featured image --}}
                 @if($page->featuredMedia)
-                    <div class="mb-10 overflow-hidden rounded-xl">
+                    @php
+                        $isPortraitImage = (int) $page->featuredMedia->height > (int) $page->featuredMedia->width;
+                    @endphp
+                    <div class="mb-10 overflow-hidden rounded-xl {{ $isPortraitImage ? 'mx-auto max-w-sm' : '' }}">
                         <img
                             src="{{ $page->featuredMedia->url() }}"
                             alt="{{ $page->featuredMedia->alt_text ?? $page->title }}"

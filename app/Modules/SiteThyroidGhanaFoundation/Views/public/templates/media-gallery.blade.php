@@ -36,7 +36,7 @@
             @php
                 $videos = [
                     ['id' => 'qVNYLJCEn-A', 'title' => 'Official Launch of Thyroid Ghana Foundation', 'desc' => 'Coverage of the official launch event of the Thyroid Ghana Foundation, introducing our mission and vision.', 'category' => 'About Us'],
-                    ['id' => 'Gn11u_1LAUE', 'title' => 'Feature Interview on TV3', 'desc' => 'Founder Nana Adwoa Konadu Dsane discusses thyroid health awareness on national television.', 'category' => 'Media'],
+                    ['id' => 'Gn11u_1LAUE', 'title' => 'Feature Interview on TV3', 'desc' => 'Founder Dr. Nana Adwoa Konadu Dsane discusses thyroid health awareness on national television.', 'category' => 'Media'],
                     ['id' => 'D_iYMxXvp5I', 'title' => 'Include Thyroid Patients on NHIS', 'desc' => 'Advocacy for including thyroid disorder treatments under Ghana\'s National Health Insurance Scheme.', 'category' => 'Advocacy'],
                     ['id' => 'U3Y6-N-0ZsQ', 'title' => 'Happy Birthday to the Foundation', 'desc' => 'Celebrating the anniversary of the Thyroid Ghana Foundation and reflecting on our achievements.', 'category' => 'Events'],
                     ['id' => '98DMSeXAnX4', 'title' => 'A Safe and Healthy Christmas', 'desc' => 'Seasonal health tips and thyroid awareness message for the holiday season from the foundation.', 'category' => 'Awareness'],
