@@ -5,7 +5,7 @@
     "keywords": ["framework", "laravel"],
     "license": "MIT",
     "require": {
-        "php": "^8.5.0",
+        "php": "^8.4.1",
         "ext-pdo_pgsql": "*",
         "ext-pgsql": "*",
         "aws/aws-sdk-php": ">=3.400.1",
@@ -136,6 +136,9 @@
         "sort-packages": true,
         "allow-plugins": {
             "pestphp/pest-plugin": true
+        },
+        "platform": {
+            "php": "8.4.1"
         }
     },
     "minimum-stability": "stable",
