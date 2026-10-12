@@ -23,7 +23,7 @@
 @if($siteIcon)
     <link rel="icon" type="image/png" sizes="32x32" href="{{ route('site-icon.serve', ['size' => 32]) }}{{ $bust }}">
     <link rel="icon" type="image/png" sizes="16x16" href="{{ route('site-icon.serve', ['size' => 16]) }}{{ $bust }}">
-    <link rel="icon" type="image/x-icon" href="{{ route('site-icon.favicon') }}{{ $bust }}">
+    <link rel="icon" type="image/x-icon" href="{{ route('site-icon.favicon-file') }}{{ $bust }}">
     <link rel="apple-touch-icon" sizes="180x180" href="{{ route('site-icon.apple') }}{{ $bust }}">
     <link rel="manifest" href="{{ route('site-icon.manifest') }}{{ $bust }}">
 @else

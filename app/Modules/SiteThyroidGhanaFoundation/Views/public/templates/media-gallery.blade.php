@@ -80,37 +80,106 @@
         </div>
     </section>
 
-    {{-- Photo Gallery placeholder --}}
-    <section class="py-16 border-t" style="background: var(--tgf-light); border-color: var(--tgf-border);">
-        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div class="mb-10">
-                <p class="text-sm font-semibold uppercase tracking-widest" style="color: var(--tgf-primary);">Photos</p>
-                <h2 class="mt-2 text-2xl font-bold" style="color: var(--tgf-dark);">Campaign Highlights</h2>
-            </div>
+    {{-- Photo gallery: International Thyroid Awareness Week 2026 --}}
+    @php
+        $galleryPhotos = \App\Modules\CmsCore\Models\Media::query()
+            ->where('metadata->gallery', \App\Modules\SiteThyroidGhanaFoundation\Database\Seeders\ThyroidAwarenessWeek2026GallerySeeder::GALLERY)
+            ->get()
+            ->sortBy(fn ($photo) => (int) ($photo->metadata['order'] ?? 0))
+            ->values();
 
-            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                @php
-                    $photos = [
-                        ['gradient' => 'linear-gradient(135deg, #0D9488, #134E4A)', 'label' => 'World Thyroid Day 2023'],
-                        ['gradient' => 'linear-gradient(135deg, #134E4A, #0F766E)', 'label' => 'Community Screening'],
-                        ['gradient' => 'linear-gradient(135deg, #B45309, #D97706)', 'label' => 'Patient Forum Meeting'],
-                        ['gradient' => 'linear-gradient(135deg, #0F172A, #1E3A5F)', 'label' => 'Annual Conference'],
-                        ['gradient' => 'linear-gradient(135deg, #0F766E, #0D9488)', 'label' => 'Health Education Workshop'],
-                        ['gradient' => 'linear-gradient(135deg, #1E3A5F, #0F172A)', 'label' => 'Northern Region Outreach'],
-                        ['gradient' => 'linear-gradient(135deg, #D97706, #B45309)', 'label' => 'Fundraising Gala'],
-                        ['gradient' => 'linear-gradient(135deg, #134E4A, #0D9488)', 'label' => 'Medication Distribution'],
-                    ];
-                @endphp
-                @foreach($photos as $photo)
-                    <div class="group relative aspect-square overflow-hidden rounded-xl" style="background: {{ $photo['gradient'] }};">
-                        <div class="absolute inset-0 flex items-end p-4">
-                            <span class="rounded-md px-3 py-1.5 text-xs font-medium text-white" style="background: rgba(0,0,0,0.5);">{{ $photo['label'] }}</span>
-                        </div>
+        $galleryItems = $galleryPhotos->map(fn ($photo) => [
+            'src' => $photo->url(),
+            'alt' => (string) $photo->alt_text,
+            'caption' => (string) ($photo->metadata['caption'] ?? $photo->title),
+            'width' => $photo->width,
+            'height' => $photo->height,
+        ])->all();
+
+        $storyUrl = $cmsUrl->route('posts.show', \App\Modules\SiteThyroidGhanaFoundation\Database\Seeders\ThyroidAwarenessWeek2026Seeder::STORY_SLUG);
+    @endphp
+
+    @if($galleryPhotos->isNotEmpty())
+        <section id="awareness-week-2026" class="border-t py-16 lg:py-20" style="background: var(--tgf-light); border-color: var(--tgf-border);">
+            <div
+                class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8"
+                x-data="{
+                    items: @js($galleryItems),
+                    open: false,
+                    index: 0,
+                    show(i) { this.index = i; this.open = true; document.body.classList.add('overflow-hidden'); },
+                    close() { this.open = false; document.body.classList.remove('overflow-hidden'); },
+                    next() { this.index = (this.index + 1) % this.items.length; },
+                    prev() { this.index = (this.index - 1 + this.items.length) % this.items.length; },
+                }"
+                @keydown.escape.window="close()"
+                @keydown.arrow-right.window="open && next()"
+                @keydown.arrow-left.window="open && prev()"
+            >
+                <div class="mb-10 flex flex-wrap items-end justify-between gap-4">
+                    <div>
+                        <p class="text-sm font-semibold uppercase tracking-widest" style="color: var(--tgf-primary);">Photos</p>
+                        <h2 class="mt-2 text-2xl font-bold" style="color: var(--tgf-dark);">International Thyroid Awareness Week 2026</h2>
+                        <p class="mt-2 max-w-2xl text-sm" style="color: var(--tgf-muted);">Highlights from the “Thyroid and Nutrition” forum at the University of Ghana Medical Centre, 26 May 2026.</p>
                     </div>
-                @endforeach
+                    <a href="{{ $storyUrl }}" class="text-sm font-semibold transition hover:opacity-70" style="color: var(--tgf-primary);">Read the story &rarr;</a>
+                </div>
+
+                <div class="columns-2 gap-4 md:columns-3 lg:columns-4">
+                    @foreach($galleryItems as $i => $item)
+                        <button
+                            type="button"
+                            @click="show({{ $i }})"
+                            class="group relative mb-4 block w-full overflow-hidden rounded-xl bg-slate-200 shadow-sm transition hover:shadow-lg focus:outline-none focus-visible:ring-2"
+                            style="break-inside: avoid;"
+                            aria-label="Open photo: {{ $item['caption'] }}"
+                        >
+                            <img
+                                src="{{ $item['src'] }}"
+                                alt="{{ $item['alt'] }}"
+                                width="{{ $item['width'] }}"
+                                height="{{ $item['height'] }}"
+                                class="h-auto w-full transition duration-300 group-hover:scale-105"
+                                loading="lazy"
+                            />
+                            <span class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-3 text-left text-xs font-medium text-white opacity-0 transition group-hover:opacity-100">{{ $item['caption'] }}</span>
+                        </button>
+                    @endforeach
+                </div>
+
+                {{-- Lightbox. The outer layer carries no display utility so inline display:none holds before Alpine boots;
+                     x-show.important is needed because utilities in this project's CSS are !important. --}}
+                <div
+                    x-show.important="open"
+                    x-transition.opacity
+                    style="display: none;"
+                    class="fixed inset-0 z-50 bg-black/90"
+                    role="dialog"
+                    aria-modal="true"
+                    aria-label="Photo viewer"
+                >
+                    <div class="flex h-full w-full items-center justify-center p-4" @click.self="close()">
+                        <button type="button" @click="close()" class="absolute right-4 top-4 rounded-full bg-white/10 p-2 text-white transition hover:bg-white/25" aria-label="Close viewer">
+                            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                        </button>
+                        <button type="button" @click="prev()" class="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-white/10 p-3 text-white transition hover:bg-white/25" aria-label="Previous photo">
+                            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                        </button>
+                        <button type="button" @click="next()" class="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-white/10 p-3 text-white transition hover:bg-white/25" aria-label="Next photo">
+                            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                        </button>
+                        <figure class="flex max-h-full max-w-5xl flex-col items-center">
+                            <img :src="items[index].src" :alt="items[index].alt" class="max-h-[80vh] w-auto max-w-full rounded-lg object-contain" />
+                            <figcaption class="mt-3 text-center text-sm text-slate-200">
+                                <span x-text="items[index].caption"></span>
+                                <span class="ml-2 text-slate-400" x-text="(index + 1) + ' / ' + items.length"></span>
+                            </figcaption>
+                        </figure>
+                    </div>
+                </div>
             </div>
-        </div>
-    </section>
+        </section>
+    @endif
 
     {{-- Follow CTA --}}
     <section class="py-14" style="background: var(--tgf-primary);">
