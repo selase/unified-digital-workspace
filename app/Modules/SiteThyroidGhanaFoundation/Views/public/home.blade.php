@@ -105,7 +105,7 @@
                     <div class="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                         <div class="max-w-2xl">
                             @if($slide->body)
-                                <p class="text-sm font-semibold uppercase tracking-widest" style="color: var(--tgf-accent-light);">{{ strip_tags($slide->body) }}</p>
+                                <p class="text-sm font-semibold uppercase tracking-widest" style="color: var(--tgf-accent-light);">{{ html_entity_decode(strip_tags($slide->body), ENT_QUOTES | ENT_HTML5) }}</p>
                             @endif
                             <h2 class="mt-4 text-3xl font-extrabold leading-tight text-white sm:text-4xl lg:text-5xl">{{ $slide->title }}</h2>
                             @if($slide->excerpt)
