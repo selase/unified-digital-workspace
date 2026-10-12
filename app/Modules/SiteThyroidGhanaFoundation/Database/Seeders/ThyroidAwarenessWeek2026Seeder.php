@@ -134,7 +134,9 @@ final class ThyroidAwarenessWeek2026Seeder extends Seeder
         $story = $this->publishStory();
         $this->publishSlides($tenant, $story);
 
+        $this->call(ThyroidAwarenessWeek2026GallerySeeder::class);
         $this->call(ThyroidFounderDetailsSeeder::class);
+        $this->call(ThyroidContactLinksSeeder::class);
 
         CmsSitemapService::forget((string) $tenant->id);
     }

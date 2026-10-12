@@ -6,7 +6,9 @@ use App\Models\TenantModule;
 use App\Models\User;
 use App\Modules\CmsCore\Models\Media;
 use App\Modules\CmsCore\Models\Post;
+use App\Modules\SiteThyroidGhanaFoundation\Database\Seeders\ThyroidAwarenessWeek2026GallerySeeder;
 use App\Modules\SiteThyroidGhanaFoundation\Database\Seeders\ThyroidAwarenessWeek2026Seeder;
+use App\Modules\SiteThyroidGhanaFoundation\Database\Seeders\ThyroidContactLinksSeeder;
 use App\Modules\SiteThyroidGhanaFoundation\Database\Seeders\ThyroidFounderDetailsSeeder;
 use App\Modules\SiteThyroidGhanaFoundation\Database\Seeders\ThyroidGhanaSeeder;
 use Illuminate\Support\Facades\Storage;
@@ -34,6 +36,7 @@ beforeEach(function (): void {
 
 afterEach(function (): void {
     Storage::disk('tenant')->deleteDirectory('cms/news/awareness-week-2026');
+    Storage::disk('tenant')->deleteDirectory('cms/gallery/awareness-week-2026');
 });
 
 it('publishes the story with its photos and featured image', function (): void {
@@ -170,4 +173,67 @@ it('shows portrait photos in the story as a centred card instead of full width',
     expect($story->body)
         ->toContain('<figure class="mx-auto max-w-md"><img src="/cms-media/')
         ->toContain('<figure><img src="/cms-media/');
+});
+
+it('replaces the placeholder photo tiles on the media gallery page with the event gallery', function (): void {
+    $html = $this->get('https://thyroidghanafoundation.org/media-gallery')->assertOk()->getContent();
+
+    expect(mb_substr_count($html, 'aria-label="Open photo:'))->toBe(29)
+        ->and($html)->toContain('id="awareness-week-2026"')
+        ->toContain('International Thyroid Awareness Week 2026')
+        ->toContain('Read the story')
+        ->not->toContain('World Thyroid Day 2023')
+        ->not->toContain('Fundraising Gala')
+        ->not->toContain('linear-gradient(135deg, #0D9488, #134E4A)');
+});
+
+it('keeps the gallery ordered, captioned and safe to re-seed', function (): void {
+    app(ThyroidAwarenessWeek2026GallerySeeder::class)->run();
+
+    $photos = Media::query()->where('metadata->gallery', ThyroidAwarenessWeek2026GallerySeeder::GALLERY)->get()
+        ->sortBy(fn (Media $photo): int => (int) $photo->metadata['order'])->values();
+
+    expect($photos)->toHaveCount(29)
+        ->and($photos->pluck('metadata.order')->all())->toBe(range(1, 29))
+        ->and($photos->first()->path)->toBe('cms/news/awareness-week-2026/vip-group-photo.jpg')
+        ->and($photos->every(fn (Media $photo): bool => filled($photo->metadata['caption']) && filled($photo->alt_text)))->toBeTrue()
+        ->and(Media::query()->where('path', 'like', 'cms/gallery/awareness-week-2026/%')->count())->toBe(15);
+});
+
+it('credits stories to the organisation instead of the account that entered them', function (): void {
+    $author = Post::query()->where('slug', ThyroidAwarenessWeek2026Seeder::STORY_SLUG)->firstOrFail()->author;
+
+    $this->get('https://thyroidghanafoundation.org/news/'.ThyroidAwarenessWeek2026Seeder::STORY_SLUG)
+        ->assertOk()
+        ->assertSee('<span>Thyroid Ghana Foundation</span>', false)
+        ->assertDontSee(mb_trim($author->first_name.' '.$author->last_name));
+});
+
+it('serves the favicon from a path the web server does not intercept, on the custom domain', function (): void {
+    $response = $this->get('https://thyroidghanafoundation.org/site-icon/favicon.ico');
+
+    expect($response->getStatusCode())->toBe(200)
+        ->and($response->headers->get('Content-Type'))->toContain('icon');
+});
+
+it('makes the email address and phone number on the action pages tappable', function (): void {
+    foreach (['donate' => 'Donation%20enquiry', 'volunteer' => 'Volunteer%20enquiry', 'membership' => 'Membership%20enquiry', 'partner-us' => 'Partnership%20enquiry'] as $slug => $subject) {
+        // The sanitizer entity-encodes characters such as @ and +; browsers decode them.
+        $html = html_entity_decode($this->get('https://thyroidghanafoundation.org/'.$slug)->assertOk()->getContent());
+
+        expect($html)->toContain('mailto:info@thyroidghanafoundation.org?subject='.$subject);
+    }
+
+    expect(html_entity_decode($this->get('https://thyroidghanafoundation.org/donate')->getContent()))->toContain('href="tel:+233243376304"');
+});
+
+it('links contact details once and never inside an existing link', function (): void {
+    $html = '<p>Email info@thyroidghanafoundation.org or call +233 (024) 337 6304.</p>'
+        .'<p><a href="https://example.test">info@thyroidghanafoundation.org</a></p>';
+
+    $linked = ThyroidContactLinksSeeder::link($html, 'Test');
+
+    expect(mb_substr_count($linked, 'mailto:'))->toBe(1)
+        ->and(mb_substr_count($linked, 'tel:+233243376304'))->toBe(1)
+        ->and(ThyroidContactLinksSeeder::link($linked, 'Test'))->toBe($linked);
 });

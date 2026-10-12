@@ -29,6 +29,8 @@ use Illuminate\Support\Facades\Route;
 // Site icons — tenant-aware favicon, apple-touch-icon, and PWA manifest.
 // Registered at root paths so browsers find them at their well-known URLs.
 Route::get('/favicon.ico', [App\Http\Controllers\SiteIconController::class, 'favicon'])->name('site-icon.favicon');
+// Forge's default nginx config answers /favicon.ico itself (404 when no file exists), so pages link to this path instead.
+Route::get('/site-icon/favicon.ico', [App\Http\Controllers\SiteIconController::class, 'favicon'])->name('site-icon.favicon-file');
 Route::get('/apple-touch-icon.png', [App\Http\Controllers\SiteIconController::class, 'appleTouchIcon'])->name('site-icon.apple');
 Route::get('/apple-touch-icon-precomposed.png', [App\Http\Controllers\SiteIconController::class, 'appleTouchIcon']);
 Route::get('/site-icon/{size}.png', [App\Http\Controllers\SiteIconController::class, 'serve'])->whereNumber('size')->name('site-icon.serve');

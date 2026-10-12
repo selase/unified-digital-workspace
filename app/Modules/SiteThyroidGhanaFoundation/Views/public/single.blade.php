@@ -37,9 +37,7 @@
             <h1 class="max-w-3xl text-3xl font-extrabold text-white sm:text-4xl">{{ $post->title }}</h1>
 
             <div class="mt-4 flex items-center gap-4 text-sm text-slate-400">
-                @if($post->author)
-                    <span>{{ $post->author->first_name }} {{ $post->author->last_name }}</span>
-                @endif
+                <span>{{ $theme->siteName() }}</span>
                 @if($post->published_at)
                     <span>&middot;</span>
                     <time datetime="{{ $post->published_at->toDateString() }}">{{ $post->published_at->format('F j, Y') }}</time>
