@@ -13,7 +13,16 @@ final class TenantFeatureUsage extends Model
 
     protected $connection = 'landlord';
 
-    protected $guarded = [];
+    /**
+     * @var list<string>
+     */
+    protected $fillable = [
+        'tenant_id',
+        'feature_slug',
+        'used_count',
+        'period_start',
+        'period_end',
+    ];
 
     protected $casts = [
         'period_start' => 'datetime',

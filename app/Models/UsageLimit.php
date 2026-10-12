@@ -34,6 +34,9 @@ final class UsageLimit extends Model
         'last_alert_at' => 'datetime',
     ];
 
+    /**
+     * @return BelongsTo<Tenant, $this>
+     */
     public function tenant(): BelongsTo
     {
         return $this->belongsTo(Tenant::class);

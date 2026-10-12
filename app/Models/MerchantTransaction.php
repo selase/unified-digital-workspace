@@ -17,7 +17,22 @@ final class MerchantTransaction extends Model
 
     protected $connection = 'landlord';
 
-    protected $guarded = [];
+    /**
+     * @var list<string>
+     */
+    protected $fillable = [
+        'tenant_id',
+        'provider',
+        'provider_transaction_id',
+        'amount',
+        'currency',
+        'status',
+        'type',
+        'customer_email',
+        'customer_name',
+        'description',
+        'meta',
+    ];
 
     protected $casts = [
         'amount' => 'integer',

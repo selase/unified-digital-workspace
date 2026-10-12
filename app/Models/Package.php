@@ -46,6 +46,9 @@ final class Package extends Model
             ->withTimestamps();
     }
 
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\MorphMany<UsagePrice, $this>
+     */
     public function usagePrices(): \Illuminate\Database\Eloquent\Relations\MorphMany
     {
         return $this->morphMany(UsagePrice::class, 'target');

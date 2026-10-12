@@ -5,15 +5,15 @@ declare(strict_types=1);
 namespace App\Exports;
 
 use App\Models\User;
-use Illuminate\Support\Collection;
+use Illuminate\Database\Eloquent\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
 
 final class UserExport implements FromCollection
 {
     /**
-     * @return Collection
+     * @return Collection<int, User>
      */
-    public function collection()
+    public function collection(): Collection
     {
         return User::all();
     }

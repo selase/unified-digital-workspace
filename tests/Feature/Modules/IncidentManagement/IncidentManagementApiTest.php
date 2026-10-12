@@ -5,7 +5,6 @@ declare(strict_types=1);
 use App\Mail\Incidents\IncidentAssigned;
 use App\Mail\Incidents\IncidentEscalated;
 use App\Mail\Incidents\IncidentReminder as IncidentReminderMail;
-use App\Models\Tenant;
 use App\Models\User;
 use App\Modules\IncidentManagement\Database\Factories\IncidentCategoryFactory;
 use App\Modules\IncidentManagement\Database\Factories\IncidentPriorityFactory;
@@ -14,68 +13,12 @@ use App\Modules\IncidentManagement\Models\Incident;
 use App\Modules\IncidentManagement\Models\IncidentCategory;
 use App\Modules\IncidentManagement\Models\IncidentPriority;
 use App\Modules\IncidentManagement\Models\IncidentReminder;
-use App\Services\ModuleManager;
-use App\Services\Tenancy\TenantContext;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Str;
 use Spatie\Activitylog\Models\Activity;
-use Spatie\Permission\Models\Permission;
 
 use function Pest\Laravel\actingAs;
 use function Pest\Laravel\postJson;
-
-/**
- * @return array{0: User, 1: Tenant}
- */
-function createIncidentApiContext(): array
-{
-    $user = User::factory()->create();
-    $tenant = app(TenantContext::class)->getTenant();
-
-    if (! $tenant) {
-        [$tenant] = setupIncidentTenantConnection($user);
-    } else {
-        $tenant->users()->syncWithoutDetaching($user->id);
-    }
-
-    $permissions = [
-        'incidents.view',
-        'incidents.create',
-        'incidents.update',
-        'incidents.delete',
-        'incidents.assign',
-        'incidents.delegate',
-        'incidents.escalate',
-        'incidents.tasks.manage',
-        'incidents.comments.manage',
-        'incidents.priorities.manage',
-        'incidents.statuses.manage',
-        'incidents.categories.manage',
-    ];
-
-    foreach ($permissions as $permission) {
-        $existing = Permission::query()
-            ->where('name', $permission)
-            ->where('guard_name', 'web')
-            ->first();
-
-        if (! $existing) {
-            Permission::create([
-                'uuid' => (string) Str::uuid(),
-                'name' => $permission,
-                'guard_name' => 'web',
-                'category' => 'Incidents',
-            ]);
-        }
-    }
-
-    $user->givePermissionTo($permissions);
-
-    app(ModuleManager::class)->enableForTenant('incident-management', $tenant);
-
-    return [$user, $tenant];
-}
 
 it('creates and updates incident categories', function () {
     [$user, $tenant] = createIncidentApiContext();

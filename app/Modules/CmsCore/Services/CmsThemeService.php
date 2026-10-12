@@ -7,6 +7,7 @@ namespace App\Modules\CmsCore\Services;
 use App\Modules\CmsCore\Models\Media;
 use App\Modules\CmsCore\Models\Menu;
 use App\Modules\CmsCore\Models\Setting;
+use App\Modules\CmsCore\Support\ContentSanitizer;
 use App\Services\Tenancy\TenantContext;
 use Illuminate\Support\Facades\File;
 
@@ -178,7 +179,7 @@ final class CmsThemeService
      */
     public function customCss(): string
     {
-        return (string) ($this->get('custom_css') ?: '');
+        return ContentSanitizer::css((string) ($this->get('custom_css') ?: ''));
     }
 
     /**

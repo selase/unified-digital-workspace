@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests;
 
 use Illuminate\Database\Events\ConnectionEstablished;
+use Illuminate\Foundation\Testing\RefreshDatabaseState;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Config;
@@ -24,6 +25,13 @@ abstract class TestCase extends BaseTestCase
      */
     private static bool $databaseMigrated = false;
 
+    /**
+     * Was the module schema migrated after RefreshDatabase last ran
+     * `migrate:fresh`? A fresh wipe drops module tables, so a worker whose
+     * first test skipped RefreshDatabase must migrate again once it runs.
+     */
+    private static bool $migratedAfterFresh = false;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -35,9 +43,12 @@ abstract class TestCase extends BaseTestCase
             config(['app.url' => 'http://unified-digital-workspace.test']);
         }
 
-        if (! self::$databaseMigrated) {
+        $freshlyWiped = RefreshDatabaseState::$migrated;
+
+        if (! self::$databaseMigrated || ($freshlyWiped && ! self::$migratedAfterFresh)) {
             $this->migrateAllSchemas();
             self::$databaseMigrated = true;
+            self::$migratedAfterFresh = $freshlyWiped;
         }
 
         $this->aliasTenantConnectionToLandlord();

@@ -13,7 +13,20 @@ final class Subscription extends Model
 
     protected $connection = 'landlord';
 
-    protected $guarded = [];
+    /**
+     * @var list<string>
+     */
+    protected $fillable = [
+        'tenant_id',
+        'name',
+        'provider_id',
+        'provider_status',
+        'provider_plan',
+        'quantity',
+        'trial_ends_at',
+        'ends_at',
+        'current_period_end',
+    ];
 
     protected $casts = [
         'trial_ends_at' => 'datetime',

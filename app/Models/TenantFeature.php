@@ -11,13 +11,24 @@ final class TenantFeature extends Model
 {
     protected $connection = 'landlord';
 
-    protected $guarded = [];
+    /**
+     * @var list<string>
+     */
+    protected $fillable = [
+        'tenant_id',
+        'feature_key',
+        'enabled',
+        'meta',
+    ];
 
     protected $casts = [
         'enabled' => 'boolean',
         'meta' => 'array',
     ];
 
+    /**
+     * @return BelongsTo<Tenant, $this>
+     */
     public function tenant(): BelongsTo
     {
         return $this->belongsTo(Tenant::class);

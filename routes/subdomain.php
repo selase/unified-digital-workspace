@@ -8,12 +8,6 @@ use App\Http\Controllers\Tenant\RoleController;
 use App\Http\Controllers\Tenant\UserController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/tenant-test', function () {
-    $tenant = app(App\Services\Tenancy\TenantContext::class)->getTenant();
-
-    return 'Tenant: '.($tenant?->name ?? 'None');
-});
-
 Route::group(['middleware' => ['auth', '2fa_challenge', 'onboarding']], function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])
         ->name('tenant.dashboard');

@@ -22,7 +22,15 @@ final class TenantLlmConfig extends Model
 
     protected $connection = 'landlord';
 
-    protected $guarded = [];
+    /**
+     * @var list<string>
+     */
+    protected $fillable = [
+        'tenant_id',
+        'provider',
+        'api_key_encrypted',
+        'is_active',
+    ];
 
     protected $casts = [
         'is_active' => 'boolean',

@@ -12,7 +12,16 @@ final class WebhookEndpoint extends Model
 {
     use HasFactory, HasUuids;
 
-    protected $guarded = [];
+    /**
+     * @var list<string>
+     */
+    protected $fillable = [
+        'tenant_id',
+        'url',
+        'secret',
+        'events',
+        'is_active',
+    ];
 
     protected $casts = [
         'events' => 'array',

@@ -101,9 +101,9 @@ final class TenantStatsServiceTest extends TestCase
     public function test_get_tenant_growth_trend_returns_correct_data()
     {
         // 1. Create tenants created over different days
-        \App\Models\Tenant::create(['name' => 'T1', 'slug' => 't1', 'created_at' => now()->subDays(1), 'status' => \App\Enum\TenantStatusEnum::ACTIVE]);
-        \App\Models\Tenant::create(['name' => 'T2', 'slug' => 't2', 'created_at' => now()->subDays(1), 'status' => \App\Enum\TenantStatusEnum::ACTIVE]);
-        \App\Models\Tenant::create(['name' => 'T3', 'slug' => 't3', 'created_at' => now(), 'status' => \App\Enum\TenantStatusEnum::ACTIVE]);
+        \App\Models\Tenant::query()->forceCreate(['name' => 'T1', 'slug' => 't1', 'created_at' => now()->subDays(1), 'status' => \App\Enum\TenantStatusEnum::ACTIVE]);
+        \App\Models\Tenant::query()->forceCreate(['name' => 'T2', 'slug' => 't2', 'created_at' => now()->subDays(1), 'status' => \App\Enum\TenantStatusEnum::ACTIVE]);
+        \App\Models\Tenant::query()->forceCreate(['name' => 'T3', 'slug' => 't3', 'created_at' => now(), 'status' => \App\Enum\TenantStatusEnum::ACTIVE]);
 
         // 2. Call service
         $result = $this->service->getTenantGrowthTrend(7);

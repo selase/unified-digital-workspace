@@ -14,7 +14,18 @@ final class TenantModule extends Model
 
     protected $connection = 'landlord';
 
-    protected $guarded = [];
+    /**
+     * @var list<string>
+     */
+    protected $fillable = [
+        'tenant_id',
+        'module_slug',
+        'is_enabled',
+        'version',
+        'settings',
+        'enabled_at',
+        'disabled_at',
+    ];
 
     protected $casts = [
         'is_enabled' => 'boolean',
