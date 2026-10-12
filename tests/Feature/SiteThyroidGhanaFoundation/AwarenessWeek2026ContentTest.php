@@ -153,3 +153,13 @@ it('shows the founder portrait on the Founder page and home quote, and Dr. on th
         ->assertOk()
         ->assertSee($portraitUrl, false);
 });
+
+it('shows ampersands in slide eyebrows once-escaped, not double-escaped', function (): void {
+    $html = $this->get('https://thyroidghanafoundation.org/')->assertOk()->getContent();
+
+    expect($html)
+        ->toContain('Screening, Symptoms &amp; Nutrition</p>')
+        ->toContain('Awareness &amp; Education</p>')
+        ->toContain('Founder &amp; President</p>')
+        ->not->toContain('&amp;amp;');
+});
