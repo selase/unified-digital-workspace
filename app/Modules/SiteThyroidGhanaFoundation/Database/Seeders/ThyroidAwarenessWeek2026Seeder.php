@@ -249,8 +249,8 @@ final class ThyroidAwarenessWeek2026Seeder extends Seeder
                     'cta_url' => '/site/the-founder',
                     'cta2_label' => 'Support Our Cause',
                     'cta2_url' => '/site/donate',
-                    'bg_position' => '72% 35%',
-                    'bg_overlay' => '0.2',
+                    'bg_position' => '90% 30%',
+                    'bg_overlay' => '0.35',
                 ],
             ],
         ];
@@ -285,6 +285,7 @@ final class ThyroidAwarenessWeek2026Seeder extends Seeder
         $url = route('cms-core.media.serve', $media, false);
         $alt = htmlspecialchars((string) $media->alt_text, ENT_QUOTES);
         $caption = htmlspecialchars($caption, ENT_QUOTES);
+        $class = $class !== '' ? $class : ((int) $media->height > (int) $media->width ? 'mx-auto max-w-md' : '');
         $classAttribute = $class !== '' ? " class=\"{$class}\"" : '';
 
         return "<figure{$classAttribute}><img src=\"{$url}\" alt=\"{$alt}\" width=\"{$media->width}\" height=\"{$media->height}\"><figcaption>{$caption}</figcaption></figure>";
