@@ -87,6 +87,9 @@ final class User extends Authenticatable
         'two_factor_confirmed_at' => 'datetime',
     ];
 
+    /**
+     * @return BelongsToMany<Tenant, $this, \Illuminate\Database\Eloquent\Relations\Pivot>
+     */
     public function tenants(): BelongsToMany
     {
         return $this->belongsToMany(Tenant::class);

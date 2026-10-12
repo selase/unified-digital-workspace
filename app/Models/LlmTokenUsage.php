@@ -34,7 +34,23 @@ final class LlmTokenUsage extends Model
 
     protected $connection = 'landlord';
 
-    protected $guarded = [];
+    /**
+     * @var list<string>
+     */
+    protected $fillable = [
+        'tenant_id',
+        'user_id',
+        'api_key_id',
+        'provider',
+        'model',
+        'prompt_tokens',
+        'completion_tokens',
+        'total_tokens',
+        'cost_usd',
+        'context',
+        'ip_address',
+        'request_hash',
+    ];
 
     protected $casts = [
         'context' => 'array',
@@ -42,11 +58,17 @@ final class LlmTokenUsage extends Model
         'total_tokens' => 'integer',
     ];
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
+    /**
+     * @return BelongsTo<TenantApiKey, $this>
+     */
     public function apiKey(): BelongsTo
     {
         return $this->belongsTo(TenantApiKey::class);

@@ -18,7 +18,20 @@ final class LlmUsageSummary extends Model
 
     protected $connection = 'landlord';
 
-    protected $guarded = [];
+    /**
+     * @var list<string>
+     */
+    protected $fillable = [
+        'tenant_id',
+        'provider',
+        'model',
+        'day',
+        'total_prompt_tokens',
+        'total_completion_tokens',
+        'total_total_tokens',
+        'total_cost_usd',
+        'request_count',
+    ];
 
     protected $casts = [
         'day' => 'date',
@@ -29,6 +42,9 @@ final class LlmUsageSummary extends Model
         'request_count' => 'integer',
     ];
 
+    /**
+     * @return BelongsTo<Tenant, $this>
+     */
     public function tenant(): BelongsTo
     {
         return $this->belongsTo(Tenant::class);

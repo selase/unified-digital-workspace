@@ -74,7 +74,7 @@ final class WebhookController extends Controller
         $signature = $request->header('x-paystack-signature');
         $secret = $gateway->api_key_encrypted; // Paystack uses secret key for hashing
 
-        if (! $signature || $signature !== hash_hmac('sha512', $request->getContent(), $secret)) {
+        if (! $signature || ! hash_equals(hash_hmac('sha512', $request->getContent(), $secret), $signature)) {
             return response()->json(['error' => 'Invalid signature'], 400);
         }
 
@@ -82,7 +82,7 @@ final class WebhookController extends Controller
         $data = $request->input('data');
 
         if ($event === 'charge.success') {
-            $this->recordTransaction($tenant, 'paystack', (object) $data);
+            $this->recordTransaction($tenant, 'paystack', json_decode((string) json_encode($data)));
         }
 
         return response()->json(['status' => 'success']);
@@ -102,7 +102,7 @@ final class WebhookController extends Controller
                 'status' => 'succeeded',
                 'type' => 'payment',
                 'customer_email' => $provider === 'stripe' ? ($data->customer_details->email ?? null) : ($data->customer->email ?? null),
-                'customer_name' => $provider === 'stripe' ? ($data->customer_details->name ?? null) : ($data->customer->first_name.' '.$data->customer->last_name),
+                'customer_name' => $provider === 'stripe' ? ($data->customer_details->name ?? null) : mb_trim(($data->customer->first_name ?? '').' '.($data->customer->last_name ?? '')),
                 'description' => $provider === 'stripe' ? 'Stripe Checkout' : 'Paystack Charge',
                 'meta' => (array) $data,
             ]

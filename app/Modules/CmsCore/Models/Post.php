@@ -7,6 +7,7 @@ namespace App\Modules\CmsCore\Models;
 use App\Models\User;
 use App\Modules\CmsCore\Database\Factories\PostFactory;
 use App\Modules\CmsCore\Models\Concerns\HasCmsUuid;
+use App\Modules\CmsCore\Support\SanitizedHtml;
 use App\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -208,6 +209,7 @@ final class Post extends Model
     protected function casts(): array
     {
         return [
+            'body' => SanitizedHtml::class,
             'published_at' => 'datetime',
             'scheduled_for' => 'datetime',
             'sort_order' => 'integer',

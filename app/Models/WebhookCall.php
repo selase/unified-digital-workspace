@@ -16,7 +16,18 @@ final class WebhookCall extends Model
     use HasFactory, HasUuids;
     use SpatieActivityLogs;
 
-    protected $guarded = [];
+    /**
+     * @var list<string>
+     */
+    protected $fillable = [
+        'tenant_id',
+        'webhook_endpoint_id',
+        'event_name',
+        'payload',
+        'status',
+        'response',
+        'exception',
+    ];
 
     protected $casts = [
         'payload' => 'array',

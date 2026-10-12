@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Exports;
 
+use Illuminate\Database\Eloquent\Builder;
 use Maatwebsite\Excel\Concerns\Exportable;
 use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -16,7 +17,10 @@ final class ActivityLogExport implements FromQuery, WithHeadings, WithMapping
 
     public function __construct(private ?string $tenantId = null) {}
 
-    public function query()
+    /**
+     * @return Builder<Activity>
+     */
+    public function query(): Builder
     {
         $query = Activity::query()
             ->with(['causer', 'subject'])
@@ -45,7 +49,7 @@ final class ActivityLogExport implements FromQuery, WithHeadings, WithMapping
         ];
     }
 
-    public function map($activity): array
+    public function map(mixed $activity): array
     {
         return [
             $activity->id,

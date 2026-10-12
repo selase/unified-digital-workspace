@@ -7,75 +7,63 @@ parameters:
 			path: app/Console/Commands/IncidentsDispatchReminders.php
 
 		-
+			rawMessage: 'Strict comparison using === between App\Models\Tenant and null will always evaluate to false.'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Console/Commands/ModuleDisableCommand.php
+
+		-
+			rawMessage: 'Strict comparison using === between App\Models\Tenant and null will always evaluate to false.'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Console/Commands/ModuleEnableCommand.php
+
+		-
 			rawMessage: 'Parameter #1 $modules of method App\Console\Commands\ModuleMigrateCommand::runForTenants() expects Illuminate\Support\Collection<int, array<string, mixed>>, Illuminate\Support\Collection<int, non-empty-array<string, mixed>>|Illuminate\Support\Collection<string, array<string, mixed>> given.'
 			identifier: argument.type
 			count: 1
 			path: app/Console/Commands/ModuleMigrateCommand.php
 
 		-
-			rawMessage: Access to an undefined property App\Modules\QualityMonitoring\Models\Alert::$escalated_at.
-			identifier: property.notFound
+			rawMessage: 'Strict comparison using === between App\Models\Tenant and null will always evaluate to false.'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Console/Commands/ModuleMigrateCommand.php
+
+		-
+			rawMessage: 'Property App\Modules\QualityMonitoring\Models\Alert::$escalated_at (string|null) does not accept Carbon\CarbonImmutable.'
+			identifier: assign.propertyType
 			count: 1
 			path: app/Console/Commands/QualityMonitoringEscalateAlerts.php
 
 		-
-			rawMessage: Access to an undefined property App\Modules\QualityMonitoring\Models\Alert::$escalation_level.
-			identifier: property.notFound
-			count: 1
-			path: app/Console/Commands/QualityMonitoringEscalateAlerts.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\QualityMonitoring\Models\Workplan::$owner_id.
-			identifier: property.notFound
-			count: 1
-			path: app/Console/Commands/QualityMonitoringEscalateAlerts.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\QualityMonitoring\Models\Activity::$due_date.
-			identifier: property.notFound
+			rawMessage: 'Cannot call method toDateString() on string.'
+			identifier: method.nonObject
 			count: 1
 			path: app/Console/Commands/QualityMonitoringGenerateAlerts.php
 
 		-
-			rawMessage: Access to an undefined property App\Modules\QualityMonitoring\Models\Activity::$responsible_id.
-			identifier: property.notFound
-			count: 2
-			path: app/Console/Commands/QualityMonitoringGenerateAlerts.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\QualityMonitoring\Models\Activity::$title.
-			identifier: property.notFound
+			rawMessage: 'Method App\Console\Commands\QualityMonitoringGenerateAlerts::generateActivityAlerts() has an unused parameter $tenant.'
+			identifier: method.unusedParameter
 			count: 1
 			path: app/Console/Commands/QualityMonitoringGenerateAlerts.php
 
 		-
-			rawMessage: Access to an undefined property App\Modules\QualityMonitoring\Models\Alert::$sent_at.
-			identifier: property.notFound
+			rawMessage: 'Method App\Console\Commands\QualityMonitoringGenerateAlerts::generateKpiAlerts() has an unused parameter $tenant.'
+			identifier: method.unusedParameter
 			count: 1
 			path: app/Console/Commands/QualityMonitoringGenerateAlerts.php
 
 		-
-			rawMessage: Access to an undefined property App\Modules\QualityMonitoring\Models\Kpi::$frequency.
-			identifier: property.notFound
-			count: 2
-			path: app/Console/Commands/QualityMonitoringGenerateAlerts.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\QualityMonitoring\Models\Kpi::$name.
-			identifier: property.notFound
+			rawMessage: 'Property App\Modules\QualityMonitoring\Models\Alert::$sent_at (string|null) does not accept Carbon\CarbonImmutable.'
+			identifier: assign.propertyType
 			count: 1
 			path: app/Console/Commands/QualityMonitoringGenerateAlerts.php
 
 		-
-			rawMessage: Access to an undefined property App\Modules\QualityMonitoring\Models\KpiUpdate::$created_at.
-			identifier: property.notFound
+			rawMessage: Using nullsafe method call on non-nullable type Carbon\CarbonImmutable|string. Use -> instead.
+			identifier: nullsafe.neverNull
 			count: 1
-			path: app/Console/Commands/QualityMonitoringGenerateAlerts.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\QualityMonitoring\Models\Objective::$workplan_id.
-			identifier: property.notFound
-			count: 3
 			path: app/Console/Commands/QualityMonitoringGenerateAlerts.php
 
 		-
@@ -83,6 +71,12 @@ parameters:
 			identifier: nullsafe.neverNull
 			count: 1
 			path: app/Console/Commands/QualityMonitoringGenerateAlerts.php
+
+		-
+			rawMessage: Coalesce operator ?? is unnecessary because the left side is always set and the right side is null.
+			identifier: nullCoalesce.unnecessary
+			count: 1
+			path: app/Console/Commands/SeedProductionMedia.php
 
 		-
 			rawMessage: 'Strict comparison using === between int<0, max> and string will always evaluate to false.'
@@ -121,79 +115,13 @@ parameters:
 			path: app/Exceptions/TenantMembershipException.php
 
 		-
-			rawMessage: 'Class App\Exports\ActivityLogExport implements generic interface Maatwebsite\Excel\Concerns\WithMapping but does not specify its types: RowType'
-			identifier: missingType.generics
-			count: 1
-			path: app/Exports/ActivityLogExport.php
-
-		-
-			rawMessage: 'Method App\Exports\ActivityLogExport::headings() return type has no value type specified in iterable type array.'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Exports/ActivityLogExport.php
-
-		-
-			rawMessage: 'Method App\Exports\ActivityLogExport::map() return type has no value type specified in iterable type array.'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Exports/ActivityLogExport.php
-
-		-
-			rawMessage: 'Method App\Exports\ActivityLogExport::query() has invalid return type Laravel\Scout\Builder.'
-			identifier: class.notFound
-			count: 1
-			path: app/Exports/ActivityLogExport.php
-
-		-
-			rawMessage: 'Method App\Exports\ActivityLogExport::query() return type with generic class Illuminate\Database\Eloquent\Builder does not specify its types: TModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Exports/ActivityLogExport.php
-
-		-
-			rawMessage: 'Method App\Exports\ActivityLogExport::query() return type with generic class Illuminate\Database\Eloquent\Relations\Relation does not specify its types: TRelatedModel, TDeclaringModel, TResult'
-			identifier: missingType.generics
-			count: 1
-			path: app/Exports/ActivityLogExport.php
-
-		-
-			rawMessage: 'Method App\Exports\AuditTrailExport::collection() return type with generic class Illuminate\Support\Collection does not specify its types: TKey, TValue'
-			identifier: missingType.generics
-			count: 1
-			path: app/Exports/AuditTrailExport.php
-
-		-
-			rawMessage: 'Method App\Exports\LoginHistoryExport::collection() return type with generic class Illuminate\Support\Collection does not specify its types: TKey, TValue'
-			identifier: missingType.generics
-			count: 1
-			path: app/Exports/LoginHistoryExport.php
-
-		-
-			rawMessage: 'Method App\Exports\UserExport::collection() return type with generic class Illuminate\Support\Collection does not specify its types: TKey, TValue'
-			identifier: missingType.generics
-			count: 1
-			path: app/Exports/UserExport.php
-
-		-
 			rawMessage: 'Unable to resolve the template type TGroupKey in call to method Illuminate\Support\Collection<int,App\Models\UsageRollup>::groupBy()'
 			identifier: argument.templateType
 			count: 1
 			path: app/Http/Controllers/Admin/AnalyticsController.php
 
 		-
-			rawMessage: Access to an undefined property Illuminate\Database\Eloquent\Model::$email.
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/Admin/AuditTrailController.php
-
-		-
-			rawMessage: Access to an undefined property Illuminate\Database\Eloquent\Model::$gravatar.
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/Admin/AuditTrailController.php
-
-		-
-			rawMessage: Access to an undefined property Illuminate\Database\Eloquent\Model::$photo.
+			rawMessage: Access to an undefined property App\Models\User::$gravatar.
 			identifier: property.notFound
 			count: 1
 			path: app/Http/Controllers/Admin/AuditTrailController.php
@@ -201,18 +129,12 @@ parameters:
 		-
 			rawMessage: 'Call to an undefined method Illuminate\Database\Eloquent\Model::displayName().'
 			identifier: method.notFound
-			count: 3
+			count: 1
 			path: app/Http/Controllers/Admin/AuditTrailController.php
 
 		-
 			rawMessage: 'Method App\Http\Controllers\Admin\AuditTrailController::exportActivityLogs() has no return type specified.'
 			identifier: missingType.return
-			count: 1
-			path: app/Http/Controllers/Admin/AuditTrailController.php
-
-		-
-			rawMessage: 'Parameter #1 $tenantId of class App\Exports\ActivityLogExport constructor expects string|null, int|null given.'
-			identifier: argument.type
 			count: 1
 			path: app/Http/Controllers/Admin/AuditTrailController.php
 
@@ -313,18 +235,6 @@ parameters:
 			path: app/Http/Controllers/Admin/ImpersonateUserController.php
 
 		-
-			rawMessage: Access to an undefined property Illuminate\Database\Eloquent\Model::$status.
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/Admin/InvoiceController.php
-
-		-
-			rawMessage: 'Call to an undefined method Illuminate\Database\Eloquent\Model::users().'
-			identifier: method.notFound
-			count: 1
-			path: app/Http/Controllers/Admin/InvoiceController.php
-
-		-
 			rawMessage: 'Method App\Http\Controllers\Admin\InvoiceController::addAdjustment() has no return type specified.'
 			identifier: missingType.return
 			count: 1
@@ -363,12 +273,6 @@ parameters:
 		-
 			rawMessage: 'Method App\Http\Controllers\Admin\InvoiceController::store() has no return type specified.'
 			identifier: missingType.return
-			count: 1
-			path: app/Http/Controllers/Admin/InvoiceController.php
-
-		-
-			rawMessage: 'Parameter #1 $invoice of method App\Http\Controllers\Admin\InvoiceController::recalculateTotals() expects App\Models\Invoice, Illuminate\Database\Eloquent\Model|null given.'
-			identifier: argument.type
 			count: 1
 			path: app/Http/Controllers/Admin/InvoiceController.php
 
@@ -475,6 +379,12 @@ parameters:
 			path: app/Http/Controllers/Admin/RateCardController.php
 
 		-
+			rawMessage: Variable $validated is never read.
+			identifier: variable.unused
+			count: 1
+			path: app/Http/Controllers/Admin/RateCardController.php
+
+		-
 			rawMessage: 'Method App\Http\Controllers\Admin\ResendAccountPasswordController::__invoke() should return Illuminate\Http\Response but returns Illuminate\Http\JsonResponse.'
 			identifier: return.type
 			count: 1
@@ -549,12 +459,6 @@ parameters:
 		-
 			rawMessage: 'Method App\Http\Controllers\Admin\TeamController::store() has no return type specified.'
 			identifier: missingType.return
-			count: 1
-			path: app/Http/Controllers/Admin/TeamController.php
-
-		-
-			rawMessage: 'Property App\Models\User::$tenant_id (string|null) does not accept int.'
-			identifier: assign.propertyType
 			count: 1
 			path: app/Http/Controllers/Admin/TeamController.php
 
@@ -769,6 +673,12 @@ parameters:
 			path: app/Http/Controllers/Billing/BillingController.php
 
 		-
+			rawMessage: Value assigned to variable $subscription is never read before being overwritten.
+			identifier: assign.overwritten
+			count: 1
+			path: app/Http/Controllers/Billing/BillingController.php
+
+		-
 			rawMessage: 'Method App\Http\Controllers\Billing\CallbackController::__invoke() has no return type specified.'
 			identifier: missingType.return
 			count: 1
@@ -901,6 +811,12 @@ parameters:
 			path: app/Http/Controllers/Marketing/LeadController.php
 
 		-
+			rawMessage: Variable $perMinute is never read.
+			identifier: variable.unused
+			count: 1
+			path: app/Http/Controllers/Marketing/LeadController.php
+
+		-
 			rawMessage: 'Method App\Http\Controllers\Settings\ApiTokenController::destroy() has no return type specified.'
 			identifier: missingType.return
 			count: 1
@@ -923,12 +839,6 @@ parameters:
 			identifier: missingType.return
 			count: 1
 			path: app/Http/Controllers/Settings/ApiTokenController.php
-
-		-
-			rawMessage: 'Parameter #1 $tenantId of method App\Services\Api\ApiKeyService::generate() expects string, int given.'
-			identifier: argument.type
-			count: 1
-			path: app/Http/Controllers/Tenant/ApiKeyController.php
 
 		-
 			rawMessage: 'Method App\Http\Controllers\Tenant\Commerce\WebhookController::handlePaystack() has no return type specified.'
@@ -955,10 +865,10 @@ parameters:
 			path: app/Http/Controllers/Tenant/Commerce/WebhookController.php
 
 		-
-			rawMessage: Access to an undefined property Illuminate\Database\Eloquent\Model::$feature_key.
-			identifier: property.notFound
+			rawMessage: Variable $paymentIntent is never read.
+			identifier: variable.unused
 			count: 1
-			path: app/Http/Controllers/Tenant/DashboardController.php
+			path: app/Http/Controllers/Tenant/Commerce/WebhookController.php
 
 		-
 			rawMessage: 'Method App\Http\Controllers\Tenant\FinanceController::refund() has no return type specified.'
@@ -967,14 +877,8 @@ parameters:
 			path: app/Http/Controllers/Tenant/FinanceController.php
 
 		-
-			rawMessage: 'Strict comparison using !== between string and int will always evaluate to true.'
-			identifier: notIdentical.alwaysTrue
-			count: 1
-			path: app/Http/Controllers/Tenant/FinanceController.php
-
-		-
-			rawMessage: Unreachable statement - code above always terminates.
-			identifier: deadCode.unreachable
+			rawMessage: Offset 'id' on string on left side of ?? does not exist.
+			identifier: nullCoalesce.offset
 			count: 1
 			path: app/Http/Controllers/Tenant/FinanceController.php
 
@@ -1051,54 +955,6 @@ parameters:
 			path: app/Http/Controllers/Tenant/UserController.php
 
 		-
-			rawMessage: Access to an undefined property Illuminate\Database\Eloquent\Model::$allowed_ips.
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Middleware/AuthenticateWithApiKey.php
-
-		-
-			rawMessage: Access to an undefined property Illuminate\Database\Eloquent\Model::$id.
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Middleware/AuthenticateWithApiKey.php
-
-		-
-			rawMessage: Access to an undefined property Illuminate\Database\Eloquent\Model::$status.
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Middleware/AuthenticateWithApiKey.php
-
-		-
-			rawMessage: 'Call to an undefined method Illuminate\Database\Eloquent\Model::requiresDedicatedDb().'
-			identifier: method.notFound
-			count: 1
-			path: app/Http/Middleware/AuthenticateWithApiKey.php
-
-		-
-			rawMessage: 'Parameter #1 $tenant of method App\Services\Tenancy\TenantContext::setTenant() expects App\Models\Tenant, Illuminate\Database\Eloquent\Model|null given.'
-			identifier: argument.type
-			count: 1
-			path: app/Http/Middleware/AuthenticateWithApiKey.php
-
-		-
-			rawMessage: 'Parameter #1 $tenant of method App\Services\Tenancy\TenantDatabaseManager::configure() expects App\Models\Tenant, Illuminate\Database\Eloquent\Model|null given.'
-			identifier: argument.type
-			count: 1
-			path: app/Http/Middleware/AuthenticateWithApiKey.php
-
-		-
-			rawMessage: 'Parameter #1 $tenant of method App\Services\Tenancy\TenantStorageManager::configure() expects App\Models\Tenant, Illuminate\Database\Eloquent\Model|null given.'
-			identifier: argument.type
-			count: 1
-			path: app/Http/Middleware/AuthenticateWithApiKey.php
-
-		-
-			rawMessage: 'Parameter #1 $tenantId of method App\Services\Llm\LlmUsageService::canConsume() expects string, int given.'
-			identifier: argument.type
-			count: 1
-			path: app/Http/Middleware/EnsureTenantHasLlmTokens.php
-
-		-
 			rawMessage: Access to an undefined property App\Models\Tenant::$package.
 			identifier: property.notFound
 			count: 1
@@ -1145,6 +1001,18 @@ parameters:
 			identifier: instanceof.alwaysTrue
 			count: 1
 			path: app/Jobs/Middleware/TenantAwareJob.php
+
+		-
+			rawMessage: Access to an undefined property App\Models\WebhookEndpoint::$secret.
+			identifier: property.notFound
+			count: 1
+			path: app/Jobs/SendWebhookJob.php
+
+		-
+			rawMessage: Access to an undefined property App\Models\WebhookEndpoint::$url.
+			identifier: property.notFound
+			count: 1
+			path: app/Jobs/SendWebhookJob.php
 
 		-
 			rawMessage: 'Method App\Jobs\SendWebhookJob::__construct() has parameter $payload with no value type specified in iterable type array.'
@@ -1543,25 +1411,7 @@ parameters:
 			path: app/Models/Invoice.php
 
 		-
-			rawMessage: 'Method App\Models\Invoice::items() return type with generic class Illuminate\Database\Eloquent\Relations\HasMany does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/Invoice.php
-
-		-
-			rawMessage: 'Method App\Models\Invoice::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/Invoice.php
-
-		-
 			rawMessage: 'Class App\Models\InvoiceItem uses generic trait Illuminate\Database\Eloquent\Factories\HasFactory but does not specify its types: TFactory'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/InvoiceItem.php
-
-		-
-			rawMessage: 'Method App\Models\InvoiceItem::invoice() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
 			identifier: missingType.generics
 			count: 1
 			path: app/Models/InvoiceItem.php
@@ -1579,26 +1429,8 @@ parameters:
 			path: app/Models/LlmTokenUsage.php
 
 		-
-			rawMessage: 'Method App\Models\LlmTokenUsage::apiKey() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/LlmTokenUsage.php
-
-		-
 			rawMessage: 'Method App\Models\LlmTokenUsage::generateUuid() has no return type specified.'
 			identifier: missingType.return
-			count: 1
-			path: app/Models/LlmTokenUsage.php
-
-		-
-			rawMessage: 'Method App\Models\LlmTokenUsage::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/LlmTokenUsage.php
-
-		-
-			rawMessage: 'Method App\Models\LlmTokenUsage::user() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
 			count: 1
 			path: app/Models/LlmTokenUsage.php
 
@@ -1611,12 +1443,6 @@ parameters:
 		-
 			rawMessage: 'Method App\Models\LlmUsageSummary::generateUuid() has no return type specified.'
 			identifier: missingType.return
-			count: 1
-			path: app/Models/LlmUsageSummary.php
-
-		-
-			rawMessage: 'Method App\Models\LlmUsageSummary::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
 			count: 1
 			path: app/Models/LlmUsageSummary.php
 
@@ -1645,12 +1471,6 @@ parameters:
 			path: app/Models/MerchantTransaction.php
 
 		-
-			rawMessage: 'Method App\Models\MerchantTransaction::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/MerchantTransaction.php
-
-		-
 			rawMessage: 'Class App\Models\Package uses generic trait Illuminate\Database\Eloquent\Factories\HasFactory but does not specify its types: TFactory'
 			identifier: missingType.generics
 			count: 1
@@ -1665,12 +1485,6 @@ parameters:
 		-
 			rawMessage: 'Method App\Models\Package::generateUuid() has no return type specified.'
 			identifier: missingType.return
-			count: 1
-			path: app/Models/Package.php
-
-		-
-			rawMessage: 'Method App\Models\Package::usagePrices() return type with generic class Illuminate\Database\Eloquent\Relations\MorphMany does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
 			count: 1
 			path: app/Models/Package.php
 
@@ -1753,18 +1567,6 @@ parameters:
 			path: app/Models/Tenant.php
 
 		-
-			rawMessage: Access to an undefined property Illuminate\Database\Eloquent\Model::$enabled.
-			identifier: property.notFound
-			count: 1
-			path: app/Models/Tenant.php
-
-		-
-			rawMessage: Access to an undefined property Illuminate\Database\Eloquent\Model::$feature_key.
-			identifier: property.notFound
-			count: 1
-			path: app/Models/Tenant.php
-
-		-
 			rawMessage: 'Class App\Models\Tenant uses generic trait Illuminate\Database\Eloquent\Factories\HasFactory but does not specify its types: TFactory'
 			identifier: missingType.generics
 			count: 1
@@ -1772,18 +1574,6 @@ parameters:
 
 		-
 			rawMessage: 'Method App\Models\Tenant::collectDescendantsInto() has parameter $bucket with generic class Illuminate\Support\Collection but does not specify its types: TKey, TValue'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/Tenant.php
-
-		-
-			rawMessage: 'Method App\Models\Tenant::enabledModules() return type with generic class Illuminate\Database\Eloquent\Relations\HasMany does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/Tenant.php
-
-		-
-			rawMessage: 'Method App\Models\Tenant::features() return type with generic class Illuminate\Database\Eloquent\Relations\HasMany does not specify its types: TRelatedModel, TDeclaringModel'
 			identifier: missingType.generics
 			count: 1
 			path: app/Models/Tenant.php
@@ -1813,49 +1603,13 @@ parameters:
 			path: app/Models/Tenant.php
 
 		-
-			rawMessage: 'Method App\Models\Tenant::modules() return type with generic class Illuminate\Database\Eloquent\Relations\HasMany does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/Tenant.php
-
-		-
 			rawMessage: 'Method App\Models\Tenant::package() has no return type specified.'
 			identifier: missingType.return
 			count: 1
 			path: app/Models/Tenant.php
 
 		-
-			rawMessage: 'Method App\Models\Tenant::parent() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/Tenant.php
-
-		-
 			rawMessage: 'Method App\Models\Tenant::primaryColor() return type with generic class Illuminate\Database\Eloquent\Casts\Attribute does not specify its types: TGet, TSet'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/Tenant.php
-
-		-
-			rawMessage: 'Method App\Models\Tenant::subscriptions() return type with generic class Illuminate\Database\Eloquent\Relations\HasMany does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/Tenant.php
-
-		-
-			rawMessage: 'Method App\Models\Tenant::usage() return type with generic class Illuminate\Database\Eloquent\Relations\HasMany does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/Tenant.php
-
-		-
-			rawMessage: 'Method App\Models\Tenant::usagePrices() return type with generic class Illuminate\Database\Eloquent\Relations\MorphMany does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/Tenant.php
-
-		-
-			rawMessage: 'Method App\Models\Tenant::users() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsToMany does not specify its types: TRelatedModel, TDeclaringModel, TPivotModel, TAccessor (2-4 required)'
 			identifier: missingType.generics
 			count: 1
 			path: app/Models/Tenant.php
@@ -1871,24 +1625,6 @@ parameters:
 			identifier: missingType.return
 			count: 1
 			path: app/Models/TenantApiKey.php
-
-		-
-			rawMessage: 'Method App\Models\TenantApiKey::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/TenantApiKey.php
-
-		-
-			rawMessage: 'Method App\Models\TenantApiKey::user() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/TenantApiKey.php
-
-		-
-			rawMessage: 'Method App\Models\TenantFeature::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/TenantFeature.php
 
 		-
 			rawMessage: 'Class App\Models\TenantFeatureUsage uses generic trait Illuminate\Database\Eloquent\Factories\HasFactory but does not specify its types: TFactory'
@@ -1939,12 +1675,6 @@ parameters:
 			path: app/Models/TenantLlmConfig.php
 
 		-
-			rawMessage: 'Method App\Models\TenantLlmConfig::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/TenantLlmConfig.php
-
-		-
 			rawMessage: 'Method App\Models\TenantModule::generateUuid() has no return type specified.'
 			identifier: missingType.return
 			count: 1
@@ -1971,12 +1701,6 @@ parameters:
 		-
 			rawMessage: 'Method App\Models\TenantPaymentGateway::scopeActive() has parameter $query with no type specified.'
 			identifier: missingType.parameter
-			count: 1
-			path: app/Models/TenantPaymentGateway.php
-
-		-
-			rawMessage: 'Method App\Models\TenantPaymentGateway::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
 			count: 1
 			path: app/Models/TenantPaymentGateway.php
 
@@ -2035,12 +1759,6 @@ parameters:
 			path: app/Models/UsageLimit.php
 
 		-
-			rawMessage: 'Method App\Models\UsageLimit::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/UsageLimit.php
-
-		-
 			rawMessage: 'Class App\Models\UsagePrice uses generic trait Illuminate\Database\Eloquent\Factories\HasFactory but does not specify its types: TFactory'
 			identifier: missingType.generics
 			count: 1
@@ -2095,12 +1813,6 @@ parameters:
 			path: app/Models/User.php
 
 		-
-			rawMessage: 'Method App\Models\User::tenants() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsToMany does not specify its types: TRelatedModel, TDeclaringModel, TPivotModel, TAccessor (2-4 required)'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/User.php
-
-		-
 			rawMessage: 'PHPDoc type array<int, string> of property App\Models\User::$hidden is not covariant with PHPDoc type list<string> of overridden property Illuminate\Database\Eloquent\Model::$hidden.'
 			identifier: property.phpDocType
 			count: 1
@@ -2143,12 +1855,6 @@ parameters:
 			path: app/Models/UserLoginHistory.php
 
 		-
-			rawMessage: 'Method App\Models\UserLoginHistory::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/UserLoginHistory.php
-
-		-
 			rawMessage: 'Method App\Models\UserLoginHistory::thisYear() has no return type specified.'
 			identifier: missingType.return
 			count: 1
@@ -2161,12 +1867,6 @@ parameters:
 			path: app/Models/UserLoginHistory.php
 
 		-
-			rawMessage: 'Method App\Models\UserLoginHistory::user() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Models/UserLoginHistory.php
-
-		-
 			rawMessage: 'Class App\Models\WebhookCall uses generic trait Illuminate\Database\Eloquent\Factories\HasFactory but does not specify its types: TFactory'
 			identifier: missingType.generics
 			count: 1
@@ -2175,12 +1875,6 @@ parameters:
 		-
 			rawMessage: 'Method App\Models\WebhookCall::endpoint() has no return type specified.'
 			identifier: missingType.return
-			count: 1
-			path: app/Models/WebhookCall.php
-
-		-
-			rawMessage: 'Method App\Models\WebhookCall::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
 			count: 1
 			path: app/Models/WebhookCall.php
 
@@ -2215,86 +1909,32 @@ parameters:
 			path: app/Modules/CmsCore/Http/Controllers/Web/CmsMediaLibraryController.php
 
 		-
+			rawMessage: 'Method App\Modules\CmsCore\Http\Controllers\Web\CmsPostLibraryController::formOptions() should return array{post: App\Modules\CmsCore\Models\Post|null, postTypes: Illuminate\Database\Eloquent\Collection<int, App\Modules\CmsCore\Models\PostType>, categories: Illuminate\Database\Eloquent\Collection<int, App\Modules\CmsCore\Models\Category>, tags: Illuminate\Database\Eloquent\Collection<int, App\Modules\CmsCore\Models\Tag>, mediaItems: Illuminate\Database\Eloquent\Collection<int, App\Modules\CmsCore\Models\Media>, parentPosts: Illuminate\Database\Eloquent\Collection<int, App\Modules\CmsCore\Models\Post>, statusOptions: array<int, string>, seoMeta: array{seo_title: string, seo_description: string, seo_canonical: string}} but returns array{post: App\Modules\CmsCore\Models\Post|null, postTypes: Illuminate\Database\Eloquent\Collection<int, App\Modules\CmsCore\Models\PostType>, categories: Illuminate\Database\Eloquent\Collection<int, App\Modules\CmsCore\Models\Category>, tags: Illuminate\Database\Eloquent\Collection<int, App\Modules\CmsCore\Models\Tag>, mediaItems: Illuminate\Database\Eloquent\Collection<int, App\Modules\CmsCore\Models\Media>, parentPosts: Illuminate\Database\Eloquent\Collection<int, App\Modules\CmsCore\Models\Post>, statusOptions: array{''draft'', ''published'', ''scheduled'', ''archived''}, seoMeta: array{seo_title: string, seo_description: string, seo_canonical: string}, ...}.'
+			identifier: return.type
+			count: 1
+			path: app/Modules/CmsCore/Http/Controllers/Web/CmsPostLibraryController.php
+
+		-
+			rawMessage: 'Parameter #2 $values of method App\Modules\CmsCore\Services\CmsSeoService::saveForPost() expects array{seo_title?: string|null, seo_description?: string|null, seo_canonical?: string|null}, array given.'
+			identifier: argument.type
+			count: 2
+			path: app/Modules/CmsCore/Http/Controllers/Web/CmsPostLibraryController.php
+
+		-
 			rawMessage: Using nullsafe property access "?->uuid" on left side of ?? is unnecessary. Use -> instead.
 			identifier: nullsafe.neverNull
 			count: 1
 			path: app/Modules/CmsCore/Http/Controllers/Web/CmsPostLibraryController.php
 
 		-
-			rawMessage: 'Method App\Modules\CmsCore\Models\Category::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
+			rawMessage: Variable $media is never read.
+			identifier: variable.unused
 			count: 1
-			path: app/Modules/CmsCore/Models/Category.php
+			path: app/Modules/CmsCore/Http/Requests/MediaUpdateRequest.php
 
 		-
-			rawMessage: 'Method App\Modules\CmsCore\Models\Media::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/CmsCore/Models/Media.php
-
-		-
-			rawMessage: 'Method App\Modules\CmsCore\Models\MediaVariant::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/CmsCore/Models/MediaVariant.php
-
-		-
-			rawMessage: 'Method App\Modules\CmsCore\Models\Menu::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/CmsCore/Models/Menu.php
-
-		-
-			rawMessage: 'Method App\Modules\CmsCore\Models\MenuItem::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/CmsCore/Models/MenuItem.php
-
-		-
-			rawMessage: 'Method App\Modules\CmsCore\Models\Post::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/CmsCore/Models/Post.php
-
-		-
-			rawMessage: 'Method App\Modules\CmsCore\Models\PostMeta::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/CmsCore/Models/PostMeta.php
-
-		-
-			rawMessage: 'Method App\Modules\CmsCore\Models\PostRevision::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/CmsCore/Models/PostRevision.php
-
-		-
-			rawMessage: 'Method App\Modules\CmsCore\Models\PostType::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/CmsCore/Models/PostType.php
-
-		-
-			rawMessage: 'Method App\Modules\CmsCore\Models\Setting::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/CmsCore/Models/Setting.php
-
-		-
-			rawMessage: 'Method App\Modules\CmsCore\Models\Tag::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/CmsCore/Models/Tag.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Models\Document::$current_version_id.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/DocumentManagement/Database/Seeders/DocumentManagementSeeder.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Models\DocumentVersion::$version_number.
-			identifier: property.notFound
+			rawMessage: Variable $versionOne is never read.
+			identifier: variable.unused
 			count: 1
 			path: app/Modules/DocumentManagement/Database/Seeders/DocumentManagementSeeder.php
 
@@ -2305,26 +1945,8 @@ parameters:
 			path: app/Modules/DocumentManagement/Http/Controllers/Api/V1/DocumentAuditController.php
 
 		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Models\Document::$published_at.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/DocumentManagement/Http/Controllers/Api/V1/DocumentController.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Models\Document::$status.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/DocumentManagement/Http/Controllers/Api/V1/DocumentController.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Models\Document::$tenant_id.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/DocumentManagement/Http/Controllers/Api/V1/DocumentController.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Models\Document::$title.
-			identifier: property.notFound
+			rawMessage: 'Property App\Modules\DocumentManagement\Models\Document::$published_at (string|null) does not accept Carbon\CarbonImmutable.'
+			identifier: assign.propertyType
 			count: 1
 			path: app/Modules/DocumentManagement/Http/Controllers/Api/V1/DocumentController.php
 
@@ -2335,80 +1957,44 @@ parameters:
 			path: app/Modules/DocumentManagement/Http/Controllers/Api/V1/DocumentController.php
 
 		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Models\DocumentQuiz::$document_id.
-			identifier: property.notFound
+			rawMessage: Comparison operation ">" between 0 and 0 is always false.
+			identifier: greater.alwaysFalse
 			count: 1
-			path: app/Modules/DocumentManagement/Http/Controllers/Api/V1/DocumentQuizAttemptController.php
+			path: app/Modules/DocumentManagement/Http/Controllers/Api/V1/DocumentQuizController.php
 
 		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Models\DocumentQuiz::$tenant_id.
-			identifier: property.notFound
+			rawMessage: Empty array passed to foreach.
+			identifier: foreach.emptyArray
 			count: 1
-			path: app/Modules/DocumentManagement/Http/Controllers/Api/V1/DocumentQuizAttemptController.php
+			path: app/Modules/DocumentManagement/Http/Controllers/Api/V1/DocumentQuizController.php
 
 		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Models\DocumentQuizQuestion::$correct_option.
-			identifier: property.notFound
+			rawMessage: 'Offset ''pass_percentage'' on array{}|string in isset() does not exist.'
+			identifier: isset.offset
 			count: 1
-			path: app/Modules/DocumentManagement/Http/Controllers/Api/V1/DocumentQuizAttemptController.php
+			path: app/Modules/DocumentManagement/Http/Controllers/Api/V1/DocumentQuizController.php
 
 		-
-			rawMessage: 'Access to an undefined property App\Modules\DocumentManagement\Models\Document|Illuminate\Database\Eloquent\Collection<int, App\Modules\DocumentManagement\Models\Document>::$tenant_id.'
-			identifier: property.notFound
+			rawMessage: 'Offset ''pass_score'' on array{}|string on left side of ?? does not exist.'
+			identifier: nullCoalesce.offset
 			count: 1
-			path: app/Modules/DocumentManagement/Http/Controllers/Api/V1/DocumentQuizAttemptController.php
+			path: app/Modules/DocumentManagement/Http/Controllers/Api/V1/DocumentQuizController.php
 
 		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Models\Document::$tenant_id.
-			identifier: property.notFound
+			rawMessage: Result of && is always false.
+			identifier: booleanAnd.alwaysFalse
 			count: 2
 			path: app/Modules/DocumentManagement/Http/Controllers/Api/V1/DocumentQuizController.php
 
 		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Models\DocumentQuiz::$document_id.
-			identifier: property.notFound
-			count: 2
-			path: app/Modules/DocumentManagement/Http/Controllers/Api/V1/DocumentQuizController.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Models\DocumentQuizQuestion::$body.
-			identifier: property.notFound
+			rawMessage: 'Strict comparison using !== between null and null will always evaluate to false.'
+			identifier: notIdentical.alwaysFalse
 			count: 1
 			path: app/Modules/DocumentManagement/Http/Controllers/Api/V1/DocumentQuizController.php
 
 		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Models\DocumentQuizQuestion::$correct_option.
-			identifier: property.notFound
-			count: 2
-			path: app/Modules/DocumentManagement/Http/Controllers/Api/V1/DocumentQuizController.php
-
-		-
-			rawMessage: 'Parameter #1 $callback of method Illuminate\Database\Eloquent\Collection<int,App\Modules\DocumentManagement\Models\DocumentQuizQuestion>::mapWithKeys() contains unresolvable type.'
-			identifier: argument.unresolvableType
-			count: 1
-			path: app/Modules/DocumentManagement/Http/Controllers/Api/V1/DocumentQuizController.php
-
-		-
-			rawMessage: 'Parameter #2 $value of method Illuminate\Support\Collection<int,array<string, mixed>>::put() contains unresolvable type.'
-			identifier: argument.unresolvableType
-			count: 1
-			path: app/Modules/DocumentManagement/Http/Controllers/Api/V1/DocumentQuizController.php
-
-		-
-			rawMessage: 'Return type of call to method Illuminate\Database\Eloquent\Collection<int,App\Modules\DocumentManagement\Models\DocumentQuizQuestion>::mapWithKeys() contains unresolvable type.'
-			identifier: method.unresolvableReturnType
-			count: 1
-			path: app/Modules/DocumentManagement/Http/Controllers/Api/V1/DocumentQuizController.php
-
-		-
-			rawMessage: 'Return type of call to method Illuminate\Support\Collection<int,array<string, mixed>>::map() contains unresolvable type.'
-			identifier: method.unresolvableReturnType
-			count: 1
-			path: app/Modules/DocumentManagement/Http/Controllers/Api/V1/DocumentQuizController.php
-
-		-
-			rawMessage: 'Return type of call to method Illuminate\Support\Collection<int,array<string, mixed>>::values() contains unresolvable type.'
-			identifier: method.unresolvableReturnType
+			rawMessage: 'Strict comparison using === between null and null will always evaluate to true.'
+			identifier: identical.alwaysTrue
 			count: 1
 			path: app/Modules/DocumentManagement/Http/Controllers/Api/V1/DocumentQuizController.php
 
@@ -2417,42 +2003,6 @@ parameters:
 			identifier: nullsafe.neverNull
 			count: 1
 			path: app/Modules/DocumentManagement/Http/Controllers/Api/V1/DocumentQuizController.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Models\Document::$current_version_id.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/DocumentManagement/Http/Controllers/Api/V1/DocumentVersionController.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Models\Document::$tenant_id.
-			identifier: property.notFound
-			count: 3
-			path: app/Modules/DocumentManagement/Http/Controllers/Api/V1/DocumentVersionController.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Models\DocumentVersion::$disk.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/DocumentManagement/Http/Controllers/Api/V1/DocumentVersionController.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Models\DocumentVersion::$filename.
-			identifier: property.notFound
-			count: 2
-			path: app/Modules/DocumentManagement/Http/Controllers/Api/V1/DocumentVersionController.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Models\DocumentVersion::$path.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/DocumentManagement/Http/Controllers/Api/V1/DocumentVersionController.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Models\DocumentVersion::$version_number.
-			identifier: property.notFound
-			count: 2
-			path: app/Modules/DocumentManagement/Http/Controllers/Api/V1/DocumentVersionController.php
 
 		-
 			rawMessage: Using nullsafe property access on non-nullable type App\Models\User. Use -> instead.
@@ -2461,13 +2011,7 @@ parameters:
 			path: app/Modules/DocumentManagement/Http/Controllers/Api/V1/DocumentVersionController.php
 
 		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Models\Document::$title.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/DocumentManagement/Http/Controllers/Web/DocumentHubController.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Models\DocumentQuiz::$title.
+			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Models\DocumentQuizAttempt::$attempts_count.
 			identifier: property.notFound
 			count: 1
 			path: app/Modules/DocumentManagement/Http/Controllers/Web/DocumentHubController.php
@@ -2479,14 +2023,8 @@ parameters:
 			path: app/Modules/DocumentManagement/Http/Controllers/Web/DocumentHubController.php
 
 		-
-			rawMessage: 'Parameter #1 $callback of method Illuminate\Database\Eloquent\Collection<int,App\Modules\DocumentManagement\Models\DocumentQuiz>::map() contains unresolvable type.'
-			identifier: argument.unresolvableType
-			count: 1
-			path: app/Modules/DocumentManagement/Http/Controllers/Web/DocumentHubController.php
-
-		-
-			rawMessage: 'Return type of call to method Illuminate\Database\Eloquent\Collection<int,App\Modules\DocumentManagement\Models\DocumentQuiz>::map() contains unresolvable type.'
-			identifier: method.unresolvableReturnType
+			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Models\DocumentQuizAttempt::$unique_users_count.
+			identifier: property.notFound
 			count: 1
 			path: app/Modules/DocumentManagement/Http/Controllers/Web/DocumentHubController.php
 
@@ -2509,21 +2047,9 @@ parameters:
 			path: app/Modules/DocumentManagement/Http/Controllers/Web/DocumentHubController.php
 
 		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Models\Document::$title.
+			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Models\DocumentQuizAttempt::$attempts_count.
 			identifier: property.notFound
-			count: 1
-			path: app/Modules/DocumentManagement/Http/Controllers/Web/DocumentQuizAnalyticsController.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Models\DocumentQuiz::$document_id.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/DocumentManagement/Http/Controllers/Web/DocumentQuizAnalyticsController.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Models\DocumentQuiz::$title.
-			identifier: property.notFound
-			count: 1
+			count: 2
 			path: app/Modules/DocumentManagement/Http/Controllers/Web/DocumentQuizAnalyticsController.php
 
 		-
@@ -2545,6 +2071,24 @@ parameters:
 			path: app/Modules/DocumentManagement/Http/Controllers/Web/DocumentQuizAnalyticsController.php
 
 		-
+			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Models\DocumentQuizAttempt::$unique_users_count.
+			identifier: property.notFound
+			count: 1
+			path: app/Modules/DocumentManagement/Http/Controllers/Web/DocumentQuizAnalyticsController.php
+
+		-
+			rawMessage: 'Offset ''pass_percentage'' on array{}|string in isset() does not exist.'
+			identifier: isset.offset
+			count: 1
+			path: app/Modules/DocumentManagement/Http/Controllers/Web/DocumentQuizAnalyticsController.php
+
+		-
+			rawMessage: 'Offset ''pass_score'' on array{}|string on left side of ?? does not exist.'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Modules/DocumentManagement/Http/Controllers/Web/DocumentQuizAnalyticsController.php
+
+		-
 			rawMessage: 'Parameter #1 $callback of method Illuminate\Database\Eloquent\Collection<int,App\Modules\DocumentManagement\Models\DocumentQuiz>::map() contains unresolvable type.'
 			identifier: argument.unresolvableType
 			count: 1
@@ -2557,6 +2101,12 @@ parameters:
 			path: app/Modules/DocumentManagement/Http/Controllers/Web/DocumentQuizAnalyticsController.php
 
 		-
+			rawMessage: Result of && is always false.
+			identifier: booleanAnd.alwaysFalse
+			count: 2
+			path: app/Modules/DocumentManagement/Http/Controllers/Web/DocumentQuizAnalyticsController.php
+
+		-
 			rawMessage: 'Return type of call to method Illuminate\Database\Eloquent\Collection<int,App\Modules\DocumentManagement\Models\DocumentQuiz>::map() contains unresolvable type.'
 			identifier: method.unresolvableReturnType
 			count: 1
@@ -2565,6 +2115,18 @@ parameters:
 		-
 			rawMessage: 'Return type of call to method Illuminate\Support\Collection<int,array<string, mixed>>::values() contains unresolvable type.'
 			identifier: method.unresolvableReturnType
+			count: 1
+			path: app/Modules/DocumentManagement/Http/Controllers/Web/DocumentQuizAnalyticsController.php
+
+		-
+			rawMessage: 'Strict comparison using !== between null and null will always evaluate to false.'
+			identifier: notIdentical.alwaysFalse
+			count: 1
+			path: app/Modules/DocumentManagement/Http/Controllers/Web/DocumentQuizAnalyticsController.php
+
+		-
+			rawMessage: 'Strict comparison using === between null and null will always evaluate to true.'
+			identifier: identical.alwaysTrue
 			count: 1
 			path: app/Modules/DocumentManagement/Http/Controllers/Web/DocumentQuizAnalyticsController.php
 
@@ -2581,304 +2143,22 @@ parameters:
 			path: app/Modules/DocumentManagement/Http/Controllers/Web/DocumentQuizAnalyticsController.php
 
 		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Http\Resources\DocumentAuditResource::$created_at.
-			identifier: property.notFound
+			rawMessage: 'Cannot call method toIso8601String() on string.'
+			identifier: method.nonObject
 			count: 1
 			path: app/Modules/DocumentManagement/Http/Resources/DocumentAuditResource.php
 
 		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Http\Resources\DocumentAuditResource::$document_id.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/DocumentManagement/Http/Resources/DocumentAuditResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Http\Resources\DocumentAuditResource::$event.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/DocumentManagement/Http/Resources/DocumentAuditResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Http\Resources\DocumentAuditResource::$metadata.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/DocumentManagement/Http/Resources/DocumentAuditResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Http\Resources\DocumentAuditResource::$user_id.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/DocumentManagement/Http/Resources/DocumentAuditResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Http\Resources\DocumentQuizAttemptResource::$completed_at.
-			identifier: property.notFound
-			count: 1
+			rawMessage: 'Cannot call method toIso8601String() on string.'
+			identifier: method.nonObject
+			count: 2
 			path: app/Modules/DocumentManagement/Http/Resources/DocumentQuizAttemptResource.php
 
 		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Http\Resources\DocumentQuizAttemptResource::$created_at.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/DocumentManagement/Http/Resources/DocumentQuizAttemptResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Http\Resources\DocumentQuizAttemptResource::$quiz_id.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/DocumentManagement/Http/Resources/DocumentQuizAttemptResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Http\Resources\DocumentQuizAttemptResource::$responses.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/DocumentManagement/Http/Resources/DocumentQuizAttemptResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Http\Resources\DocumentQuizAttemptResource::$score.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/DocumentManagement/Http/Resources/DocumentQuizAttemptResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Http\Resources\DocumentQuizAttemptResource::$started_at.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/DocumentManagement/Http/Resources/DocumentQuizAttemptResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Http\Resources\DocumentQuizAttemptResource::$user_id.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/DocumentManagement/Http/Resources/DocumentQuizAttemptResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Http\Resources\DocumentQuizQuestionResource::$body.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/DocumentManagement/Http/Resources/DocumentQuizQuestionResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Http\Resources\DocumentQuizQuestionResource::$correct_option.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/DocumentManagement/Http/Resources/DocumentQuizQuestionResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Http\Resources\DocumentQuizQuestionResource::$options.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/DocumentManagement/Http/Resources/DocumentQuizQuestionResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Http\Resources\DocumentQuizQuestionResource::$points.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/DocumentManagement/Http/Resources/DocumentQuizQuestionResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Http\Resources\DocumentQuizQuestionResource::$quiz_id.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/DocumentManagement/Http/Resources/DocumentQuizQuestionResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Http\Resources\DocumentQuizQuestionResource::$sort_order.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/DocumentManagement/Http/Resources/DocumentQuizQuestionResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Http\Resources\DocumentQuizResource::$description.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/DocumentManagement/Http/Resources/DocumentQuizResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Http\Resources\DocumentQuizResource::$document_id.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/DocumentManagement/Http/Resources/DocumentQuizResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Http\Resources\DocumentQuizResource::$settings.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/DocumentManagement/Http/Resources/DocumentQuizResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Http\Resources\DocumentQuizResource::$title.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/DocumentManagement/Http/Resources/DocumentQuizResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Http\Resources\DocumentResource::$category.
-			identifier: property.notFound
+			rawMessage: 'Cannot call method toIso8601String() on string.'
+			identifier: method.nonObject
 			count: 1
 			path: app/Modules/DocumentManagement/Http/Resources/DocumentResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Http\Resources\DocumentResource::$created_at.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/DocumentManagement/Http/Resources/DocumentResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Http\Resources\DocumentResource::$description.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/DocumentManagement/Http/Resources/DocumentResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Http\Resources\DocumentResource::$metadata.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/DocumentManagement/Http/Resources/DocumentResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Http\Resources\DocumentResource::$owner_id.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/DocumentManagement/Http/Resources/DocumentResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Http\Resources\DocumentResource::$published_at.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/DocumentManagement/Http/Resources/DocumentResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Http\Resources\DocumentResource::$slug.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/DocumentManagement/Http/Resources/DocumentResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Http\Resources\DocumentResource::$status.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/DocumentManagement/Http/Resources/DocumentResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Http\Resources\DocumentResource::$tags.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/DocumentManagement/Http/Resources/DocumentResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Http\Resources\DocumentResource::$tenant_id.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/DocumentManagement/Http/Resources/DocumentResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Http\Resources\DocumentResource::$title.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/DocumentManagement/Http/Resources/DocumentResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Http\Resources\DocumentResource::$updated_at.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/DocumentManagement/Http/Resources/DocumentResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Http\Resources\DocumentResource::$uuid.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/DocumentManagement/Http/Resources/DocumentResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Http\Resources\DocumentResource::$visibility.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/DocumentManagement/Http/Resources/DocumentResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Http\Resources\DocumentVersionResource::$checksum_sha256.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/DocumentManagement/Http/Resources/DocumentVersionResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Http\Resources\DocumentVersionResource::$created_at.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/DocumentManagement/Http/Resources/DocumentVersionResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Http\Resources\DocumentVersionResource::$disk.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/DocumentManagement/Http/Resources/DocumentVersionResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Http\Resources\DocumentVersionResource::$document_id.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/DocumentManagement/Http/Resources/DocumentVersionResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Http\Resources\DocumentVersionResource::$filename.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/DocumentManagement/Http/Resources/DocumentVersionResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Http\Resources\DocumentVersionResource::$mime_type.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/DocumentManagement/Http/Resources/DocumentVersionResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Http\Resources\DocumentVersionResource::$notes.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/DocumentManagement/Http/Resources/DocumentVersionResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Http\Resources\DocumentVersionResource::$path.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/DocumentManagement/Http/Resources/DocumentVersionResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Http\Resources\DocumentVersionResource::$size_bytes.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/DocumentManagement/Http/Resources/DocumentVersionResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Http\Resources\DocumentVersionResource::$uploaded_by_id.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/DocumentManagement/Http/Resources/DocumentVersionResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Http\Resources\DocumentVersionResource::$version_number.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/DocumentManagement/Http/Resources/DocumentVersionResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Models\Document::$slug.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/DocumentManagement/Models/Document.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Models\Document::$tenant_id.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/DocumentManagement/Models/Document.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\DocumentManagement\Models\Document::$title.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/DocumentManagement/Models/Document.php
 
 		-
 			rawMessage: 'Class App\Modules\DocumentManagement\Models\Document uses generic trait Illuminate\Database\Eloquent\Factories\HasFactory but does not specify its types: TFactory'
@@ -2887,25 +2167,7 @@ parameters:
 			path: app/Modules/DocumentManagement/Models/Document.php
 
 		-
-			rawMessage: 'Method App\Modules\DocumentManagement\Models\Document::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/DocumentManagement/Models/Document.php
-
-		-
-			rawMessage: 'Method App\Modules\DocumentManagement\Models\DocumentAudit::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/DocumentManagement/Models/DocumentAudit.php
-
-		-
 			rawMessage: 'Class App\Modules\DocumentManagement\Models\DocumentQuiz uses generic trait Illuminate\Database\Eloquent\Factories\HasFactory but does not specify its types: TFactory'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/DocumentManagement/Models/DocumentQuiz.php
-
-		-
-			rawMessage: 'Method App\Modules\DocumentManagement\Models\DocumentQuiz::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
 			identifier: missingType.generics
 			count: 1
 			path: app/Modules/DocumentManagement/Models/DocumentQuiz.php
@@ -2917,31 +2179,13 @@ parameters:
 			path: app/Modules/DocumentManagement/Models/DocumentQuizAttempt.php
 
 		-
-			rawMessage: 'Method App\Modules\DocumentManagement\Models\DocumentQuizAttempt::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/DocumentManagement/Models/DocumentQuizAttempt.php
-
-		-
 			rawMessage: 'Class App\Modules\DocumentManagement\Models\DocumentQuizQuestion uses generic trait Illuminate\Database\Eloquent\Factories\HasFactory but does not specify its types: TFactory'
 			identifier: missingType.generics
 			count: 1
 			path: app/Modules/DocumentManagement/Models/DocumentQuizQuestion.php
 
 		-
-			rawMessage: 'Method App\Modules\DocumentManagement\Models\DocumentQuizQuestion::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/DocumentManagement/Models/DocumentQuizQuestion.php
-
-		-
 			rawMessage: 'Class App\Modules\DocumentManagement\Models\DocumentVersion uses generic trait Illuminate\Database\Eloquent\Factories\HasFactory but does not specify its types: TFactory'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/DocumentManagement/Models/DocumentVersion.php
-
-		-
-			rawMessage: 'Method App\Modules\DocumentManagement\Models\DocumentVersion::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
 			identifier: missingType.generics
 			count: 1
 			path: app/Modules/DocumentManagement/Models/DocumentVersion.php
@@ -3007,12 +2251,6 @@ parameters:
 			path: app/Modules/Forums/Models/ForumChannel.php
 
 		-
-			rawMessage: 'Method App\Modules\Forums\Models\ForumChannel::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/Forums/Models/ForumChannel.php
-
-		-
 			rawMessage: 'Class App\Modules\Forums\Models\ForumMessage uses generic trait Illuminate\Database\Eloquent\Factories\HasFactory but does not specify its types: TFactory'
 			identifier: missingType.generics
 			count: 1
@@ -3025,19 +2263,7 @@ parameters:
 			path: app/Modules/Forums/Models/ForumMessage.php
 
 		-
-			rawMessage: 'Method App\Modules\Forums\Models\ForumMessage::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/Forums/Models/ForumMessage.php
-
-		-
 			rawMessage: 'Class App\Modules\Forums\Models\ForumMessageRecipient uses generic trait Illuminate\Database\Eloquent\Factories\HasFactory but does not specify its types: TFactory'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/Forums/Models/ForumMessageRecipient.php
-
-		-
-			rawMessage: 'Method App\Modules\Forums\Models\ForumMessageRecipient::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
 			identifier: missingType.generics
 			count: 1
 			path: app/Modules/Forums/Models/ForumMessageRecipient.php
@@ -3049,31 +2275,13 @@ parameters:
 			path: app/Modules/Forums/Models/ForumModerationLog.php
 
 		-
-			rawMessage: 'Method App\Modules\Forums\Models\ForumModerationLog::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/Forums/Models/ForumModerationLog.php
-
-		-
 			rawMessage: 'Class App\Modules\Forums\Models\ForumPost uses generic trait Illuminate\Database\Eloquent\Factories\HasFactory but does not specify its types: TFactory'
 			identifier: missingType.generics
 			count: 1
 			path: app/Modules/Forums/Models/ForumPost.php
 
 		-
-			rawMessage: 'Method App\Modules\Forums\Models\ForumPost::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/Forums/Models/ForumPost.php
-
-		-
 			rawMessage: 'Class App\Modules\Forums\Models\ForumReaction uses generic trait Illuminate\Database\Eloquent\Factories\HasFactory but does not specify its types: TFactory'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/Forums/Models/ForumReaction.php
-
-		-
-			rawMessage: 'Method App\Modules\Forums\Models\ForumReaction::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
 			identifier: missingType.generics
 			count: 1
 			path: app/Modules/Forums/Models/ForumReaction.php
@@ -3091,346 +2299,10 @@ parameters:
 			path: app/Modules/Forums/Models/ForumThread.php
 
 		-
-			rawMessage: 'Method App\Modules\Forums\Models\ForumThread::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/Forums/Models/ForumThread.php
-
-		-
-			rawMessage: 'Method App\Modules\Forums\Services\ForumMentionService::extractMentionedUuids() should return Illuminate\Support\Collection<int, string> but returns Illuminate\Support\Collection<int, lowercase-string&non-empty-string>.'
-			identifier: return.type
-			count: 1
-			path: app/Modules/Forums/Services/ForumMentionService.php
-
-		-
 			rawMessage: 'Offset 1 on array{list<string>, list<non-falsy-string>} on left side of ?? always exists and is not nullable.'
 			identifier: nullCoalesce.offset
 			count: 1
 			path: app/Modules/Forums/Services/ForumMentionService.php
-
-		-
-			rawMessage: 'Method App\Modules\HrmsCore\Models\Appraisal\Appraisal::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/HrmsCore/Models/Appraisal/Appraisal.php
-
-		-
-			rawMessage: 'Method App\Modules\HrmsCore\Models\Appraisal\AppraisalComment::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/HrmsCore/Models/Appraisal/AppraisalComment.php
-
-		-
-			rawMessage: 'Method App\Modules\HrmsCore\Models\Appraisal\AppraisalCompetency::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/HrmsCore/Models/Appraisal/AppraisalCompetency.php
-
-		-
-			rawMessage: 'Method App\Modules\HrmsCore\Models\Appraisal\AppraisalCriterion::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/HrmsCore/Models/Appraisal/AppraisalCriterion.php
-
-		-
-			rawMessage: 'Method App\Modules\HrmsCore\Models\Appraisal\AppraisalGoal::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/HrmsCore/Models/Appraisal/AppraisalGoal.php
-
-		-
-			rawMessage: 'Method App\Modules\HrmsCore\Models\Appraisal\AppraisalPeriod::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/HrmsCore/Models/Appraisal/AppraisalPeriod.php
-
-		-
-			rawMessage: 'Method App\Modules\HrmsCore\Models\Appraisal\AppraisalRatingScale::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/HrmsCore/Models/Appraisal/AppraisalRatingScale.php
-
-		-
-			rawMessage: 'Method App\Modules\HrmsCore\Models\Appraisal\AppraisalRecommendation::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/HrmsCore/Models/Appraisal/AppraisalRecommendation.php
-
-		-
-			rawMessage: 'Method App\Modules\HrmsCore\Models\Appraisal\AppraisalResponse::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/HrmsCore/Models/Appraisal/AppraisalResponse.php
-
-		-
-			rawMessage: 'Method App\Modules\HrmsCore\Models\Appraisal\AppraisalReview::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/HrmsCore/Models/Appraisal/AppraisalReview.php
-
-		-
-			rawMessage: 'Method App\Modules\HrmsCore\Models\Appraisal\AppraisalScore::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/HrmsCore/Models/Appraisal/AppraisalScore.php
-
-		-
-			rawMessage: 'Method App\Modules\HrmsCore\Models\Appraisal\AppraisalSection::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/HrmsCore/Models/Appraisal/AppraisalSection.php
-
-		-
-			rawMessage: 'Method App\Modules\HrmsCore\Models\Appraisal\AppraisalTemplate::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/HrmsCore/Models/Appraisal/AppraisalTemplate.php
-
-		-
-			rawMessage: 'Method App\Modules\HrmsCore\Models\Employees\BankDetails::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/HrmsCore/Models/Employees/BankDetails.php
-
-		-
-			rawMessage: 'Method App\Modules\HrmsCore\Models\Employees\Children::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/HrmsCore/Models/Employees/Children.php
-
-		-
-			rawMessage: 'Method App\Modules\HrmsCore\Models\Employees\CurrentJob::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/HrmsCore/Models/Employees/CurrentJob.php
-
-		-
-			rawMessage: 'Method App\Modules\HrmsCore\Models\Employees\EducationalBackground::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/HrmsCore/Models/Employees/EducationalBackground.php
-
-		-
-			rawMessage: 'Method App\Modules\HrmsCore\Models\Employees\EmergencyContact::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/HrmsCore/Models/Employees/EmergencyContact.php
-
-		-
-			rawMessage: 'Method App\Modules\HrmsCore\Models\Employees\Employee::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/HrmsCore/Models/Employees/Employee.php
-
-		-
-			rawMessage: 'Method App\Modules\HrmsCore\Models\Employees\EmployeeParent::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/HrmsCore/Models/Employees/EmployeeParent.php
-
-		-
-			rawMessage: 'Method App\Modules\HrmsCore\Models\Employees\EmploymentStatus::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/HrmsCore/Models/Employees/EmploymentStatus.php
-
-		-
-			rawMessage: 'Method App\Modules\HrmsCore\Models\Employees\NextOfKin::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/HrmsCore/Models/Employees/NextOfKin.php
-
-		-
-			rawMessage: 'Method App\Modules\HrmsCore\Models\Employees\PreviousWorkExperience::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/HrmsCore/Models/Employees/PreviousWorkExperience.php
-
-		-
-			rawMessage: 'Method App\Modules\HrmsCore\Models\Employees\ProfessionalQualification::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/HrmsCore/Models/Employees/ProfessionalQualification.php
-
-		-
-			rawMessage: 'Method App\Modules\HrmsCore\Models\Leave\Holiday::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/HrmsCore/Models/Leave/Holiday.php
-
-		-
-			rawMessage: 'Method App\Modules\HrmsCore\Models\Leave\LeaveBalance::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/HrmsCore/Models/Leave/LeaveBalance.php
-
-		-
-			rawMessage: 'Method App\Modules\HrmsCore\Models\Leave\LeaveCategory::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/HrmsCore/Models/Leave/LeaveCategory.php
-
-		-
-			rawMessage: 'Method App\Modules\HrmsCore\Models\Leave\LeaveRequest::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/HrmsCore/Models/Leave/LeaveRequest.php
-
-		-
-			rawMessage: 'Method App\Modules\HrmsCore\Models\Organization\Center::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/HrmsCore/Models/Organization/Center.php
-
-		-
-			rawMessage: 'Method App\Modules\HrmsCore\Models\Organization\Department::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/HrmsCore/Models/Organization/Department.php
-
-		-
-			rawMessage: 'Method App\Modules\HrmsCore\Models\Organization\DepartmentType::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/HrmsCore/Models/Organization/DepartmentType.php
-
-		-
-			rawMessage: 'Method App\Modules\HrmsCore\Models\Organization\Directorate::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/HrmsCore/Models/Organization/Directorate.php
-
-		-
-			rawMessage: 'Method App\Modules\HrmsCore\Models\Organization\Grade::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/HrmsCore/Models/Organization/Grade.php
-
-		-
-			rawMessage: 'Method App\Modules\HrmsCore\Models\Organization\Unit::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/HrmsCore/Models/Organization/Unit.php
-
-		-
-			rawMessage: 'Method App\Modules\HrmsCore\Models\Promotion\StaffPromotion::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/HrmsCore/Models/Promotion/StaffPromotion.php
-
-		-
-			rawMessage: 'Method App\Modules\HrmsCore\Models\Recruitment\Candidate::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/HrmsCore/Models/Recruitment/Candidate.php
-
-		-
-			rawMessage: 'Method App\Modules\HrmsCore\Models\Recruitment\CandidateApplication::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/HrmsCore/Models/Recruitment/CandidateApplication.php
-
-		-
-			rawMessage: 'Method App\Modules\HrmsCore\Models\Recruitment\CandidateAssessment::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/HrmsCore/Models/Recruitment/CandidateAssessment.php
-
-		-
-			rawMessage: 'Method App\Modules\HrmsCore\Models\Recruitment\CandidateDocument::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/HrmsCore/Models/Recruitment/CandidateDocument.php
-
-		-
-			rawMessage: 'Method App\Modules\HrmsCore\Models\Recruitment\CandidateReference::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/HrmsCore/Models/Recruitment/CandidateReference.php
-
-		-
-			rawMessage: 'Method App\Modules\HrmsCore\Models\Recruitment\Interview::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/HrmsCore/Models/Recruitment/Interview.php
-
-		-
-			rawMessage: 'Method App\Modules\HrmsCore\Models\Recruitment\InterviewEvaluation::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/HrmsCore/Models/Recruitment/InterviewEvaluation.php
-
-		-
-			rawMessage: 'Method App\Modules\HrmsCore\Models\Recruitment\InterviewPanel::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/HrmsCore/Models/Recruitment/InterviewPanel.php
-
-		-
-			rawMessage: 'Method App\Modules\HrmsCore\Models\Recruitment\InterviewStage::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/HrmsCore/Models/Recruitment/InterviewStage.php
-
-		-
-			rawMessage: 'Method App\Modules\HrmsCore\Models\Recruitment\JobOffer::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/HrmsCore/Models/Recruitment/JobOffer.php
-
-		-
-			rawMessage: 'Method App\Modules\HrmsCore\Models\Recruitment\JobPosting::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/HrmsCore/Models/Recruitment/JobPosting.php
-
-		-
-			rawMessage: 'Method App\Modules\HrmsCore\Models\Recruitment\JobRequisition::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/HrmsCore/Models/Recruitment/JobRequisition.php
-
-		-
-			rawMessage: 'Method App\Modules\HrmsCore\Models\Recruitment\OfferNegotiation::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/HrmsCore/Models/Recruitment/OfferNegotiation.php
-
-		-
-			rawMessage: 'Method App\Modules\HrmsCore\Models\Recruitment\OnboardingTask::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/HrmsCore/Models/Recruitment/OnboardingTask.php
-
-		-
-			rawMessage: 'Method App\Modules\HrmsCore\Models\Salary\Allowance::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/HrmsCore/Models/Salary/Allowance.php
-
-		-
-			rawMessage: 'Method App\Modules\HrmsCore\Models\Salary\AllowanceType::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/HrmsCore/Models/Salary/AllowanceType.php
-
-		-
-			rawMessage: 'Method App\Modules\HrmsCore\Models\Salary\EmployeeAllowance::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/HrmsCore/Models/Salary/EmployeeAllowance.php
-
-		-
-			rawMessage: 'Method App\Modules\HrmsCore\Models\Salary\SalaryLevel::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/HrmsCore/Models/Salary/SalaryLevel.php
-
-		-
-			rawMessage: 'Method App\Modules\HrmsCore\Models\Salary\SalaryStep::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/HrmsCore/Models/Salary/SalaryStep.php
 
 		-
 			rawMessage: 'Method App\Modules\IncidentManagement\Http\Controllers\Api\V1\IncidentController::logIncidentActivity() has parameter $properties with no value type specified in iterable type array.'
@@ -3439,100 +2311,10 @@ parameters:
 			path: app/Modules/IncidentManagement/Http/Controllers/Api/V1/IncidentController.php
 
 		-
-			rawMessage: 'Call to an undefined method Illuminate\Database\Eloquent\Builder<Illuminate\Database\Eloquent\Model>::visibleTo().'
-			identifier: method.notFound
-			count: 2
-			path: app/Modules/IncidentManagement/Http/Controllers/Web/IncidentReportController.php
-
-		-
-			rawMessage: 'Call to an undefined method Illuminate\Database\Eloquent\Builder<Illuminate\Database\Eloquent\Model>::visibleTo().'
-			identifier: method.notFound
-			count: 2
-			path: app/Modules/IncidentManagement/Http/Controllers/Web/IncidentTaskBoardController.php
-
-		-
-			rawMessage: 'Method App\Modules\IncidentManagement\Models\Incident::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
+			rawMessage: Variable $incident is never read.
+			identifier: variable.unused
 			count: 1
-			path: app/Modules/IncidentManagement/Models/Incident.php
-
-		-
-			rawMessage: 'Method App\Modules\IncidentManagement\Models\IncidentAssignment::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/IncidentManagement/Models/IncidentAssignment.php
-
-		-
-			rawMessage: 'Method App\Modules\IncidentManagement\Models\IncidentAttachment::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/IncidentManagement/Models/IncidentAttachment.php
-
-		-
-			rawMessage: 'Method App\Modules\IncidentManagement\Models\IncidentCategory::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/IncidentManagement/Models/IncidentCategory.php
-
-		-
-			rawMessage: 'Method App\Modules\IncidentManagement\Models\IncidentComment::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/IncidentManagement/Models/IncidentComment.php
-
-		-
-			rawMessage: 'Method App\Modules\IncidentManagement\Models\IncidentEscalation::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/IncidentManagement/Models/IncidentEscalation.php
-
-		-
-			rawMessage: 'Method App\Modules\IncidentManagement\Models\IncidentPriority::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/IncidentManagement/Models/IncidentPriority.php
-
-		-
-			rawMessage: 'Method App\Modules\IncidentManagement\Models\IncidentProgressComment::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/IncidentManagement/Models/IncidentProgressComment.php
-
-		-
-			rawMessage: 'Method App\Modules\IncidentManagement\Models\IncidentProgressReport::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/IncidentManagement/Models/IncidentProgressReport.php
-
-		-
-			rawMessage: 'Method App\Modules\IncidentManagement\Models\IncidentReminder::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/IncidentManagement/Models/IncidentReminder.php
-
-		-
-			rawMessage: 'Method App\Modules\IncidentManagement\Models\IncidentReporter::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/IncidentManagement/Models/IncidentReporter.php
-
-		-
-			rawMessage: 'Method App\Modules\IncidentManagement\Models\IncidentSla::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/IncidentManagement/Models/IncidentSla.php
-
-		-
-			rawMessage: 'Method App\Modules\IncidentManagement\Models\IncidentStatus::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/IncidentManagement/Models/IncidentStatus.php
-
-		-
-			rawMessage: 'Method App\Modules\IncidentManagement\Models\IncidentTask::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/IncidentManagement/Models/IncidentTask.php
+			path: app/Modules/IncidentManagement/Http/Requests/IncidentUpdateRequest.php
 
 		-
 			rawMessage: Using nullsafe property access "?->resolution_time_minutes" on left side of ?? is unnecessary. Use -> instead.
@@ -3553,6 +2335,18 @@ parameters:
 			path: app/Modules/Memos/Http/Controllers/Api/V1/MemoController.php
 
 		-
+			rawMessage: Match arm comparison between 'directorate' and 'directorate' is always true.
+			identifier: match.alwaysTrue
+			count: 1
+			path: app/Modules/Memos/Http/Requests/MemoShareRequest.php
+
+		-
+			rawMessage: Match arm comparison between 'directorate' and 'directorate' is always true.
+			identifier: match.alwaysTrue
+			count: 1
+			path: app/Modules/Memos/Http/Requests/MemoStoreRequest.php
+
+		-
 			rawMessage: 'Class App\Modules\Memos\Models\Memo uses generic trait Illuminate\Database\Eloquent\Factories\HasFactory but does not specify its types: TFactory'
 			identifier: missingType.generics
 			count: 1
@@ -3565,19 +2359,7 @@ parameters:
 			path: app/Modules/Memos/Models/Memo.php
 
 		-
-			rawMessage: 'Method App\Modules\Memos\Models\Memo::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/Memos/Models/Memo.php
-
-		-
 			rawMessage: 'Class App\Modules\Memos\Models\MemoAction uses generic trait Illuminate\Database\Eloquent\Factories\HasFactory but does not specify its types: TFactory'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/Memos/Models/MemoAction.php
-
-		-
-			rawMessage: 'Method App\Modules\Memos\Models\MemoAction::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
 			identifier: missingType.generics
 			count: 1
 			path: app/Modules/Memos/Models/MemoAction.php
@@ -3589,57 +2371,15 @@ parameters:
 			path: app/Modules/Memos/Models/MemoMinute.php
 
 		-
-			rawMessage: 'Method App\Modules\Memos\Models\MemoMinute::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/Memos/Models/MemoMinute.php
-
-		-
 			rawMessage: 'Class App\Modules\Memos\Models\MemoRecipient uses generic trait Illuminate\Database\Eloquent\Factories\HasFactory but does not specify its types: TFactory'
 			identifier: missingType.generics
 			count: 1
 			path: app/Modules/Memos/Models/MemoRecipient.php
 
 		-
-			rawMessage: 'Method App\Modules\Memos\Models\MemoRecipient::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/Memos/Models/MemoRecipient.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Models\Milestone::$project_id.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Controllers/Api/V1/MilestoneController.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Models\Project::$name.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Controllers/Api/V1/ProjectController.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Models\Task::$due_date.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Controllers/Api/V1/ProjectController.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Models\Task::$start_date.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Controllers/Api/V1/ProjectController.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Models\Task::$status.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Controllers/Api/V1/ProjectController.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Models\Task::$title.
-			identifier: property.notFound
-			count: 1
+			rawMessage: 'Cannot call method toDateString() on string.'
+			identifier: method.nonObject
+			count: 2
 			path: app/Modules/ProjectManagement/Http/Controllers/Api/V1/ProjectController.php
 
 		-
@@ -3655,511 +2395,91 @@ parameters:
 			path: app/Modules/ProjectManagement/Http/Controllers/Api/V1/ProjectController.php
 
 		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Models\ResourceAllocation::$end_date.
-			identifier: property.notFound
-			count: 1
+			rawMessage: 'Cannot call method toDateString() on string.'
+			identifier: method.nonObject
+			count: 2
 			path: app/Modules/ProjectManagement/Http/Controllers/Api/V1/ResourceAllocationController.php
 
 		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Models\ResourceAllocation::$project_id.
-			identifier: property.notFound
-			count: 1
+			rawMessage: Using nullsafe method call on non-nullable type string. Use -> instead.
+			identifier: nullsafe.neverNull
+			count: 2
 			path: app/Modules/ProjectManagement/Http/Controllers/Api/V1/ResourceAllocationController.php
 
 		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Models\ResourceAllocation::$start_date.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Controllers/Api/V1/ResourceAllocationController.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Models\ResourceAllocation::$user_id.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Controllers/Api/V1/ResourceAllocationController.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Models\Task::$project_id.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Controllers/Api/V1/TaskController.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Models\TaskAssignment::$user_id.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Controllers/Api/V1/TaskController.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Models\TaskDependency::$task_id.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Controllers/Api/V1/TaskController.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\MilestoneResource::$completed_at.
-			identifier: property.notFound
+			rawMessage: 'Cannot call method toDateString() on string.'
+			identifier: method.nonObject
 			count: 1
 			path: app/Modules/ProjectManagement/Http/Resources/MilestoneResource.php
 
 		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\MilestoneResource::$created_at.
-			identifier: property.notFound
+			rawMessage: 'Cannot call method toIso8601String() on string.'
+			identifier: method.nonObject
 			count: 1
 			path: app/Modules/ProjectManagement/Http/Resources/MilestoneResource.php
 
 		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\MilestoneResource::$description.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/MilestoneResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\MilestoneResource::$due_date.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/MilestoneResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\MilestoneResource::$name.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/MilestoneResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\MilestoneResource::$project_id.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/MilestoneResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\MilestoneResource::$sort_order.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/MilestoneResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\MilestoneResource::$updated_at.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/MilestoneResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\ProjectMemberResource::$joined_at.
-			identifier: property.notFound
+			rawMessage: 'Cannot call method toIso8601String() on string.'
+			identifier: method.nonObject
 			count: 1
 			path: app/Modules/ProjectManagement/Http/Resources/ProjectMemberResource.php
 
 		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\ProjectMemberResource::$project_id.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/ProjectMemberResource.php
+			rawMessage: 'Cannot call method toDateString() on string.'
+			identifier: method.nonObject
+			count: 2
+			path: app/Modules/ProjectManagement/Http/Resources/ProjectResource.php
 
 		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\ProjectMemberResource::$role.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/ProjectMemberResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\ProjectMemberResource::$user_id.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/ProjectMemberResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\ProjectResource::$budget_amount.
-			identifier: property.notFound
+			rawMessage: 'Cannot call method toIso8601String() on string.'
+			identifier: method.nonObject
 			count: 1
 			path: app/Modules/ProjectManagement/Http/Resources/ProjectResource.php
 
 		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\ProjectResource::$completed_at.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/ProjectResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\ProjectResource::$created_at.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/ProjectResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\ProjectResource::$currency.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/ProjectResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\ProjectResource::$deleted_at.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/ProjectResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\ProjectResource::$description.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/ProjectResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\ProjectResource::$end_date.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/ProjectResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\ProjectResource::$metadata.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/ProjectResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\ProjectResource::$name.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/ProjectResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\ProjectResource::$owner_id.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/ProjectResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\ProjectResource::$priority.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/ProjectResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\ProjectResource::$slug.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/ProjectResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\ProjectResource::$start_date.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/ProjectResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\ProjectResource::$status.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/ProjectResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\ProjectResource::$tenant_id.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/ProjectResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\ProjectResource::$updated_at.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/ProjectResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\ProjectResource::$uuid.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/ProjectResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\ResourceAllocationResource::$allocation_percent.
-			identifier: property.notFound
-			count: 1
+			rawMessage: 'Cannot call method toDateString() on string.'
+			identifier: method.nonObject
+			count: 2
 			path: app/Modules/ProjectManagement/Http/Resources/ResourceAllocationResource.php
 
 		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\ResourceAllocationResource::$created_at.
-			identifier: property.notFound
-			count: 1
+			rawMessage: Using nullsafe method call on non-nullable type string. Use -> instead.
+			identifier: nullsafe.neverNull
+			count: 2
 			path: app/Modules/ProjectManagement/Http/Resources/ResourceAllocationResource.php
 
 		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\ResourceAllocationResource::$end_date.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/ResourceAllocationResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\ResourceAllocationResource::$project_id.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/ResourceAllocationResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\ResourceAllocationResource::$role.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/ResourceAllocationResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\ResourceAllocationResource::$start_date.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/ResourceAllocationResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\ResourceAllocationResource::$user_id.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/ResourceAllocationResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\TaskAssignmentResource::$assigned_at.
-			identifier: property.notFound
+			rawMessage: 'Cannot call method toIso8601String() on string.'
+			identifier: method.nonObject
 			count: 1
 			path: app/Modules/ProjectManagement/Http/Resources/TaskAssignmentResource.php
 
 		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\TaskAssignmentResource::$assigned_by_id.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/TaskAssignmentResource.php
+			rawMessage: 'Cannot call method toDateString() on string.'
+			identifier: method.nonObject
+			count: 2
+			path: app/Modules/ProjectManagement/Http/Resources/TaskResource.php
 
 		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\TaskAssignmentResource::$task_id.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/TaskAssignmentResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\TaskAssignmentResource::$user_id.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/TaskAssignmentResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\TaskAttachmentResource::$created_at.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/TaskAttachmentResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\TaskAttachmentResource::$disk.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/TaskAttachmentResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\TaskAttachmentResource::$filename.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/TaskAttachmentResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\TaskAttachmentResource::$mime_type.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/TaskAttachmentResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\TaskAttachmentResource::$path.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/TaskAttachmentResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\TaskAttachmentResource::$size_bytes.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/TaskAttachmentResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\TaskAttachmentResource::$task_id.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/TaskAttachmentResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\TaskAttachmentResource::$uploaded_by_id.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/TaskAttachmentResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\TaskCommentResource::$body.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/TaskCommentResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\TaskCommentResource::$created_at.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/TaskCommentResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\TaskCommentResource::$task_id.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/TaskCommentResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\TaskCommentResource::$updated_at.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/TaskCommentResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\TaskCommentResource::$user_id.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/TaskCommentResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\TaskDependencyResource::$depends_on_task_id.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/TaskDependencyResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\TaskDependencyResource::$task_id.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/TaskDependencyResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\TaskResource::$completed_at.
-			identifier: property.notFound
+			rawMessage: 'Cannot call method toIso8601String() on string.'
+			identifier: method.nonObject
 			count: 1
 			path: app/Modules/ProjectManagement/Http/Resources/TaskResource.php
 
 		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\TaskResource::$created_at.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/TaskResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\TaskResource::$description.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/TaskResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\TaskResource::$due_date.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/TaskResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\TaskResource::$estimated_minutes.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/TaskResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\TaskResource::$milestone_id.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/TaskResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\TaskResource::$parent_id.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/TaskResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\TaskResource::$priority.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/TaskResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\TaskResource::$project_id.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/TaskResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\TaskResource::$sort_order.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/TaskResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\TaskResource::$start_date.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/TaskResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\TaskResource::$status.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/TaskResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\TaskResource::$title.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/TaskResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\TaskResource::$updated_at.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/TaskResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\TaskResource::$uuid.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/TaskResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\TimeEntryResource::$created_at.
-			identifier: property.notFound
+			rawMessage: 'Cannot call method toDateString() on string.'
+			identifier: method.nonObject
 			count: 1
 			path: app/Modules/ProjectManagement/Http/Resources/TimeEntryResource.php
 
 		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\TimeEntryResource::$entry_date.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/TimeEntryResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\TimeEntryResource::$minutes.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/TimeEntryResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\TimeEntryResource::$note.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/TimeEntryResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\TimeEntryResource::$task_id.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/TimeEntryResource.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\ProjectManagement\Http\Resources\TimeEntryResource::$user_id.
-			identifier: property.notFound
+			rawMessage: Using nullsafe method call on non-nullable type string. Use -> instead.
+			identifier: nullsafe.neverNull
 			count: 1
 			path: app/Modules/ProjectManagement/Http/Resources/TimeEntryResource.php
 
 		-
 			rawMessage: 'Class App\Modules\ProjectManagement\Models\Milestone uses generic trait Illuminate\Database\Eloquent\Factories\HasFactory but does not specify its types: TFactory'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/ProjectManagement/Models/Milestone.php
-
-		-
-			rawMessage: 'Method App\Modules\ProjectManagement\Models\Milestone::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
 			identifier: missingType.generics
 			count: 1
 			path: app/Modules/ProjectManagement/Models/Milestone.php
@@ -4171,19 +2491,7 @@ parameters:
 			path: app/Modules/ProjectManagement/Models/Project.php
 
 		-
-			rawMessage: 'Method App\Modules\ProjectManagement\Models\Project::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/ProjectManagement/Models/Project.php
-
-		-
 			rawMessage: 'Class App\Modules\ProjectManagement\Models\ProjectMember uses generic trait Illuminate\Database\Eloquent\Factories\HasFactory but does not specify its types: TFactory'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/ProjectManagement/Models/ProjectMember.php
-
-		-
-			rawMessage: 'Method App\Modules\ProjectManagement\Models\ProjectMember::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
 			identifier: missingType.generics
 			count: 1
 			path: app/Modules/ProjectManagement/Models/ProjectMember.php
@@ -4195,19 +2503,7 @@ parameters:
 			path: app/Modules/ProjectManagement/Models/ResourceAllocation.php
 
 		-
-			rawMessage: 'Method App\Modules\ProjectManagement\Models\ResourceAllocation::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/ProjectManagement/Models/ResourceAllocation.php
-
-		-
 			rawMessage: 'Class App\Modules\ProjectManagement\Models\Task uses generic trait Illuminate\Database\Eloquent\Factories\HasFactory but does not specify its types: TFactory'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/ProjectManagement/Models/Task.php
-
-		-
-			rawMessage: 'Method App\Modules\ProjectManagement\Models\Task::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
 			identifier: missingType.generics
 			count: 1
 			path: app/Modules/ProjectManagement/Models/Task.php
@@ -4219,19 +2515,7 @@ parameters:
 			path: app/Modules/ProjectManagement/Models/TaskAssignment.php
 
 		-
-			rawMessage: 'Method App\Modules\ProjectManagement\Models\TaskAssignment::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/ProjectManagement/Models/TaskAssignment.php
-
-		-
 			rawMessage: 'Class App\Modules\ProjectManagement\Models\TaskAttachment uses generic trait Illuminate\Database\Eloquent\Factories\HasFactory but does not specify its types: TFactory'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/ProjectManagement/Models/TaskAttachment.php
-
-		-
-			rawMessage: 'Method App\Modules\ProjectManagement\Models\TaskAttachment::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
 			identifier: missingType.generics
 			count: 1
 			path: app/Modules/ProjectManagement/Models/TaskAttachment.php
@@ -4243,19 +2527,7 @@ parameters:
 			path: app/Modules/ProjectManagement/Models/TaskComment.php
 
 		-
-			rawMessage: 'Method App\Modules\ProjectManagement\Models\TaskComment::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/ProjectManagement/Models/TaskComment.php
-
-		-
 			rawMessage: 'Class App\Modules\ProjectManagement\Models\TaskDependency uses generic trait Illuminate\Database\Eloquent\Factories\HasFactory but does not specify its types: TFactory'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/ProjectManagement/Models/TaskDependency.php
-
-		-
-			rawMessage: 'Method App\Modules\ProjectManagement\Models\TaskDependency::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
 			identifier: missingType.generics
 			count: 1
 			path: app/Modules/ProjectManagement/Models/TaskDependency.php
@@ -4267,46 +2539,10 @@ parameters:
 			path: app/Modules/ProjectManagement/Models/TimeEntry.php
 
 		-
-			rawMessage: 'Method App\Modules\ProjectManagement\Models\TimeEntry::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/ProjectManagement/Models/TimeEntry.php
-
-		-
-			rawMessage: 'Class App\Modules\QualityMonitoring\Exports\WorkplanAlertsExport implements generic interface Maatwebsite\Excel\Concerns\WithMapping but does not specify its types: RowType'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/QualityMonitoring/Exports/WorkplanAlertsExport.php
-
-		-
 			rawMessage: 'Method App\Modules\QualityMonitoring\Exports\WorkplanAlertsExport::applyDateRange() has parameter $query with generic class Illuminate\Database\Eloquent\Builder but does not specify its types: TModel'
 			identifier: missingType.generics
 			count: 1
 			path: app/Modules/QualityMonitoring/Exports/WorkplanAlertsExport.php
-
-		-
-			rawMessage: 'Method App\Modules\QualityMonitoring\Exports\WorkplanAlertsExport::headings() return type has no value type specified in iterable type array.'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Modules/QualityMonitoring/Exports/WorkplanAlertsExport.php
-
-		-
-			rawMessage: 'Method App\Modules\QualityMonitoring\Exports\WorkplanAlertsExport::map() return type has no value type specified in iterable type array.'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Modules/QualityMonitoring/Exports/WorkplanAlertsExport.php
-
-		-
-			rawMessage: 'Method App\Modules\QualityMonitoring\Exports\WorkplanAlertsExport::query() return type with generic class Illuminate\Database\Eloquent\Builder does not specify its types: TModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/QualityMonitoring/Exports/WorkplanAlertsExport.php
-
-		-
-			rawMessage: 'Class App\Modules\QualityMonitoring\Exports\WorkplanKpiUpdatesExport implements generic interface Maatwebsite\Excel\Concerns\WithMapping but does not specify its types: RowType'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/QualityMonitoring/Exports/WorkplanKpiUpdatesExport.php
 
 		-
 			rawMessage: 'Method App\Modules\QualityMonitoring\Exports\WorkplanKpiUpdatesExport::applyDateRange() has parameter $query with generic class Illuminate\Database\Eloquent\Builder but does not specify its types: TModel'
@@ -4315,105 +2551,21 @@ parameters:
 			path: app/Modules/QualityMonitoring/Exports/WorkplanKpiUpdatesExport.php
 
 		-
-			rawMessage: 'Method App\Modules\QualityMonitoring\Exports\WorkplanKpiUpdatesExport::headings() return type has no value type specified in iterable type array.'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Modules/QualityMonitoring/Exports/WorkplanKpiUpdatesExport.php
-
-		-
-			rawMessage: 'Method App\Modules\QualityMonitoring\Exports\WorkplanKpiUpdatesExport::map() return type has no value type specified in iterable type array.'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Modules/QualityMonitoring/Exports/WorkplanKpiUpdatesExport.php
-
-		-
-			rawMessage: 'Method App\Modules\QualityMonitoring\Exports\WorkplanKpiUpdatesExport::query() return type with generic class Illuminate\Database\Eloquent\Builder does not specify its types: TModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/QualityMonitoring/Exports/WorkplanKpiUpdatesExport.php
-
-		-
-			rawMessage: 'Class App\Modules\QualityMonitoring\Exports\WorkplanVariancesExport implements generic interface Maatwebsite\Excel\Concerns\WithMapping but does not specify its types: RowType'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/QualityMonitoring/Exports/WorkplanVariancesExport.php
-
-		-
 			rawMessage: 'Method App\Modules\QualityMonitoring\Exports\WorkplanVariancesExport::applyDateRange() has parameter $query with generic class Illuminate\Database\Eloquent\Builder but does not specify its types: TModel'
 			identifier: missingType.generics
 			count: 1
 			path: app/Modules/QualityMonitoring/Exports/WorkplanVariancesExport.php
 
 		-
-			rawMessage: 'Method App\Modules\QualityMonitoring\Exports\WorkplanVariancesExport::headings() return type has no value type specified in iterable type array.'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Modules/QualityMonitoring/Exports/WorkplanVariancesExport.php
-
-		-
-			rawMessage: 'Method App\Modules\QualityMonitoring\Exports\WorkplanVariancesExport::map() return type has no value type specified in iterable type array.'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Modules/QualityMonitoring/Exports/WorkplanVariancesExport.php
-
-		-
-			rawMessage: 'Method App\Modules\QualityMonitoring\Exports\WorkplanVariancesExport::query() return type with generic class Illuminate\Database\Eloquent\Builder does not specify its types: TModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/QualityMonitoring/Exports/WorkplanVariancesExport.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\QualityMonitoring\Models\Activity::$objective_id.
-			identifier: property.notFound
-			count: 2
-			path: app/Modules/QualityMonitoring/Http/Controllers/Api/V1/ActivityController.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\QualityMonitoring\Models\Alert::$metadata.
-			identifier: property.notFound
+			rawMessage: 'Property App\Modules\QualityMonitoring\Models\Alert::$metadata (string|null) does not accept array<mixed>.'
+			identifier: assign.propertyType
 			count: 1
 			path: app/Modules/QualityMonitoring/Http/Controllers/Api/V1/AlertController.php
 
 		-
-			rawMessage: Access to an undefined property App\Modules\QualityMonitoring\Models\Alert::$status.
-			identifier: property.notFound
+			rawMessage: 'Property App\Modules\QualityMonitoring\Models\WorkplanVersion::$approved_at (string|null) does not accept Carbon\CarbonImmutable.'
+			identifier: assign.propertyType
 			count: 1
-			path: app/Modules/QualityMonitoring/Http/Controllers/Api/V1/AlertController.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\QualityMonitoring\Models\Kpi::$activity_id.
-			identifier: property.notFound
-			count: 2
-			path: app/Modules/QualityMonitoring/Http/Controllers/Api/V1/KpiController.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\QualityMonitoring\Models\Objective::$workplan_id.
-			identifier: property.notFound
-			count: 2
-			path: app/Modules/QualityMonitoring/Http/Controllers/Api/V1/ObjectiveController.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\QualityMonitoring\Models\Objective::$workplan_id.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/QualityMonitoring/Http/Controllers/Api/V1/VarianceController.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\QualityMonitoring\Models\Workplan::$status.
-			identifier: property.notFound
-			count: 3
-			path: app/Modules/QualityMonitoring/Http/Controllers/Api/V1/WorkplanController.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\QualityMonitoring\Models\WorkplanVersion::$approved_at.
-			identifier: property.notFound
-			count: 1
-			path: app/Modules/QualityMonitoring/Http/Controllers/Api/V1/WorkplanController.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\QualityMonitoring\Models\WorkplanVersion::$status.
-			identifier: property.notFound
-			count: 2
 			path: app/Modules/QualityMonitoring/Http/Controllers/Api/V1/WorkplanController.php
 
 		-
@@ -4471,19 +2623,7 @@ parameters:
 			path: app/Modules/QualityMonitoring/Models/Activity.php
 
 		-
-			rawMessage: 'Method App\Modules\QualityMonitoring\Models\Activity::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/QualityMonitoring/Models/Activity.php
-
-		-
 			rawMessage: 'Class App\Modules\QualityMonitoring\Models\Alert uses generic trait Illuminate\Database\Eloquent\Factories\HasFactory but does not specify its types: TFactory'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/QualityMonitoring/Models/Alert.php
-
-		-
-			rawMessage: 'Method App\Modules\QualityMonitoring\Models\Alert::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
 			identifier: missingType.generics
 			count: 1
 			path: app/Modules/QualityMonitoring/Models/Alert.php
@@ -4495,19 +2635,7 @@ parameters:
 			path: app/Modules/QualityMonitoring/Models/DataSource.php
 
 		-
-			rawMessage: 'Method App\Modules\QualityMonitoring\Models\DataSource::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/QualityMonitoring/Models/DataSource.php
-
-		-
 			rawMessage: 'Class App\Modules\QualityMonitoring\Models\Indicator uses generic trait Illuminate\Database\Eloquent\Factories\HasFactory but does not specify its types: TFactory'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/QualityMonitoring/Models/Indicator.php
-
-		-
-			rawMessage: 'Method App\Modules\QualityMonitoring\Models\Indicator::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
 			identifier: missingType.generics
 			count: 1
 			path: app/Modules/QualityMonitoring/Models/Indicator.php
@@ -4519,19 +2647,7 @@ parameters:
 			path: app/Modules/QualityMonitoring/Models/Kpi.php
 
 		-
-			rawMessage: 'Method App\Modules\QualityMonitoring\Models\Kpi::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/QualityMonitoring/Models/Kpi.php
-
-		-
 			rawMessage: 'Class App\Modules\QualityMonitoring\Models\KpiUpdate uses generic trait Illuminate\Database\Eloquent\Factories\HasFactory but does not specify its types: TFactory'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/QualityMonitoring/Models/KpiUpdate.php
-
-		-
-			rawMessage: 'Method App\Modules\QualityMonitoring\Models\KpiUpdate::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
 			identifier: missingType.generics
 			count: 1
 			path: app/Modules/QualityMonitoring/Models/KpiUpdate.php
@@ -4543,31 +2659,13 @@ parameters:
 			path: app/Modules/QualityMonitoring/Models/Objective.php
 
 		-
-			rawMessage: 'Method App\Modules\QualityMonitoring\Models\Objective::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/QualityMonitoring/Models/Objective.php
-
-		-
 			rawMessage: 'Class App\Modules\QualityMonitoring\Models\Review uses generic trait Illuminate\Database\Eloquent\Factories\HasFactory but does not specify its types: TFactory'
 			identifier: missingType.generics
 			count: 1
 			path: app/Modules/QualityMonitoring/Models/Review.php
 
 		-
-			rawMessage: 'Method App\Modules\QualityMonitoring\Models\Review::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/QualityMonitoring/Models/Review.php
-
-		-
 			rawMessage: 'Class App\Modules\QualityMonitoring\Models\Variance uses generic trait Illuminate\Database\Eloquent\Factories\HasFactory but does not specify its types: TFactory'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/QualityMonitoring/Models/Variance.php
-
-		-
-			rawMessage: 'Method App\Modules\QualityMonitoring\Models\Variance::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
 			identifier: missingType.generics
 			count: 1
 			path: app/Modules/QualityMonitoring/Models/Variance.php
@@ -4585,19 +2683,7 @@ parameters:
 			path: app/Modules/QualityMonitoring/Models/Workplan.php
 
 		-
-			rawMessage: 'Method App\Modules\QualityMonitoring\Models\Workplan::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/QualityMonitoring/Models/Workplan.php
-
-		-
 			rawMessage: 'Class App\Modules\QualityMonitoring\Models\WorkplanVersion uses generic trait Illuminate\Database\Eloquent\Factories\HasFactory but does not specify its types: TFactory'
-			identifier: missingType.generics
-			count: 1
-			path: app/Modules/QualityMonitoring/Models/WorkplanVersion.php
-
-		-
-			rawMessage: 'Method App\Modules\QualityMonitoring\Models\WorkplanVersion::tenant() return type with generic class Illuminate\Database\Eloquent\Relations\BelongsTo does not specify its types: TRelatedModel, TDeclaringModel'
 			identifier: missingType.generics
 			count: 1
 			path: app/Modules/QualityMonitoring/Models/WorkplanVersion.php
@@ -4615,70 +2701,16 @@ parameters:
 			path: app/Modules/SiteThyroidGhanaFoundation/Database/Seeders/ThyroidGhanaSeeder.php
 
 		-
-			rawMessage: Access to an undefined property App\Modules\QualityMonitoring\Models\Alert::$kpi_id.
-			identifier: property.notFound
-			count: 1
-			path: app/Notifications/QualityMonitoring/QualityAlertEscalationNotification.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\QualityMonitoring\Models\Alert::$metadata.
-			identifier: property.notFound
-			count: 1
-			path: app/Notifications/QualityMonitoring/QualityAlertEscalationNotification.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\QualityMonitoring\Models\Alert::$status.
-			identifier: property.notFound
-			count: 1
-			path: app/Notifications/QualityMonitoring/QualityAlertEscalationNotification.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\QualityMonitoring\Models\Alert::$type.
-			identifier: property.notFound
-			count: 1
-			path: app/Notifications/QualityMonitoring/QualityAlertEscalationNotification.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\QualityMonitoring\Models\Alert::$workplan_id.
-			identifier: property.notFound
-			count: 1
-			path: app/Notifications/QualityMonitoring/QualityAlertEscalationNotification.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\QualityMonitoring\Models\Alert::$kpi_id.
-			identifier: property.notFound
-			count: 1
-			path: app/Notifications/QualityMonitoring/QualityAlertNotification.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\QualityMonitoring\Models\Alert::$metadata.
-			identifier: property.notFound
-			count: 1
-			path: app/Notifications/QualityMonitoring/QualityAlertNotification.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\QualityMonitoring\Models\Alert::$status.
-			identifier: property.notFound
-			count: 1
-			path: app/Notifications/QualityMonitoring/QualityAlertNotification.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\QualityMonitoring\Models\Alert::$type.
-			identifier: property.notFound
-			count: 1
-			path: app/Notifications/QualityMonitoring/QualityAlertNotification.php
-
-		-
-			rawMessage: Access to an undefined property App\Modules\QualityMonitoring\Models\Alert::$workplan_id.
-			identifier: property.notFound
-			count: 1
-			path: app/Notifications/QualityMonitoring/QualityAlertNotification.php
-
-		-
 			rawMessage: Property App\Providers\EventServiceProvider::$subscribe type has no value type specified in iterable type array.
 			identifier: missingType.iterableValue
 			count: 1
 			path: app/Providers/EventServiceProvider.php
+
+		-
+			rawMessage: 'Class App\Scopes\TenantScope implements generic interface Illuminate\Database\Eloquent\Scope but does not specify its types: TModel'
+			identifier: missingType.generics
+			count: 1
+			path: app/Scopes/TenantScope.php
 
 		-
 			rawMessage: 'Method App\Services\Api\ApiKeyService::generate() has parameter $ipRestrictions with no value type specified in iterable type array.'
@@ -4711,43 +2743,19 @@ parameters:
 			path: app/Services/Llm/LlmUsageService.php
 
 		-
-			rawMessage: 'Call to an undefined method Illuminate\Database\Eloquent\Model::givePermissionTo().'
-			identifier: method.notFound
+			rawMessage: 'Method App\Services\Navigation\WorkspaceNavigation::resolveTenantGroups() should return Illuminate\Support\Collection<int, array{label: string, icon: string, is_active: bool, items: array<int, array<string, mixed>>}> but returns Illuminate\Support\Collection<int, array{label: ''Developer''|''Finance''|''Organization'', icon: ''ki-filled ki-code''|''ki-filled ki…''|''ki-filled ki-wallet'', is_active: bool, items: array<int, non-empty-array<string, mixed>>}>.'
+			identifier: return.type
 			count: 1
-			path: app/Services/ModuleManager.php
+			path: app/Services/Navigation/WorkspaceNavigation.php
 
 		-
-			rawMessage: 'Call to an undefined method Illuminate\Database\Eloquent\Model::hasRole().'
-			identifier: method.notFound
-			count: 1
-			path: app/Services/ModuleManager.php
-
-		-
-			rawMessage: 'Parameter #1 $tenantId of static method App\Services\Tenancy\EntitlementService::forgetAllowedPermissions() expects string, int given.'
-			identifier: argument.type
-			count: 1
-			path: app/Services/ModuleManager.php
-
-		-
-			rawMessage: 'Method App\Services\Navigation\WorkspaceNavigation::resolveTenantGroups() should return Illuminate\Support\Collection<int, array{label: string, icon: string, is_active: bool, items: array<int, array<string, mixed>>}> but returns Illuminate\Support\Collection<int, array{label: string, icon: string, is_active: bool, items: array<int, non-empty-array<string, mixed>>}>.'
+			rawMessage: 'Method App\Services\Navigation\WorkspaceNavigation::resolveTopMenuGroups() should return Illuminate\Support\Collection<int, array<string, mixed>> but returns Illuminate\Support\Collection<int, array{label: ''Administration''|''Modules''|''Tenant''|''Workspace'', items: non-empty-array<int, array<string, mixed>>}>.'
 			identifier: return.type
 			count: 1
 			path: app/Services/Navigation/WorkspaceNavigation.php
 
 		-
 			rawMessage: 'Method App\Services\Navigation\WorkspaceNavigation::resolveTopMenuGroups() should return Illuminate\Support\Collection<int, array<string, mixed>> but returns Illuminate\Support\Collection<int, array{label: mixed, items: array<int, non-empty-array<string, mixed>>}>.'
-			identifier: return.type
-			count: 1
-			path: app/Services/Navigation/WorkspaceNavigation.php
-
-		-
-			rawMessage: 'Method App\Services\Navigation\WorkspaceNavigation::resolveTopMenuGroups() should return Illuminate\Support\Collection<int, array<string, mixed>> but returns Illuminate\Support\Collection<int, array{label: string, items: array<int, array{label: string, url: string, is_active: bool}>}>.'
-			identifier: return.type
-			count: 1
-			path: app/Services/Navigation/WorkspaceNavigation.php
-
-		-
-			rawMessage: 'Method App\Services\Navigation\WorkspaceNavigation::resolveTopMenuGroups() should return Illuminate\Support\Collection<int, array<string, mixed>> but returns Illuminate\Support\Collection<int, array{label: string, items: non-empty-array<int, array<string, mixed>>}>.'
 			identifier: return.type
 			count: 1
 			path: app/Services/Navigation/WorkspaceNavigation.php
@@ -4766,12 +2774,6 @@ parameters:
 
 		-
 			rawMessage: 'Parameter $moduleMenus of method App\Services\Navigation\WorkspaceNavigation::resolveTopMenuGroups() expects Illuminate\Support\Collection<int, array<string, mixed>>, Illuminate\Support\Collection<int, non-empty-array<string, mixed>> given.'
-			identifier: argument.type
-			count: 1
-			path: app/Services/Navigation/WorkspaceNavigation.php
-
-		-
-			rawMessage: 'Parameter $superadmin of method App\Services\Navigation\WorkspaceNavigation::resolveTopMenuGroups() expects Illuminate\Support\Collection<int, array<string, mixed>>, Illuminate\Support\Collection<int, non-empty-array<string, mixed>> given.'
 			identifier: argument.type
 			count: 1
 			path: app/Services/Navigation/WorkspaceNavigation.php
@@ -4867,13 +2869,7 @@ parameters:
 			path: app/Services/Payment/StripeGateway.php
 
 		-
-			rawMessage: Access to an undefined property Illuminate\Database\Eloquent\Model::$email.
-			identifier: property.notFound
-			count: 1
-			path: app/Services/Search/SearchService.php
-
-		-
-			rawMessage: Access to an undefined property Illuminate\Database\Eloquent\Model::$name.
+			rawMessage: Access to an undefined property App\Models\User::$name.
 			identifier: property.notFound
 			count: 1
 			path: app/Services/Search/SearchService.php
@@ -4985,12 +2981,6 @@ parameters:
 			identifier: missingType.iterableValue
 			count: 1
 			path: app/Services/Tenancy/TenantHealthService.php
-
-		-
-			rawMessage: 'Parameter #3 $subject of function str_replace expects array<string>|string, int given.'
-			identifier: argument.type
-			count: 1
-			path: app/Services/Tenancy/TenantProvisioner.php
 
 		-
 			rawMessage: 'Method App\Services\Tenancy\UsageService::recordEvent() has parameter $meta with no value type specified in iterable type array.'
@@ -5161,12 +3151,6 @@ parameters:
 			path: database/factories/TransactionFactory.php
 
 		-
-			rawMessage: 'Parameter #2 $tenantId of method Database\Seeders\CompletedModulesDemoSeeder::grantModulePermissionsToTenantUser() expects string, int given.'
-			identifier: argument.type
-			count: 1
-			path: database/seeders/CompletedModulesDemoSeeder.php
-
-		-
 			rawMessage: Using nullsafe method call on non-nullable type Illuminate\Console\Command. Use -> instead.
 			identifier: nullsafe.neverNull
 			count: 3
@@ -5185,7 +3169,7 @@ parameters:
 			path: database/seeders/RoleSeeder.php
 
 		-
-			rawMessage: Using nullsafe property access "?->name" on left side of ?? is unnecessary. Use -> instead.
-			identifier: nullsafe.neverNull
+			rawMessage: Variable $item1 is never read.
+			identifier: variable.unused
 			count: 1
-			path: routes/subdomain.php
+			path: database/seeders/SampleInvoiceSeeder.php

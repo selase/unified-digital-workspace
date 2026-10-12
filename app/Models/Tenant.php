@@ -29,7 +29,42 @@ final class Tenant extends Model
 
     protected $connection = 'landlord';
 
-    protected $guarded = [];
+    /**
+     * @var list<string>
+     */
+    protected $fillable = [
+        'name',
+        'slug',
+        'email',
+        'phone_number',
+        'address',
+        'country',
+        'city',
+        'state',
+        'zipcode',
+        'logo',
+        'status',
+        'isolation_mode',
+        'db_driver',
+        'db_secret_ref',
+        's3_mode',
+        's3_secret_ref',
+        'encryption_at_rest',
+        'kms_key_ref',
+        'meta',
+        'package_id',
+        'onboarding_completed_at',
+        'llm_models_whitelist',
+        'allowed_ips',
+        'custom_llm_limit',
+        'require_2fa',
+        'custom_domain',
+        'custom_domain_verified_at',
+        'custom_domain_status',
+        'markup_percentage',
+        'llm_topup_balance',
+        'parent_id',
+    ];
 
     protected $casts = [
         'status' => TenantStatusEnum::class,
@@ -53,21 +88,33 @@ final class Tenant extends Model
         return (bool) $this->encryption_at_rest;
     }
 
+    /**
+     * @return BelongsToMany<User, $this, \Illuminate\Database\Eloquent\Relations\Pivot>
+     */
     public function users(): BelongsToMany
     {
         return $this->belongsToMany(User::class);
     }
 
+    /**
+     * @return HasMany<TenantFeature, $this>
+     */
     public function features(): HasMany
     {
         return $this->hasMany(TenantFeature::class);
     }
 
+    /**
+     * @return HasMany<TenantModule, $this>
+     */
     public function modules(): HasMany
     {
         return $this->hasMany(TenantModule::class);
     }
 
+    /**
+     * @return HasMany<TenantModule, $this>
+     */
     public function enabledModules(): HasMany
     {
         return $this->hasMany(TenantModule::class)->where('is_enabled', true);
@@ -90,6 +137,8 @@ final class Tenant extends Model
 
     /**
      * Parent tenant in the single-parent tree. Null for root tenants.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo<Tenant, $this>
      */
     public function parent(): \Illuminate\Database\Eloquent\Relations\BelongsTo
     {
@@ -141,6 +190,9 @@ final class Tenant extends Model
         return $bucket;
     }
 
+    /**
+     * @return HasMany<Subscription, $this>
+     */
     public function subscriptions(): HasMany
     {
         return $this->hasMany(Subscription::class);
@@ -230,15 +282,20 @@ final class Tenant extends Model
     }
 
     /* -----------------------------------------------------------------
-     |  Metered Usage / Feature Limits
-     | -----------------------------------------------------------------
+       |  Metered Usage / Feature Limits
+       | -----------------------------------------------------------------
+       */
+    /**
+     * @return HasMany<TenantFeatureUsage, $this>
      */
-
     public function usage(): HasMany
     {
         return $this->hasMany(TenantFeatureUsage::class);
     }
 
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\MorphMany<UsagePrice, $this>
+     */
     public function usagePrices(): \Illuminate\Database\Eloquent\Relations\MorphMany
     {
         return $this->morphMany(UsagePrice::class, 'target');
@@ -273,11 +330,9 @@ final class Tenant extends Model
         $feature = $this->features()->where('feature_key', $featureSlug)->first();
 
         if (! $feature) {
-            // dump("Feature not found: $featureSlug for Tenant {$this->id}");
             return false;
         }
         if (! $feature->enabled) {
-            // dump("Feature disabled: $featureSlug");
             return false;
         }
 
@@ -298,8 +353,6 @@ final class Tenant extends Model
             ->where('feature_slug', $featureSlug)
             ->whereNull('period_start') // Assuming lifetime limit for now
             ->value('used_count') ?? 0;
-
-        // dump("Usage: $usage, Quantity: $quantity, Limit: $limit");
 
         return ($usage + $quantity) <= $limit;
     }

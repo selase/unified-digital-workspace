@@ -10,7 +10,7 @@ beforeEach(function () {
 });
 
 test('it can set and get active tenant', function () {
-    $tenant = new Tenant(['id' => '019bb884-3060-70f0-906a-ed7cc8e994ef', 'name' => 'Test Tenant']);
+    $tenant = (new Tenant)->forceFill(['id' => '019bb884-3060-70f0-906a-ed7cc8e994ef', 'name' => 'Test Tenant']);
 
     $this->context->setTenant($tenant);
 

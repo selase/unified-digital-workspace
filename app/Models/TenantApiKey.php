@@ -20,7 +20,21 @@ final class TenantApiKey extends Model
 
     protected $connection = 'landlord';
 
-    protected $guarded = [];
+    /**
+     * @var list<string>
+     */
+    protected $fillable = [
+        'tenant_id',
+        'user_id',
+        'name',
+        'key_hash',
+        'key_hint',
+        'scopes',
+        'last_used_at',
+        'expires_at',
+        'revoked_at',
+        'ip_restrictions',
+    ];
 
     protected $casts = [
         'scopes' => 'array',
@@ -30,11 +44,17 @@ final class TenantApiKey extends Model
         'revoked_at' => 'datetime',
     ];
 
+    /**
+     * @return BelongsTo<Tenant, $this>
+     */
     public function tenant(): BelongsTo
     {
         return $this->belongsTo(Tenant::class);
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

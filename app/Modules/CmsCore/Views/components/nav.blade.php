@@ -6,7 +6,7 @@
      */
     $resolveUrl = function (\App\Modules\CmsCore\Models\MenuItem $item): string {
         if ($item->url) {
-            return $item->url;
+            return $cmsUrl->normalizeUrl($item->url);
         }
 
         if ($item->post_id && $item->relationLoaded('post') && $item->post) {

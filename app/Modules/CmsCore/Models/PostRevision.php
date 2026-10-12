@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\CmsCore\Models;
 
 use App\Models\User;
+use App\Modules\CmsCore\Support\SanitizedHtml;
 use App\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -58,6 +59,7 @@ final class PostRevision extends Model
     protected function casts(): array
     {
         return [
+            'body' => SanitizedHtml::class,
             'created_at' => 'datetime',
         ];
     }

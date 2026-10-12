@@ -33,11 +33,16 @@
             </div>
 
             @php
+                $founderPortrait = \App\Modules\CmsCore\Models\Media::query()
+                    ->where('path', \App\Modules\SiteThyroidGhanaFoundation\Database\Seeders\ThyroidAwarenessWeek2026Seeder::FOUNDER_PORTRAIT_PATH)
+                    ->first();
+
                 $team = [
                     [
-                        'name' => 'Nana Adwoa Konadu Dsane (Mrs.)',
+                        'name' => 'Dr. Nana Adwoa Konadu Dsane',
                         'role' => 'Founder & President',
                         'photo' => 'cms/team/nana-adjoa.jpg',
+                        'photo_url' => $founderPortrait?->url(),
                         'bio' => 'Established the foundation in 2018 following her personal battle with hyperthyroidism. A seasoned administrator with over 20 years of experience across research, health, and education.',
                     ],
                     [
@@ -78,7 +83,7 @@
                     <div class="group overflow-hidden rounded-xl bg-white shadow-sm border transition hover:shadow-lg" style="border-color: var(--tgf-border);">
                         <div class="aspect-square overflow-hidden bg-slate-100">
                             <img
-                                src="{{ Storage::disk('public')->url($member['photo']) }}"
+                                src="{{ $member['photo_url'] ?? Storage::disk('public')->url($member['photo']) }}"
                                 alt="{{ $member['name'] }}"
                                 class="h-full w-full object-cover object-top transition group-hover:scale-105"
                                 loading="lazy"

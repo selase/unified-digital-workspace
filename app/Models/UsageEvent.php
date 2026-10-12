@@ -16,7 +16,18 @@ final class UsageEvent extends Model
 
     protected $connection = 'landlord';
 
-    protected $guarded = [];
+    /**
+     * @var list<string>
+     */
+    protected $fillable = [
+        'tenant_id',
+        'occurred_at',
+        'type',
+        'key',
+        'quantity',
+        'unit',
+        'meta',
+    ];
 
     protected $casts = [
         'occurred_at' => 'datetime',

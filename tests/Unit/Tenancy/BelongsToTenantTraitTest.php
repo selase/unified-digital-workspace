@@ -15,7 +15,7 @@ test('model using trait uses tenant connection', function () {
 
 test('model using trait sets tenant id on creating', function () {
     $tenantId = '019bb884-3060-70f0-906a-ed7cc8e994ef';
-    $tenant = new Tenant(['id' => $tenantId]);
+    $tenant = (new Tenant)->forceFill(['id' => $tenantId]);
     $context = app(TenantContext::class);
     $context->setTenant($tenant);
 

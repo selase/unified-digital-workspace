@@ -60,6 +60,7 @@ final class RedirectAdminFromCustomDomain
      * Public-facing on a custom domain:
      *   - module.website.* (CMS pages registered via cms.website middleware)
      *   - site-icon.* (favicon, apple-touch-icon, manifest, sized PNGs)
+     *   - cms-core.media.serve (uploaded images/files embedded in those pages)
      */
     private function isAdminRoute(Request $request): bool
     {
@@ -75,6 +76,10 @@ final class RedirectAdminFromCustomDomain
         }
 
         if (str_starts_with($name, 'site-icon.')) {
+            return false;
+        }
+
+        if ($name === 'cms-core.media.serve') {
             return false;
         }
 

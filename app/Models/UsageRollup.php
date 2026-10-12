@@ -14,7 +14,18 @@ final class UsageRollup extends Model
 
     protected $connection = 'landlord';
 
-    protected $guarded = [];
+    /**
+     * @var list<string>
+     */
+    protected $fillable = [
+        'tenant_id',
+        'period',
+        'period_start',
+        'metric',
+        'dimensions',
+        'dimensions_hash',
+        'value',
+    ];
 
     protected $casts = [
         'period_start' => 'datetime',

@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Config;
 
 test('it configures shared storage', function () {
     $tenantSlug = 'acme-co';
-    $tenant = new Tenant([
+    $tenant = (new Tenant)->forceFill([
         'id' => '019bb884-3060-70f0-906a-ed7cc8e994ef',
         'slug' => $tenantSlug,
         's3_mode' => 'shared',
@@ -34,7 +34,7 @@ test('it configures shared storage', function () {
 });
 
 test('it configures byo storage', function () {
-    $tenant = new Tenant([
+    $tenant = (new Tenant)->forceFill([
         'id' => '019bb884-3060-70f0-906a-ed7cc8e994ef',
         's3_mode' => 'byo',
         's3_secret_ref' => 'tenant_s3_ref',

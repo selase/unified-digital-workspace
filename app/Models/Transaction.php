@@ -14,7 +14,19 @@ final class Transaction extends Model
 
     protected $connection = 'landlord';
 
-    protected $guarded = [];
+    /**
+     * @var list<string>
+     */
+    protected $fillable = [
+        'tenant_id',
+        'provider',
+        'provider_transaction_id',
+        'amount',
+        'currency',
+        'status',
+        'type',
+        'meta',
+    ];
 
     protected $casts = [
         'meta' => 'array',

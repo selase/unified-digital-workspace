@@ -5,25 +5,32 @@ declare(strict_types=1);
 namespace App\Modules\CmsCore\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Modules\CmsCore\Services\CmsSitemapService;
+use App\Modules\CmsCore\Services\CmsUrlService;
+use App\Services\Tenancy\TenantContext;
+use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\Artisan;
 
 final class CmsPublicSitemapController extends Controller
 {
-    public function index(): Response
+    public function __construct(
+        private readonly CmsSitemapService $sitemap,
+        private readonly CmsUrlService $cmsUrl,
+        private readonly TenantContext $tenantContext,
+    ) {}
+
+    public function index(Request $request): Response
     {
-        $path = storage_path('app/public/sitemap.xml');
+        $tenant = $this->tenantContext->getTenant();
 
-        if (! file_exists($path)) {
-            Artisan::call('cms:generate-sitemap');
-        }
+        abort_if($tenant === null, 404);
 
-        $content = file_exists($path)
-            ? (string) file_get_contents($path)
-            : '<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"></urlset>';
+        $xml = $this->sitemap->xml(
+            (string) $tenant->id,
+            $request->getSchemeAndHttpHost(),
+            $this->cmsUrl->isWebsiteMode(),
+        );
 
-        return response($content, 200, [
-            'Content-Type' => 'application/xml',
-        ]);
+        return response($xml, 200, ['Content-Type' => 'application/xml']);
     }
 }

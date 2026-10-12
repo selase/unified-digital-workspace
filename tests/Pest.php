@@ -163,3 +163,55 @@ function setupMemoTenantConnection(?User $user = null): array
 {
     return [setActiveTenantForTest($user), null];
 }
+
+/**
+ * @return array{0: User, 1: Tenant}
+ */
+function createIncidentApiContext(): array
+{
+    $user = User::factory()->create();
+    $tenant = app(App\Services\Tenancy\TenantContext::class)->getTenant();
+
+    if (! $tenant) {
+        [$tenant] = setupIncidentTenantConnection($user);
+    } else {
+        $tenant->users()->syncWithoutDetaching($user->id);
+    }
+
+    $permissions = [
+        'incidents.view',
+        'incidents.create',
+        'incidents.update',
+        'incidents.delete',
+        'incidents.assign',
+        'incidents.delegate',
+        'incidents.escalate',
+        'incidents.tasks.manage',
+        'incidents.comments.manage',
+        'incidents.priorities.manage',
+        'incidents.statuses.manage',
+        'incidents.categories.manage',
+    ];
+
+    foreach ($permissions as $permission) {
+        $existing = Spatie\Permission\Models\Permission::query()
+            ->where('name', $permission)
+            ->where('guard_name', 'web')
+            ->first();
+
+        if (! $existing) {
+            Spatie\Permission\Models\Permission::create([
+                'uuid' => (string) Illuminate\Support\Str::uuid(),
+                'name' => $permission,
+                'guard_name' => 'web',
+                'category' => 'Incidents',
+            ]);
+        }
+    }
+
+    $user->givePermissionTo($permissions);
+
+    app(App\Services\ModuleManager::class)->enableForTenant('incident-management', $tenant);
+
+    return [$user, $tenant];
+}

@@ -17,4 +17,16 @@ parameters:
 
     level: 6
 
+    databaseMigrationsPath:
+        - database/migrations/landlord
+        - database/migrations/tenant
+        - app/Modules/CmsCore/Database/Migrations
+        - app/Modules/DocumentManagement/Database/Migrations
+        - app/Modules/Forums/Database/Migrations
+        - app/Modules/HrmsCore/Database/Migrations
+        - app/Modules/IncidentManagement/Database/Migrations
+        - app/Modules/Memos/Database/Migrations
+        - app/Modules/ProjectManagement/Database/Migrations
+        - app/Modules/QualityMonitoring/Database/Migrations
+
     tmpDir: /tmp/phpstan
