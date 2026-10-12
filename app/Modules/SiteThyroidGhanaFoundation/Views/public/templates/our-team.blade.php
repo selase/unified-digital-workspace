@@ -35,7 +35,7 @@
             @php
                 $team = [
                     [
-                        'name' => 'Nana Adwoa Konadu Dsane (Mrs.)',
+                        'name' => 'Dr. Nana Adwoa Konadu Dsane',
                         'role' => 'Founder & President',
                         'photo' => 'cms/team/nana-adjoa.jpg',
                         'bio' => 'Established the foundation in 2018 following her personal battle with hyperthyroidism. A seasoned administrator with over 20 years of experience across research, health, and education.',

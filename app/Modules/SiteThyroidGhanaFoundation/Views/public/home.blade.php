@@ -254,7 +254,7 @@
                     <p class="text-sm font-semibold uppercase tracking-widest" style="color: var(--tgf-primary);">Our Mission</p>
                     <h2 class="mt-3 text-3xl font-bold sm:text-4xl" style="color: var(--tgf-dark);">A Ghana where thyroid diseases are detected early and treated effectively</h2>
                     <p class="mt-6 text-base leading-relaxed" style="color: var(--tgf-muted);">
-                        Founded in July 2018 by Mrs. Nana Adwoa Konadu Dsane following her own battle with hyperthyroidism, the Thyroid Ghana Foundation is a proud member of the Thyroid Federation International working to transform thyroid healthcare in Ghana.
+                        Founded in July 2018 by Dr. Nana Adwoa Konadu Dsane following her own battle with hyperthyroidism, the Thyroid Ghana Foundation is a proud member of the Thyroid Federation International working to transform thyroid healthcare in Ghana.
                     </p>
                     <p class="mt-4 text-base leading-relaxed" style="color: var(--tgf-muted);">
                         We create opportunities for early detection, support research and institutions involved in thyroid disease management, and advocate for improved healthcare practices for patients across the country.

@@ -78,6 +78,18 @@ final class ThyroidAwarenessWeek2026Seeder extends Seeder
             'title' => 'International Thyroid Awareness Week 2026 — volunteers and organising team',
             'alt' => 'The volunteers and organising team in matching blue awareness-week t-shirts.',
         ],
+        'vip-guests' => [
+            'title' => 'International Thyroid Awareness Week 2026 — guests on the red carpet',
+            'alt' => 'The Foundation’s founder with two guests on the red carpet in front of the event backdrop.',
+        ],
+        'thyroid-management-presentation' => [
+            'title' => 'International Thyroid Awareness Week 2026 — management of thyroid disorders',
+            'alt' => 'A presenter explaining treatment options for thyroid disorders beside the event banners.',
+        ],
+        'founder-closing-call' => [
+            'title' => 'Dr. Nana Adwoa Konadu Dsane — International Thyroid Awareness Week 2026',
+            'alt' => 'Dr. Nana Adwoa Konadu Dsane, Founder of Thyroid Ghana Foundation, in an International Thyroid Awareness Week t-shirt.',
+        ],
         'participants-group-photo' => [
             'title' => 'International Thyroid Awareness Week 2026 — participants group photo',
             'alt' => 'Group photo of participants, speakers and partners after the forum.',
@@ -111,6 +123,8 @@ final class ThyroidAwarenessWeek2026Seeder extends Seeder
         $this->importPhotos();
         $story = $this->publishStory();
         $this->publishSlides($tenant, $story);
+
+        $this->call(ThyroidFounderTitleSeeder::class);
 
         CmsSitemapService::forget((string) $tenant->id);
     }
@@ -260,6 +274,9 @@ final class ThyroidAwarenessWeek2026Seeder extends Seeder
         $plate = $this->figure('healthy-plate', 'A chickpea, avocado and vegetable salad from the demonstration.');
         $partners = $this->figure('mds-lancet-partners', 'Representatives of MDS-Lancet Laboratories, a long-standing partner of the Foundation.');
         $audience = $this->figure('full-house-audience', 'A full house of patients, professionals, partners, media and members of the public.');
+        $guests = $this->figure('vip-guests', 'Guests and organisers on the red carpet at the University of Ghana Medical Centre.');
+        $management = $this->figure('thyroid-management-presentation', 'The presentation on treatment options for thyroid disorders.');
+        $founder = $this->figure('founder-closing-call', 'Dr. Nana Adwoa Konadu Dsane, Founder of Thyroid Ghana Foundation, called on participants to become ambassadors for thyroid awareness.');
         $volunteers = $this->figure('volunteers-team', 'The volunteers and organising team behind the programme.');
         $group = $this->figure('participants-group-photo', 'Participants, speakers and partners at the close of the forum.');
 
@@ -281,6 +298,8 @@ final class ThyroidAwarenessWeek2026Seeder extends Seeder
 <p>A solidarity message was delivered on behalf of the management of the University of Ghana Medical Centre, reaffirming the institution’s commitment to raising thyroid awareness and improving patient outcomes through multidisciplinary care.</p>
 
 {$opening}
+
+{$guests}
 
 <h2>Expert presentations</h2>
 
@@ -324,6 +343,8 @@ final class ThyroidAwarenessWeek2026Seeder extends Seeder
 </ul>
 
 <p>Dr. Damah emphasised the importance of early diagnosis and adherence to treatment plans to improve quality of life and reduce complications associated with thyroid disorders.</p>
+
+{$management}
 
 <h2>Patient testimonies</h2>
 
@@ -378,7 +399,7 @@ final class ThyroidAwarenessWeek2026Seeder extends Seeder
 
 <p>She further highlighted the need for sustained public education, research and policy support to improve thyroid health outcomes in Ghana.</p>
 
-{$volunteers}
+{$founder}
 
 <h2>Conclusion</h2>
 
@@ -387,6 +408,8 @@ final class ThyroidAwarenessWeek2026Seeder extends Seeder
 <p>The event reinforced Thyroid Ghana Foundation’s commitment to improving awareness, supporting patients, promoting early diagnosis, and advocating for better thyroid healthcare services in Ghana.</p>
 
 <p>The Foundation expresses its sincere appreciation to the University of Ghana Medical Centre, the Ghana Academy of Nutrition and Dietetics, MDS-Lancet Laboratories, healthcare professionals, volunteers, partners, media representatives and all the participants whose contributions made the programme a success.</p>
+
+{$volunteers}
 
 {$group}
 HTML;

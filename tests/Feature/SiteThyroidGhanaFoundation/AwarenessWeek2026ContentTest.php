@@ -7,6 +7,7 @@ use App\Models\User;
 use App\Modules\CmsCore\Models\Media;
 use App\Modules\CmsCore\Models\Post;
 use App\Modules\SiteThyroidGhanaFoundation\Database\Seeders\ThyroidAwarenessWeek2026Seeder;
+use App\Modules\SiteThyroidGhanaFoundation\Database\Seeders\ThyroidFounderTitleSeeder;
 use App\Modules\SiteThyroidGhanaFoundation\Database\Seeders\ThyroidGhanaSeeder;
 use Illuminate\Support\Facades\Storage;
 
@@ -48,7 +49,7 @@ it('publishes the story with its photos and featured image', function (): void {
         ->toContain(' width="')
         ->not->toContain('<script');
 
-    expect(Media::query()->where('path', 'like', 'cms/news/awareness-week-2026/%')->count())->toBe(11);
+    expect(Media::query()->where('path', 'like', 'cms/news/awareness-week-2026/%')->count())->toBe(14);
 
     foreach (Media::query()->where('path', 'like', 'cms/news/awareness-week-2026/%')->get() as $media) {
         expect(Storage::disk('tenant')->exists($media->path))->toBeTrue()
@@ -61,7 +62,7 @@ it('is safe to run again without duplicating anything', function (): void {
 
     expect(Post::query()->where('slug', ThyroidAwarenessWeek2026Seeder::STORY_SLUG)->count())->toBe(1)
         ->and(Post::query()->forType('slider')->count())->toBe(5)
-        ->and(Media::query()->where('path', 'like', 'cms/news/awareness-week-2026/%')->count())->toBe(11);
+        ->and(Media::query()->where('path', 'like', 'cms/news/awareness-week-2026/%')->count())->toBe(14);
 });
 
 it('leads the home page hero with the event slides on the custom domain', function (): void {
@@ -88,4 +89,34 @@ it('renders the story page and lists it in the sitemap', function (): void {
     $this->get('https://thyroidghanafoundation.org/sitemap.xml')
         ->assertOk()
         ->assertSee('/news/'.ThyroidAwarenessWeek2026Seeder::STORY_SLUG, false);
+});
+
+it('writes the founder as Dr. in freshly seeded content', function (): void {
+    $text = Post::query()->whereIn('slug', ['about', 'the-founder', 'our-team'])->get()
+        ->map(fn (Post $post): string => $post->body.$post->excerpt)
+        ->implode(' ');
+
+    expect($text)->toContain('Dr. Nana Adwoa Konadu Dsane')
+        ->not->toContain('Mrs. Nana')
+        ->not->toContain('Mrs. Dsane')
+        ->not->toContain('Dsane (Mrs.)');
+});
+
+it('corrects the founder honorific on existing content without touching other titles', function (): void {
+    Post::query()->where('slug', 'the-founder')->update([
+        'excerpt' => 'Mrs. Nana Adwoa Konadu Dsane — Founder.',
+        'body' => '<p>Mrs. Dsane founded it. Mrs Nana Adwoa Konadu Dsane spoke. Nana Adwoa Konadu Dsane (Mrs.) leads. '
+            .'Reviewed by Dr. Mrs. Josephine Akpalu and Mrs. Beatrice Williams.</p>',
+    ]);
+
+    app(ThyroidFounderTitleSeeder::class)->run();
+
+    $founder = Post::query()->where('slug', 'the-founder')->firstOrFail();
+
+    expect($founder->excerpt)->toBe('Dr. Nana Adwoa Konadu Dsane — Founder.')
+        ->and($founder->body)->toContain('Dr. Dsane founded it.')
+        ->toContain('Dr. Nana Adwoa Konadu Dsane spoke.')
+        ->toContain('Dr. Nana Adwoa Konadu Dsane leads.')
+        ->toContain('Dr. Mrs. Josephine Akpalu')
+        ->toContain('Mrs. Beatrice Williams');
 });
