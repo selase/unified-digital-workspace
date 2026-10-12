@@ -130,7 +130,7 @@ it('corrects the founder honorific on existing content without touching other ti
 it('gives the founder a hero slide with a focal point and a light overlay', function (): void {
     $html = $this->get('https://thyroidghanafoundation.org/')->assertOk()->getContent();
 
-    expect($html)->toContain('rgba(15,23,42,0.2)')->toContain('72% 35%/cover');
+    expect($html)->toContain('rgba(15,23,42,0.35)')->toContain('90% 30%/cover');
 });
 
 it('shows the founder portrait on the Founder page and home quote, and Dr. on the team page', function (): void {

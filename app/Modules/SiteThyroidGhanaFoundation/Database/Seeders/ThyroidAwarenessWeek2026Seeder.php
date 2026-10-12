@@ -249,8 +249,8 @@ final class ThyroidAwarenessWeek2026Seeder extends Seeder
                     'cta_url' => '/site/the-founder',
                     'cta2_label' => 'Support Our Cause',
                     'cta2_url' => '/site/donate',
-                    'bg_position' => '72% 35%',
-                    'bg_overlay' => '0.2',
+                    'bg_position' => '90% 30%',
+                    'bg_overlay' => '0.35',
                 ],
             ],
         ];
