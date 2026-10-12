@@ -6,7 +6,7 @@
             <nav class="mb-8 flex flex-wrap justify-center gap-x-8 gap-y-2">
                 @foreach($menu->items->sortBy('sort_order') as $item)
                     <a
-                        href="{{ $item->url }}"
+                        href="{{ $cmsUrl->normalizeUrl($item->url) }}"
                         class="text-sm text-gray-500 transition hover:text-gray-700"
                         @if($item->open_in_new_tab) target="_blank" rel="noopener" @endif
                     >

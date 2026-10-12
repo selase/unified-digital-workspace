@@ -50,6 +50,30 @@ final class CmsUrlService
     }
 
     /**
+     * Make a stored content link valid for the current context.
+     *
+     * Content authored against the subdomain (`/site/about`) is reused on
+     * custom domains, where the same page lives at the root (`/about`).
+     * Absolute URLs, anchors and non-/site paths are returned untouched.
+     */
+    public function normalizeUrl(?string $url): string
+    {
+        $url = (string) $url;
+
+        if (! $this->isWebsiteMode()) {
+            return $url;
+        }
+
+        if (preg_match('~^/site(?=[/?#]|$)~', $url) !== 1) {
+            return $url;
+        }
+
+        $rest = mb_substr($url, 5);
+
+        return str_starts_with($rest, '/') ? $rest : '/'.$rest;
+    }
+
+    /**
      * Get the route name prefix for the current context.
      */
     public function prefix(): string

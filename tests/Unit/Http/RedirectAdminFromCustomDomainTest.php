@@ -102,3 +102,11 @@ test('host comparison is case-insensitive', function (): void {
 
     expect($response->getStatusCode())->toBe(302);
 });
+
+test('cms media route on a custom domain is passed through', function (): void {
+    $tenant = makeTenant('thyroidghanafoundation.org');
+
+    $response = runMiddleware($tenant, 'thyroidghanafoundation.org', 'cms-core.media.serve');
+
+    expect($response->getStatusCode())->toBe(200);
+});

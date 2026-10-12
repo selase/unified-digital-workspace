@@ -111,10 +111,10 @@
                             @endif
                             <div class="mt-8 flex flex-wrap gap-4">
                                 @if($getMeta($slide, 'cta_label'))
-                                    <a href="{{ $getMeta($slide, 'cta_url') ?: '#' }}" class="tgf-btn-primary">{{ $getMeta($slide, 'cta_label') }}</a>
+                                    <a href="{{ $cmsUrl->normalizeUrl($getMeta($slide, 'cta_url')) ?: '#' }}" class="tgf-btn-primary">{{ $getMeta($slide, 'cta_label') }}</a>
                                 @endif
                                 @if($getMeta($slide, 'cta2_label'))
-                                    <a href="{{ $getMeta($slide, 'cta2_url') ?: '#' }}" class="tgf-btn-accent">{{ $getMeta($slide, 'cta2_label') }}</a>
+                                    <a href="{{ $cmsUrl->normalizeUrl($getMeta($slide, 'cta2_url')) ?: '#' }}" class="tgf-btn-accent">{{ $getMeta($slide, 'cta2_label') }}</a>
                                 @endif
                                 @if($hasVideo)
                                     <button
