@@ -8,6 +8,7 @@ use App\Modules\CmsCore\Models\Media;
 use App\Modules\CmsCore\Models\Post;
 use App\Modules\SiteThyroidGhanaFoundation\Database\Seeders\ThyroidAwarenessWeek2026GallerySeeder;
 use App\Modules\SiteThyroidGhanaFoundation\Database\Seeders\ThyroidAwarenessWeek2026Seeder;
+use App\Modules\SiteThyroidGhanaFoundation\Database\Seeders\ThyroidContactLinksSeeder;
 use App\Modules\SiteThyroidGhanaFoundation\Database\Seeders\ThyroidFounderDetailsSeeder;
 use App\Modules\SiteThyroidGhanaFoundation\Database\Seeders\ThyroidGhanaSeeder;
 use Illuminate\Support\Facades\Storage;
@@ -213,4 +214,26 @@ it('serves the favicon from a path the web server does not intercept, on the cus
 
     expect($response->getStatusCode())->toBe(200)
         ->and($response->headers->get('Content-Type'))->toContain('icon');
+});
+
+it('makes the email address and phone number on the action pages tappable', function (): void {
+    foreach (['donate' => 'Donation%20enquiry', 'volunteer' => 'Volunteer%20enquiry', 'membership' => 'Membership%20enquiry', 'partner-us' => 'Partnership%20enquiry'] as $slug => $subject) {
+        // The sanitizer entity-encodes characters such as @ and +; browsers decode them.
+        $html = html_entity_decode($this->get('https://thyroidghanafoundation.org/'.$slug)->assertOk()->getContent());
+
+        expect($html)->toContain('mailto:info@thyroidghanafoundation.org?subject='.$subject);
+    }
+
+    expect(html_entity_decode($this->get('https://thyroidghanafoundation.org/donate')->getContent()))->toContain('href="tel:+233243376304"');
+});
+
+it('links contact details once and never inside an existing link', function (): void {
+    $html = '<p>Email info@thyroidghanafoundation.org or call +233 (024) 337 6304.</p>'
+        .'<p><a href="https://example.test">info@thyroidghanafoundation.org</a></p>';
+
+    $linked = ThyroidContactLinksSeeder::link($html, 'Test');
+
+    expect(mb_substr_count($linked, 'mailto:'))->toBe(1)
+        ->and(mb_substr_count($linked, 'tel:+233243376304'))->toBe(1)
+        ->and(ThyroidContactLinksSeeder::link($linked, 'Test'))->toBe($linked);
 });
