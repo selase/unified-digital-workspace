@@ -18,6 +18,7 @@
             <tbody class="text-sm text-foreground">
                 @forelse ($activityLogs as $activityLog)
                     @php($entry = \App\Libraries\ActivityLogPresenter::describe($activityLog))
+                    @continue($entry === null)
                     <tr>
                         <td class="whitespace-nowrap">{{ \App\Libraries\Helper::getHumanDate($activityLog->created_at) }}</td>
                         <td>{{ $entry['summary'] }}</td>

@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\File;
  */
 function invokeResolveMimeType(UploadedFile $file, string $extension): string
 {
-    $controller = new CmsMediaLibraryController;
+    $controller = new CmsMediaLibraryController(new App\Modules\CmsCore\Services\ImageOptimizer);
     $method = new ReflectionMethod($controller, 'resolveMimeType');
     $method->setAccessible(true);
 

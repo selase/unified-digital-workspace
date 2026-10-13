@@ -279,3 +279,203 @@ it('gives people without a Gravatar an avatar of their initials', function (): v
     expect($user->gravatar)->toStartWith('https://www.gravatar.com/avatar/'.md5('ama@example.org').'?')
         ->and($query)->toMatchArray(['d' => 'initials', 'name' => 'Ama Mensah']);
 });
+
+it('saves a slide whose display order is negative', function (): void {
+    [$editor, $tenant] = cmsEditorWith(['cms.posts.view', 'cms.posts.update']);
+    $post = PostFactory::new()->forTenant($tenant->id)->create(['author_id' => $editor->uuid, 'sort_order' => -3]);
+
+    $this->actingAs($editor)
+        ->withSession(['active_tenant_id' => $tenant->id])
+        ->put(route('cms-core.posts.update', $post), [
+            'title' => 'Renamed slide',
+            'post_type_id' => $post->post_type_id,
+            'status' => $post->status,
+            'sort_order' => -3,
+        ])
+        ->assertSessionHasNoErrors()
+        ->assertRedirect();
+
+    expect($post->fresh()->title)->toBe('Renamed slide')
+        ->and($post->fresh()->sort_order)->toBe(-3);
+});
+
+it('serves a small cached preview of a library image', function (): void {
+    Illuminate\Support\Facades\Storage::fake('public');
+    [$editor, $tenant] = cmsEditorWith(['cms.posts.view', 'cms.media.view']);
+
+    $canvas = imagecreatetruecolor(1600, 900);
+    ob_start();
+    imagejpeg($canvas, null, 95);
+    $original = (string) ob_get_clean();
+    Illuminate\Support\Facades\Storage::disk('public')->put('cms/media/photo.jpg', $original);
+
+    $media = App\Modules\CmsCore\Database\Factories\MediaFactory::new()->forTenant($tenant->id)->create([
+        'uploaded_by' => $editor->uuid,
+        'disk' => 'public',
+        'path' => 'cms/media/photo.jpg',
+        'mime_type' => 'image/jpeg',
+    ]);
+
+    $request = fn () => $this->actingAs($editor)
+        ->withSession(['active_tenant_id' => $tenant->id])
+        ->get(route('cms-core.media.thumb', $media));
+
+    $response = $request()->assertSuccessful()->assertHeader('Content-Type', 'image/jpeg');
+    [$width, $height] = getimagesizefromstring($response->getContent());
+
+    $variant = App\Modules\CmsCore\Models\MediaVariant::query()->where('media_id', $media->id)->where('variant', 'thumb')->firstOrFail();
+
+    expect([$width, $height])->toBe([480, 270])
+        ->and(mb_strlen($response->getContent(), '8bit'))->toBeLessThan(mb_strlen($original, '8bit'))
+        ->and(Illuminate\Support\Facades\Storage::disk('public')->exists($variant->path))->toBeTrue();
+
+    // The second request is answered from the stored preview: the original can be gone.
+    Illuminate\Support\Facades\Storage::disk('public')->delete('cms/media/photo.jpg');
+    $request()->assertSuccessful();
+
+    expect(App\Modules\CmsCore\Models\MediaVariant::query()->where('media_id', $media->id)->count())->toBe(1);
+
+    $picker = $this->actingAs($editor)
+        ->withSession(['active_tenant_id' => $tenant->id])
+        ->getJson(route('cms-core.media.picker'))
+        ->json('data.0.thumb');
+
+    expect($picker)->toBe(route('cms-core.media.thumb', $media));
+});
+
+it('answers not found for a preview when the image file is missing, and refuses people who cannot see media', function (): void {
+    Illuminate\Support\Facades\Storage::fake('public');
+    [$editor, $tenant] = cmsEditorWith(['cms.posts.view', 'cms.media.view']);
+
+    $media = App\Modules\CmsCore\Database\Factories\MediaFactory::new()->forTenant($tenant->id)->create([
+        'uploaded_by' => $editor->uuid,
+        'disk' => 'public',
+        'path' => 'cms/media/gone.jpg',
+        'mime_type' => 'image/jpeg',
+    ]);
+
+    $this->actingAs($editor)
+        ->withSession(['active_tenant_id' => $tenant->id])
+        ->get(route('cms-core.media.thumb', $media))
+        ->assertNotFound();
+
+    $editor->revokePermissionTo('cms.media.view');
+    app(Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+
+    $this->actingAs($editor->fresh())
+        ->withSession(['active_tenant_id' => $tenant->id])
+        ->get(route('cms-core.media.thumb', $media))
+        ->assertForbidden();
+});
+
+it('leaves the last-login bookkeeping row out of the activity list', function (): void {
+    $stamp = new Activity([
+        'description' => 'This model has been updated',
+        'event' => 'updated',
+        'subject_type' => User::class,
+        'properties' => ['attributes' => ['last_login_at' => now(), 'last_login_ip' => '10.0.0.1', 'updated_at' => now()]],
+    ]);
+    $rename = new Activity([
+        'description' => 'This model has been updated',
+        'event' => 'updated',
+        'subject_type' => User::class,
+        'properties' => ['attributes' => ['first_name' => 'Ama']],
+    ]);
+
+    expect(ActivityLogPresenter::describe($stamp))->toBeNull()
+        ->and(ActivityLogPresenter::describe($rename))->toBe(['summary' => 'Updated a user', 'details' => 'Changed: first name']);
+});
+
+/**
+ * A noisy photo-like JPEG, so re-encoding has something real to compress.
+ */
+function cmsTestPhoto(int $width, int $height, int $quality = 100): string
+{
+    $image = imagecreatetruecolor($width, $height);
+
+    for ($y = 0; $y < $height; $y += 8) {
+        for ($x = 0; $x < $width; $x += 8) {
+            imagefilledrectangle($image, $x, $y, $x + 7, $y + 7, imagecolorallocate($image, ($x * 3) % 256, ($y * 5) % 256, ($x + $y) % 256));
+        }
+    }
+
+    ob_start();
+    imagejpeg($image, null, $quality);
+
+    return (string) ob_get_clean();
+}
+
+it('shrinks an oversized photo when it is uploaded to the media library', function (): void {
+    Illuminate\Support\Facades\Storage::fake('tenant');
+    [$editor, $tenant] = cmsEditorWith(['cms.posts.view', 'cms.media.view', 'cms.media.manage']);
+
+    $original = cmsTestPhoto(4000, 3000);
+    $upload = Illuminate\Http\UploadedFile::fake()->createWithContent('holiday.jpg', $original);
+
+    $this->actingAs($editor)
+        ->withSession(['active_tenant_id' => $tenant->id])
+        ->post(route('cms-core.media.store'), ['file' => $upload, 'title' => 'Holiday'])
+        ->assertSessionHasNoErrors()
+        ->assertRedirect();
+
+    $media = App\Modules\CmsCore\Models\Media::query()->where('title', 'Holiday')->firstOrFail();
+    $stored = (string) Illuminate\Support\Facades\Storage::disk('tenant')->get($media->path);
+    [$width, $height] = getimagesizefromstring($stored);
+
+    expect([$width, $height])->toBe([2560, 1920])
+        ->and([$media->width, $media->height])->toBe([2560, 1920])
+        ->and($media->size_bytes)->toBe(mb_strlen($stored, '8bit'))
+        ->and($media->size_bytes)->toBeLessThan((int) (mb_strlen($original, '8bit') / 2))
+        ->and($media->checksum_sha256)->toBe(hash('sha256', $stored))
+        ->and($media->mime_type)->toBe('image/jpeg');
+});
+
+it('optimizes a featured image uploaded with a post', function (): void {
+    Illuminate\Support\Facades\Storage::fake('tenant');
+    [$editor, $tenant] = cmsEditorWith(['cms.posts.view', 'cms.posts.update']);
+    $post = PostFactory::new()->forTenant($tenant->id)->create(['author_id' => $editor->uuid]);
+
+    $this->actingAs($editor)
+        ->withSession(['active_tenant_id' => $tenant->id])
+        ->put(route('cms-core.posts.update', $post), [
+            'title' => $post->title,
+            'post_type_id' => $post->post_type_id,
+            'status' => $post->status,
+            'featured_image' => Illuminate\Http\UploadedFile::fake()->createWithContent('banner.jpg', cmsTestPhoto(3200, 1800)),
+        ])
+        ->assertSessionHasNoErrors();
+
+    $media = $post->fresh()->featuredMedia;
+
+    expect($media)->not->toBeNull()
+        ->and([$media->width, $media->height])->toBe([2560, 1440])
+        ->and(Illuminate\Support\Facades\Storage::disk('tenant')->exists($media->path))->toBeTrue()
+        ->and($media->checksum_sha256)->not->toBeNull();
+});
+
+it('stores files it cannot safely improve exactly as uploaded', function (string $name, string $contents): void {
+    Illuminate\Support\Facades\Storage::fake('tenant');
+
+    $stored = app(App\Modules\CmsCore\Services\ImageOptimizer::class)
+        ->store(Illuminate\Http\UploadedFile::fake()->createWithContent($name, $contents), 'cms/media');
+
+    expect($stored['optimized'])->toBeFalse()
+        ->and(Illuminate\Support\Facades\Storage::disk('tenant')->get($stored['path']))->toBe($contents);
+})->with([
+    'a document' => fn () => ['report.pdf', "%PDF-1.4\nnot an image"],
+    'a vector graphic' => fn () => ['logo.svg', '<svg xmlns="http://www.w3.org/2000/svg" width="10" height="10"/>'],
+    'a photo that is already heavily compressed' => fn () => ['small.jpg', cmsTestPhoto(320, 200, 25)],
+]);
+
+it('turns a sideways phone photo upright', function (): void {
+    $jpeg = cmsTestPhoto(400, 200, 95);
+    // Insert a minimal EXIF block saying "rotate 90 degrees clockwise to view" (orientation 6).
+    $exif = "Exif\0\0II*\0\x08\0\0\0\x01\0\x12\x01\x03\0\x01\0\0\0\x06\0\0\0\0\0\0\0";
+    $withExif = mb_substr($jpeg, 0, 2, '8bit')."\xFF\xE1".pack('n', mb_strlen($exif, '8bit') + 2).$exif.mb_substr($jpeg, 2, null, '8bit');
+
+    $optimized = app(App\Modules\CmsCore\Services\ImageOptimizer::class)
+        ->optimize(Illuminate\Http\UploadedFile::fake()->createWithContent('phone.jpg', $withExif));
+
+    expect($optimized)->not->toBeNull()
+        ->and([$optimized['width'], $optimized['height']])->toBe([200, 400]);
+});

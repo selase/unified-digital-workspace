@@ -14,6 +14,7 @@ use App\Modules\CmsCore\Models\PostMeta;
 use App\Modules\CmsCore\Models\PostType;
 use App\Modules\CmsCore\Models\Tag;
 use App\Modules\CmsCore\Services\CmsSeoService;
+use App\Modules\CmsCore\Services\ImageOptimizer;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -33,7 +34,8 @@ final class CmsPostLibraryController extends Controller
     private const BUTTON_META_KEYS = ['cta_label', 'cta_url', 'cta2_label', 'cta2_url'];
 
     public function __construct(
-        private readonly CmsSeoService $seoService
+        private readonly CmsSeoService $seoService,
+        private readonly ImageOptimizer $imageOptimizer,
     ) {}
 
     public function index(Request $request): View
@@ -189,21 +191,23 @@ final class CmsPostLibraryController extends Controller
 
     private function storeFeaturedImage(UploadedFile $file, string $uploadedBy): int
     {
-        $path = $file->store('cms/posts/featured', 'tenant');
+        $stored = $this->imageOptimizer->store($file, 'cms/posts/featured');
         $originalFilename = (string) $file->getClientOriginalName();
         $extension = $file->getClientOriginalExtension();
         $mimeType = $file->getClientMimeType();
-        $size = $file->getSize();
         $title = pathinfo($originalFilename, PATHINFO_FILENAME);
 
         $media = Media::query()->create([
             'disk' => 'tenant',
-            'path' => (string) $path,
+            'path' => $stored['path'],
             'original_filename' => $originalFilename,
-            'filename' => basename((string) $path),
+            'filename' => basename($stored['path']),
             'extension' => $extension === '' ? null : $extension,
             'mime_type' => $mimeType ?: 'application/octet-stream',
-            'size_bytes' => $size ?: 0,
+            'size_bytes' => $stored['size_bytes'],
+            'checksum_sha256' => $stored['checksum_sha256'],
+            'width' => $stored['width'],
+            'height' => $stored['height'],
             'title' => $title !== '' ? $title : null,
             'uploaded_by' => $uploadedBy,
             'source' => 'upload',

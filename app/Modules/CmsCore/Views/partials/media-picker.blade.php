@@ -102,15 +102,21 @@
                     button.className = 'group overflow-hidden rounded-lg bg-muted/30 text-start transition hover:bg-muted/50 focus-visible:outline-2 focus-visible:outline-primary';
                     if (String(item.id) === input.value) { button.setAttribute('aria-current', 'true'); button.classList.add('ring-2', 'ring-primary'); }
 
+                    // An image whose file is gone cannot be used, so its tile is dropped rather than shown broken.
                     const image = document.createElement('img');
-                    image.src = item.url;
-                    image.alt = item.title;
+                    image.src = item.thumb || item.url;
+                    image.alt = '';
                     image.loading = 'lazy';
                     image.className = 'aspect-video w-full object-cover';
+                    image.addEventListener('error', () => {
+                        button.remove();
+                        if (! grid.children.length && more.hidden) { status.hidden = false; }
+                    });
 
                     const caption = document.createElement('span');
-                    caption.className = 'block truncate px-2.5 py-2 text-xs text-foreground';
+                    caption.className = 'line-clamp-2 min-h-10 px-2.5 py-2 text-xs leading-snug text-foreground';
                     caption.textContent = item.title;
+                    button.title = item.title;
 
                     button.append(image, caption);
                     button.addEventListener('click', () => choose(item));
