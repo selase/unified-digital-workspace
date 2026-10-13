@@ -268,5 +268,14 @@ it('falls back to the website logo when the organisation has not uploaded one', 
         ->assertSuccessful()
         ->getContent();
 
-    expect($html)->toContain('class="default-logo max-h-9 max-w-[170px] object-contain" src="'.e($logo->url()).'"');
+    expect($html)->toContain('class="default-logo max-h-11 max-w-[170px] object-contain" src="'.e($logo->url()).'"');
+});
+
+it('gives people without a Gravatar an avatar of their initials', function (): void {
+    $user = User::factory()->make(['first_name' => 'Ama', 'last_name' => 'Mensah', 'email' => 'Ama@Example.org ']);
+
+    parse_str((string) parse_url($user->gravatar, PHP_URL_QUERY), $query);
+
+    expect($user->gravatar)->toStartWith('https://www.gravatar.com/avatar/'.md5('ama@example.org').'?')
+        ->and($query)->toMatchArray(['d' => 'initials', 'name' => 'Ama Mensah']);
 });
