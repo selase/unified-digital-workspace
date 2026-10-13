@@ -9,8 +9,10 @@ use App\Http\Requests\User\StoreUserRequest;
 use App\Http\Requests\User\UpdateUserRequest;
 use App\Libraries\Helper;
 use App\Models\Role;
+use App\Models\Tenant;
 use App\Models\User;
 use App\Services\Tenancy\TenantContext;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -149,17 +151,9 @@ final class UserController extends Controller
         $tenant = $this->getTenant();
         $validated = $request->validated();
 
-        $role = Role::where('id', $validated['role'])
-            ->where(function ($q) use ($tenant) {
-                $q->whereNull('tenant_id')
-                    ->orWhere('tenant_id', $tenant->id);
-            })->firstOrFail();
+        $roles = $this->assignableRoles($validated['roles'], $tenant);
 
-        if ($role->name === 'Superadmin') {
-            abort(403, 'Cannot assign Superadmin role.');
-        }
-
-        return DB::transaction(function () use ($validated, $tenant, $role) {
+        return DB::transaction(function () use ($validated, $tenant, $roles) {
             $password = Helper::generateRandomPassword();
             $user = User::create([
                 'first_name' => $validated['first_name'],
@@ -172,7 +166,7 @@ final class UserController extends Controller
             ]);
 
             setPermissionsTeamId($tenant->id);
-            $user->assignRole($role);
+            $user->assignRole($roles);
             $user->tenants()->attach($tenant->id);
 
             // Send email
@@ -198,9 +192,7 @@ final class UserController extends Controller
 
         return response()->json([
             'data' => $user,
-            'role' => [
-                'id' => $user->roles->first()?->id,
-            ],
+            'roles' => $user->roles->pluck('id'),
         ]);
     }
 
@@ -215,6 +207,8 @@ final class UserController extends Controller
             abort(403);
         }
 
+        $roles = $this->assignableRoles($validated['roles'], $tenant);
+
         $user->update([
             'first_name' => $validated['first_name'],
             'last_name' => $validated['last_name'],
@@ -223,14 +217,8 @@ final class UserController extends Controller
             'status' => $validated['status'],
         ]);
 
-        $role = Role::where('id', $validated['role'])
-            ->where(function ($q) use ($tenant) {
-                $q->whereNull('tenant_id')
-                    ->orWhere('tenant_id', $tenant->id);
-            })->firstOrFail();
-
         setPermissionsTeamId($tenant->id);
-        $user->syncRoles([$role]);
+        $user->syncRoles($roles);
 
         return response()->json([
             'status' => 'success',
@@ -246,5 +234,33 @@ final class UserController extends Controller
         }
 
         return $tenant;
+    }
+
+    /**
+     * Resolve the submitted role ids to roles this tenant may hand out:
+     * its own roles or global ones, never Superadmin.
+     *
+     * @param  array<int, int|string>  $roleIds
+     * @return Collection<int, Role>
+     */
+    private function assignableRoles(array $roleIds, Tenant $tenant): Collection
+    {
+        $roles = Role::query()
+            ->whereIn('id', $roleIds)
+            ->where(function ($query) use ($tenant) {
+                $query->whereNull('tenant_id')
+                    ->orWhere('tenant_id', $tenant->id);
+            })
+            ->get();
+
+        if ($roles->count() !== count(array_unique($roleIds))) {
+            abort(404);
+        }
+
+        if ($roles->contains('name', 'Superadmin')) {
+            abort(403, 'Cannot assign Superadmin role.');
+        }
+
+        return $roles;
     }
 }

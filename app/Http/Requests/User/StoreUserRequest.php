@@ -41,7 +41,7 @@ final class StoreUserRequest extends FormRequest
                 'array',
                 function ($attribute, $value, $fail) {
                     foreach ($value as $roleId) {
-                        $role = \App\Models\Role::findById($roleId);
+                        $role = \App\Models\Role::query()->find($roleId);
                         if (! $role) {
                             $fail('The selected role is invalid.');
 
