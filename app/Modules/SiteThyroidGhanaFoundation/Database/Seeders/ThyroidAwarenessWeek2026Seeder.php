@@ -137,6 +137,7 @@ final class ThyroidAwarenessWeek2026Seeder extends Seeder
         $this->call(ThyroidAwarenessWeek2026GallerySeeder::class);
         $this->call(ThyroidFounderDetailsSeeder::class);
         $this->call(ThyroidContactLinksSeeder::class);
+        $this->call(ThyroidEnquiryFormsSeeder::class);
 
         CmsSitemapService::forget((string) $tenant->id);
     }

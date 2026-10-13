@@ -4,13 +4,16 @@ declare(strict_types=1);
 
 use App\Models\TenantModule;
 use App\Models\User;
+use App\Modules\CmsCore\Mail\SiteEnquiryReceived;
 use App\Modules\CmsCore\Models\Media;
 use App\Modules\CmsCore\Models\Post;
+use App\Modules\CmsCore\Support\EnquiryToken;
 use App\Modules\SiteThyroidGhanaFoundation\Database\Seeders\ThyroidAwarenessWeek2026GallerySeeder;
 use App\Modules\SiteThyroidGhanaFoundation\Database\Seeders\ThyroidAwarenessWeek2026Seeder;
 use App\Modules\SiteThyroidGhanaFoundation\Database\Seeders\ThyroidContactLinksSeeder;
 use App\Modules\SiteThyroidGhanaFoundation\Database\Seeders\ThyroidFounderDetailsSeeder;
 use App\Modules\SiteThyroidGhanaFoundation\Database\Seeders\ThyroidGhanaSeeder;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 
 beforeEach(function (): void {
@@ -236,4 +239,36 @@ it('links contact details once and never inside an existing link', function (): 
     expect(mb_substr_count($linked, 'mailto:'))->toBe(1)
         ->and(mb_substr_count($linked, 'tel:+233243376304'))->toBe(1)
         ->and(ThyroidContactLinksSeeder::link($linked, 'Test'))->toBe($linked);
+});
+
+it('puts the right email form on each action page and nowhere else', function (): void {
+    foreach (['volunteer' => 'volunteer', 'membership' => 'membership', 'partner-us' => 'partnership', 'donate' => 'donation'] as $slug => $type) {
+        $this->get('https://thyroidghanafoundation.org/'.$slug)
+            ->assertOk()
+            ->assertSee('id="enquiry"', false)
+            ->assertSee('name="type" value="'.$type.'"', false);
+    }
+
+    $this->get('https://thyroidghanafoundation.org/partner-us')->assertSee('name="organisation"', false);
+    $this->get('https://thyroidghanafoundation.org/volunteer')->assertDontSee('name="organisation"', false);
+
+    foreach (['about', 'the-founder', 'faq'] as $slug) {
+        $this->get('https://thyroidghanafoundation.org/'.$slug)->assertOk()->assertDontSee('id="enquiry"', false);
+    }
+});
+
+it('emails enquiries from the foundation site to the foundation inbox', function (): void {
+    Mail::fake();
+
+    $this->postJson('https://thyroidghanafoundation.org/enquiries', [
+        'type' => 'membership',
+        'name' => 'Ama Boateng',
+        'email' => 'ama@example.test',
+        'message' => 'I live with Hashimoto and would like to join the community.',
+        'form_token' => EnquiryToken::issue(time() - 10),
+    ])->assertOk();
+
+    Mail::assertSent(SiteEnquiryReceived::class, fn (SiteEnquiryReceived $mail): bool => $mail->hasTo('info@thyroidghanafoundation.org')
+        && $mail->hasReplyTo('ama@example.test')
+        && $mail->envelope()->subject === '[Thyroid Ghana Foundation] Membership enquiry from Ama Boateng');
 });
