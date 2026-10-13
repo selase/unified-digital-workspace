@@ -5,6 +5,7 @@
     $selectedTags = collect(old('tag_ids', $post?->tags?->pluck('id')->all() ?? []))->map(fn ($id) => (int) $id)->all();
     $selectedMedia = collect(old('media_ids', $post?->media?->pluck('id')->all() ?? []))->map(fn ($id) => (int) $id)->all();
     $selectedFeaturedMediaId = old('featured_media_id', $post?->featured_media_id);
+    $selectedFeaturedMedia = filled($selectedFeaturedMediaId) ? \App\Modules\CmsCore\Models\Media::query()->find((int) $selectedFeaturedMediaId) : null;
     $seoMeta = $seoMeta ?? ['seo_title' => '', 'seo_description' => '', 'seo_canonical' => ''];
     $mediaMeta = $mediaMeta ?? ['video_url' => '', 'audio_url' => '', 'poster_media_id' => ''];
     $buttonMeta = $buttonMeta ?? ['cta_label' => '', 'cta_url' => '', 'cta2_label' => '', 'cta2_url' => ''];
@@ -143,27 +144,12 @@
         @error('parent_id') <p class="text-xs text-destructive mt-1">{{ $message }}</p> @enderror
     </div>
 
-    <div class="kt-form-item">
-        <label class="kt-form-label">Featured Media</label>
+    <div class="kt-form-item lg:col-span-2">
+        <label class="kt-form-label">Featured Image</label>
         <div class="kt-form-control">
-            <select class="kt-select" data-kt-select="true" name="featured_media_id">
-                <option value="">None</option>
-                @foreach($mediaItems as $mediaItem)
-                    <option value="{{ $mediaItem->id }}" @selected((int) $selectedFeaturedMediaId === $mediaItem->id)>
-                        {{ $mediaItem->title ?: $mediaItem->original_filename ?: $mediaItem->filename ?: 'Media #'.$mediaItem->id }}
-                    </option>
-                @endforeach
-            </select>
+            @include('cms-core::partials.media-picker', ['name' => 'featured_media_id', 'selected' => $selectedFeaturedMedia, 'uploadName' => 'featured_image'])
         </div>
         @error('featured_media_id') <p class="text-xs text-destructive mt-1">{{ $message }}</p> @enderror
-    </div>
-
-    <div class="kt-form-item">
-        <label class="kt-form-label">Upload Featured Image</label>
-        <div class="kt-form-control">
-            <input class="kt-input file:mr-3 file:rounded-lg file:border-0 file:bg-primary/10 file:px-3 file:py-2 file:text-sm file:font-medium file:text-primary hover:file:bg-primary/20" name="featured_image" type="file" accept="image/*">
-        </div>
-        <p class="mt-1 text-xs text-muted-foreground">JPEG, PNG, WebP up to 10MB. Upload overrides selected featured media.</p>
         @error('featured_image') <p class="text-xs text-destructive mt-1">{{ $message }}</p> @enderror
     </div>
 

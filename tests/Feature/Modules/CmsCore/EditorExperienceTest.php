@@ -187,3 +187,86 @@ it('describes activity in plain words without exposing record contents', functio
     expect(ActivityLogPresenter::describe($signIn))->toBe(['summary' => 'Signed in', 'details' => null])
         ->and(ActivityLogPresenter::describe($edit))->toBe(['summary' => 'Updated a post', 'details' => 'Changed: title']);
 });
+
+it('serves the image picker a searchable page of images only', function (): void {
+    [$editor, $tenant] = cmsEditorWith(['cms.posts.view', 'cms.media.view']);
+
+    $media = fn (array $attributes) => App\Modules\CmsCore\Database\Factories\MediaFactory::new()
+        ->forTenant($tenant->id)
+        ->create($attributes + ['uploaded_by' => $editor->uuid, 'mime_type' => 'image/jpeg']);
+
+    $media(['title' => 'Awareness Week group photo', 'filename' => 'group.jpg']);
+    $media(['title' => 'Annual report', 'filename' => 'report.pdf', 'mime_type' => 'application/pdf']);
+    foreach (range(1, 25) as $number) {
+        $media(['title' => "Clinic visit {$number}", 'filename' => "clinic-{$number}.jpg"]);
+    }
+
+    $request = fn (array $query = []) => $this->actingAs($editor)
+        ->withSession(['active_tenant_id' => $tenant->id])
+        ->getJson(route('cms-core.media.picker', $query));
+
+    $firstPage = $request()->assertSuccessful()->json();
+
+    expect($firstPage['data'])->toHaveCount(24)
+        ->and($firstPage['has_more'])->toBeTrue()
+        ->and(collect($firstPage['data'])->pluck('title'))->not->toContain('Annual report');
+
+    $found = $request(['search' => 'awareness WEEK'])->json();
+
+    expect($found['has_more'])->toBeFalse()
+        ->and(collect($found['data'])->pluck('title')->all())->toBe(['Awareness Week group photo'])
+        ->and($found['data'][0]['url'])->toBeString()->not->toBeEmpty();
+});
+
+it('refuses the image picker to someone who cannot see media', function (): void {
+    [$editor, $tenant] = cmsEditorWith(['cms.posts.view']);
+
+    $this->actingAs($editor)
+        ->withSession(['active_tenant_id' => $tenant->id])
+        ->getJson(route('cms-core.media.picker'))
+        ->assertForbidden();
+});
+
+it('shows the current featured image on the post edit page', function (): void {
+    [$editor, $tenant] = cmsEditorWith(['cms.posts.view', 'cms.posts.update', 'cms.media.view']);
+
+    $image = App\Modules\CmsCore\Database\Factories\MediaFactory::new()->forTenant($tenant->id)->create([
+        'uploaded_by' => $editor->uuid,
+        'mime_type' => 'image/jpeg',
+        'title' => 'VIP group photo',
+    ]);
+    $post = PostFactory::new()->forTenant($tenant->id)->create(['author_id' => $editor->uuid, 'featured_media_id' => $image->id]);
+
+    $this->actingAs($editor)
+        ->withSession(['active_tenant_id' => $tenant->id])
+        ->get(route('cms-core.posts.edit', $post))
+        ->assertSuccessful()
+        ->assertSee('VIP group photo')
+        ->assertSee('src="'.e($image->url()).'"', false)
+        ->assertSee('name="featured_media_id" value="'.$image->id.'"', false)
+        ->assertSee('Choose from library');
+});
+
+it('falls back to the website logo when the organisation has not uploaded one', function (): void {
+    [$editor, $tenant] = cmsEditorWith(['cms.posts.view'], ['name' => 'Thyroid Ghana Foundation', 'logo' => null]);
+
+    $logo = App\Modules\CmsCore\Database\Factories\MediaFactory::new()->forTenant($tenant->id)->create([
+        'uploaded_by' => $editor->uuid,
+        'mime_type' => 'image/png',
+        'title' => 'Site logo',
+    ]);
+    App\Modules\CmsCore\Models\Setting::query()->create([
+        'tenant_id' => $tenant->id,
+        'group' => 'theme',
+        'key' => 'logo_media_id',
+        'value' => $logo->id,
+    ]);
+
+    $html = $this->actingAs($editor)
+        ->withSession(['active_tenant_id' => $tenant->id])
+        ->get('/cms-core')
+        ->assertSuccessful()
+        ->getContent();
+
+    expect($html)->toContain('class="default-logo max-h-9 max-w-[170px] object-contain" src="'.e($logo->url()).'"');
+});

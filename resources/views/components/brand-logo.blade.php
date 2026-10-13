@@ -2,16 +2,21 @@
 
 @php
     /**
-     * The organisation's own logo when one is uploaded, otherwise a wordmark
-     * built from its name (or the platform name outside an organisation).
+     * The organisation's own logo when one is uploaded, then the logo of its
+     * public website if it has one, otherwise a wordmark built from its name
+     * (or the platform name outside an organisation).
      * Error pages can render before an organisation is resolved, so every
      * lookup here must tolerate a missing or failing tenant context.
      */
     try {
         $brandTenant = app(\App\Services\Tenancy\TenantContext::class)->getTenant();
         $brandLogoUrl = $brandTenant?->logo_url;
+
+        if ($brandTenant && blank($brandLogoUrl)) {
+            $brandLogoUrl = app(\App\Modules\CmsCore\Services\CmsThemeService::class)->logo()?->url();
+        }
     } catch (\Throwable) {
-        $brandTenant = null;
+        $brandTenant ??= null;
         $brandLogoUrl = null;
     }
 
