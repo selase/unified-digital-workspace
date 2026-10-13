@@ -60,11 +60,20 @@ final class Helper
     }
 
     // generate avatar image
-    public static function generateGravatar($email, $size = 200): string
+    /**
+     * Gravatar URL for an email. People without a Gravatar get a tile with
+     * their initials (from $name) instead of Gravatar's generic logo.
+     */
+    public static function generateGravatar($email, $size = 200, ?string $name = null): string
     {
-        $hash = md5(mb_strtolower(mb_trim($email)));
+        $hash = md5(mb_strtolower(mb_trim((string) $email)));
+        $query = ['s' => $size, 'd' => 'initials'];
 
-        return "https://www.gravatar.com/avatar/$hash?s=$size";
+        if (filled($name) && mb_trim($name) !== '') {
+            $query['name'] = mb_trim($name);
+        }
+
+        return "https://www.gravatar.com/avatar/$hash?".http_build_query($query);
     }
 
     public static function generateUiAvatar(string $name, int $size = 128): string

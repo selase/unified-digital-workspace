@@ -29,8 +29,11 @@
     {{-- The sidebar's own CSS shows .default-logo or .small-logo depending on whether it is collapsed,
          so those two wrappers must not carry display utilities of their own. --}}
     @if($brandLogoUrl)
-        <img class="default-logo max-h-9 max-w-[170px] object-contain" src="{{ $brandLogoUrl }}" alt="{{ $brandName }}"/>
-        <img class="small-logo size-8 max-w-none object-contain" src="{{ $brandLogoUrl }}" alt="{{ $brandName }}"/>
+        {{-- Logos are usually wide, so the collapsed sidebar (about 80px) shows the initial badge rather than a shrunken, unreadable image. --}}
+        <img class="default-logo max-h-11 max-w-[170px] object-contain" src="{{ $brandLogoUrl }}" alt="{{ $brandName }}"/>
+        <span class="small-logo" title="{{ $brandName }}">
+            <span class="{{ $badgeClasses }}">{{ $brandInitial }}</span>
+        </span>
     @else
         <span class="default-logo">
             <span class="flex items-center gap-2.5">
@@ -43,7 +46,7 @@
         </span>
     @endif
 @elseif($brandLogoUrl)
-    <img {{ $attributes->merge(['class' => 'max-h-10 max-w-[200px] object-contain']) }} src="{{ $brandLogoUrl }}" alt="{{ $brandName }}"/>
+    <img {{ $attributes->merge(['class' => 'max-h-16 max-w-[220px] object-contain']) }} src="{{ $brandLogoUrl }}" alt="{{ $brandName }}"/>
 @else
     <span {{ $attributes->merge(['class' => 'inline-flex items-center gap-2.5']) }}>
         <span class="{{ $badgeClasses }}" aria-hidden="true">{{ $brandInitial }}</span>

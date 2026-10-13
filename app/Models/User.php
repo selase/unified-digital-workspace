@@ -150,7 +150,7 @@ final class User extends Authenticatable
     protected function gravatar(): Attribute
     {
         return Attribute::make(
-            get: fn (): string => Helper::generateGravatar($this->email),
+            get: fn (): string => Helper::generateGravatar($this->email, 200, $this->displayName()),
         );
     }
 }
