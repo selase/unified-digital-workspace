@@ -27,9 +27,9 @@ final class ActivityLogPresenter
     ];
 
     /**
-     * @return array{summary: string, details: string|null}
+     * @return array{summary: string, details: string|null}|null Null for bookkeeping rows not worth showing.
      */
-    public static function describe(Activity $activity): array
+    public static function describe(Activity $activity): ?array
     {
         if ($activity->subject_type === UserLoginHistory::class) {
             return ['summary' => 'Signed in', 'details' => null];
@@ -38,7 +38,8 @@ final class ActivityLogPresenter
         $changedFields = self::changedFields($activity);
 
         if ($activity->subject_type === User::class && $activity->event === 'updated' && $changedFields === []) {
-            return ['summary' => 'Sign-in recorded', 'details' => null];
+            // Signing in stamps the user's last-login fields; the sign-in itself is already listed.
+            return null;
         }
 
         $subject = self::subjectLabel($activity->subject_type);
@@ -66,7 +67,8 @@ final class ActivityLogPresenter
 
         $label = Str::lower(Str::headline(class_basename($subjectType)));
 
-        return (in_array($label[0], ['a', 'e', 'i', 'o', 'u'], true) ? 'an ' : 'a ').$label;
+        // "u" is left out on purpose: the record names that start with it (user, unit, usage) take "a".
+        return (in_array($label[0], ['a', 'e', 'i', 'o'], true) ? 'an ' : 'a ').$label;
     }
 
     /**

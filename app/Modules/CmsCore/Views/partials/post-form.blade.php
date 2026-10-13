@@ -235,9 +235,9 @@
         <div class="kt-form-item">
             <label class="kt-form-label">Display order</label>
             <div class="kt-form-control">
-                <input class="kt-input" name="sort_order" type="number" min="0" step="1" value="{{ old('sort_order', $post?->sort_order ?? 0) }}">
+                <input class="kt-input" name="sort_order" type="number" step="1" value="{{ old('sort_order', $post?->sort_order ?? 0) }}">
             </div>
-            <p class="mt-1 text-xs text-muted-foreground">Lower numbers appear first.</p>
+            <p class="mt-1 text-xs text-muted-foreground">Lower numbers appear first. Negative numbers are allowed.</p>
             @error('sort_order') <p class="text-xs text-destructive mt-1">{{ $message }}</p> @enderror
         </div>
     </div>

@@ -279,3 +279,109 @@ it('gives people without a Gravatar an avatar of their initials', function (): v
     expect($user->gravatar)->toStartWith('https://www.gravatar.com/avatar/'.md5('ama@example.org').'?')
         ->and($query)->toMatchArray(['d' => 'initials', 'name' => 'Ama Mensah']);
 });
+
+it('saves a slide whose display order is negative', function (): void {
+    [$editor, $tenant] = cmsEditorWith(['cms.posts.view', 'cms.posts.update']);
+    $post = PostFactory::new()->forTenant($tenant->id)->create(['author_id' => $editor->uuid, 'sort_order' => -3]);
+
+    $this->actingAs($editor)
+        ->withSession(['active_tenant_id' => $tenant->id])
+        ->put(route('cms-core.posts.update', $post), [
+            'title' => 'Renamed slide',
+            'post_type_id' => $post->post_type_id,
+            'status' => $post->status,
+            'sort_order' => -3,
+        ])
+        ->assertSessionHasNoErrors()
+        ->assertRedirect();
+
+    expect($post->fresh()->title)->toBe('Renamed slide')
+        ->and($post->fresh()->sort_order)->toBe(-3);
+});
+
+it('serves a small cached preview of a library image', function (): void {
+    Illuminate\Support\Facades\Storage::fake('public');
+    [$editor, $tenant] = cmsEditorWith(['cms.posts.view', 'cms.media.view']);
+
+    $canvas = imagecreatetruecolor(1600, 900);
+    ob_start();
+    imagejpeg($canvas, null, 95);
+    $original = (string) ob_get_clean();
+    Illuminate\Support\Facades\Storage::disk('public')->put('cms/media/photo.jpg', $original);
+
+    $media = App\Modules\CmsCore\Database\Factories\MediaFactory::new()->forTenant($tenant->id)->create([
+        'uploaded_by' => $editor->uuid,
+        'disk' => 'public',
+        'path' => 'cms/media/photo.jpg',
+        'mime_type' => 'image/jpeg',
+    ]);
+
+    $request = fn () => $this->actingAs($editor)
+        ->withSession(['active_tenant_id' => $tenant->id])
+        ->get(route('cms-core.media.thumb', $media));
+
+    $response = $request()->assertSuccessful()->assertHeader('Content-Type', 'image/jpeg');
+    [$width, $height] = getimagesizefromstring($response->getContent());
+
+    $variant = App\Modules\CmsCore\Models\MediaVariant::query()->where('media_id', $media->id)->where('variant', 'thumb')->firstOrFail();
+
+    expect([$width, $height])->toBe([480, 270])
+        ->and(mb_strlen($response->getContent(), '8bit'))->toBeLessThan(mb_strlen($original, '8bit'))
+        ->and(Illuminate\Support\Facades\Storage::disk('public')->exists($variant->path))->toBeTrue();
+
+    // The second request is answered from the stored preview: the original can be gone.
+    Illuminate\Support\Facades\Storage::disk('public')->delete('cms/media/photo.jpg');
+    $request()->assertSuccessful();
+
+    expect(App\Modules\CmsCore\Models\MediaVariant::query()->where('media_id', $media->id)->count())->toBe(1);
+
+    $picker = $this->actingAs($editor)
+        ->withSession(['active_tenant_id' => $tenant->id])
+        ->getJson(route('cms-core.media.picker'))
+        ->json('data.0.thumb');
+
+    expect($picker)->toBe(route('cms-core.media.thumb', $media));
+});
+
+it('answers not found for a preview when the image file is missing, and refuses people who cannot see media', function (): void {
+    Illuminate\Support\Facades\Storage::fake('public');
+    [$editor, $tenant] = cmsEditorWith(['cms.posts.view', 'cms.media.view']);
+
+    $media = App\Modules\CmsCore\Database\Factories\MediaFactory::new()->forTenant($tenant->id)->create([
+        'uploaded_by' => $editor->uuid,
+        'disk' => 'public',
+        'path' => 'cms/media/gone.jpg',
+        'mime_type' => 'image/jpeg',
+    ]);
+
+    $this->actingAs($editor)
+        ->withSession(['active_tenant_id' => $tenant->id])
+        ->get(route('cms-core.media.thumb', $media))
+        ->assertNotFound();
+
+    $editor->revokePermissionTo('cms.media.view');
+    app(Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+
+    $this->actingAs($editor->fresh())
+        ->withSession(['active_tenant_id' => $tenant->id])
+        ->get(route('cms-core.media.thumb', $media))
+        ->assertForbidden();
+});
+
+it('leaves the last-login bookkeeping row out of the activity list', function (): void {
+    $stamp = new Activity([
+        'description' => 'This model has been updated',
+        'event' => 'updated',
+        'subject_type' => User::class,
+        'properties' => ['attributes' => ['last_login_at' => now(), 'last_login_ip' => '10.0.0.1', 'updated_at' => now()]],
+    ]);
+    $rename = new Activity([
+        'description' => 'This model has been updated',
+        'event' => 'updated',
+        'subject_type' => User::class,
+        'properties' => ['attributes' => ['first_name' => 'Ama']],
+    ]);
+
+    expect(ActivityLogPresenter::describe($stamp))->toBeNull()
+        ->and(ActivityLogPresenter::describe($rename))->toBe(['summary' => 'Updated a user', 'details' => 'Changed: first name']);
+});

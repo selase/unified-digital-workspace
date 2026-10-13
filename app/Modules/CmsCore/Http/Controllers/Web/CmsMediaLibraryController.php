@@ -6,10 +6,12 @@ namespace App\Modules\CmsCore\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Modules\CmsCore\Models\Media;
+use App\Modules\CmsCore\Services\MediaThumbnailService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
@@ -73,8 +75,26 @@ final class CmsMediaLibraryController extends Controller
                 'id' => $media->id,
                 'title' => (string) ($media->title ?: $media->original_filename ?: $media->filename),
                 'url' => $media->url(),
+                'thumb' => route('cms-core.media.thumb', $media),
             ])->all(),
             'has_more' => $images->hasMorePages(),
+        ]);
+    }
+
+    /**
+     * A small preview of one library image, for grids that show many at once.
+     */
+    public function thumb(Request $request, Media $media, MediaThumbnailService $thumbnails): Response
+    {
+        abort_if(! $request->user()?->can('cms.media.view'), 403);
+
+        $thumbnail = $thumbnails->bytes($media);
+
+        abort_if($thumbnail === null, 404);
+
+        return response($thumbnail['contents'], 200, [
+            'Content-Type' => $thumbnail['mime'],
+            'Cache-Control' => 'private, max-age=604800',
         ]);
     }
 

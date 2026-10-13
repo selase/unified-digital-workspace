@@ -64,7 +64,7 @@ final class PostUpdateRequest extends FormRequest
                 'integer',
                 Rule::exists(Post::class, 'id')->where('tenant_id', $tenantId),
             ],
-            'sort_order' => ['sometimes', 'integer', 'min:0'],
+            'sort_order' => ['sometimes', 'integer', 'between:-100000,100000'],
             'category_ids' => ['nullable', 'array'],
             'category_ids.*' => [
                 'integer',
@@ -103,7 +103,7 @@ final class PostUpdateRequest extends FormRequest
             'cta2_url.required_with' => 'Add a link for the second button, or clear its text.',
             'cta_url.regex' => 'The first button link must start with / or https://.',
             'cta2_url.regex' => 'The second button link must start with / or https://.',
-            'sort_order.min' => 'Display order cannot be negative.',
+            'sort_order.integer' => 'Display order must be a whole number.',
         ];
     }
 
