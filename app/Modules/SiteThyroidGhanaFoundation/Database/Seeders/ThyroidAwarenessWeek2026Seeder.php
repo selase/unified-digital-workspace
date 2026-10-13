@@ -284,7 +284,7 @@ final class ThyroidAwarenessWeek2026Seeder extends Seeder
     private function figure(string $photo, string $caption, string $class = ''): string
     {
         $media = $this->media[$photo];
-        $url = route('cms-core.media.serve', $media, false);
+        $url = $media->serveUrl(false);
         $alt = htmlspecialchars((string) $media->alt_text, ENT_QUOTES);
         $caption = htmlspecialchars($caption, ENT_QUOTES);
         $class = $class !== '' ? $class : ((int) $media->height > (int) $media->width ? 'mx-auto max-w-md' : '');

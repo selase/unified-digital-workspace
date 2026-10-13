@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Modules\CmsCore\Models\Media;
 use App\Modules\CmsCore\Models\Post;
 use App\Modules\CmsCore\Models\PostRevision;
 use App\Modules\CmsCore\Services\CmsThemeService;
@@ -73,4 +74,20 @@ test('theme service returns sanitized custom css', function () {
     ]);
 
     expect($theme->customCss())->not->toContain('<script')->not->toContain('</style')->toContain('p{color:red}');
+});
+
+test('media urls carry a content hash so replaced files are not stuck in browser caches', function () {
+    $media = new Media;
+    $media->uuid = '6bda4ef5-dcec-4a20-8b1c-fc24ffbbce27';
+    $media->disk = 'tenant';
+
+    expect($media->serveUrl(false))->toBe('/cms-media/6bda4ef5-dcec-4a20-8b1c-fc24ffbbce27');
+
+    $media->checksum_sha256 = 'abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789';
+
+    expect($media->serveUrl(false))->toBe('/cms-media/6bda4ef5-dcec-4a20-8b1c-fc24ffbbce27?v=abcdef012345')
+        ->and($media->url())->toEndWith('/cms-media/6bda4ef5-dcec-4a20-8b1c-fc24ffbbce27?v=abcdef012345');
+
+    $media->checksum_sha256 = str_repeat('0', 64);
+    expect($media->serveUrl(false))->not->toContain('abcdef012345');
 });

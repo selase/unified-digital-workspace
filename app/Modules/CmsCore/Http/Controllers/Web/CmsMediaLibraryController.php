@@ -180,7 +180,7 @@ final class CmsMediaLibraryController extends Controller
         ]);
 
         return response()->json([
-            'url' => route('cms-core.media.serve', $media),
+            'url' => $media->serveUrl(),
             'id' => $media->id,
             'alt' => $media->title,
         ]);
