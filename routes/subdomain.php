@@ -13,11 +13,14 @@ Route::group(['middleware' => ['auth', '2fa_challenge', 'onboarding']], function
         ->name('tenant.dashboard');
 
     Route::get('/billing', [App\Http\Controllers\Billing\BillingController::class, 'index'])
-        ->name('tenant.billing.index');
+        ->name('tenant.billing.index')
+        ->middleware('can:core.settings.manage');
     Route::get('/pricing', [App\Http\Controllers\Billing\BillingController::class, 'pricing'])
-        ->name('tenant.pricing');
+        ->name('tenant.pricing')
+        ->middleware('can:core.settings.manage');
     Route::post('/billing/checkout', [App\Http\Controllers\Billing\CheckoutController::class, 'store'])
-        ->name('tenant.billing.checkout');
+        ->name('tenant.billing.checkout')
+        ->middleware('can:core.settings.manage');
 
     Route::get('/settings', [OrgSettingsController::class, 'index'])
         ->name('tenant.settings.index');
@@ -27,9 +30,11 @@ Route::group(['middleware' => ['auth', '2fa_challenge', 'onboarding']], function
         ->name('tenant.settings.verify-domain');
 
     Route::get('/settings/billing', [App\Http\Controllers\Tenant\BillingSettingsController::class, 'index'])
-        ->name('tenant.settings.billing');
+        ->name('tenant.settings.billing')
+        ->middleware('can:core.settings.manage');
     Route::post('/settings/billing', [App\Http\Controllers\Tenant\BillingSettingsController::class, 'update'])
-        ->name('tenant.settings.billing.update');
+        ->name('tenant.settings.billing.update')
+        ->middleware('can:core.settings.manage');
 
     Route::get('/settings/payments', [App\Http\Controllers\Tenant\PaymentSettingsController::class, 'index'])
         ->name('tenant.settings.payments.index');
@@ -44,7 +49,8 @@ Route::group(['middleware' => ['auth', '2fa_challenge', 'onboarding']], function
         ->only(['index', 'store', 'destroy']);
     Route::resource('llm-usage', App\Http\Controllers\Tenant\LlmUsageController::class)
         ->names('tenant.llm-usage')
-        ->only(['index']);
+        ->only(['index'])
+        ->middleware('can:core.settings.manage');
 
     // Module catalog — tenant admins enable/disable optional modules subject to
     // package entitlements (handled by ModuleManager::checkEntitlements).
@@ -56,10 +62,10 @@ Route::group(['middleware' => ['auth', '2fa_challenge', 'onboarding']], function
         ->name('tenant.modules.disable');
 
     // Merchant Finance & Sales
-    Route::get('/finance', [App\Http\Controllers\Tenant\FinanceController::class, 'index'])->name('tenant.finance.index');
-    Route::post('/finance/refund/{transaction}', [App\Http\Controllers\Tenant\FinanceController::class, 'refund'])->name('tenant.finance.refund');
+    Route::get('/finance', [App\Http\Controllers\Tenant\FinanceController::class, 'index'])->name('tenant.finance.index')->middleware('can:core.settings.manage');
+    Route::post('/finance/refund/{transaction}', [App\Http\Controllers\Tenant\FinanceController::class, 'refund'])->name('tenant.finance.refund')->middleware('can:core.settings.manage');
 
-    Route::prefix('llm-config')->name('tenant.llm-config.')->group(function () {
+    Route::prefix('llm-config')->name('tenant.llm-config.')->middleware('can:core.settings.manage')->group(function () {
         Route::get('/', [App\Http\Controllers\Tenant\LlmConfigController::class, 'index'])->name('index');
         Route::put('/', [App\Http\Controllers\Tenant\LlmConfigController::class, 'update'])->name('update');
         Route::delete('/{provider}', [App\Http\Controllers\Tenant\LlmConfigController::class, 'destroy'])->name('destroy');
@@ -74,5 +80,6 @@ Route::group(['middleware' => ['auth', '2fa_challenge', 'onboarding']], function
 
     // LLM Billing
     Route::post('/billing/llm-checkout', [App\Http\Controllers\Tenant\LlmCheckoutController::class, 'store'])
-        ->name('billing.llm-checkout');
+        ->name('billing.llm-checkout')
+        ->middleware('can:core.settings.manage');
 });

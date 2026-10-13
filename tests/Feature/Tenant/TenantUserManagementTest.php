@@ -103,3 +103,47 @@ test('a user cannot be given another tenant\'s role or the Superadmin role', fun
 
     expect(User::query()->where('email', 'ama@hospital-a.test')->exists())->toBeFalse();
 });
+
+test('a user with only content permissions is kept out of organisation, billing and developer pages', function () {
+    setPermissionsTeamId($this->tenant->id);
+    $this->editorRole->givePermissionTo(['core.dashboard.access']);
+
+    $editor = User::factory()->create(['tenant_id' => $this->tenant->id]);
+    $editor->tenants()->attach($this->tenant->id);
+    $editor->assignRole($this->editorRole);
+
+    $routes = [
+        'tenant.settings.index', 'tenant.users.index', 'tenant.roles.index', 'tenant.modules.index',
+        'tenant.billing.index', 'tenant.pricing', 'tenant.settings.billing', 'tenant.settings.payments.index',
+        'tenant.finance.index', 'tenant.api-keys.index', 'tenant.llm-usage.index', 'tenant.llm-config.index',
+    ];
+
+    foreach ($routes as $name) {
+        $this->actingAs($editor)
+            ->get(route($name, ['subdomain' => $this->tenant->slug]))
+            ->assertForbidden();
+    }
+
+    $this->actingAs($editor)
+        ->post(route('tenant.settings.billing.update', ['subdomain' => $this->tenant->slug]), ['billing_email' => 'x@example.com'])
+        ->assertForbidden();
+
+    $navigation = app(App\Services\Navigation\WorkspaceNavigation::class)
+        ->forRequest(tap(request(), fn ($request) => $request->setUserResolver(fn () => $editor)));
+
+    $visibleLinks = collect($navigation['sidebar']['tenant_groups'])->flatMap(fn (array $group) => $group['items'])->pluck('label')->all();
+
+    expect($visibleLinks)->toBe(['My Tenants']);
+});
+
+test('an organisation admin still reaches billing settings and sees the organisation menu', function () {
+    $this->actingAs($this->orgSuperadmin)
+        ->get(route('tenant.settings.billing', ['subdomain' => $this->tenant->slug]))
+        ->assertOk();
+
+    $navigation = app(App\Services\Navigation\WorkspaceNavigation::class)
+        ->forRequest(tap(request(), fn ($request) => $request->setUserResolver(fn () => $this->orgSuperadmin)));
+
+    expect(collect($navigation['sidebar']['tenant_groups'])->pluck('label')->all())
+        ->toContain('Organization', 'Finance', 'Developer');
+});
