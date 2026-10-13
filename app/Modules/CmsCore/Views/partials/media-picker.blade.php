@@ -113,9 +113,13 @@
                         if (! grid.children.length && more.hidden) { status.hidden = false; }
                     });
 
+                    // The clamp sits on an inner element: on the padded one, part of a third line shows in the padding.
                     const caption = document.createElement('span');
-                    caption.className = 'line-clamp-2 min-h-10 px-2.5 py-2 text-xs leading-snug text-foreground';
-                    caption.textContent = item.title;
+                    caption.className = 'block px-2.5 py-2';
+                    const captionText = document.createElement('span');
+                    captionText.className = 'line-clamp-2 min-h-8 text-xs leading-4 text-foreground';
+                    captionText.textContent = item.title;
+                    caption.append(captionText);
                     button.title = item.title;
 
                     button.append(image, caption);
