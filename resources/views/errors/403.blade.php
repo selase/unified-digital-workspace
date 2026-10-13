@@ -1,12 +1,12 @@
 @extends('errors::custom-layout')
 
-@section('title', __('Forbidden'))
+@section('title', __('You don\'t have access to this page'))
 
 @section('code', '403')
 
-@section('message', __($exception->getMessage() ?: 'Forbidden'))
+@php
+    $forbiddenDetail = $exception->getMessage();
+    $hasUsefulDetail = filled($forbiddenDetail) && ! in_array($forbiddenDetail, ['Forbidden', 'This action is unauthorized.'], true);
+@endphp
 
-
-{{--  @section('image')
-    <div class="d-flex flex-row-auto bgi-no-repeat bgi-position-x-center bgi-size-contain bgi-position-y-bottom min-h-100px min-h-lg-350px" style="background-image: url({{ asset('assets/media/illustrations/sketchy-1/17.png') }}"></div>
-@endsection  --}}
+@section('message', $hasUsefulDetail ? __($forbiddenDetail) : __('Your account isn\'t allowed to open this page. If you think you should have access, ask an administrator of your organisation.'))

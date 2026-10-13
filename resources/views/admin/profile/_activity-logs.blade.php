@@ -2,7 +2,7 @@
     <div class="mb-4 flex items-center justify-between gap-3">
         <div>
             <h2 class="text-lg font-semibold text-foreground">Activity Logs</h2>
-            <p class="text-xs text-muted-foreground">Recorded user actions and associated metadata.</p>
+            <p class="text-xs text-muted-foreground">The most recent things this account did.</p>
         </div>
     </div>
 
@@ -10,29 +10,22 @@
         <table class="kt-table table-auto kt-table-border" id="activity-table">
             <thead>
                 <tr class="text-xs uppercase text-muted-foreground">
-                    <th>{{ __('locale.labels.log_id') }}</th>
-                    <th>{{ __('locale.labels.location') }}</th>
-                    <th>{{ __('locale.labels.event') }}</th>
-                    <th>{{ __('locale.labels.subject_type') }}</th>
-                    <th>{{ __('locale.labels.created_at') }}</th>
-                    <th>{{ __('locale.labels.properties') }}</th>
+                    <th>When</th>
+                    <th>What happened</th>
+                    <th>Details</th>
                 </tr>
             </thead>
             <tbody class="text-sm text-foreground">
                 @forelse ($activityLogs as $activityLog)
+                    @php($entry = \App\Libraries\ActivityLogPresenter::describe($activityLog))
                     <tr>
-                        <td>{{ $activityLog->id }}</td>
-                        <td>{{ $activityLog->log_name }}</td>
-                        <td>{{ $activityLog->description }}</td>
-                        <td>{{ $activityLog->subject_type }}</td>
-                        <td>{{ \App\Libraries\Helper::getHumanDate($activityLog->created_at) }}</td>
-                        <td>
-                            <textarea rows="5" class="kt-textarea min-w-72" disabled>{{ $activityLog->properties }}</textarea>
-                        </td>
+                        <td class="whitespace-nowrap">{{ \App\Libraries\Helper::getHumanDate($activityLog->created_at) }}</td>
+                        <td>{{ $entry['summary'] }}</td>
+                        <td class="text-muted-foreground">{{ $entry['details'] ?? '—' }}</td>
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="6" class="py-8 text-center text-muted-foreground">No activity logs found.</td>
+                        <td colspan="3" class="py-8 text-center text-muted-foreground">No activity logs found.</td>
                     </tr>
                 @endforelse
             </tbody>

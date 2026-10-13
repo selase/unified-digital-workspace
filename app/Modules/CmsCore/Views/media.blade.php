@@ -12,7 +12,9 @@
                     <p class="mt-2 text-sm text-muted-foreground">Uploaded assets with metadata, type, size, and ownership.</p>
                 </div>
                 <div class="flex gap-2">
-                    <a class="kt-btn kt-btn-primary" href="{{ route('cms-core.media.create') }}">Upload Media</a>
+                    @can('cms.media.manage')
+                        <a class="kt-btn kt-btn-primary" href="{{ route('cms-core.media.create') }}">Upload Media</a>
+                    @endcan
                     <a class="kt-btn kt-btn-outline" href="{{ route('cms-core.index') }}">Back to Hub</a>
                 </div>
             </div>

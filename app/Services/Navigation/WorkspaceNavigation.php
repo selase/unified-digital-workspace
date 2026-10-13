@@ -76,7 +76,6 @@ final class WorkspaceNavigation
             ['label' => 'Tenant Health', 'route' => 'health.tenants'],
             ['label' => 'Application Health', 'route' => 'application.health'],
             ['label' => 'Developer Tokens', 'route' => 'settings.developer.tokens.index'],
-            ['label' => 'My Tenants', 'route' => 'tenant.my-tenants'],
         ])->map(fn (array $item): ?array => $this->resolveLink($item, $tenantSlug, $currentRouteName, $user))->filter()->values();
 
         $tenantGroups = $isTenantContext
@@ -285,7 +284,6 @@ final class WorkspaceNavigation
                     ['label' => 'Users', 'route' => 'tenant.users.index', 'permission' => 'core.users.read'],
                     ['label' => 'Roles', 'route' => 'tenant.roles.index', 'permission' => 'core.roles.read'],
                     ['label' => 'Modules', 'route' => 'tenant.modules.index', 'permission' => 'core.settings.manage'],
-                    ['label' => 'My Tenants', 'route' => 'tenant.my-tenants'],
                 ],
             ],
             [

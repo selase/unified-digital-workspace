@@ -49,7 +49,11 @@
                             @forelse($menus as $menu)
                                 <tr>
                                     <td>
-                                        <a href="{{ route('cms-core.menus.edit', $menu) }}" class="font-medium hover:underline">{{ $menu->name }}</a>
+                                        @can('cms.menus.manage')
+                                            <a href="{{ route('cms-core.menus.edit', $menu) }}" class="font-medium hover:underline">{{ $menu->name }}</a>
+                                        @else
+                                            <span class="font-medium">{{ $menu->name }}</span>
+                                        @endcan
                                     </td>
                                     <td>{{ $menu->slug }}</td>
                                     <td>{{ $menu->items_count }}</td>
