@@ -16,6 +16,7 @@ it('displays billing dashboard with transactions and subscription', function () 
     // 1. Arrange
     $user = User::factory()->create();
     $tenant = setActiveTenantForTest($user);
+    grantOrganisationAdminAccess($user);
     $this->actingAs($user);
 
     // Create Subscription

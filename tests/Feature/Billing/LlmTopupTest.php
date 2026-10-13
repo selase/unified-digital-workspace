@@ -26,6 +26,8 @@ beforeEach(function () {
     // Create user
     $this->user = User::factory()->create();
     $this->tenant->users()->attach($this->user);
+    setPermissionsTeamId($this->tenant->id);
+    grantOrganisationAdminAccess($this->user);
 
     // Mock TenantContext
     $this->mock(TenantContext::class, function ($mock) {

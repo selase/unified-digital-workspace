@@ -96,6 +96,25 @@ function setActiveTenantForTest(?User $user = null, array $overrides = []): Tena
     return $tenant;
 }
 
+/**
+ * Give a test user the permissions an organisation admin holds, for tests that
+ * open the organisation, billing or developer pages. Call after the tenant
+ * (permissions team) is active.
+ */
+function grantOrganisationAdminAccess(User $user): void
+{
+    $permissions = ['core.settings.manage', 'core.users.read', 'core.roles.read', 'core.api-keys.manage'];
+
+    foreach ($permissions as $name) {
+        Spatie\Permission\Models\Permission::query()->firstOrCreate(
+            ['name' => $name, 'guard_name' => 'web'],
+            ['uuid' => (string) Illuminate\Support\Str::uuid(), 'category' => 'core'],
+        );
+    }
+
+    $user->givePermissionTo($permissions);
+}
+
 function refreshTenantDatabases(): void
 {
     Config::set('database.connections.tenant', Config::get('database.connections.landlord'));

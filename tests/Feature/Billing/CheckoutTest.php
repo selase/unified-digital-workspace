@@ -15,6 +15,7 @@ it('redirects to provider checkout url', function () {
     // Setup Tenant & User
     $user = User::factory()->create();
     $tenant = setActiveTenantForTest($user, ['meta' => ['stripe_id' => 'cus_123']]);
+    grantOrganisationAdminAccess($user);
     $this->withSession(['active_tenant_id' => $tenant->id]);
     $this->actingAs($user);
 
@@ -38,6 +39,7 @@ it('creates customer if missing before checkout', function () {
 
     $user = User::factory()->create();
     $tenant = setActiveTenantForTest($user, ['meta' => []]);
+    grantOrganisationAdminAccess($user);
     $this->withSession(['active_tenant_id' => $tenant->id]);
     $this->actingAs($user);
 

@@ -116,22 +116,24 @@ Route::group(['middleware' => ['auth', '2fa_challenge', 'onboarding']], function
             ->name('impersonation.impersonate');
     });
 
-    // Billing routes
-    Route::get('/billing', [App\Http\Controllers\Billing\BillingController::class, 'index'])
-        ->name('billing.index');
+    // Billing routes: only people who manage the organisation may see or change billing
+    Route::middleware('can:core.settings.manage')->group(function (): void {
+        Route::get('/billing', [App\Http\Controllers\Billing\BillingController::class, 'index'])
+            ->name('billing.index');
 
-    Route::post('/billing/checkout', [App\Http\Controllers\Billing\CheckoutController::class, 'store'])
-        ->name('billing.checkout');
+        Route::post('/billing/checkout', [App\Http\Controllers\Billing\CheckoutController::class, 'store'])
+            ->name('billing.checkout');
 
-    Route::post('/billing/transactions/{transaction}/refund', [App\Http\Controllers\Billing\RefundController::class, 'store'])
-        ->name('billing.refund');
+        Route::post('/billing/transactions/{transaction}/refund', [App\Http\Controllers\Billing\RefundController::class, 'store'])
+            ->name('billing.refund');
 
-    Route::get('/billing/invoices/{invoice}/download', [App\Http\Controllers\Billing\InvoiceController::class, 'download'])
-        ->name('billing.invoices.download');
+        Route::get('/billing/invoices/{invoice}/download', [App\Http\Controllers\Billing\InvoiceController::class, 'download'])
+            ->name('billing.invoices.download');
 
-    Route::resource('/billing/invoices', App\Http\Controllers\Billing\InvoiceController::class)
-        ->only(['index', 'show'])
-        ->names('billing.invoices');
+        Route::resource('/billing/invoices', App\Http\Controllers\Billing\InvoiceController::class)
+            ->only(['index', 'show'])
+            ->names('billing.invoices');
+    });
 
     // Developer Settings (API Tokens)
     Route::group(['prefix' => 'settings/developer', 'as' => 'settings.developer.'], function (): void {

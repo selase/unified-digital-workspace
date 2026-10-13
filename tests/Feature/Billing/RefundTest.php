@@ -14,6 +14,7 @@ uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 test('admins can initiate a refund for a successful transaction', function () {
     $user = User::factory()->create();
     $tenant = setActiveTenantForTest($user);
+    grantOrganisationAdminAccess($user);
 
     // Assume user has permission (if using permissions, otherwise check role)
     // For now, assuming any auth user in this test context is admin/owner
@@ -49,6 +50,7 @@ test('admins can initiate a refund for a successful transaction', function () {
 test('refunds cannot be initiated for failed transactions', function () {
     $user = User::factory()->create();
     $tenant = setActiveTenantForTest($user);
+    grantOrganisationAdminAccess($user);
 
     $transaction = Transaction::factory()->create([
         'tenant_id' => $tenant->id,
@@ -66,6 +68,7 @@ test('refunds cannot be initiated for failed transactions', function () {
 test('refund button is visible for success transactions', function () {
     $user = User::factory()->create();
     $tenant = setActiveTenantForTest($user);
+    grantOrganisationAdminAccess($user);
 
     Transaction::factory()->create([
         'tenant_id' => $tenant->id,

@@ -1137,6 +1137,7 @@ it('renders the tenant llm usage view with the metronic layout', function (): vo
 it('renders the tenant billing dashboard with the metronic layout', function (): void {
     $user = User::factory()->create();
     $tenant = setActiveTenantForTest($user);
+    grantOrganisationAdminAccess($user);
 
     Transaction::factory()->create([
         'tenant_id' => $tenant->id,
@@ -1180,6 +1181,7 @@ it('renders the tenant billing dashboard with the metronic layout', function ():
 it('renders the tenant pricing page with the metronic layout', function (): void {
     $user = User::factory()->create();
     $tenant = setActiveTenantForTest($user);
+    grantOrganisationAdminAccess($user);
 
     $package = Package::factory()->create([
         'name' => 'Growth',
@@ -1200,6 +1202,7 @@ it('renders the tenant pricing page with the metronic layout', function (): void
 it('renders tenant invoice details with the metronic layout', function (): void {
     $user = User::factory()->create();
     $tenant = setActiveTenantForTest($user);
+    grantOrganisationAdminAccess($user);
 
     $invoice = Invoice::create([
         'id' => (string) Str::uuid(),

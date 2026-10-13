@@ -85,6 +85,7 @@ it('renders tenant dashboard with metronic shell hooks and without legacy bootst
 
     setPermissionsTeamId($tenant->id);
     $user->givePermissionTo('core.dashboard.access');
+    grantOrganisationAdminAccess($user);
 
     $content = $this->actingAs($user)
         ->withSession(['active_tenant_id' => $tenant->id])
