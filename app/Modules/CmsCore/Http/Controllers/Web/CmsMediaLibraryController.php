@@ -6,6 +6,7 @@ namespace App\Modules\CmsCore\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Modules\CmsCore\Models\Media;
+use App\Modules\CmsCore\Services\ImageOptimizer;
 use App\Modules\CmsCore\Services\MediaThumbnailService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
@@ -17,6 +18,8 @@ use Illuminate\Support\Facades\Storage;
 
 final class CmsMediaLibraryController extends Controller
 {
+    public function __construct(private readonly ImageOptimizer $imageOptimizer) {}
+
     public function index(Request $request): View
     {
         abort_if(! $request->user()?->can('cms.media.view'), 403);
@@ -119,26 +122,23 @@ final class CmsMediaLibraryController extends Controller
 
         /** @var UploadedFile $file */
         $file = $request->file('file');
-        $path = $file->store('cms/media', 'tenant');
+        $stored = $this->imageOptimizer->store($file, 'cms/media');
         $originalFilename = (string) $file->getClientOriginalName();
         $extension = $file->getClientOriginalExtension();
         $mimeType = $this->resolveMimeType($file, $extension);
-        $size = $file->getSize();
         $title = $request->string('title')->value() ?: pathinfo($originalFilename, PATHINFO_FILENAME);
-
-        $dimensions = $this->extractDimensions($file);
 
         $media = Media::query()->create([
             'disk' => 'tenant',
-            'path' => (string) $path,
+            'path' => $stored['path'],
             'original_filename' => $originalFilename,
-            'filename' => basename((string) $path),
+            'filename' => basename($stored['path']),
             'extension' => $extension === '' ? null : $extension,
             'mime_type' => $mimeType,
-            'size_bytes' => $size ?: 0,
-            'checksum_sha256' => hash_file('sha256', $file->getRealPath()) ?: null,
-            'width' => $dimensions['width'],
-            'height' => $dimensions['height'],
+            'size_bytes' => $stored['size_bytes'],
+            'checksum_sha256' => $stored['checksum_sha256'],
+            'width' => $stored['width'],
+            'height' => $stored['height'],
             'alt_text' => $request->string('alt_text')->value() ?: null,
             'title' => $title !== '' ? $title : null,
             'description' => $request->string('description')->value() ?: null,
@@ -208,25 +208,23 @@ final class CmsMediaLibraryController extends Controller
 
         /** @var UploadedFile $file */
         $file = $request->file('file');
-        $path = $file->store('cms/inline', 'tenant');
+        $stored = $this->imageOptimizer->store($file, 'cms/inline');
         $originalFilename = (string) $file->getClientOriginalName();
         $extension = $file->getClientOriginalExtension();
         $mimeType = $file->getClientMimeType();
-        $size = $file->getSize();
         $title = pathinfo($originalFilename, PATHINFO_FILENAME);
-
-        $dimensions = $this->extractDimensions($file);
 
         $media = Media::query()->create([
             'disk' => 'tenant',
-            'path' => (string) $path,
+            'path' => $stored['path'],
             'original_filename' => $originalFilename,
-            'filename' => basename((string) $path),
+            'filename' => basename($stored['path']),
             'extension' => $extension === '' ? null : $extension,
             'mime_type' => $mimeType ?: 'image/jpeg',
-            'size_bytes' => $size ?: 0,
-            'width' => $dimensions['width'],
-            'height' => $dimensions['height'],
+            'size_bytes' => $stored['size_bytes'],
+            'checksum_sha256' => $stored['checksum_sha256'],
+            'width' => $stored['width'],
+            'height' => $stored['height'],
             'title' => $title !== '' ? $title : null,
             'uploaded_by' => (string) $request->user()?->uuid,
             'source' => 'editor',
@@ -266,25 +264,5 @@ final class CmsMediaLibraryController extends Controller
         }
 
         return $mimeType !== '' ? $mimeType : 'application/octet-stream';
-    }
-
-    /**
-     * @return array{width: int|null, height: int|null}
-     */
-    private function extractDimensions(UploadedFile $file): array
-    {
-        $mimeType = $file->getClientMimeType() ?? '';
-
-        if (! str_starts_with($mimeType, 'image/')) {
-            return ['width' => null, 'height' => null];
-        }
-
-        $info = @getimagesize($file->getRealPath());
-
-        if ($info === false) {
-            return ['width' => null, 'height' => null];
-        }
-
-        return ['width' => $info[0], 'height' => $info[1]];
     }
 }
