@@ -61,6 +61,15 @@
                     </style>
                     {!! $page->body !!}
                 </div>
+
+                {{-- Optional enquiry form, enabled per page with the "enquiry_form" meta --}}
+                @php
+                    $enquiryType = $page->meta->firstWhere('key', 'enquiry_form')?->value;
+                    $enquiryType = is_array($enquiryType) ? ($enquiryType[0] ?? null) : $enquiryType;
+                @endphp
+                @if($enquiryType)
+                    @include('cms-core::components.enquiry-form', ['type' => $enquiryType])
+                @endif
             </div>
         </div>
     </section>

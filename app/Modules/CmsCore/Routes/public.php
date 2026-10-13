@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Modules\CmsCore\Http\Controllers\Web\CmsEnquiryController;
 use App\Modules\CmsCore\Http\Controllers\Web\CmsPublicHomeController;
 use App\Modules\CmsCore\Http\Controllers\Web\CmsPublicNewsletterController;
 use App\Modules\CmsCore\Http\Controllers\Web\CmsPublicPostController;
@@ -19,6 +20,8 @@ Route::get('/newsletters', [CmsPublicNewsletterController::class, 'archive'])->n
 Route::get('/newsletters/{slug}', [CmsPublicNewsletterController::class, 'show'])->name('newsletters.show');
 
 Route::get('/sitemap.xml', [CmsPublicSitemapController::class, 'index'])->name('sitemap');
+
+Route::post('/enquiries', [CmsEnquiryController::class, 'store'])->middleware('throttle:5,10')->name('enquiries.store');
 
 // Catch-all for static pages. Registered as Route::fallback() so it only
 // matches when no other route does — this prevents the /{slug} pattern

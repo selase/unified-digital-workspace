@@ -16,5 +16,10 @@ final class VerifyCsrfToken extends Middleware
     protected $except = [
         'webhooks/*',
         'webhooks/merchant/*',
+        // Public enquiry forms. Custom domains cannot hold the platform session
+        // cookie, so these are protected by a honeypot, a signed render-time
+        // token and rate limiting instead (see EnquiryToken).
+        'enquiries',
+        'site/enquiries',
     ];
 }
