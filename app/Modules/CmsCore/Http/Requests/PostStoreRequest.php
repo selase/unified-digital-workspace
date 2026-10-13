@@ -83,6 +83,24 @@ final class PostStoreRequest extends FormRequest
             'video_url' => ['nullable', 'url', 'max:500'],
             'audio_url' => ['nullable', 'url', 'max:500'],
             'poster_media_id' => ['nullable', 'integer'],
+            'cta_label' => ['nullable', 'string', 'max:60'],
+            'cta_url' => ['nullable', 'required_with:cta_label', 'string', 'max:500', 'regex:/^(\/(?!\/)|https?:\/\/)\S*$/'],
+            'cta2_label' => ['nullable', 'string', 'max:60'],
+            'cta2_url' => ['nullable', 'required_with:cta2_label', 'string', 'max:500', 'regex:/^(\/(?!\/)|https?:\/\/)\S*$/'],
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'cta_url.required_with' => 'Add a link for the first button, or clear its text.',
+            'cta2_url.required_with' => 'Add a link for the second button, or clear its text.',
+            'cta_url.regex' => 'The first button link must start with / or https://.',
+            'cta2_url.regex' => 'The second button link must start with / or https://.',
+            'sort_order.min' => 'Display order cannot be negative.',
         ];
     }
 

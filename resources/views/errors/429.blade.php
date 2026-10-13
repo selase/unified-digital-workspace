@@ -1,11 +1,11 @@
 @extends('errors::custom-layout')
 
-@section('title', __('Too Many Requests'))
+@section('title', __('Too many requests'))
 
 @section('code', '429')
 
-@section('message', __('Too many requests from the same client IP; Dynamic IP Restriction Maximum request rate limit reached.'))
+@section('message', __('You\'ve done that too many times in a short while. Please wait a minute and try again.'))
 
-{{--  @section('image')
-    <div class="d-flex flex-row-auto bgi-no-repeat bgi-position-x-center bgi-size-contain bgi-position-y-bottom min-h-100px min-h-lg-350px" style="background-image: url({{ asset('assets/media/illustrations/sketchy-1/17.png') }}"></div>
-@endsection  --}}
+@section('actions')
+    <a href="javascript:history.back()" class="kt-btn kt-btn-primary">{{ __('Go back') }}</a>
+@endsection

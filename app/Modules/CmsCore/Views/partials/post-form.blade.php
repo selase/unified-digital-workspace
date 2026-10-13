@@ -7,6 +7,7 @@
     $selectedFeaturedMediaId = old('featured_media_id', $post?->featured_media_id);
     $seoMeta = $seoMeta ?? ['seo_title' => '', 'seo_description' => '', 'seo_canonical' => ''];
     $mediaMeta = $mediaMeta ?? ['video_url' => '', 'audio_url' => '', 'poster_media_id' => ''];
+    $buttonMeta = $buttonMeta ?? ['cta_label' => '', 'cta_url' => '', 'cta2_label' => '', 'cta2_url' => ''];
 @endphp
 
 <input name="author_id" type="hidden" value="{{ old('author_id', $post?->author_id ?? (string) auth()->user()?->uuid) }}">
@@ -217,6 +218,41 @@
             </div>
             <p class="mt-1 text-xs text-muted-foreground">Thumbnail for video/audio. Falls back to featured image.</p>
             @error('poster_media_id') <p class="text-xs text-destructive mt-1">{{ $message }}</p> @enderror
+        </div>
+    </div>
+</div>
+
+{{-- Buttons & display order --}}
+<div class="mt-8 border-t border-border pt-6">
+    <h3 class="mb-4 text-sm font-semibold text-foreground">Buttons and Display Order</h3>
+    <p class="mb-4 text-xs text-muted-foreground">Used by homepage slides: up to two buttons shown on the slide, and where the slide sits in the rotation. Leave a button's text empty to hide it.</p>
+    <div class="grid gap-6 lg:grid-cols-2">
+        @foreach(['cta' => 'First button', 'cta2' => 'Second button'] as $buttonKey => $buttonTitle)
+            <div class="kt-form-item">
+                <label class="kt-form-label">{{ $buttonTitle }} text</label>
+                <div class="kt-form-control">
+                    <input class="kt-input" name="{{ $buttonKey }}_label" type="text" maxlength="60" value="{{ old($buttonKey.'_label', $buttonMeta[$buttonKey.'_label']) }}" placeholder="e.g. Learn more">
+                </div>
+                @error($buttonKey.'_label') <p class="text-xs text-destructive mt-1">{{ $message }}</p> @enderror
+            </div>
+
+            <div class="kt-form-item">
+                <label class="kt-form-label">{{ $buttonTitle }} link</label>
+                <div class="kt-form-control">
+                    <input class="kt-input" name="{{ $buttonKey }}_url" type="text" value="{{ old($buttonKey.'_url', $buttonMeta[$buttonKey.'_url']) }}" placeholder="/about or https://example.org">
+                </div>
+                <p class="mt-1 text-xs text-muted-foreground">A page on this site (starting with /) or a full web address.</p>
+                @error($buttonKey.'_url') <p class="text-xs text-destructive mt-1">{{ $message }}</p> @enderror
+            </div>
+        @endforeach
+
+        <div class="kt-form-item">
+            <label class="kt-form-label">Display order</label>
+            <div class="kt-form-control">
+                <input class="kt-input" name="sort_order" type="number" min="0" step="1" value="{{ old('sort_order', $post?->sort_order ?? 0) }}">
+            </div>
+            <p class="mt-1 text-xs text-muted-foreground">Lower numbers appear first.</p>
+            @error('sort_order') <p class="text-xs text-destructive mt-1">{{ $message }}</p> @enderror
         </div>
     </div>
 </div>

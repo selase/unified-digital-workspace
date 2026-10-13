@@ -107,7 +107,7 @@ it('renders tenant dashboard with metronic shell hooks and without legacy bootst
     expect($content)->toContain(route('tenant.llm-usage.index', ['subdomain' => $tenant->slug]));
     expect($content)->toContain(route('tenant.llm-config.index', ['subdomain' => $tenant->slug]));
     expect($content)->toContain(route('tenant.pricing', ['subdomain' => $tenant->slug]));
-    expect($content)->toContain(route('tenant.my-tenants'));
+    expect($content)->not->toContain(route('tenant.my-tenants'));
 });
 
 it('renders auth pages with metronic assets', function (): void {

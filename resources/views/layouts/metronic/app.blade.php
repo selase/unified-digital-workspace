@@ -129,13 +129,8 @@
         id="sidebar"
     >
         <div class="kt-sidebar-header hidden lg:flex items-center relative justify-between px-3 lg:px-6 shrink-0" id="sidebar_header">
-            <a class="dark:hidden" href="{{ $navigation['homeUrl'] }}">
-                <img class="default-logo min-h-[22px] max-w-none" src="{{ asset('assets/metronic/media/app/default-logo.svg') }}" alt="Logo"/>
-                <img class="small-logo min-h-[22px] max-w-none" src="{{ asset('assets/metronic/media/app/mini-logo.svg') }}" alt="Logo"/>
-            </a>
-            <a class="hidden dark:block" href="{{ $navigation['homeUrl'] }}">
-                <img class="default-logo min-h-[22px] max-w-none" src="{{ asset('assets/metronic/media/app/default-logo-dark.svg') }}" alt="Logo"/>
-                <img class="small-logo min-h-[22px] max-w-none" src="{{ asset('assets/metronic/media/app/mini-logo.svg') }}" alt="Logo"/>
+            <a class="flex items-center" href="{{ $navigation['homeUrl'] }}">
+                <x-brand-logo variant="sidebar" />
             </a>
             <button
                 class="kt-btn kt-btn-outline kt-btn-icon size-[30px] absolute start-full top-2/4 -translate-x-2/4 -translate-y-2/4 rtl:translate-x-2/4"

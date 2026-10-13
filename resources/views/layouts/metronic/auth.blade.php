@@ -46,6 +46,9 @@
 <div class="min-h-screen flex items-center justify-center bg-center bg-cover bg-no-repeat page-bg p-6">
     <div class="kt-card w-full max-w-[420px]">
         <div class="kt-card-content p-8 sm:p-10">
+            <div class="mb-6 flex justify-center">
+                <x-brand-logo />
+            </div>
             @yield('content')
         </div>
     </div>

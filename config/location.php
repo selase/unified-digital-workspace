@@ -174,7 +174,7 @@ return [
 
     'testing' => [
 
-        'enabled' => env('LOCATION_TESTING', true),
+        'enabled' => env('LOCATION_TESTING', env('APP_ENV', 'production') !== 'production'),
 
         'ip' => '66.102.0.0',
 

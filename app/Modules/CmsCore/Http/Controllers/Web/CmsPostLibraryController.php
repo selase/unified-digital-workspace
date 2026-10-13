@@ -24,6 +24,14 @@ use Illuminate\Support\Str;
 
 final class CmsPostLibraryController extends Controller
 {
+    /**
+     * Post meta keys for the two optional buttons a template may show with a
+     * post (the homepage slides use them).
+     *
+     * @var array<int, string>
+     */
+    private const BUTTON_META_KEYS = ['cta_label', 'cta_url', 'cta2_label', 'cta2_url'];
+
     public function __construct(
         private readonly CmsSeoService $seoService
     ) {}
@@ -75,12 +83,12 @@ final class CmsPostLibraryController extends Controller
     public function store(PostStoreRequest $request): RedirectResponse
     {
         $payload = $this->normalizePayload($request->validated(), $request);
-        $attributes = Arr::except($payload, ['category_ids', 'tag_ids', 'media_ids', 'featured_image', 'seo_title', 'seo_description', 'seo_canonical', 'video_url', 'audio_url', 'poster_media_id']);
+        $attributes = Arr::except($payload, ['category_ids', 'tag_ids', 'media_ids', 'featured_image', 'seo_title', 'seo_description', 'seo_canonical', 'video_url', 'audio_url', 'poster_media_id', ...self::BUTTON_META_KEYS]);
 
         $post = Post::create($attributes);
         $this->syncRelations($post, $payload);
         $this->seoService->saveForPost($post, $request->only(['seo_title', 'seo_description', 'seo_canonical']));
-        $this->saveMediaMeta($post, $request->only(['video_url', 'audio_url', 'poster_media_id']));
+        $this->saveMeta($post, ['video_url', 'audio_url', 'poster_media_id', ...self::BUTTON_META_KEYS], $request->validated());
 
         return redirect()
             ->route('cms-core.posts.show', $post)
@@ -120,14 +128,14 @@ final class CmsPostLibraryController extends Controller
     public function update(PostUpdateRequest $request, Post $post): RedirectResponse
     {
         $payload = $this->normalizePayload($request->validated(), $request);
-        $attributes = Arr::except($payload, ['category_ids', 'tag_ids', 'media_ids', 'featured_image', 'seo_title', 'seo_description', 'seo_canonical', 'video_url', 'audio_url', 'poster_media_id']);
+        $attributes = Arr::except($payload, ['category_ids', 'tag_ids', 'media_ids', 'featured_image', 'seo_title', 'seo_description', 'seo_canonical', 'video_url', 'audio_url', 'poster_media_id', ...self::BUTTON_META_KEYS]);
 
         $post->fill($attributes);
         $post->save();
 
         $this->syncRelations($post, $payload);
         $this->seoService->saveForPost($post, $request->only(['seo_title', 'seo_description', 'seo_canonical']));
-        $this->saveMediaMeta($post, $request->only(['video_url', 'audio_url', 'poster_media_id']));
+        $this->saveMeta($post, ['video_url', 'audio_url', 'poster_media_id', ...self::BUTTON_META_KEYS], $request->validated());
 
         return redirect()
             ->route('cms-core.posts.show', $post)
@@ -244,7 +252,9 @@ final class CmsPostLibraryController extends Controller
      *     mediaItems: \Illuminate\Database\Eloquent\Collection<int, Media>,
      *     parentPosts: \Illuminate\Database\Eloquent\Collection<int, Post>,
      *     statusOptions: array<int, string>,
-     *     seoMeta: array{seo_title: string, seo_description: string, seo_canonical: string}
+     *     seoMeta: array{seo_title: string, seo_description: string, seo_canonical: string},
+     *     mediaMeta: array{video_url: string, audio_url: string, poster_media_id: string},
+     *     buttonMeta: array{cta_label: string, cta_url: string, cta2_label: string, cta2_url: string}
      * }
      */
     private function formOptions(?Post $post = null): array
@@ -265,6 +275,7 @@ final class CmsPostLibraryController extends Controller
             'statusOptions' => ['draft', 'published', 'scheduled', 'archived'],
             'seoMeta' => $post ? $this->seoService->getMetaValues($post) : ['seo_title' => '', 'seo_description' => '', 'seo_canonical' => ''],
             'mediaMeta' => $post ? $this->getMediaMeta($post) : ['video_url' => '', 'audio_url' => '', 'poster_media_id' => ''],
+            'buttonMeta' => $post ? $this->getButtonMeta($post) : ['cta_label' => '', 'cta_url' => '', 'cta2_label' => '', 'cta2_url' => ''],
         ];
     }
 
@@ -286,12 +297,38 @@ final class CmsPostLibraryController extends Controller
     }
 
     /**
-     * @param  array<string, string|null>  $values
+     * @return array{cta_label: string, cta_url: string, cta2_label: string, cta2_url: string}
      */
-    private function saveMediaMeta(Post $post, array $values): void
+    private function getButtonMeta(Post $post): array
     {
-        foreach (['video_url', 'audio_url', 'poster_media_id'] as $key) {
-            $value = $values[$key] ?? null;
+        $meta = PostMeta::query()
+            ->where('post_id', $post->id)
+            ->whereIn('key', self::BUTTON_META_KEYS)
+            ->pluck('value', 'key');
+
+        return [
+            'cta_label' => (string) ($meta['cta_label'] ?? ''),
+            'cta_url' => (string) ($meta['cta_url'] ?? ''),
+            'cta2_label' => (string) ($meta['cta2_label'] ?? ''),
+            'cta2_url' => (string) ($meta['cta2_url'] ?? ''),
+        ];
+    }
+
+    /**
+     * Store each submitted key as post meta; a key left empty is removed.
+     * Keys absent from the submission are left untouched.
+     *
+     * @param  array<int, string>  $keys
+     * @param  array<string, mixed>  $values
+     */
+    private function saveMeta(Post $post, array $keys, array $values): void
+    {
+        foreach ($keys as $key) {
+            if (! array_key_exists($key, $values)) {
+                continue;
+            }
+
+            $value = $values[$key];
 
             if ($value !== null && $value !== '') {
                 PostMeta::query()->updateOrCreate(

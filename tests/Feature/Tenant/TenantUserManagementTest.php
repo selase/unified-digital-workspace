@@ -133,7 +133,7 @@ test('a user with only content permissions is kept out of organisation, billing 
 
     $visibleLinks = collect($navigation['sidebar']['tenant_groups'])->flatMap(fn (array $group) => $group['items'])->pluck('label')->all();
 
-    expect($visibleLinks)->toBe(['My Tenants']);
+    expect($visibleLinks)->toBe([]);
 });
 
 test('an organisation admin still reaches billing settings and sees the organisation menu', function () {
