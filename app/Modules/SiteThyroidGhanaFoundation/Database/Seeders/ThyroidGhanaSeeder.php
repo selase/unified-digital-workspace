@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\SiteThyroidGhanaFoundation\Database\Seeders;
 
+use App\Models\Role;
 use App\Models\Tenant;
 use App\Modules\CmsCore\Models\Category;
 use App\Modules\CmsCore\Models\Menu;
@@ -15,6 +16,7 @@ use App\Modules\CmsCore\Models\Tag;
 use App\Services\Tenancy\TenantContext;
 use App\Services\Tenancy\TenantDatabaseManager;
 use Illuminate\Database\Seeder;
+use Spatie\Permission\Models\Permission;
 
 final class ThyroidGhanaSeeder extends Seeder
 {
@@ -32,6 +34,7 @@ final class ThyroidGhanaSeeder extends Seeder
             ?? \App\Models\User::where('email', 'hiselase@gmail.com')->first();
         $this->authorId = (string) ($user?->uuid ?? '');
 
+        $this->seedEditorRole($tenant);
         $this->seedPostTypes($tenant);
         $this->seedCategories($tenant);
         $this->seedTags($tenant);
@@ -40,6 +43,35 @@ final class ThyroidGhanaSeeder extends Seeder
         $this->seedSliders($tenant);
         $this->seedMenus($tenant);
         $this->seedThemeSettings($tenant);
+    }
+
+    /**
+     * Tenant-scoped role for content staff: manages posts, categories, tags and media,
+     * but not post types, menus, website settings, users or billing.
+     */
+    private function seedEditorRole(Tenant $tenant): void
+    {
+        $role = Role::query()->firstOrCreate([
+            'name' => 'CMS Editor',
+            'tenant_id' => $tenant->id,
+            'guard_name' => 'web',
+        ]);
+
+        $role->syncPermissions(Permission::query()->whereIn('name', [
+            'core.dashboard.access',
+            'cms.posts.view',
+            'cms.posts.create',
+            'cms.posts.update',
+            'cms.posts.delete',
+            'cms.post_types.view',
+            'cms.categories.view',
+            'cms.categories.manage',
+            'cms.tags.view',
+            'cms.tags.manage',
+            'cms.media.view',
+            'cms.media.manage',
+            'cms.menus.view',
+        ])->get());
     }
 
     private function seedPostTypes(Tenant $tenant): void
