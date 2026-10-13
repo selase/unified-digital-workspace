@@ -7,6 +7,7 @@ namespace App\Modules\CmsCore\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use App\Modules\CmsCore\Models\Media;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -41,6 +42,39 @@ final class CmsMediaLibraryController extends Controller
             'mediaItems' => $mediaItems,
             'search' => $search,
             'type' => $type,
+        ]);
+    }
+
+    /**
+     * One page of images for the picker dialog on content forms.
+     */
+    public function picker(Request $request): JsonResponse
+    {
+        abort_if(! $request->user()?->can('cms.media.view'), 403);
+
+        $search = mb_trim((string) $request->string('search'));
+
+        $images = Media::query()
+            ->where('mime_type', 'like', 'image/%')
+            ->when($search !== '', function ($query) use ($search): void {
+                $needle = '%'.mb_strtolower($search).'%';
+
+                $query->where(function ($q) use ($needle): void {
+                    foreach (['title', 'original_filename', 'filename', 'alt_text'] as $column) {
+                        $q->orWhereRaw("lower({$column}) like ?", [$needle]);
+                    }
+                });
+            })
+            ->latest('id')
+            ->simplePaginate(24);
+
+        return response()->json([
+            'data' => collect($images->items())->map(fn (Media $media): array => [
+                'id' => $media->id,
+                'title' => (string) ($media->title ?: $media->original_filename ?: $media->filename),
+                'url' => $media->url(),
+            ])->all(),
+            'has_more' => $images->hasMorePages(),
         ]);
     }
 
@@ -144,7 +178,7 @@ final class CmsMediaLibraryController extends Controller
     /**
      * Inline upload for the TipTap editor — returns JSON with the image URL.
      */
-    public function uploadInline(Request $request): \Illuminate\Http\JsonResponse
+    public function uploadInline(Request $request): JsonResponse
     {
         abort_if(! $request->user()?->can('cms.media.manage'), 403);
 
