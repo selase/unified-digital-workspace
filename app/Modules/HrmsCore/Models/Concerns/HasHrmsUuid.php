@@ -43,6 +43,23 @@ trait HasHrmsUuid
     }
 
     /**
+     * Retrieve the model for a bound value.
+     *
+     * @param  mixed  $value
+     * @param  string|null  $field
+     * @return \Illuminate\Database\Eloquent\Model|null
+     */
+    public function resolveRouteBinding($value, $field = null)
+    {
+        $bindingField = $field ?? $this->getRouteKeyName();
+        if ($bindingField === 'uuid' && ! Str::isUuid((string) $value)) {
+            return null;
+        }
+
+        return parent::resolveRouteBinding($value, $field);
+    }
+
+    /**
      * Scope a query to find by UUID.
      *
      * @param  \Illuminate\Database\Eloquent\Builder<static>  $query

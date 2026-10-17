@@ -71,4 +71,30 @@ Route::prefix('holidays')->name('holidays.')->group(function (): void {
     Route::delete('/{holiday}', [App\Modules\HrmsCore\Http\Controllers\Web\HrmsHolidayWebController::class, 'destroy'])->name('destroy');
 });
 
-Route::get('/recruitment', [HrmsRecruitmentController::class, 'index'])->name('recruitment.index');
+Route::prefix('recruitment')->name('recruitment.')->group(function (): void {
+    Route::get('/', [HrmsRecruitmentController::class, 'index'])->name('index');
+
+    Route::post('/requisitions', [HrmsRecruitmentController::class, 'storeRequisition'])->name('requisitions.store');
+    Route::put('/requisitions/{requisition}', [HrmsRecruitmentController::class, 'updateRequisition'])->name('requisitions.update');
+    Route::post('/requisitions/{requisition}/status', [HrmsRecruitmentController::class, 'transitionRequisitionStatus'])->name('requisitions.status');
+    Route::delete('/requisitions/{requisition}', [HrmsRecruitmentController::class, 'destroyRequisition'])->name('requisitions.destroy');
+
+    Route::post('/postings', [HrmsRecruitmentController::class, 'storePosting'])->name('postings.store');
+    Route::get('/postings/{posting}', [HrmsRecruitmentController::class, 'showPosting'])->name('postings.show');
+    Route::put('/postings/{posting}', [HrmsRecruitmentController::class, 'updatePosting'])->name('postings.update');
+    Route::post('/postings/{posting}/toggle-status', [HrmsRecruitmentController::class, 'togglePostingStatus'])->name('postings.toggle-status');
+    Route::delete('/postings/{posting}', [HrmsRecruitmentController::class, 'destroyPosting'])->name('postings.destroy');
+
+    Route::post('/postings/{posting}/applications', [HrmsRecruitmentController::class, 'storeApplication'])->name('applications.store');
+    Route::put('/applications/{application}/status', [HrmsRecruitmentController::class, 'updateApplicationStatus'])->name('applications.status');
+    Route::delete('/applications/{application}', [HrmsRecruitmentController::class, 'destroyApplication'])->name('applications.destroy');
+
+    Route::post('/applications/{application}/interviews', [HrmsRecruitmentController::class, 'storeInterview'])->name('interviews.store');
+    Route::put('/interviews/{interview}', [HrmsRecruitmentController::class, 'updateInterview'])->name('interviews.update');
+    Route::delete('/interviews/{interview}', [HrmsRecruitmentController::class, 'destroyInterview'])->name('interviews.destroy');
+
+    Route::post('/applications/{application}/offers', [HrmsRecruitmentController::class, 'storeOffer'])->name('offers.store');
+    Route::post('/offers/{offer}/send', [HrmsRecruitmentController::class, 'sendOffer'])->name('offers.send');
+    Route::post('/offers/{offer}/decision', [HrmsRecruitmentController::class, 'recordOfferDecision'])->name('offers.decision');
+    Route::delete('/offers/{offer}', [HrmsRecruitmentController::class, 'destroyOffer'])->name('offers.destroy');
+});

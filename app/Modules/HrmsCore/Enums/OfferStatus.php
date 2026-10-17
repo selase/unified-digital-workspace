@@ -69,4 +69,27 @@ enum OfferStatus: string
     {
         return $this === self::Sent;
     }
+
+    /**
+     * Get the statuses that this offer status is allowed to transition to.
+     *
+     * @return array<int, self>
+     */
+    public function allowedTransitions(): array
+    {
+        return match ($this) {
+            self::Draft => [self::PendingApproval, self::Sent, self::Withdrawn],
+            self::PendingApproval => [self::Sent, self::Withdrawn],
+            self::Sent => [self::Accepted, self::Rejected, self::Withdrawn, self::Expired],
+            self::Accepted, self::Rejected, self::Withdrawn, self::Expired => [],
+        };
+    }
+
+    /**
+     * Check if this status can transition to the given target status.
+     */
+    public function canTransitionTo(self $target): bool
+    {
+        return in_array($target, $this->allowedTransitions(), true);
+    }
 }

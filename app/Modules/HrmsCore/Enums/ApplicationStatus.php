@@ -75,4 +75,30 @@ enum ApplicationStatus: string
     {
         return ! $this->isFinal();
     }
+
+    /**
+     * Get the statuses that this status is allowed to transition to.
+     *
+     * @return array<int, self>
+     */
+    public function allowedTransitions(): array
+    {
+        return match ($this) {
+            self::Submitted => [self::Screening, self::Shortlisted, self::Rejected, self::Withdrawn],
+            self::Screening => [self::Shortlisted, self::Interview, self::Assessment, self::Rejected, self::Withdrawn],
+            self::Shortlisted => [self::Interview, self::Assessment, self::Rejected, self::Withdrawn],
+            self::Interview => [self::Assessment, self::Offer, self::Rejected, self::Withdrawn],
+            self::Assessment => [self::Interview, self::Offer, self::Rejected, self::Withdrawn],
+            self::Offer => [self::Hired, self::Rejected, self::Withdrawn],
+            self::Hired, self::Rejected, self::Withdrawn => [],
+        };
+    }
+
+    /**
+     * Check if this status can transition to the given target status.
+     */
+    public function canTransitionTo(self $target): bool
+    {
+        return in_array($target, $this->allowedTransitions(), true);
+    }
 }
