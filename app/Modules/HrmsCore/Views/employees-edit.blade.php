@@ -1,34 +1,34 @@
 @extends('layouts.metronic.app')
 
-@section('title', 'Edit Employee')
+@section('title', 'Edit Employee - ' . $employee->fullName())
 
 @section('content')
-    <section class="grid gap-6">
-        <div class="kt-card p-6 lg:p-8">
-            <div class="flex flex-wrap items-start justify-between gap-4">
-                <div>
-                    <p class="text-xs uppercase tracking-wide text-muted-foreground">HRMS Core</p>
-                    <h1 class="mt-2 text-2xl font-semibold text-foreground">Edit Employee Profile</h1>
-                    <p class="mt-2 text-sm text-muted-foreground">Update core identity, contact records, and organizational placement.</p>
-                </div>
-                <div class="flex items-center gap-2">
-                    <a class="kt-btn kt-btn-outline" href="{{ route('hrms-core.employees.show', $employee) }}">View Profile</a>
-                    <a class="kt-btn kt-btn-outline" href="{{ route('hrms-core.employees.index') }}">Back to Directory</a>
-                </div>
+<div class="flex flex-col gap-6">
+    <x-metronic.page-header
+        title="Edit Employee Profile"
+        description="Update profile records for {{ $employee->fullName() }} ({{ $employee->employee_staff_id ?: 'No Staff ID' }})."
+    >
+        <x-slot:actions>
+            <a href="{{ route('hrms-core.employees.show', $employee) }}" class="kt-btn kt-btn-outline">
+                View Profile
+            </a>
+            <a href="{{ route('hrms-core.employees.index') }}" class="kt-btn kt-btn-outline">
+                Back to Directory
+            </a>
+        </x-slot:actions>
+    </x-metronic.page-header>
+
+    <x-metronic.card title="Employee Details" subtitle="Edit personnel enrollment attributes">
+        <form action="{{ route('hrms-core.employees.update', $employee) }}" class="kt-form" method="POST">
+            @csrf
+            @method('PUT')
+            @include('hrms-core::partials.employee-form', ['employee' => $employee, 'grades' => $grades, 'centers' => $centers])
+
+            <div class="mt-8 pt-5 border-t border-border flex items-center justify-end gap-3">
+                <a href="{{ route('hrms-core.employees.show', $employee) }}" class="kt-btn kt-btn-outline">Cancel</a>
+                <button type="submit" class="kt-btn kt-btn-primary">Save Changes</button>
             </div>
-        </div>
-
-        <div class="kt-card p-6">
-            <form action="{{ route('hrms-core.employees.update', $employee) }}" class="kt-form" method="POST">
-                @csrf
-                @method('PUT')
-                @include('hrms-core::partials.employee-form', ['employee' => $employee, 'grades' => $grades, 'centers' => $centers])
-
-                <div class="mt-8 flex items-center justify-end gap-3">
-                    <a class="kt-btn kt-btn-outline" href="{{ route('hrms-core.employees.show', $employee) }}">Cancel</a>
-                    <button class="kt-btn kt-btn-primary" type="submit">Save Changes</button>
-                </div>
-            </form>
-        </div>
-    </section>
+        </form>
+    </x-metronic.card>
+</div>
 @endsection
