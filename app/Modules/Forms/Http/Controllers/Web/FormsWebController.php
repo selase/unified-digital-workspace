@@ -86,7 +86,7 @@ final class FormsWebController extends Controller
             'description' => ['nullable', 'string'],
             'type' => ['required', 'string', Rule::in(['general', 'hr_request', 'survey', 'live_poll'])],
             'target_audience' => ['required', 'string', Rule::in(['public', 'internal_only', 'departmental'])],
-            'target_department_id' => ['nullable', 'integer', Rule::exists('departments', 'id')],
+            'target_department_id' => ['nullable', 'integer', Rule::exists('hrms_departments', 'id')],
             'allow_anonymous' => ['nullable', 'boolean'],
             'single_response_per_user' => ['nullable', 'boolean'],
             'expires_at' => ['nullable', 'date'],
@@ -328,7 +328,7 @@ final class FormsWebController extends Controller
 
         $validatedData = $request->validate($rules);
 
-        FormSubmission::create([
+        $submission = FormSubmission::create([
             'tenant_id' => $form->tenant_id,
             'form_definition_id' => $form->id,
             'user_id' => $userUuid,
@@ -336,6 +336,18 @@ final class FormsWebController extends Controller
             'responses_json' => $validatedData,
             'status' => 'submitted',
         ]);
+
+        \App\Modules\WorkflowAutomation\Events\WorkflowDomainEvent::dispatch(
+            (string) $form->tenant_id,
+            'form.submitted',
+            [
+                'submission_id' => $submission->id,
+                'form_id' => $form->id,
+                'form_slug' => $form->slug,
+                'form_title' => $form->title,
+                'responses' => $validatedData,
+            ]
+        );
 
         return back()->with('status', 'success')->with('message', 'Your submission has been received successfully.');
     }
@@ -353,9 +365,24 @@ final class FormsWebController extends Controller
         }
 
         if ($form->target_audience === 'departmental' && $form->target_department_id) {
-            // Check if user is associated with this department (via employee or department_id)
-            $userDeptId = $user->department_id ?? null;
-            if ($userDeptId && (int) $userDeptId !== (int) $form->target_department_id) {
+            if ($user->can('forms.manage')) {
+                return;
+            }
+
+            $isInDepartment = false;
+
+            if (isset($user->department_id) && (int) $user->department_id === (int) $form->target_department_id) {
+                $isInDepartment = true;
+            } elseif (class_exists(\App\Modules\HrmsCore\Models\Employees\Employee::class)) {
+                $employee = \App\Modules\HrmsCore\Models\Employees\Employee::where('user_id', $user->id)->first();
+                if ($employee) {
+                    $isInDepartment = $employee->departments()
+                        ->where('hrms_departments.id', $form->target_department_id)
+                        ->exists();
+                }
+            }
+
+            if (! $isInDepartment) {
                 abort(403, 'Access restricted to members of the designated department.');
             }
         }

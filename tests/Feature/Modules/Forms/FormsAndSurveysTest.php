@@ -219,4 +219,102 @@ describe('Phase 24: General Form Builder, HR Forms, Surveys & Live Polls (TRK-FO
 
         expect(FormSubmission::where('form_definition_id', $closedForm->id)->exists())->toBeFalse();
     });
+
+    test('adversarial reject: departmental form strictly restricts access to assigned department members', function (): void {
+        [$admin, $tenant] = createFormsTestContext();
+
+        $financeDept = App\Modules\HrmsCore\Models\Organization\Department::create([
+            'tenant_id' => $tenant->id,
+            'name' => 'Finance Department',
+            'slug' => 'finance-'.uniqid(),
+            'is_active' => true,
+        ]);
+
+        $otherDept = App\Modules\HrmsCore\Models\Organization\Department::create([
+            'tenant_id' => $tenant->id,
+            'name' => 'Logistics Department',
+            'slug' => 'logistics-'.uniqid(),
+            'is_active' => true,
+        ]);
+
+        $form = FormDefinition::create([
+            'tenant_id' => $tenant->id,
+            'title' => 'Finance Department Expense Reconciliation',
+            'slug' => 'finance-expense-reconciliation',
+            'type' => 'general',
+            'target_audience' => 'departmental',
+            'target_department_id' => $financeDept->id,
+            'status' => 'published',
+            'created_by' => (string) $admin->uuid,
+        ]);
+
+        FormField::create([
+            'tenant_id' => $tenant->id,
+            'form_definition_id' => $form->id,
+            'label' => 'Voucher Number',
+            'field_name' => 'voucher_number',
+            'field_type' => 'text',
+            'is_required' => true,
+            'sort_order' => 1,
+        ]);
+
+        // 1. User without any department receives 403 Forbidden
+        $userNoDept = User::factory()->create(['email' => 'nodept-'.uniqid().'@example.com']);
+        $userNoDept->tenants()->syncWithoutDetaching([$tenant->id]);
+        $userNoDept->givePermissionTo('forms.submit');
+
+        $this->actingAs($userNoDept)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->get(route('forms.public.show', $form->slug))
+            ->assertStatus(403);
+
+        $this->actingAs($userNoDept)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->post(route('forms.public.submit', $form->slug), ['voucher_number' => 'V-1001'])
+            ->assertStatus(403);
+
+        // 2. User from different department (Logistics) receives 403 Forbidden
+        $userWrongDept = User::factory()->create(['email' => 'wrongdept-'.uniqid().'@example.com']);
+        $userWrongDept->tenants()->syncWithoutDetaching([$tenant->id]);
+        $userWrongDept->givePermissionTo('forms.submit');
+
+        $empWrong = App\Modules\HrmsCore\Models\Employees\Employee::create([
+            'tenant_id' => $tenant->id,
+            'user_id' => $userWrongDept->id,
+            'first_name' => 'Wrong',
+            'last_name' => 'Officer',
+            'email' => $userWrongDept->email,
+        ]);
+        $empWrong->departments()->attach($otherDept->id);
+
+        $this->actingAs($userWrongDept)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->get(route('forms.public.show', $form->slug))
+            ->assertStatus(403);
+
+        // 3. User with matching department (Finance) succeeds
+        $userFinance = User::factory()->create(['email' => 'finance-'.uniqid().'@example.com']);
+        $userFinance->tenants()->syncWithoutDetaching([$tenant->id]);
+        $userFinance->givePermissionTo('forms.submit');
+
+        $empFinance = App\Modules\HrmsCore\Models\Employees\Employee::create([
+            'tenant_id' => $tenant->id,
+            'user_id' => $userFinance->id,
+            'first_name' => 'Finance',
+            'last_name' => 'Officer',
+            'email' => $userFinance->email,
+        ]);
+        $empFinance->departments()->attach($financeDept->id);
+
+        $this->actingAs($userFinance)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->get(route('forms.public.show', $form->slug))
+            ->assertStatus(200);
+
+        // 4. Admin with forms.manage can access regardless of department
+        $this->actingAs($admin)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->get(route('forms.public.show', $form->slug))
+            ->assertStatus(200);
+    });
 });

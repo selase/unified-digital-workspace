@@ -6,6 +6,7 @@ use App\Models\Tenant;
 use App\Models\User;
 use App\Modules\Crm\Models\CrmLead;
 use App\Modules\RealEstate\Models\ClientPlotAllocation;
+use App\Modules\RealEstate\Models\InstallmentSchedule;
 use App\Modules\RealEstate\Models\LandDocument;
 use App\Modules\RealEstate\Models\LandParcel;
 use App\Modules\RealEstate\Models\PropertyListing;
@@ -471,5 +472,143 @@ describe('Phase 20: Real Estate Management, Public Land Listings, Client Portal,
                 'target_stage' => LandParcel::STAGE_REGISTRATION,
             ])
             ->assertNotFound();
+    });
+
+    test('enforces adversarial security boundaries against IDOR on documents, expert orders, and installments, and rejects overpayments', function (): void {
+        [$user, $tenant] = createRealEstateTestContext();
+
+        // 1. Setup client A and client B
+        $clientA = User::factory()->create([
+            'tenant_id' => $tenant->id,
+            'email' => 'clientA@example.com',
+        ]);
+        $clientB = User::factory()->create([
+            'tenant_id' => $tenant->id,
+            'email' => 'clientB@example.com',
+        ]);
+
+        $clientA->tenants()->syncWithoutDetaching([$tenant->id]);
+        $clientB->tenants()->syncWithoutDetaching([$tenant->id]);
+
+        $clientA->givePermissionTo('realestate.client.portal');
+        $clientB->givePermissionTo('realestate.client.portal');
+
+        $project = RealEstateProject::create([
+            'name' => 'Legacy Hills',
+            'code' => 'LGC-HILLS',
+            'location' => 'Prampram',
+            'region' => 'Greater Accra',
+            'total_acreage' => 10.00,
+            'status' => 'active',
+        ]);
+
+        $parcelA = LandParcel::create([
+            'real_estate_project_id' => $project->id,
+            'plot_number' => 'PLT-A-01',
+            'size_dimension' => '70x100 ft',
+            'acreage' => 0.1600,
+            'price_pesewas' => 5000000, // 50,000 GHS
+            'tenure_type' => 'PRIVATE',
+            'current_stage' => LandParcel::STAGE_READY_TO_BUILD,
+            'status' => 'allocated',
+        ]);
+
+        $allocationA = ClientPlotAllocation::create([
+            'land_parcel_id' => $parcelA->id,
+            'client_user_id' => (string) $clientA->uuid,
+            'allocation_number' => 'ALC-A-001',
+            'total_price_pesewas' => 5000000,
+            'amount_paid_pesewas' => 0,
+            'status' => 'active',
+            'allocated_at' => now(),
+        ]);
+
+        $installmentA = InstallmentSchedule::create([
+            'client_plot_allocation_id' => $allocationA->id,
+            'installment_number' => 1,
+            'due_date' => now()->addMonth()->toDateString(),
+            'amount_due_pesewas' => 2500000, // 25,000 GHS
+            'amount_paid_pesewas' => 0,
+            'status' => 'pending',
+        ]);
+
+        // Upload document for Parcel A
+        Storage::fake('local');
+        $fakeDocPath = "tenants/{$tenant->id}/real-estate/{$parcelA->uuid}/test_doc.pdf";
+        Storage::disk('local')->put($fakeDocPath, 'Secret Indenture Content');
+
+        $docA = LandDocument::create([
+            'land_parcel_id' => $parcelA->id,
+            'workflow_stage' => $parcelA->current_stage,
+            'document_type' => 'INDENTURE',
+            'title' => 'Indenture for Client A',
+            'file_path' => $fakeDocPath,
+            'verification_status' => 'VERIFIED',
+            'uploaded_by_id' => (string) $user->uuid,
+        ]);
+
+        // ADVERSARIAL TEST 1: Client B cannot download Client A's document (IDOR 403)
+        $this->actingAs($clientB)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->get(route('real-estate.documents.download', $docA))
+            ->assertForbidden();
+
+        // But Client A can download their own document
+        $this->actingAs($clientA)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->get(route('real-estate.documents.download', $docA))
+            ->assertOk();
+
+        // ADVERSARIAL TEST 2: Client B cannot dispatch vendor order for Client A's parcel (IDOR 403)
+        $this->actingAs($clientB)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->post(route('real-estate.parcels.order-vendor', $parcelA), [
+                'category' => 'surveying',
+                'title' => 'Unauthorized survey',
+            ])
+            ->assertForbidden();
+
+        // ADVERSARIAL TEST 3: Client B cannot pay Client A's installment (IDOR 403)
+        $this->actingAs($clientB)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->post(route('real-estate.installments.pay', $installmentA), [
+                'amount_ghs' => 5000,
+                'payment_reference' => 'PAY-ILLEGAL-01',
+            ])
+            ->assertForbidden();
+
+        // ADVERSARIAL TEST 4: Client A attempting to overpay installment is rejected with validation error
+        $overpayResponse = $this->actingAs($clientA)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->post(route('real-estate.installments.pay', $installmentA), [
+                'amount_ghs' => 30000, // Due is 25,000 GHS
+                'payment_reference' => 'PAY-OVERPAY-01',
+            ]);
+        $overpayResponse->assertSessionHasErrors('amount_ghs');
+        expect($installmentA->fresh()->amount_paid_pesewas)->toBe(0);
+
+        // ADVERSARIAL TEST 5: Online payment routes to PaymentGateway checkout session
+        Illuminate\Support\Facades\Http::fake([
+            'api.paystack.co/*' => Illuminate\Support\Facades\Http::response([
+                'status' => true,
+                'data' => [
+                    'authorization_url' => 'https://checkout.paystack.test/pay/session_abc123',
+                    'email' => 'clientA@example.com',
+                ],
+            ], 200),
+        ]);
+
+        $mockGateway = Mockery::mock(PaymentGateway::class);
+        $mockGateway->shouldReceive('createOneTimeCheckoutSession')
+            ->andReturn('https://checkout.paystack.test/pay/session_abc123');
+        app()->instance(PaymentGateway::class, $mockGateway);
+
+        $this->actingAs($clientA)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->post(route('real-estate.installments.pay', $installmentA), [
+                'amount_ghs' => 10000,
+                'pay_online' => true,
+            ])
+            ->assertRedirect('https://checkout.paystack.test/pay/session_abc123');
     });
 });

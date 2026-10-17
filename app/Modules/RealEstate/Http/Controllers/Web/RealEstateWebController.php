@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\RealEstate\Http\Controllers\Web;
 
+use App\Contracts\PaymentGateway;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Modules\RealEstate\Models\ClientPlotAllocation;
@@ -295,21 +296,24 @@ final class RealEstateWebController extends Controller
     {
         $user = $request->user();
 
-        // Security check: must have realestate view/manage permission OR be the allocated client
-        $isAllocatedClient = $document->parcel?->allocation?->client_user_id === (string) $user?->uuid;
-        abort_if(! $user?->can('realestate.view') && ! $user?->can('realestate.client.portal') && ! $isAllocatedClient, 403);
+        // Security check: staff with realestate permission OR specifically the allocated client
+        $isStaff = (bool) ($user?->can('realestate.view') || $user?->can('realestate.manage'));
+        $isAllocatedClient = (bool) ($user?->can('realestate.client.portal') && $document->parcel?->allocation?->client_user_id === (string) $user?->uuid);
+        abort_if(! $isStaff && ! $isAllocatedClient, 403);
 
         if (! Storage::disk('local')->exists($document->file_path)) {
             abort(404, 'Document vault asset file not found on disk.');
         }
 
         $fullPath = Storage::disk('local')->path($document->file_path);
-
         $response = response()->download($fullPath, basename($document->file_path));
-        $response->setPrivate();
-        $response->headers->addCacheControlDirective('no-store', true);
+        $response->headers->removeCacheControlDirective('public');
+        $response->headers->addCacheControlDirective('private', true);
         $response->headers->addCacheControlDirective('no-cache', true);
+        $response->headers->addCacheControlDirective('no-store', true);
         $response->headers->addCacheControlDirective('must-revalidate', true);
+        $response->headers->set('Pragma', 'no-cache');
+        $response->headers->set('Expires', '0');
 
         return $response;
     }
@@ -380,19 +384,56 @@ final class RealEstateWebController extends Controller
             ->with('message', "Plot {$parcel->plot_number} allocated to {$validated['client_name']} ({$allocation->allocation_number}).");
     }
 
-    public function payInstallment(Request $request, InstallmentSchedule $installment): RedirectResponse
-    {
+    public function payInstallment(
+        Request $request,
+        InstallmentSchedule $installment,
+        PaymentGateway $gateway
+    ): RedirectResponse {
         $user = $request->user();
-        abort_if(! $user?->can('realestate.manage') && ! $user?->can('realestate.client.portal'), 403);
+        /** @var ClientPlotAllocation $allocation */
+        $allocation = $installment->allocation()->firstOrFail();
+
+        $isStaff = (bool) $user?->can('realestate.manage');
+        $isClient = (bool) ($user?->can('realestate.client.portal') && $allocation->client_user_id === (string) $user?->uuid);
+        abort_if(! $isStaff && ! $isClient, 403);
 
         $validated = $request->validate([
             'amount_ghs' => ['required', 'numeric', 'min:1'],
             'payment_reference' => ['nullable', 'string', 'max:120'],
+            'pay_online' => ['nullable', 'boolean'],
         ]);
 
         $pesewas = (int) round(((float) $validated['amount_ghs']) * 100);
         $due = (int) $installment->amount_due_pesewas;
-        $newPaid = $installment->amount_paid_pesewas + $pesewas;
+        $alreadyPaid = (int) $installment->amount_paid_pesewas;
+        $remainingDue = max(0, $due - $alreadyPaid);
+
+        if ($pesewas > $remainingDue) {
+            return back()->withErrors([
+                'amount_ghs' => 'Payment exceeds remaining installment due balance of GHS '.number_format($remainingDue / 100, 2),
+            ]);
+        }
+
+        // If online payment requested, generate checkout session
+        if (! empty($validated['pay_online']) || ($isClient && empty($validated['payment_reference']))) {
+            $redirectUrl = route('real-estate.portal.index');
+            $checkoutUrl = $gateway->createOneTimeCheckoutSession(
+                (string) ($user->email ?? 'customer@example.com'),
+                $pesewas,
+                'GHS',
+                $redirectUrl,
+                [
+                    'type' => 'real_estate_installment',
+                    'installment_id' => $installment->id,
+                    'allocation_id' => $allocation->id,
+                    'user_uuid' => (string) $user->uuid,
+                ]
+            );
+
+            return redirect()->away($checkoutUrl);
+        }
+
+        $newPaid = $alreadyPaid + $pesewas;
 
         $installment->update([
             'amount_paid_pesewas' => $newPaid,
@@ -401,8 +442,6 @@ final class RealEstateWebController extends Controller
             'payment_reference' => $validated['payment_reference'] ?? 'PAY-'.mb_strtoupper(Str::random(8)),
         ]);
 
-        /** @var ClientPlotAllocation $allocation */
-        $allocation = $installment->allocation()->firstOrFail();
         $allocation->increment('amount_paid_pesewas', $pesewas);
 
         if ($allocation->amount_paid_pesewas >= $allocation->total_price_pesewas) {
@@ -418,7 +457,9 @@ final class RealEstateWebController extends Controller
     public function orderExpertOrMaterial(Request $request, LandParcel $parcel): RedirectResponse
     {
         $user = $request->user();
-        abort_if(! $user?->can('realestate.manage') && ! $user?->can('realestate.client.portal'), 403);
+        $isStaff = (bool) $user?->can('realestate.manage');
+        $isAllocatedClient = (bool) ($user?->can('realestate.client.portal') && $parcel->allocation?->client_user_id === (string) $user?->uuid);
+        abort_if(! $isStaff && ! $isAllocatedClient, 403);
 
         $validated = $request->validate([
             'category' => ['required', 'string', Rule::in([
