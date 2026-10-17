@@ -11,6 +11,26 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
+/**
+ * @property int $id
+ * @property string $uuid
+ * @property string $tenant_id
+ * @property string $invoice_number
+ * @property int|null $service_job_id
+ * @property int|null $vendor_profile_id
+ * @property string|null $client_id
+ * @property string $currency
+ * @property int $gross_amount_pesewas
+ * @property int $tenant_commission_bps
+ * @property int $platform_commission_bps
+ * @property int $tenant_commission_pesewas
+ * @property int $platform_commission_pesewas
+ * @property int $net_vendor_payout_pesewas
+ * @property array<mixed>|null $line_items
+ * @property string|null $notes
+ * @property string $status
+ * @property \Illuminate\Support\Carbon|null $valid_until
+ */
 final class ProformaInvoice extends Model
 {
     use BelongsToTenant;

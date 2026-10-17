@@ -12,6 +12,23 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * @property int $id
+ * @property string $uuid
+ * @property string $tenant_id
+ * @property string $job_number
+ * @property int|null $vendor_profile_id
+ * @property string $requester_id
+ * @property string $source_module
+ * @property string $category
+ * @property string $title
+ * @property string $description
+ * @property string $location
+ * @property string $status
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property \Illuminate\Support\Carbon|null $deleted_at
+ */
 final class ServiceJob extends Model
 {
     use BelongsToTenant;

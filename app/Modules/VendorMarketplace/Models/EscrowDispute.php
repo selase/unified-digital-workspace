@@ -10,6 +10,19 @@ use App\Traits\HasUuid;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property int $id
+ * @property string $uuid
+ * @property string $tenant_id
+ * @property int $escrow_account_id
+ * @property string $raised_by_id
+ * @property string $reason
+ * @property string $status
+ * @property string|null $resolution_type
+ * @property string|null $resolution_notes
+ * @property string|null $resolved_by_id
+ * @property \Illuminate\Support\Carbon|null $resolved_at
+ */
 final class EscrowDispute extends Model
 {
     use BelongsToTenant;

@@ -85,6 +85,7 @@ final class EscrowSettlementService
         EscrowAccount $escrow,
         string $actorUuid,
         string $idempotencyKey,
+        bool $holdPayoutForDisbursement = false,
     ): EscrowAccount {
         $vendorKey = "{$idempotencyKey}:vendor";
 
@@ -172,16 +173,60 @@ final class EscrowSettlementService
             ]);
         }
 
+        $newStatus = $holdPayoutForDisbursement
+            ? EscrowAccount::STATUS_PENDING_PAYOUT
+            : EscrowAccount::STATUS_RELEASED;
+
         $locked->update([
             'held_balance_pesewas' => 0,
             'released_vendor_pesewas' => $vendorAmount,
             'released_tenant_commission_pesewas' => $tenantFee,
             'released_platform_commission_pesewas' => $platformFee,
-            'status' => EscrowAccount::STATUS_RELEASED,
+            'status' => $newStatus,
             'settled_at' => now(),
         ]);
 
         $locked->serviceJob()->update(['status' => ServiceJob::STATUS_COMPLETED]);
+
+        return $locked->fresh() ?? $locked;
+    }
+
+    /**
+     * Atomically executes vendor payout disbursement for an escrow held in pending_payout.
+     */
+    public function settlePayout(
+        EscrowAccount $escrow,
+        string $actorUuid,
+        string $payoutReference
+    ): EscrowAccount {
+        /** @var EscrowAccount $locked */
+        $locked = EscrowAccount::query()->where('id', $escrow->id)->lockForUpdate()->firstOrFail();
+
+        if ($locked->status === EscrowAccount::STATUS_RELEASED) {
+            return $locked;
+        }
+
+        if ($locked->status !== EscrowAccount::STATUS_PENDING_PAYOUT) {
+            throw new DomainException('Only escrows in pending payout state can be settled for disbursement.');
+        }
+
+        EscrowLedgerEntry::create([
+            'escrow_account_id' => $locked->id,
+            'idempotency_key' => "payout:{$locked->uuid}:{$payoutReference}",
+            'entry_type' => 'vendor_payout_disbursed',
+            'direction' => 'debit',
+            'beneficiary_type' => 'vendor',
+            'amount_pesewas' => (int) $locked->released_vendor_pesewas,
+            'balance_after_pesewas' => 0,
+            'actor_id' => $actorUuid,
+            'notes' => "Vendor payout disbursed via reference {$payoutReference}",
+            'occurred_at' => now(),
+        ]);
+
+        $locked->update([
+            'status' => EscrowAccount::STATUS_RELEASED,
+            'settled_at' => now(),
+        ]);
 
         return $locked->fresh() ?? $locked;
     }

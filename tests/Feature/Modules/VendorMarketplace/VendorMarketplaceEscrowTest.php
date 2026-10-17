@@ -299,4 +299,93 @@ describe('Phase 19: Cross-Cutting Vendor & Service Provider Marketplace, 3-Way C
             ->get(route('vendor-marketplace.index'))
             ->assertForbidden();
     });
+
+    test('supports online gateway checkout for escrow funding and pending_payout settlement lifecycle', function (): void {
+        [$user, $tenant] = createVendorMarketplaceTestContext();
+
+        // Setup vendor and job
+        $vendor = VendorProfile::create([
+            'user_id' => (string) $user->uuid,
+            'business_name' => 'Acme Electricals Ltd',
+            'code' => 'VND-ELEC-01',
+            'category' => 'electrical',
+            'status' => 'verified',
+        ]);
+
+        $job = ServiceJob::create([
+            'job_number' => 'JOB-ELEC-01',
+            'requester_id' => (string) $user->uuid,
+            'source_module' => 'facilities',
+            'category' => 'electrical',
+            'title' => 'Main Switchboard Rewiring',
+            'vendor_profile_id' => $vendor->id,
+            'status' => ServiceJob::STATUS_ASSIGNED,
+        ]);
+
+        $proforma = ProformaInvoice::create([
+            'invoice_number' => 'PFI-ELEC-01',
+            'service_job_id' => $job->id,
+            'vendor_profile_id' => $vendor->id,
+            'client_id' => (string) $user->uuid,
+            'currency' => 'GHS',
+            'gross_amount_pesewas' => 500000, // 5,000 GHS
+            'tenant_commission_bps' => 500,
+            'platform_commission_bps' => 200,
+            'tenant_commission_pesewas' => 25000,
+            'platform_commission_pesewas' => 10000,
+            'net_vendor_payout_pesewas' => 465000,
+            'status' => ProformaInvoice::STATUS_SUBMITTED,
+        ]);
+
+        // 1. Online funding via PaymentGateway checkout session
+        $mockGateway = Mockery::mock(App\Contracts\PaymentGateway::class);
+        $mockGateway->shouldReceive('createOneTimeCheckoutSession')
+            ->once()
+            ->andReturn('https://checkout.stripe.test/pay/session_escrow_001');
+        app()->instance(App\Contracts\PaymentGateway::class, $mockGateway);
+
+        $this->actingAs($user)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->post(route('vendor-marketplace.escrows.fund', $proforma), [
+                'pay_online' => true,
+            ])
+            ->assertRedirect('https://checkout.stripe.test/pay/session_escrow_001');
+
+        // 2. Offline/confirmed funding
+        $this->actingAs($user)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->post(route('vendor-marketplace.escrows.fund', $proforma), [
+                'idempotency_key' => 'fund-escrow-payout-test',
+            ])
+            ->assertRedirect(route('vendor-marketplace.index'));
+
+        $escrow = EscrowAccount::where('proforma_invoice_id', $proforma->id)->firstOrFail();
+        expect($escrow->status)->toBe(EscrowAccount::STATUS_FUNDED);
+
+        // 3. Release escrow with hold_payout_for_disbursement = true -> transitions to pending_payout
+        $this->actingAs($user)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->post(route('vendor-marketplace.escrows.release', $escrow), [
+                'idempotency_key' => 'release-escrow-hold-payout',
+                'hold_payout_for_disbursement' => true,
+            ])
+            ->assertRedirect(route('vendor-marketplace.index'));
+
+        $escrow->refresh();
+        expect($escrow->status)->toBe(EscrowAccount::STATUS_PENDING_PAYOUT)
+            ->and($escrow->released_vendor_pesewas)->toBe(465000)
+            ->and($escrow->held_balance_pesewas)->toBe(0);
+
+        // 4. Finance settles payout
+        $this->actingAs($user)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->post(route('vendor-marketplace.escrows.settle-payout', $escrow), [
+                'payout_reference' => 'MOMO-PAYOUT-REF-8841',
+            ])
+            ->assertRedirect(route('vendor-marketplace.index'));
+
+        $escrow->refresh();
+        expect($escrow->status)->toBe(EscrowAccount::STATUS_RELEASED)
+            ->and(EscrowLedgerEntry::where('entry_type', 'vendor_payout_disbursed')->count())->toBe(1);
+    });
 });

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\VendorMarketplace\Http\Controllers\Web;
 
+use App\Contracts\PaymentGateway;
 use App\Http\Controllers\Controller;
 use App\Modules\VendorMarketplace\Models\CommissionRateCard;
 use App\Modules\VendorMarketplace\Models\EscrowAccount;
@@ -236,9 +237,26 @@ final class VendorMarketplaceWebController extends Controller
         Request $request,
         ProformaInvoice $proforma,
         EscrowSettlementService $settlement,
+        PaymentGateway $gateway,
     ): RedirectResponse {
         $user = $request->user();
         abort_if(! $user?->can('escrow.manage'), 403);
+
+        if ($request->boolean('pay_online')) {
+            $checkoutUrl = $gateway->createOneTimeCheckoutSession(
+                (string) ($user->email ?? 'buyer@example.com'),
+                (int) $proforma->gross_amount_pesewas,
+                (string) ($proforma->currency ?: 'GHS'),
+                route('vendor-marketplace.index'),
+                [
+                    'type' => 'escrow_funding',
+                    'proforma_id' => $proforma->id,
+                    'user_uuid' => (string) $user->uuid,
+                ]
+            );
+
+            return redirect()->away($checkoutUrl);
+        }
 
         $idempotencyKey = (string) ($request->input('idempotency_key') ?: "fund:{$proforma->uuid}");
 
@@ -263,9 +281,38 @@ final class VendorMarketplaceWebController extends Controller
         abort_if(! $user?->can('escrow.manage'), 403);
 
         $idempotencyKey = (string) ($request->input('idempotency_key') ?: "release:{$escrow->uuid}");
+        $holdPayout = $request->boolean('hold_payout_for_disbursement');
 
         try {
-            $settlement->releaseEscrow($escrow, (string) $user->uuid, $idempotencyKey);
+            $settlement->releaseEscrow($escrow, (string) $user->uuid, $idempotencyKey, $holdPayout);
+        } catch (DomainException $e) {
+            return back()->withErrors(['escrow' => $e->getMessage()]);
+        }
+
+        $msg = $holdPayout
+            ? "Escrow {$escrow->escrow_number} approved for payout; pending finance disbursement."
+            : "Escrow {$escrow->escrow_number} settled via 3-way split.";
+
+        return redirect()
+            ->route('vendor-marketplace.index')
+            ->with('status', 'success')
+            ->with('message', $msg);
+    }
+
+    public function settlePayout(
+        Request $request,
+        EscrowAccount $escrow,
+        EscrowSettlementService $settlement,
+    ): RedirectResponse {
+        $user = $request->user();
+        abort_if(! $user?->can('escrow.manage'), 403);
+
+        $validated = $request->validate([
+            'payout_reference' => ['required', 'string', 'max:120'],
+        ]);
+
+        try {
+            $settlement->settlePayout($escrow, (string) $user->uuid, $validated['payout_reference']);
         } catch (DomainException $e) {
             return back()->withErrors(['escrow' => $e->getMessage()]);
         }
@@ -273,7 +320,7 @@ final class VendorMarketplaceWebController extends Controller
         return redirect()
             ->route('vendor-marketplace.index')
             ->with('status', 'success')
-            ->with('message', "Escrow {$escrow->escrow_number} settled via 3-way split.");
+            ->with('message', "Vendor payout disbursed for Escrow {$escrow->escrow_number}.");
     }
 
     public function openDispute(

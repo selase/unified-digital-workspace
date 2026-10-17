@@ -12,5 +12,6 @@ Route::post('/jobs', [VendorMarketplaceWebController::class, 'storeJob'])->name(
 Route::post('/jobs/{job}/proformas', [VendorMarketplaceWebController::class, 'storeProforma'])->name('proformas.store');
 Route::post('/proformas/{proforma}/fund-escrow', [VendorMarketplaceWebController::class, 'fundEscrow'])->name('escrows.fund');
 Route::post('/escrows/{escrow}/release', [VendorMarketplaceWebController::class, 'releaseEscrow'])->name('escrows.release');
+Route::post('/escrows/{escrow}/settle-payout', [VendorMarketplaceWebController::class, 'settlePayout'])->name('escrows.settle-payout');
 Route::post('/escrows/{escrow}/disputes', [VendorMarketplaceWebController::class, 'openDispute'])->name('escrows.disputes.open');
 Route::post('/disputes/{dispute}/resolve', [VendorMarketplaceWebController::class, 'resolveDispute'])->name('escrows.disputes.resolve');

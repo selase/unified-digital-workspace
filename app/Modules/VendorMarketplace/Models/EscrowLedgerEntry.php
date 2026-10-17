@@ -10,6 +10,21 @@ use App\Traits\HasUuid;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property int $id
+ * @property string $uuid
+ * @property string $tenant_id
+ * @property int $escrow_account_id
+ * @property string $idempotency_key
+ * @property string $entry_type
+ * @property string $direction
+ * @property string $beneficiary_type
+ * @property int $amount_pesewas
+ * @property int $balance_after_pesewas
+ * @property string|null $actor_id
+ * @property string|null $notes
+ * @property \Illuminate\Support\Carbon|null $occurred_at
+ */
 final class EscrowLedgerEntry extends Model
 {
     use BelongsToTenant;

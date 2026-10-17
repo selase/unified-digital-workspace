@@ -11,6 +11,27 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property int $id
+ * @property string $uuid
+ * @property string $tenant_id
+ * @property string $escrow_number
+ * @property int $proforma_invoice_id
+ * @property int|null $service_job_id
+ * @property int|null $vendor_profile_id
+ * @property string|null $buyer_id
+ * @property string $currency
+ * @property int $funded_amount_pesewas
+ * @property int $held_balance_pesewas
+ * @property int $released_vendor_pesewas
+ * @property int $released_tenant_commission_pesewas
+ * @property int $released_platform_commission_pesewas
+ * @property int $refunded_buyer_pesewas
+ * @property string $status
+ * @property \Illuminate\Support\Carbon|null $funded_at
+ * @property \Illuminate\Support\Carbon|null $settled_at
+ * @property-read ProformaInvoice|null $proformaInvoice
+ */
 final class EscrowAccount extends Model
 {
     use BelongsToTenant;
@@ -21,6 +42,8 @@ final class EscrowAccount extends Model
     public const STATUS_FUNDED = 'funded';
 
     public const STATUS_FROZEN_DISPUTED = 'frozen_disputed';
+
+    public const STATUS_PENDING_PAYOUT = 'pending_payout';
 
     public const STATUS_RELEASED = 'released';
 
