@@ -15,6 +15,7 @@ final class TaskDependency extends Model
     use HasFactory;
 
     protected $fillable = [
+        'tenant_id',
         'task_id',
         'depends_on_task_id',
     ];

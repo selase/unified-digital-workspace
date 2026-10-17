@@ -16,6 +16,7 @@ final class ResourceAllocation extends Model
     use HasFactory;
 
     protected $fillable = [
+        'tenant_id',
         'project_id',
         'user_id',
         'start_date',

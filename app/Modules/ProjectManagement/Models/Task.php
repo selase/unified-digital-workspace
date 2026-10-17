@@ -23,6 +23,7 @@ final class Task extends Model
 
     protected $fillable = [
         'uuid',
+        'tenant_id',
         'project_id',
         'milestone_id',
         'title',

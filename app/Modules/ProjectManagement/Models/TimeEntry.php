@@ -16,6 +16,7 @@ final class TimeEntry extends Model
     use HasFactory;
 
     protected $fillable = [
+        'tenant_id',
         'task_id',
         'user_id',
         'entry_date',

@@ -16,6 +16,7 @@ final class Milestone extends Model
     use HasFactory;
 
     protected $fillable = [
+        'tenant_id',
         'project_id',
         'name',
         'description',

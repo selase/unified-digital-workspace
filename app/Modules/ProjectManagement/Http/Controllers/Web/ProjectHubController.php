@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Modules\ProjectManagement\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Modules\ProjectManagement\Models\Milestone;
+use App\Modules\ProjectManagement\Models\Project;
+use App\Modules\ProjectManagement\Models\Task;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
 
 final class ProjectHubController extends Controller
 {
@@ -15,23 +17,55 @@ final class ProjectHubController extends Controller
     {
         abort_if(! $request->user()?->can('projects.view'), 403);
 
-        $apiLinks = collect([
-            ['label' => 'Projects', 'route' => 'api.project-management.v1.projects.index', 'params' => []],
-            ['label' => 'Project Summary', 'route' => 'api.project-management.v1.projects.summary', 'params' => ['project' => 1]],
-            ['label' => 'Project Gantt', 'route' => 'api.project-management.v1.projects.gantt', 'params' => ['project' => 1]],
-            ['label' => 'Project Tasks', 'route' => 'api.project-management.v1.projects.tasks.index', 'params' => ['project' => 1]],
-        ])->map(function (array $apiLink): array {
-            $apiLink['url'] = Route::has($apiLink['route']) ? route($apiLink['route'], $apiLink['params']) : null;
+        $projectsQuery = Project::query();
+        $totalProjects = (clone $projectsQuery)->count();
+        $activeProjects = (clone $projectsQuery)->where('status', 'in-progress')->count();
+        $plannedProjects = (clone $projectsQuery)->where('status', 'planned')->count();
+        $completedProjects = (clone $projectsQuery)->where('status', 'completed')->count();
+        $onHoldProjects = (clone $projectsQuery)->where('status', 'on-hold')->count();
 
-            return $apiLink;
-        })->filter(fn (array $apiLink): bool => filled($apiLink['url']))->values();
+        $totalBudget = (clone $projectsQuery)->sum('budget_amount');
+
+        $tasksQuery = Task::query();
+        $totalTasks = (clone $tasksQuery)->count();
+        $completedTasks = (clone $tasksQuery)->where('status', 'done')->count();
+        $overdueTasks = (clone $tasksQuery)
+            ->where('status', '!=', 'done')
+            ->whereNotNull('due_date')
+            ->whereDate('due_date', '<', now()->toDateString())
+            ->count();
+
+        $recentProjects = Project::query()
+            ->with(['owner:id,uuid,first_name,last_name,email'])
+            ->withCount([
+                'tasks',
+                'members',
+                'tasks as completed_tasks_count' => fn ($q) => $q->where('status', 'done'),
+            ])
+            ->latest('updated_at')
+            ->limit(6)
+            ->get();
+
+        $upcomingMilestones = Milestone::query()
+            ->with('project:id,uuid,name,slug')
+            ->whereNull('completed_at')
+            ->whereNotNull('due_date')
+            ->orderBy('due_date')
+            ->limit(5)
+            ->get();
 
         return view('project-management::index', [
-            'rootApiUrl' => route('api.project-management.index'),
-            'apiLinks' => $apiLinks,
-            'featureCount' => count((array) config('modules.project-management.features', [])),
-            'permissionCount' => count((array) config('modules.project-management.permissions', [])),
-            'moduleVersion' => (string) config('modules.project-management.version', '1.0.0'),
+            'totalProjects' => $totalProjects,
+            'activeProjects' => $activeProjects,
+            'plannedProjects' => $plannedProjects,
+            'completedProjects' => $completedProjects,
+            'onHoldProjects' => $onHoldProjects,
+            'totalBudget' => (float) $totalBudget,
+            'totalTasks' => $totalTasks,
+            'completedTasks' => $completedTasks,
+            'overdueTasks' => $overdueTasks,
+            'recentProjects' => $recentProjects,
+            'upcomingMilestones' => $upcomingMilestones,
         ]);
     }
 }

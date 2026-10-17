@@ -13,6 +13,23 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * @property int $id
+ * @property string $uuid
+ * @property string $tenant_id
+ * @property string $name
+ * @property string $slug
+ * @property string|null $description
+ * @property string $status
+ * @property string $priority
+ * @property \Illuminate\Support\Carbon|null $start_date
+ * @property \Illuminate\Support\Carbon|null $end_date
+ * @property \Illuminate\Support\Carbon|null $completed_at
+ * @property numeric-string|null $budget_amount
+ * @property string|null $currency
+ * @property string|null $owner_id
+ * @property array<string, mixed>|null $metadata
+ */
 final class Project extends Model
 {
     use BelongsToTenant;

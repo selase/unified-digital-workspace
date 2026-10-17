@@ -16,6 +16,7 @@ final class TaskAssignment extends Model
     use HasFactory;
 
     protected $fillable = [
+        'tenant_id',
         'task_id',
         'user_id',
         'assigned_by_id',
