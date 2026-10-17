@@ -11,6 +11,31 @@ use App\Traits\HasUuid;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property int $id
+ * @property string $uuid
+ * @property string $tenant_id
+ * @property string $work_order_number
+ * @property string $mode
+ * @property int|null $facility_building_id
+ * @property int|null $facility_space_id
+ * @property int|null $facility_asset_id
+ * @property int|null $preventive_maintenance_schedule_id
+ * @property string $requester_id
+ * @property string|null $assigned_technician_id
+ * @property string $category
+ * @property string $title
+ * @property string|null $description
+ * @property string $priority
+ * @property string $status
+ * @property \Illuminate\Support\Carbon|null $due_date
+ * @property \Illuminate\Support\Carbon|null $scheduled_due_date
+ * @property \Illuminate\Support\Carbon|null $completed_at
+ * @property string|null $completion_notes
+ * @property int|null $service_job_id
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ */
 final class FacilityWorkOrder extends Model
 {
     use BelongsToTenant;
@@ -48,14 +73,24 @@ final class FacilityWorkOrder extends Model
         'priority',
         'status',
         'due_date',
+        'scheduled_due_date',
         'completed_at',
         'completion_notes',
         'service_job_id',
+        'preventive_maintenance_schedule_id',
     ];
 
     public function getRouteKeyName(): string
     {
         return 'uuid';
+    }
+
+    /**
+     * @return BelongsTo<PreventiveMaintenanceSchedule, $this>
+     */
+    public function preventiveMaintenanceSchedule(): BelongsTo
+    {
+        return $this->belongsTo(PreventiveMaintenanceSchedule::class, 'preventive_maintenance_schedule_id');
     }
 
     /**
@@ -113,6 +148,7 @@ final class FacilityWorkOrder extends Model
     {
         return [
             'due_date' => 'date',
+            'scheduled_due_date' => 'date',
             'completed_at' => 'datetime',
         ];
     }

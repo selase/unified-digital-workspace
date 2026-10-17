@@ -19,6 +19,12 @@ final class FacilitiesManagementServiceProvider extends ServiceProvider
         $this->loadViewsFrom(__DIR__.'/../Views', 'facilities-management');
         $this->loadMigrationsFrom(__DIR__.'/../Database/Migrations');
 
+        if ($this->app->runningInConsole()) {
+            $this->commands([
+                \App\Modules\FacilitiesManagement\Console\Commands\GeneratePreventiveWorkOrdersCommand::class,
+            ]);
+        }
+
         $this->registerRoutes();
     }
 

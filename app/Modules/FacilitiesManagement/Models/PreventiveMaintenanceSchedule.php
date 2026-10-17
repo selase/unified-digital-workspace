@@ -9,6 +9,22 @@ use App\Traits\HasUuid;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property int $id
+ * @property string $uuid
+ * @property string $tenant_id
+ * @property int $facility_asset_id
+ * @property string $title
+ * @property string|null $description
+ * @property string $frequency
+ * @property int $interval_days
+ * @property \Carbon\CarbonInterface|\Illuminate\Support\Carbon|string|null $last_performed_at
+ * @property \Carbon\CarbonInterface|\Illuminate\Support\Carbon|string|null $next_due_date
+ * @property bool $is_active
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read FacilityAsset|null $asset
+ */
 final class PreventiveMaintenanceSchedule extends Model
 {
     use BelongsToTenant;
@@ -40,6 +56,14 @@ final class PreventiveMaintenanceSchedule extends Model
     public function asset(): BelongsTo
     {
         return $this->belongsTo(FacilityAsset::class, 'facility_asset_id');
+    }
+
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\HasMany<FacilityWorkOrder, $this>
+     */
+    public function workOrders(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(FacilityWorkOrder::class, 'preventive_maintenance_schedule_id');
     }
 
     /**

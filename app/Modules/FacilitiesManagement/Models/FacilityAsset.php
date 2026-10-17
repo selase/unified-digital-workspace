@@ -11,6 +11,29 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * @property int $id
+ * @property string $uuid
+ * @property string $tenant_id
+ * @property int $facility_building_id
+ * @property int|null $facility_space_id
+ * @property string $asset_tag
+ * @property string $name
+ * @property string $category
+ * @property string|null $serial_number
+ * @property string|null $manufacturer
+ * @property string|null $model_number
+ * @property \Illuminate\Support\Carbon|null $purchase_date
+ * @property int $purchase_cost_pesewas
+ * @property \Illuminate\Support\Carbon|null $warranty_expiry_date
+ * @property string $status
+ * @property string $criticality
+ * @property \Illuminate\Support\Carbon|null $last_serviced_at
+ * @property \Illuminate\Support\Carbon|null $next_service_due
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read FacilityBuilding|null $building
+ */
 final class FacilityAsset extends Model
 {
     use BelongsToTenant;

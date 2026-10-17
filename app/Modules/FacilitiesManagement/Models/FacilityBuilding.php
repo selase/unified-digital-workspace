@@ -12,6 +12,20 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * @property int $id
+ * @property string $uuid
+ * @property string $tenant_id
+ * @property string $name
+ * @property string $code
+ * @property string|null $address
+ * @property int $floors_count
+ * @property float $total_area_sqm
+ * @property string|null $manager_id
+ * @property string $status
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ */
 final class FacilityBuilding extends Model
 {
     use BelongsToTenant;

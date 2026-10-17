@@ -72,7 +72,8 @@ final class FacilitiesManagementWebController extends Controller
         $user = $request->user();
         abort_if(! $user?->can('facilities.manage'), 403);
 
-        $tenantId = (string) (app(TenantContext::class)->getTenant()?->id ?? '');
+        $tenant = app(TenantContext::class)->getTenant();
+        $tenantId = (string) ($tenant !== null ? $tenant->id : '');
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -108,7 +109,8 @@ final class FacilitiesManagementWebController extends Controller
         $user = $request->user();
         abort_if(! $user?->can('facilities.assets.manage') && ! $user?->can('facilities.manage'), 403);
 
-        $tenantId = (string) (app(TenantContext::class)->getTenant()?->id ?? '');
+        $tenant = app(TenantContext::class)->getTenant();
+        $tenantId = (string) ($tenant !== null ? $tenant->id : '');
 
         $validated = $request->validate([
             'facility_building_id' => [
@@ -184,7 +186,8 @@ final class FacilitiesManagementWebController extends Controller
         $user = $request->user();
         abort_if(! $user?->can('facilities.manage'), 403);
 
-        $tenantId = (string) (app(TenantContext::class)->getTenant()?->id ?? '');
+        $tenant = app(TenantContext::class)->getTenant();
+        $tenantId = (string) ($tenant !== null ? $tenant->id : '');
 
         $validated = $request->validate([
             'facility_building_id' => [
@@ -217,6 +220,20 @@ final class FacilitiesManagementWebController extends Controller
             'status' => FacilityWorkOrder::STATUS_OPEN,
             'due_date' => $validated['due_date'] ?? now()->addDays(3)->toDateString(),
         ]);
+
+        \App\Modules\WorkflowAutomation\Events\WorkflowDomainEvent::dispatch(
+            (string) $order->tenant_id,
+            'facilities.request.created',
+            [
+                'id' => $order->id,
+                'work_order_number' => $order->work_order_number,
+                'mode' => $order->mode,
+                'title' => $order->title,
+                'category' => $order->category,
+                'priority' => $order->priority,
+                'status' => $order->status,
+            ]
+        );
 
         return redirect()
             ->route('facilities-management.index')
@@ -261,6 +278,20 @@ final class FacilitiesManagementWebController extends Controller
             'due_date' => now()->addDays(2)->toDateString(),
             'service_job_id' => $job->id,
         ]);
+
+        \App\Modules\WorkflowAutomation\Events\WorkflowDomainEvent::dispatch(
+            (string) $order->tenant_id,
+            'facilities.request.created',
+            [
+                'id' => $order->id,
+                'work_order_number' => $order->work_order_number,
+                'mode' => $order->mode,
+                'title' => $order->title,
+                'category' => $order->category,
+                'priority' => $order->priority,
+                'status' => $order->status,
+            ]
+        );
 
         return redirect()
             ->route('facilities-management.index')
