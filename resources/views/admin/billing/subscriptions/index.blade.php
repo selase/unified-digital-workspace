@@ -80,7 +80,7 @@
                                 </td>
                                 <td>
                                     <span class="text-sm text-muted-foreground">
-                                        {{ $subscription->ends_at ? $subscription->ends_at->format('M d, Y') : 'Auto-renew' }}
+                                        {{ $subscription->ends_at ? $subscription->ends_at->format('d/m/Y') : 'Auto-renew' }}
                                     </span>
                                 </td>
                             </tr>

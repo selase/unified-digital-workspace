@@ -76,11 +76,11 @@
                                 </td>
                                 <td>
                                     <span class="text-xs text-muted-foreground">
-                                        {{ $periodEnd?->format('M d, Y') ?? 'Auto-renew' }}
+                                        {{ $periodEnd?->format('d/m/Y') ?? 'Auto-renew' }}
                                     </span>
                                 </td>
                                 <td>
-                                    <span class="text-xs text-muted-foreground">{{ $subscription->created_at?->format('M d, Y') }}</span>
+                                    <span class="text-xs text-muted-foreground">{{ $subscription->created_at?->format('d/m/Y') }}</span>
                                 </td>
                                 <td class="text-right">
                                     @if(Route::has('tenants.subscriptions.show'))

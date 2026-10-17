@@ -1,11 +1,11 @@
 <x-mail::message>
 # Hello,
 
-A new invoice has been generated for your account for the period **{{ $invoice->period_start->format('M d, Y') }}** to **{{ $invoice->period_end->format('M d, Y') }}**.
+A new invoice has been generated for your account for the period **{{ $invoice->period_start->format('d/m/Y') }}** to **{{ $invoice->period_end->format('d/m/Y') }}**.
 
 **Invoice Number:** {{ $invoice->number }}  
 **Total Amount:** {{ number_format((float)$invoice->total, 2) }} {{ $invoice->currency }}  
-**Due Date:** {{ $invoice->due_at->format('M d, Y') }}
+**Due Date:** {{ $invoice->due_at->format('d/m/Y') }}
 
 <x-mail::button :url="route('tenant.billing.index')">
 View & Pay Invoice

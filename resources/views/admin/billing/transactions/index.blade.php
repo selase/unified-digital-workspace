@@ -79,7 +79,7 @@
                                     @endif
                                 </td>
                                 <td>
-                                    <span class="text-sm text-muted-foreground">{{ $transaction->created_at->format('M d, Y H:i') }}</span>
+                                    <span class="text-sm text-muted-foreground">{{ $transaction->created_at->format('d/m/Y H:i') }}</span>
                                 </td>
                             </tr>
                         @empty

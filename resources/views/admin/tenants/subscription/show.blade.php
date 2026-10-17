@@ -100,7 +100,7 @@
                                         <span class="kt-badge {{ $logStatusClass }}">{{ strtoupper($logStatus) }}</span>
                                     </td>
                                     <td>
-                                        <span class="text-xs text-muted-foreground">{{ $logDate?->format('M d, Y') }}</span>
+                                        <span class="text-xs text-muted-foreground">{{ $logDate?->format('d/m/Y') }}</span>
                                     </td>
                                     <td class="text-right">
                                         <button type="button" class="kt-btn kt-btn-sm kt-btn-outline">Download</button>
@@ -140,7 +140,7 @@
                     </div>
                     <div>
                         <div class="text-xs uppercase text-muted-foreground">Current Period End</div>
-                        <div class="text-sm text-foreground">{{ $subscription->current_period_end?->format('M d, Y') ?? $subscription->ends_at?->format('M d, Y') ?? 'Auto-renew' }}</div>
+                        <div class="text-sm text-foreground">{{ $subscription->current_period_end?->format('d/m/Y') ?? $subscription->ends_at?->format('d/m/Y') ?? 'Auto-renew' }}</div>
                     </div>
                     <div>
                         <div class="text-xs uppercase text-muted-foreground">Payment Method</div>

@@ -29,7 +29,7 @@
                 <div class="mt-6 space-y-2 text-sm">
                     <div class="flex items-center justify-between gap-3">
                         <span class="text-muted-foreground">Next Invoice</span>
-                        <span class="font-medium text-foreground">{{ $subscription?->current_period_end?->format('M d, Y') ?? 'N/A' }}</span>
+                        <span class="font-medium text-foreground">{{ $subscription?->current_period_end?->format('d/m/Y') ?? 'N/A' }}</span>
                     </div>
                     <div class="flex items-center justify-between gap-3">
                         <span class="text-muted-foreground">Subscription</span>
@@ -115,7 +115,7 @@
                             <div class="flex items-start justify-between gap-4">
                                 <div>
                                     <p class="font-medium text-foreground">{{ $transaction->provider_transaction_id ?: 'Payment' }}</p>
-                                    <p class="text-xs text-muted-foreground">{{ $transaction->created_at->format('M d, Y') }}</p>
+                                    <p class="text-xs text-muted-foreground">{{ $transaction->created_at->format('d/m/Y') }}</p>
                                 </div>
                                 <div class="text-end">
                                     <p class="font-semibold text-foreground">${{ number_format($transaction->amount / 100, 2) }}</p>

@@ -9,7 +9,7 @@
                 <div>
                     <p class="text-xs uppercase tracking-wide text-muted-foreground">Billing</p>
                     <h1 class="mt-2 text-3xl font-semibold text-foreground">Invoice #{{ $invoice->number }}</h1>
-                    <p class="mt-2 text-sm text-muted-foreground">Issued {{ $invoice->created_at->format('M d, Y') }} · Due {{ $invoice->due_at->format('M d, Y') }}</p>
+                    <p class="mt-2 text-sm text-muted-foreground">Issued {{ $invoice->created_at->format('d/m/Y') }} · Due {{ $invoice->due_at->format('d/m/Y') }}</p>
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
                     <button type="button" class="kt-btn kt-btn-outline" onclick="window.print()">Print Invoice</button>

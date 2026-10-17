@@ -38,11 +38,11 @@
                 <div class="grid gap-6 lg:grid-cols-2">
                     <div>
                         <div class="text-xs uppercase text-muted-foreground">Issue Date</div>
-                        <div class="text-sm text-foreground">{{ $issueDate?->format('M d, Y') ?? 'N/A' }}</div>
+                        <div class="text-sm text-foreground">{{ $issueDate?->format('d/m/Y') ?? 'N/A' }}</div>
                     </div>
                     <div>
                         <div class="text-xs uppercase text-muted-foreground">Paid Date</div>
-                        <div class="text-sm text-foreground">{{ $paidDate?->format('M d, Y') ?? 'N/A' }}</div>
+                        <div class="text-sm text-foreground">{{ $paidDate?->format('d/m/Y') ?? 'N/A' }}</div>
                     </div>
                     <div>
                         <div class="text-xs uppercase text-muted-foreground">Issued For</div>

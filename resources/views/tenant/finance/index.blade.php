@@ -121,7 +121,7 @@
                                     <span class="kt-badge {{ $badgeClass }}">{{ strtoupper($transaction->status) }}</span>
                                 </td>
                                 <td class="text-center">
-                                    <div class="text-sm text-foreground">{{ $transaction->created_at->format('M d, Y') }}</div>
+                                    <div class="text-sm text-foreground">{{ $transaction->created_at->format('d/m/Y') }}</div>
                                     <div class="text-xs text-muted-foreground">{{ $transaction->created_at->format('H:i') }}</div>
                                 </td>
                                 <td class="text-right">

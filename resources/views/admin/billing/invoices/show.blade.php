@@ -19,7 +19,7 @@
                         <span class="kt-badge {{ $invoice->status === 'draft' ? 'kt-badge-warning' : ($invoice->status === 'paid' ? 'kt-badge-success' : 'kt-badge-primary') }}">
                             {{ strtoupper($invoice->status) }}
                         </span>
-                        <span class="text-xs text-muted-foreground">Due by {{ $invoice->due_at->format('M d, Y') }}</span>
+                        <span class="text-xs text-muted-foreground">Due by {{ $invoice->due_at->format('d/m/Y') }}</span>
                     </div>
                 </div>
                 <div class="no-print flex flex-wrap items-center gap-3">
@@ -89,13 +89,13 @@
                 <div>
                     <p class="text-xs uppercase text-muted-foreground">Period</p>
                     <div class="mt-2 text-sm font-semibold text-foreground">
-                        {{ $invoice->period_start->format('M d, Y') }} - {{ $invoice->period_end->format('M d, Y') }}
+                        {{ $invoice->period_start->format('d/m/Y') }} - {{ $invoice->period_end->format('d/m/Y') }}
                     </div>
                 </div>
                 <div class="lg:text-right">
                     <p class="text-xs uppercase text-muted-foreground">Amount Due</p>
                     <div class="mt-2 text-2xl font-semibold text-foreground">${{ number_format((float)$invoice->total, 2) }}</div>
-                    <div class="text-xs text-muted-foreground">Due by {{ $invoice->due_at->format('M d, Y') }}</div>
+                    <div class="text-xs text-muted-foreground">Due by {{ $invoice->due_at->format('d/m/Y') }}</div>
                 </div>
             </div>
 

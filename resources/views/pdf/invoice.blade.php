@@ -186,7 +186,7 @@
                     <div style="margin-top: 8px;">
                         <span class="badge badge-{{ $invoice->status }}">{{ strtoupper($invoice->status) }}</span>
                         @if($invoice->due_at)
-                            <span style="font-size: 10px; color: #a1a5b7; margin-left: 6px;">Due by {{ $invoice->due_at->format('M d, Y') }}</span>
+                            <span style="font-size: 10px; color: #a1a5b7; margin-left: 6px;">Due by {{ $invoice->due_at->format('d/m/Y') }}</span>
                         @endif
                     </div>
                 </td>
@@ -195,7 +195,7 @@
                     <div class="invoice-number">#{{ $invoice->number }}</div>
                     <div style="text-align: right; margin-top: 4px;">
                         <span class="invoice-label">Issue Date</span><br>
-                        <span style="font-size: 12px; color: #181c32;">{{ $invoice->created_at->format('M d, Y') }}</span>
+                        <span style="font-size: 12px; color: #181c32;">{{ $invoice->created_at->format('d/m/Y') }}</span>
                     </div>
                 </td>
             </tr>
@@ -213,14 +213,14 @@
             <td style="width: 2%;"></td>
             <td style="width: 33%;">
                 <div class="info-label">Period</div>
-                <div class="info-value">{{ $invoice->period_start->format('M d, Y') }} &ndash; {{ $invoice->period_end->format('M d, Y') }}</div>
+                <div class="info-value">{{ $invoice->period_start->format('d/m/Y') }} &ndash; {{ $invoice->period_end->format('d/m/Y') }}</div>
             </td>
             <td style="width: 2%;"></td>
             <td style="width: 30%; text-align: right;">
                 <div class="info-label">Amount Due</div>
                 <div class="amount-due">${{ number_format((float)$invoice->total, 2) }}</div>
                 @if($invoice->due_at)
-                    <div class="info-sub">Due by {{ $invoice->due_at->format('M d, Y') }}</div>
+                    <div class="info-sub">Due by {{ $invoice->due_at->format('d/m/Y') }}</div>
                 @endif
             </td>
         </tr>
