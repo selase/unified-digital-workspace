@@ -104,7 +104,7 @@ final class HrmsLeaveRequestController extends Controller
         $approvers = app(\App\Modules\HrmsCore\Services\OrgHierarchyResolver::class)
             ->resolveApproversForLeave($employee, $startDate);
 
-        LeaveRequest::create([
+        $createdLeave = LeaveRequest::create([
             'employee_id' => $employee->id,
             'leave_category_id' => $validated['leave_category_id'],
             'proposed_start_date' => $validated['proposed_start_date'],
@@ -117,6 +117,25 @@ final class HrmsLeaveRequestController extends Controller
             'hod_id' => $approvers['hod']?->id,
             'status' => LeaveStatus::Pending,
         ]);
+
+        // Send queued notification to supervisor or HOD
+        $targetApprover = $approvers['supervisor'] ?? $approvers['hod'] ?? null;
+        if ($targetApprover && $targetApprover->user) {
+            $targetApprover->user->notify(new \App\Notifications\LeaveApprovalRequiredNotification($createdLeave));
+        }
+
+        // Emit domain event for workflow automation
+        \App\Modules\WorkflowAutomation\Events\WorkflowDomainEvent::dispatch(
+            (string) $employee->tenant_id,
+            'leave.submitted',
+            [
+                'leave_request_id' => $createdLeave->id,
+                'employee_id' => $employee->id,
+                'employee_name' => $employee->displayName(),
+                'days' => $days,
+                'status' => 'pending',
+            ]
+        );
 
         return redirect()
             ->route('hrms-core.leave-requests.index')
@@ -138,6 +157,16 @@ final class HrmsLeaveRequestController extends Controller
             'hod_comments' => $comments,
             'hod_decision_at' => now(),
         ]);
+
+        \App\Modules\WorkflowAutomation\Events\WorkflowDomainEvent::dispatch(
+            (string) $leaveRequest->tenant_id,
+            'leave.approved',
+            [
+                'leave_request_id' => $leaveRequest->id,
+                'employee_id' => $leaveRequest->employee_id,
+                'status' => 'approved',
+            ]
+        );
 
         return redirect()
             ->route('hrms-core.leave-requests.index')

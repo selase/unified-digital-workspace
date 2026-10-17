@@ -18,6 +18,24 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
+/**
+ * @property int $id
+ * @property string $uuid
+ * @property string $tenant_id
+ * @property string $title
+ * @property string $slug
+ * @property string|null $description
+ * @property string $status
+ * @property array<string, mixed>|null $visibility
+ * @property int|null $current_version_id
+ * @property string $owner_id
+ * @property string|null $category
+ * @property array<int, string>|null $tags
+ * @property array<string, mixed>|null $metadata
+ * @property \Carbon\CarbonInterface|\Illuminate\Support\Carbon|string|null $published_at
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ */
 final class Document extends Model
 {
     use BelongsToTenant;

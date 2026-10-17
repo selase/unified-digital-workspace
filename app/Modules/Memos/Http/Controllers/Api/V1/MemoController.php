@@ -246,6 +246,17 @@ final class MemoController extends Controller
         ]);
         $memo->save();
 
+        \App\Modules\WorkflowAutomation\Events\WorkflowDomainEvent::dispatch(
+            (string) $memo->tenant_id,
+            'memo.dispatched',
+            [
+                'id' => $memo->id,
+                'subject' => $memo->subject,
+                'sender_id' => $memo->sender_id,
+                'status' => $memo->status,
+            ]
+        );
+
         return new MemoResource($memo->load($this->memoRelations()));
     }
 

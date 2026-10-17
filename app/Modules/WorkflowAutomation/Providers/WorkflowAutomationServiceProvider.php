@@ -20,6 +20,11 @@ final class WorkflowAutomationServiceProvider extends ServiceProvider
         $this->loadMigrationsFrom(__DIR__.'/../Database/Migrations');
         $this->loadViewsFrom(__DIR__.'/../Views', 'workflow-automation');
 
+        \Illuminate\Support\Facades\Event::listen(
+            \App\Modules\WorkflowAutomation\Events\WorkflowDomainEvent::class,
+            \App\Modules\WorkflowAutomation\Listeners\WorkflowDomainEventListener::class
+        );
+
         $this->registerRoutes();
     }
 

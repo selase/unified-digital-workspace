@@ -143,6 +143,16 @@ final class MemoWebController extends Controller
 
         if ($shouldSend) {
             $this->dispatchNotificationsForMemo($memo, $user);
+            \App\Modules\WorkflowAutomation\Events\WorkflowDomainEvent::dispatch(
+                (string) $memo->tenant_id,
+                'memo.dispatched',
+                [
+                    'id' => $memo->id,
+                    'subject' => $memo->subject,
+                    'sender_id' => $memo->sender_id,
+                    'status' => $memo->status,
+                ]
+            );
         }
 
         return redirect()
@@ -242,6 +252,16 @@ final class MemoWebController extends Controller
         $memo->save();
 
         $this->dispatchNotificationsForMemo($memo, $user);
+        \App\Modules\WorkflowAutomation\Events\WorkflowDomainEvent::dispatch(
+            (string) $memo->tenant_id,
+            'memo.dispatched',
+            [
+                'id' => $memo->id,
+                'subject' => $memo->subject,
+                'sender_id' => $memo->sender_id,
+                'status' => $memo->status,
+            ]
+        );
 
         return redirect()
             ->route('memos.show', $memo)

@@ -7,9 +7,9 @@ namespace App\Modules\WorkflowAutomation\Services;
 use App\Models\User;
 use App\Modules\WorkflowAutomation\Models\WorkflowExecutionLog;
 use App\Modules\WorkflowAutomation\Models\WorkflowRule;
-use Illuminate\Notifications\DatabaseNotification;
+use App\Notifications\InstitutionalWorkflowAlert;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Notification;
 use Throwable;
 
 final class WorkflowEngineService
@@ -28,9 +28,15 @@ final class WorkflowEngineService
         if ($depth > self::MAX_CHAIN_DEPTH) {
             Log::warning("Workflow recursion circuit breaker tripped for tenant [{$tenantId}] on event [{$event}] at depth [{$depth}].");
 
+            $initiatingRuleId = $payload['_initiating_rule_id'] ?? WorkflowRule::where('tenant_id', $tenantId)->value('id');
+
+            if (! $initiatingRuleId) {
+                return [];
+            }
+
             $abortedLog = WorkflowExecutionLog::create([
                 'tenant_id' => $tenantId,
-                'workflow_rule_id' => $payload['_initiating_rule_id'] ?? 0,
+                'workflow_rule_id' => $initiatingRuleId,
                 'trigger_event' => $event,
                 'context_payload' => $payload,
                 'actions_executed' => [],
@@ -120,19 +126,19 @@ final class WorkflowEngineService
         }
 
         foreach ($conditions as $cond) {
-            $field = $cond['field'] ?? null;
-            $op = $cond['operator'] ?? '=';
-            $expected = $cond['value'] ?? null;
+            $field = $cond['field'];
+            $op = $cond['operator'];
+            $expected = $cond['value'];
 
-            if ($field === null) {
+            if ($field === '') {
                 continue;
             }
 
             $actual = $payload[$field] ?? null;
 
             $matches = match ($op) {
-                '=' => (string) $actual === (string) $expected,
-                '!=' => (string) $actual !== (string) $expected,
+                '=', 'equals' => (string) $actual === (string) $expected,
+                '!=', 'not_equals' => (string) $actual !== (string) $expected,
                 '>' => (float) $actual > (float) $expected,
                 '<' => (float) $actual < (float) $expected,
                 '>=' => (float) $actual >= (float) $expected,
@@ -165,8 +171,9 @@ final class WorkflowEngineService
 
             switch ($type) {
                 case 'dispatch_notification':
-                    $title = $this->interpolateTemplate($action['title_template'] ?? 'Workflow Notification: {event}', $payload, $rule);
-                    $body = $this->interpolateTemplate($action['body_template'] ?? 'Triggered by workflow rule {rule_name}', $payload, $rule);
+                case 'send_notification':
+                    $title = $this->interpolateTemplate($action['title_template'] ?? $action['title'] ?? 'Workflow Notification: {event}', $payload, $rule);
+                    $body = $this->interpolateTemplate($action['body_template'] ?? $action['message'] ?? 'Triggered by workflow rule {rule_name}', $payload, $rule);
 
                     // Find recipient user if specified or send to creator/admins
                     $targetRole = $action['target_role'] ?? 'Super Admin';
@@ -174,21 +181,14 @@ final class WorkflowEngineService
                         ->get()
                         ->filter(fn (User $u): bool => $u->hasRole($targetRole));
 
-                    foreach ($targetUsers as $targetUser) {
-                        DatabaseNotification::create([
-                            'id' => (string) Str::uuid(),
-                            'type' => 'App\Notifications\InstitutionalWorkflowAlert',
-                            'notifiable_type' => User::class,
-                            'notifiable_id' => $targetUser->id,
-                            'data' => [
-                                'title' => $title,
-                                'message' => $body,
-                                'workflow_rule_id' => $rule->id,
-                                'action_url' => route('workflow-automation.show', $rule),
-                            ],
-                            'created_at' => now(),
-                        ]);
-                    }
+                    $notification = new InstitutionalWorkflowAlert(
+                        title: $title,
+                        message: $body,
+                        workflowRuleId: (int) $rule->id,
+                        actionUrl: route('workflow-automation.show', $rule),
+                    );
+
+                    Notification::send($targetUsers, $notification);
 
                     $executed[] = [
                         'type' => 'dispatch_notification',
@@ -211,6 +211,14 @@ final class WorkflowEngineService
 
                 case 'trigger_downstream':
                     $downstreamEvent = (string) ($action['downstream_event'] ?? '');
+                    if ($downstreamEvent !== '') {
+                        $this->trigger(
+                            $rule->tenant_id,
+                            $downstreamEvent,
+                            $action['downstream_payload'] ?? $payload,
+                            $depth + 1
+                        );
+                    }
                     $executed[] = [
                         'type' => 'trigger_downstream',
                         'downstream_event' => $downstreamEvent,
@@ -237,15 +245,20 @@ final class WorkflowEngineService
      */
     private function interpolateTemplate(string $template, array $payload, WorkflowRule $rule): string
     {
+        /** @var array<string, string> $replacements */
         $replacements = [
-            '{rule_name}' => $rule->name,
+            '{rule_name}' => (string) $rule->name,
+            '{{rule_name}}' => (string) $rule->name,
             '{rule_id}' => (string) $rule->id,
-            '{event}' => $rule->trigger_event,
+            '{{rule_id}}' => (string) $rule->id,
+            '{event}' => (string) $rule->trigger_event,
+            '{{event}}' => (string) $rule->trigger_event,
         ];
 
         foreach ($payload as $key => $val) {
             if (is_scalar($val)) {
                 $replacements['{'.$key.'}'] = (string) $val;
+                $replacements['{{'.$key.'}}'] = (string) $val;
             }
         }
 

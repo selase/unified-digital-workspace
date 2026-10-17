@@ -122,6 +122,20 @@ final class DocumentWebController extends Controller
             'created_at' => now(),
         ]);
 
+        if ($document->status === 'published') {
+            \App\Modules\WorkflowAutomation\Events\WorkflowDomainEvent::dispatch(
+                (string) $document->tenant_id,
+                'document.published',
+                [
+                    'id' => $document->id,
+                    'title' => $document->title,
+                    'slug' => $document->slug,
+                    'status' => $document->status,
+                    'published_at' => now()->toIso8601String(),
+                ]
+            );
+        }
+
         return redirect()
             ->route('document-management.documents.show', $document)
             ->with('status', 'success')
@@ -219,6 +233,18 @@ final class DocumentWebController extends Controller
         ]);
 
         $this->logAudit($document, 'publish', (string) $user->uuid);
+
+        \App\Modules\WorkflowAutomation\Events\WorkflowDomainEvent::dispatch(
+            (string) $document->tenant_id,
+            'document.published',
+            [
+                'id' => $document->id,
+                'title' => $document->title,
+                'slug' => $document->slug,
+                'status' => $document->status,
+                'published_at' => now()->toIso8601String(),
+            ]
+        );
 
         return redirect()
             ->route('document-management.documents.show', $document)

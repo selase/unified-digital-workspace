@@ -113,6 +113,18 @@ final class IncidentController extends Controller
             'status_id' => $incident->status_id,
         ]);
 
+        \App\Modules\WorkflowAutomation\Events\WorkflowDomainEvent::dispatch(
+            (string) $incident->tenant_id,
+            'incident.logged',
+            [
+                'incident_id' => $incident->id,
+                'reference_code' => $incident->reference_code,
+                'title' => $incident->title,
+                'impact' => $incident->impact,
+                'priority_id' => $incident->priority_id,
+            ]
+        );
+
         return (new IncidentResource($incident->load(['category', 'priority', 'status'])))
             ->response()
             ->setStatusCode(201);
@@ -229,7 +241,24 @@ final class IncidentController extends Controller
             if ($assignee && $assignee->email) {
                 Mail::to($assignee->email)->queue(new IncidentEscalated($incident));
             }
+
+            if ($assignee) {
+                $assignee->notify(new \App\Notifications\IncidentEscalatedNotification($incident, $data['reason'] ?? null));
+            }
         }
+
+        \App\Modules\WorkflowAutomation\Events\WorkflowDomainEvent::dispatch(
+            (string) $incident->tenant_id,
+            'incident.escalated',
+            [
+                'incident_id' => $incident->id,
+                'reference_code' => $incident->reference_code,
+                'title' => $incident->title,
+                'impact' => $incident->impact,
+                'to_priority_id' => $data['to_priority_id'],
+                'reason' => $data['reason'] ?? null,
+            ]
+        );
 
         $this->logIncidentActivity($incident, 'escalated', (string) $request->user()?->uuid, [
             'from_priority_id' => $incident->getOriginal('priority_id'),

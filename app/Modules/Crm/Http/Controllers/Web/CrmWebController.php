@@ -121,6 +121,18 @@ final class CrmWebController extends Controller
             'occurred_at' => now(),
         ]);
 
+        \App\Modules\WorkflowAutomation\Events\WorkflowDomainEvent::dispatch(
+            (string) ($lead->tenant_id ?? app(TenantContext::class)->getTenant()?->id),
+            'crm.inquiry.created',
+            [
+                'lead_id' => $lead->id,
+                'reference_code' => $lead->reference_code,
+                'full_name' => $lead->full_name,
+                'source' => $lead->source,
+                'status' => $lead->status,
+            ]
+        );
+
         return redirect()
             ->route('crm.index')
             ->with('status', 'success')

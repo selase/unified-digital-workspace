@@ -103,6 +103,18 @@ final class IncidentListController extends Controller
             $this->notifyAssignedUser($incident, (string) $payload['assigned_to_id']);
         }
 
+        \App\Modules\WorkflowAutomation\Events\WorkflowDomainEvent::dispatch(
+            (string) $incident->tenant_id,
+            'incident.logged',
+            [
+                'incident_id' => $incident->id,
+                'reference_code' => $incident->reference_code,
+                'title' => $incident->title,
+                'impact' => $incident->impact,
+                'priority_id' => $incident->priority_id,
+            ]
+        );
+
         $this->logIncidentActivity($incident, 'created', (string) $request->user()?->uuid, [
             'title' => $incident->title,
             'priority_id' => $incident->priority_id,
@@ -279,7 +291,25 @@ final class IncidentListController extends Controller
             if ($assignee && $assignee->email) {
                 Mail::to($assignee->email)->queue(new IncidentEscalated($incident));
             }
+
+            if ($assignee) {
+                $assignee->notify(new \App\Notifications\IncidentEscalatedNotification($incident, $payload['reason'] ?? null));
+            }
         }
+
+        \App\Modules\WorkflowAutomation\Events\WorkflowDomainEvent::dispatch(
+            (string) $incident->tenant_id,
+            'incident.escalated',
+            [
+                'incident_id' => $incident->id,
+                'reference_code' => $incident->reference_code,
+                'title' => $incident->title,
+                'impact' => $incident->impact,
+                'from_priority_id' => $fromPriority,
+                'to_priority_id' => $payload['to_priority_id'],
+                'reason' => $payload['reason'] ?? null,
+            ]
+        );
 
         $this->logIncidentActivity($incident, 'escalated', (string) $request->user()?->uuid, [
             'from_priority_id' => $fromPriority,

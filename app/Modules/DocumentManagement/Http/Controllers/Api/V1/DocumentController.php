@@ -126,6 +126,18 @@ final class DocumentController extends Controller
 
         $this->logAudit($document, 'publish', (string) request()->user()?->uuid);
 
+        \App\Modules\WorkflowAutomation\Events\WorkflowDomainEvent::dispatch(
+            (string) $document->tenant_id,
+            'document.published',
+            [
+                'id' => $document->id,
+                'title' => $document->title,
+                'slug' => $document->slug,
+                'status' => $document->status,
+                'published_at' => now()->toIso8601String(),
+            ]
+        );
+
         return new DocumentResource($document);
     }
 

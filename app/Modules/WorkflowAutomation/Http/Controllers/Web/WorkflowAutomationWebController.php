@@ -21,6 +21,9 @@ final class WorkflowAutomationWebController extends Controller
 
     public function index(Request $request): View
     {
+        $user = $request->user();
+        abort_if(! $user?->can('workflows.view') && ! $user?->can('workflows.manage'), 403);
+
         $tenant = $request->attributes->get('tenant');
         $tenantId = $tenant instanceof Tenant ? (string) $tenant->id : (string) $request->user()?->tenant_id;
 
@@ -40,6 +43,9 @@ final class WorkflowAutomationWebController extends Controller
 
     public function create(Request $request): View
     {
+        $user = $request->user();
+        abort_if(! $user?->can('workflows.manage'), 403);
+
         $tenant = $request->attributes->get('tenant');
 
         $availableEvents = [
@@ -56,9 +62,11 @@ final class WorkflowAutomationWebController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        $user = $request->user();
+        abort_if(! $user?->can('workflows.manage'), 403);
+
         $tenant = $request->attributes->get('tenant');
         $tenantId = $tenant instanceof Tenant ? (string) $tenant->id : (string) $request->user()?->tenant_id;
-        $user = $request->user();
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -116,6 +124,9 @@ final class WorkflowAutomationWebController extends Controller
 
     public function show(Request $request, WorkflowRule $rule): View
     {
+        $user = $request->user();
+        abort_if(! $user?->can('workflows.view') && ! $user?->can('workflows.manage'), 403);
+
         $tenant = $request->attributes->get('tenant');
         $tenantId = $tenant instanceof Tenant ? (string) $tenant->id : (string) $request->user()?->tenant_id;
 
@@ -132,6 +143,9 @@ final class WorkflowAutomationWebController extends Controller
 
     public function toggle(Request $request, WorkflowRule $rule): RedirectResponse
     {
+        $user = $request->user();
+        abort_if(! $user?->can('workflows.manage'), 403);
+
         $tenant = $request->attributes->get('tenant');
         $tenantId = $tenant instanceof Tenant ? (string) $tenant->id : (string) $request->user()?->tenant_id;
 
@@ -150,6 +164,9 @@ final class WorkflowAutomationWebController extends Controller
 
     public function testRun(Request $request, WorkflowRule $rule): RedirectResponse
     {
+        $user = $request->user();
+        abort_if(! $user?->can('workflows.execute') && ! $user?->can('workflows.manage'), 403);
+
         $tenant = $request->attributes->get('tenant');
         $tenantId = $tenant instanceof Tenant ? (string) $tenant->id : (string) $request->user()?->tenant_id;
 
@@ -174,6 +191,9 @@ final class WorkflowAutomationWebController extends Controller
 
     public function destroy(Request $request, WorkflowRule $rule): RedirectResponse
     {
+        $user = $request->user();
+        abort_if(! $user?->can('workflows.manage'), 403);
+
         $tenant = $request->attributes->get('tenant');
         $tenantId = $tenant instanceof Tenant ? (string) $tenant->id : (string) $request->user()?->tenant_id;
 

@@ -32,6 +32,7 @@ describe('Phase 27: Cross-Module Workflow & Process Automation Engine (TRK-WORKF
 
         $superAdminRole = Role::firstOrCreate(['name' => 'Super Admin', 'guard_name' => 'web'], ['uuid' => (string) Str::uuid()]);
         $admin->assignRole($superAdminRole);
+        $admin->givePermissionTo(['workflows.view', 'workflows.manage', 'workflows.execute']);
 
         $engine = app(WorkflowEngineService::class);
 
@@ -130,6 +131,7 @@ describe('Phase 27: Cross-Module Workflow & Process Automation Engine (TRK-WORKF
         $userB = User::factory()->create(['tenant_id' => $tenantB->id]);
         $tenantB->users()->attach($userB->id);
         $userB->assignRole(Role::firstOrCreate(['name' => 'Super Admin', 'guard_name' => 'web'], ['uuid' => (string) Str::uuid()]));
+        $userB->givePermissionTo('workflows.view');
 
         $ruleA = WorkflowRule::create([
             'tenant_id' => $tenantA->id,
@@ -157,5 +159,61 @@ describe('Phase 27: Cross-Module Workflow & Process Automation Engine (TRK-WORKF
             ->get(route('workflow-automation.show', $ruleA));
 
         $response->assertStatus(404);
+    });
+
+    test('adversarial reject: unauthorized users without required workflow permissions receive 403', function () {
+        $tenant = Tenant::factory()->create(['slug' => 'test-wf-rbac']);
+        $user = User::factory()->create(['tenant_id' => $tenant->id]);
+        $tenant->users()->attach($user->id);
+
+        $rule = WorkflowRule::create([
+            'tenant_id' => $tenant->id,
+            'name' => 'Internal Rule',
+            'trigger_event' => 'custom.event',
+            'conditions' => [],
+            'actions' => [],
+            'is_active' => true,
+        ]);
+
+        // 1. Without workflows.view -> 403 on index
+        $this->actingAs($user)
+            ->withSession(['current_tenant_id' => $tenant->id])
+            ->get(route('workflow-automation.index'))
+            ->assertStatus(403);
+
+        // Grant workflows.view only
+        $user->givePermissionTo('workflows.view');
+
+        $this->actingAs($user)
+            ->withSession(['current_tenant_id' => $tenant->id])
+            ->get(route('workflow-automation.index'))
+            ->assertStatus(200);
+
+        // 2. Without workflows.manage -> 403 on store
+        $this->actingAs($user)
+            ->withSession(['current_tenant_id' => $tenant->id])
+            ->post(route('workflow-automation.store'), [
+                'name' => 'Unauthorized Rule',
+                'trigger_event' => 'unauth.event',
+                'action_type' => 'log_audit_alert',
+            ])
+            ->assertStatus(403);
+
+        // 3. Without workflows.execute -> 403 on testRun
+        $this->actingAs($user)
+            ->withSession(['current_tenant_id' => $tenant->id])
+            ->post(route('workflow-automation.test-run', $rule), [
+                'test_payload' => '{}',
+            ])
+            ->assertStatus(403);
+
+        // Grant workflows.execute -> 200/redirect
+        $user->givePermissionTo('workflows.execute');
+        $this->actingAs($user)
+            ->withSession(['current_tenant_id' => $tenant->id])
+            ->post(route('workflow-automation.test-run', $rule), [
+                'test_payload' => '{}',
+            ])
+            ->assertRedirect();
     });
 });
