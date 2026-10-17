@@ -4,10 +4,18 @@
 
 @section('content')
 <div class="flex flex-col gap-6">
-    <x-metronic.page-header
-        title="CRM & Client Pipeline Hub"
-        description="Unified management of walk-in & online inquiries, institutional & individual client accounts, deal stages, and one-click client portal onboarding."
-    />
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+            <h1 class="text-xl font-bold text-foreground">CRM & Client Pipeline Hub</h1>
+            <p class="text-xs text-muted-foreground">Unified management of walk-in & online inquiries, institutional & individual client accounts, deal stages, and one-click client portal onboarding.</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+            <a href="{{ route('crm.pipeline') }}" class="kt-btn kt-btn-sm kt-btn-primary">Kanban Pipeline</a>
+            <a href="{{ route('crm.leads.index') }}" class="kt-btn kt-btn-sm kt-btn-outline">Leads Directory</a>
+            <a href="{{ route('crm.accounts.index') }}" class="kt-btn kt-btn-sm kt-btn-outline">Client Accounts</a>
+            <a href="{{ route('crm.deals.index') }}" class="kt-btn kt-btn-sm kt-btn-outline">Deals Directory</a>
+        </div>
+    </div>
 
     {{-- Pipeline KPI Cards --}}
     <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
@@ -203,9 +211,10 @@
     <div class="kt-card">
         <div class="kt-card-header flex items-center justify-between">
             <div>
-                <h3 class="kt-card-title">Walk-In & Online Inquiries Registry</h3>
+                <h3 class="kt-card-title">Recent Walk-In & Online Inquiries</h3>
                 <p class="text-xs text-muted-foreground">Convert qualified prospects into Client Accounts with optional Portal Login provisioning.</p>
             </div>
+            <a href="{{ route('crm.leads.index') }}" class="kt-btn kt-btn-xs kt-btn-outline">View All Leads</a>
         </div>
         <div class="kt-card-table kt-scrollable-x-auto">
             <table class="kt-table table-auto kt-table-border">
@@ -223,9 +232,15 @@
                 <tbody>
                     @forelse($leads as $lead)
                         <tr>
-                            <td class="font-mono text-xs font-semibold">{{ $lead->reference_code }}</td>
+                            <td class="font-mono text-xs font-semibold">
+                                <a href="{{ route('crm.leads.show', $lead) }}" class="text-primary hover:underline">
+                                    {{ $lead->reference_code }}
+                                </a>
+                            </td>
                             <td>
-                                <div class="font-semibold text-foreground">{{ $lead->full_name }}</div>
+                                <a href="{{ route('crm.leads.show', $lead) }}" class="font-semibold text-foreground hover:text-primary hover:underline">
+                                    {{ $lead->full_name }}
+                                </a>
                                 <div class="text-xs text-muted-foreground">{{ $lead->email ?? $lead->phone ?? 'No contact' }}</div>
                             </td>
                             <td>
@@ -268,8 +283,12 @@
     {{-- Deals Pipeline & Accounts Directory --}}
     <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
         <div class="kt-card">
-            <div class="kt-card-header">
-                <h3 class="kt-card-title">Active Deals Pipeline</h3>
+            <div class="kt-card-header flex items-center justify-between">
+                <h3 class="kt-card-title">Recent Deals</h3>
+                <div class="flex items-center gap-1.5">
+                    <a href="{{ route('crm.pipeline') }}" class="kt-btn kt-btn-xs kt-btn-primary">Kanban</a>
+                    <a href="{{ route('crm.deals.index') }}" class="kt-btn kt-btn-xs kt-btn-outline">View All</a>
+                </div>
             </div>
             <div class="kt-card-table kt-scrollable-x-auto">
                 <table class="kt-table table-auto kt-table-border">
@@ -285,7 +304,9 @@
                         @forelse($deals as $deal)
                             <tr>
                                 <td>
-                                    <div class="font-semibold text-foreground">{{ $deal->title }}</div>
+                                    <a href="{{ route('crm.deals.show', $deal) }}" class="font-semibold text-foreground hover:text-primary hover:underline">
+                                        {{ $deal->title }}
+                                    </a>
                                     <div class="text-xs text-muted-foreground">{{ $deal->account?->name }} ({{ $deal->probability }}% win)</div>
                                 </td>
                                 <td class="font-semibold text-mono">{{ $deal->formattedValue() }}</td>
@@ -316,8 +337,9 @@
         </div>
 
         <div class="kt-card">
-            <div class="kt-card-header">
-                <h3 class="kt-card-title">Client Accounts Directory</h3>
+            <div class="kt-card-header flex items-center justify-between">
+                <h3 class="kt-card-title">Client Accounts</h3>
+                <a href="{{ route('crm.accounts.index') }}" class="kt-btn kt-btn-xs kt-btn-outline">View All Accounts</a>
             </div>
             <div class="kt-card-table kt-scrollable-x-auto">
                 <table class="kt-table table-auto kt-table-border">
@@ -333,9 +355,15 @@
                     <tbody>
                         @forelse($accounts as $account)
                             <tr>
-                                <td class="font-mono text-xs font-semibold">{{ $account->code }}</td>
+                                <td class="font-mono text-xs font-semibold">
+                                    <a href="{{ route('crm.accounts.show', $account) }}" class="text-primary hover:underline">
+                                        {{ $account->code }}
+                                    </a>
+                                </td>
                                 <td>
-                                    <div class="font-semibold text-foreground">{{ $account->name }}</div>
+                                    <a href="{{ route('crm.accounts.show', $account) }}" class="font-semibold text-foreground hover:text-primary hover:underline">
+                                        {{ $account->name }}
+                                    </a>
                                     <div class="text-xs text-muted-foreground">{{ $account->email ?? $account->phone ?? '—' }}</div>
                                 </td>
                                 <td><span class="kt-badge kt-badge-xs kt-badge-outline uppercase">{{ $account->account_type }}</span></td>

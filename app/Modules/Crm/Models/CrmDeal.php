@@ -23,9 +23,10 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int $deal_value_pesewas
  * @property int $value_pesewas
  * @property string $currency
- * @property int|null $probability_pct
+ * @property int $probability
  * @property \Illuminate\Support\Carbon|null $expected_close_date
  * @property string|null $owner_id
+ * @property string|null $notes
  * @property array<string, mixed>|null $metadata
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
@@ -50,7 +51,16 @@ final class CrmDeal extends Model
 
     public const STAGE_CLOSED_WON = 'closed_won';
 
-    public const STAGE_CLOSED_AWAY = 'closed_lost';
+    public const STAGE_CLOSED_LOST = 'closed_lost';
+
+    public const STAGES = [
+        self::STAGE_DISCOVERY => 'Discovery',
+        self::STAGE_SITE_VISIT => 'Site Visit',
+        self::STAGE_PROPOSAL => 'Proposal',
+        self::STAGE_NEGOTIATION => 'Negotiation',
+        self::STAGE_CLOSED_WON => 'Closed Won',
+        self::STAGE_CLOSED_LOST => 'Closed Lost',
+    ];
 
     protected $table = 'crm_deals';
 

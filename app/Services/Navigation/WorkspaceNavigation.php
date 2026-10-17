@@ -666,12 +666,20 @@ final class WorkspaceNavigation
                 'home_route' => 'crm.index',
                 'sidebar' => [
                     ['label' => 'CRM Pipeline Hub', 'route' => 'crm.index'],
+                    ['label' => 'Kanban Pipeline', 'route' => 'crm.pipeline'],
+                    ['label' => 'Leads & Inquiries', 'route' => 'crm.leads.index'],
+                    ['label' => 'Client Accounts', 'route' => 'crm.accounts.index'],
+                    ['label' => 'Deals Directory', 'route' => 'crm.deals.index'],
                 ],
                 'top_menu' => [
                     [
                         'label' => 'Client Operations',
                         'items' => [
                             ['label' => 'CRM Pipeline Hub', 'route' => 'crm.index'],
+                            ['label' => 'Kanban Pipeline', 'route' => 'crm.pipeline'],
+                            ['label' => 'Leads & Inquiries', 'route' => 'crm.leads.index'],
+                            ['label' => 'Client Accounts', 'route' => 'crm.accounts.index'],
+                            ['label' => 'Deals Directory', 'route' => 'crm.deals.index'],
                         ],
                     ],
                 ],

@@ -11,6 +11,22 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
+/**
+ * @property int $id
+ * @property string $uuid
+ * @property string $tenant_id
+ * @property string $subject_type
+ * @property int $subject_id
+ * @property string $activity_type
+ * @property string $summary
+ * @property string|null $details
+ * @property string|null $logged_by_id
+ * @property \Illuminate\Support\Carbon $occurred_at
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read User|null $loggedBy
+ * @property-read Model|null $subject
+ */
 final class CrmActivity extends Model
 {
     use BelongsToTenant;
