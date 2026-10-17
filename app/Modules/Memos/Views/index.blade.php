@@ -10,92 +10,190 @@
         $acknowledgedCount = (int) ($statusCounts[\App\Modules\Memos\Models\Memo::STATUS_ACKNOWLEDGED] ?? 0);
     @endphp
 
-    <section class="grid gap-6">
-        <div class="kt-card p-6 lg:p-8">
-            <div class="flex flex-wrap items-start justify-between gap-4">
-                <div>
-                    <p class="text-xs uppercase tracking-wide text-muted-foreground">Memo Management</p>
-                    <h1 class="mt-2 text-2xl font-semibold text-foreground">Memos Hub</h1>
-                    <p class="mt-2 text-sm text-muted-foreground">Track sensitive memos, acknowledgements, minutes, and actions.</p>
-                </div>
-                <a href="{{ route('api.memos.v1.memos.index') }}" class="kt-btn kt-btn-outline">Open API</a>
-            </div>
+    <x-metronic.page-header
+        title="Memos Hub"
+        subtitle="Institutional e-Office memorandum circulation, minute tracking, and digital endorsements."
+        :breadcrumbs="[
+            ['label' => 'Workspace', 'url' => route('tenant.dashboard')],
+            ['label' => 'Memos Hub'],
+        ]"
+    >
+        <x-slot:actions>
+            <a href="{{ route('memos.list') }}" class="kt-btn kt-btn-sm kt-btn-outline">
+                <i class="ki-filled ki-burger-menu-2"></i>
+                All Memos
+            </a>
+            @can('memos.create')
+                <a href="{{ route('memos.create') }}" class="kt-btn kt-btn-sm kt-btn-primary">
+                    <i class="ki-filled ki-plus"></i>
+                    Draft New Memo
+                </a>
+            @endcan
+        </x-slot:actions>
+    </x-metronic.page-header>
 
-            <div class="mt-5 grid gap-3 md:grid-cols-4">
-                <div class="rounded-lg bg-muted/30 p-4">
-                    <p class="text-xs uppercase tracking-wide text-muted-foreground">Draft</p>
-                    <p class="mt-2 text-xl font-semibold text-foreground">{{ $draftCount }}</p>
-                </div>
-                <div class="rounded-lg bg-muted/30 p-4">
-                    <p class="text-xs uppercase tracking-wide text-muted-foreground">Pending Verification</p>
-                    <p class="mt-2 text-xl font-semibold text-foreground">{{ $pendingVerificationCount }}</p>
-                </div>
-                <div class="rounded-lg bg-muted/30 p-4">
-                    <p class="text-xs uppercase tracking-wide text-muted-foreground">Sent</p>
-                    <p class="mt-2 text-xl font-semibold text-foreground">{{ $sentCount }}</p>
-                </div>
-                <div class="rounded-lg bg-muted/30 p-4">
-                    <p class="text-xs uppercase tracking-wide text-muted-foreground">Acknowledged</p>
-                    <p class="mt-2 text-xl font-semibold text-foreground">{{ $acknowledgedCount }}</p>
-                </div>
+    @if (session('message'))
+        <div class="mb-6 p-4 rounded-xl border border-green-200 bg-green-50 text-green-800 dark:border-green-900/50 dark:bg-green-950/20 dark:text-green-400 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <i class="ki-filled ki-check-circle text-lg"></i>
+                <span class="text-sm font-medium">{{ session('message') }}</span>
             </div>
         </div>
+    @endif
 
+    <section class="grid gap-6">
+        <!-- Metric KPI Cards -->
+        <div class="grid gap-4 md:grid-cols-4">
+            <x-metronic.card class="bg-card">
+                <div class="flex items-center justify-between">
+                    <p class="text-xs uppercase font-medium tracking-wide text-muted-foreground">Drafts</p>
+                    <span class="size-8 rounded-lg bg-muted/40 flex items-center justify-center text-muted-foreground">
+                        <i class="ki-filled ki-file-down"></i>
+                    </span>
+                </div>
+                <p class="mt-2 text-2xl font-bold tracking-tight text-foreground">{{ $draftCount }}</p>
+                <p class="text-2xs text-muted-foreground mt-1">Pending dispatch or signature</p>
+            </x-metronic.card>
+
+            <x-metronic.card class="bg-card">
+                <div class="flex items-center justify-between">
+                    <p class="text-xs uppercase font-medium tracking-wide text-muted-foreground">Pending</p>
+                    <span class="size-8 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-600 dark:text-amber-400">
+                        <i class="ki-filled ki-time"></i>
+                    </span>
+                </div>
+                <p class="mt-2 text-2xl font-bold tracking-tight text-foreground">{{ $pendingVerificationCount }}</p>
+                <p class="text-2xs text-muted-foreground mt-1">Awaiting 2FA code / check</p>
+            </x-metronic.card>
+
+            <x-metronic.card class="bg-card">
+                <div class="flex items-center justify-between">
+                    <p class="text-xs uppercase font-medium tracking-wide text-muted-foreground">Dispatched</p>
+                    <span class="size-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-primary">
+                        <i class="ki-filled ki-send"></i>
+                    </span>
+                </div>
+                <p class="mt-2 text-2xl font-bold tracking-tight text-foreground">{{ $sentCount }}</p>
+                <p class="text-2xs text-muted-foreground mt-1">In active circulation</p>
+            </x-metronic.card>
+
+            <x-metronic.card class="bg-card">
+                <div class="flex items-center justify-between">
+                    <p class="text-xs uppercase font-medium tracking-wide text-muted-foreground">Acknowledged</p>
+                    <span class="size-8 rounded-lg bg-green-500/10 flex items-center justify-center text-green-600 dark:text-green-400">
+                        <i class="ki-filled ki-shield-tick"></i>
+                    </span>
+                </div>
+                <p class="mt-2 text-2xl font-bold tracking-tight text-foreground">{{ $acknowledgedCount }}</p>
+                <p class="text-2xs text-muted-foreground mt-1">Fully read & acknowledged</p>
+            </x-metronic.card>
+        </div>
+
+        <!-- Main Content Grid -->
         <div class="grid gap-6 xl:grid-cols-12">
-            <div class="kt-card p-6 xl:col-span-8">
-                <div class="mb-4 flex items-center justify-between gap-3">
-                    <h2 class="text-lg font-semibold text-foreground">Recent Memos</h2>
-                    <span class="text-xs text-muted-foreground">Latest 10 updates</span>
+            <!-- Recent Memos Table -->
+            <div class="xl:col-span-8 flex flex-col gap-4">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-base font-semibold text-foreground">Recent Memoranda</h3>
+                    <a href="{{ route('memos.list') }}" class="text-xs font-medium text-primary hover:underline">View all memos &rarr;</a>
                 </div>
 
-                <div class="overflow-x-auto">
-                    <table class="kt-table table-auto kt-table-border">
-                        <thead>
-                            <tr class="text-xs uppercase text-muted-foreground">
-                                <th>Subject</th>
-                                <th>Sender</th>
-                                <th>Status</th>
-                                <th>Recipients</th>
-                                <th>Last Update</th>
-                            </tr>
-                        </thead>
-                        <tbody class="text-sm text-foreground">
-                            @forelse($recentMemos as $memo)
-                                <tr>
-                                    <td class="font-medium">{{ $memo->subject }}</td>
-                                    <td>{{ $memo->sender?->displayName() ?: $memo->sender?->email ?: 'System' }}</td>
-                                    <td><span class="kt-badge kt-badge-outline">{{ str_replace('_', ' ', ucfirst($memo->status)) }}</span></td>
-                                    <td>{{ $memo->recipients->count() }}</td>
-                                    <td>{{ $memo->updated_at?->diffForHumans() }}</td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="5" class="py-8 text-center text-muted-foreground">No memos created yet.</td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
+                <x-metronic.table>
+                    <x-slot:head>
+                        <tr>
+                            <th class="px-5 py-3.5">Subject & Reference</th>
+                            <th class="px-5 py-3.5">Sender</th>
+                            <th class="px-5 py-3.5">Status</th>
+                            <th class="px-5 py-3.5">Recipients</th>
+                            <th class="px-5 py-3.5 text-right">Actions</th>
+                        </tr>
+                    </x-slot:head>
+
+                    @forelse($recentMemos as $memo)
+                        <tr class="hover:bg-muted/30 transition-colors">
+                            <td class="px-5 py-3.5">
+                                <a href="{{ route('memos.show', $memo) }}" class="font-semibold text-foreground hover:text-primary transition-colors block">
+                                    {{ $memo->subject }}
+                                </a>
+                                <span class="text-2xs font-mono text-muted-foreground">MEM-{{ strtoupper(substr($memo->uuid, 0, 8)) }} &bull; {{ $memo->updated_at?->diffForHumans() }}</span>
+                            </td>
+                            <td class="px-5 py-3.5 text-sm text-foreground">
+                                {{ $memo->sender?->displayName() ?: $memo->sender?->email ?: 'System' }}
+                            </td>
+                            <td class="px-5 py-3.5">
+                                @php
+                                    $variant = match($memo->status) {
+                                        'draft' => 'secondary',
+                                        'pending_verification' => 'warning',
+                                        'sent' => 'primary',
+                                        'acknowledged' => 'success',
+                                        default => 'secondary',
+                                    };
+                                @endphp
+                                <x-metronic.badge :variant="$variant" size="sm">
+                                    {{ strtoupper(str_replace('_', ' ', $memo->status)) }}
+                                </x-metronic.badge>
+                            </td>
+                            <td class="px-5 py-3.5 text-xs text-muted-foreground">
+                                {{ $memo->recipients->count() }} addressee(s)
+                            </td>
+                            <td class="px-5 py-3.5 text-right">
+                                <a href="{{ route('memos.show', $memo) }}" class="kt-btn kt-btn-xs kt-btn-outline inline-flex items-center gap-1">
+                                    View
+                                    <i class="ki-filled ki-right text-xs"></i>
+                                </a>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="5" class="py-10 text-center text-muted-foreground text-sm">
+                                <i class="ki-filled ki-document text-2xl block mb-1 opacity-40"></i>
+                                No memos created yet. Click "Draft New Memo" to begin.
+                            </td>
+                        </tr>
+                    @endforelse
+                </x-metronic.table>
             </div>
 
-            <div class="kt-card p-6 xl:col-span-4">
-                <h2 class="text-lg font-semibold text-foreground">Execution Snapshot</h2>
-                <div class="mt-4 space-y-3">
-                    <div class="rounded-lg bg-muted/30 p-4">
-                        <p class="text-xs uppercase tracking-wide text-muted-foreground">Acknowledgement Required</p>
-                        <p class="mt-2 text-xl font-semibold text-foreground">{{ $acknowledgementRequiredCount }}</p>
+            <!-- Execution Snapshot -->
+            <div class="xl:col-span-4 flex flex-col gap-4">
+                <h3 class="text-base font-semibold text-foreground">Circulation Snapshot</h3>
+
+                <x-metronic.card>
+                    <div class="space-y-4">
+                        <div class="p-4 rounded-xl bg-muted/20 border border-border flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-medium text-muted-foreground uppercase tracking-wider">Acks Required</p>
+                                <p class="text-xl font-bold text-foreground mt-1">{{ $acknowledgementRequiredCount }}</p>
+                            </div>
+                            <span class="size-10 rounded-lg bg-background border border-border flex items-center justify-center text-foreground font-bold">
+                                <i class="ki-filled ki-shield-tick"></i>
+                            </span>
+                        </div>
+
+                        <div class="p-4 rounded-xl bg-muted/20 border border-border flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-medium text-muted-foreground uppercase tracking-wider">Pending Acks</p>
+                                <p class="text-xl font-bold {{ $pendingAcknowledgementCount > 0 ? 'text-amber-600 dark:text-amber-400' : 'text-foreground' }} mt-1">
+                                    {{ $pendingAcknowledgementCount }}
+                                </p>
+                            </div>
+                            <span class="size-10 rounded-lg bg-background border border-border flex items-center justify-center {{ $pendingAcknowledgementCount > 0 ? 'text-amber-600' : 'text-foreground' }}">
+                                <i class="ki-filled ki-time"></i>
+                            </span>
+                        </div>
+
+                        <div class="p-4 rounded-xl bg-muted/20 border border-border flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-medium text-muted-foreground uppercase tracking-wider">Open Actions</p>
+                                <p class="text-xl font-bold text-foreground mt-1">{{ $openActionCount }}</p>
+                            </div>
+                            <span class="size-10 rounded-lg bg-background border border-border flex items-center justify-center text-foreground">
+                                <i class="ki-filled ki-task"></i>
+                            </span>
+                        </div>
                     </div>
-                    <div class="rounded-lg bg-muted/30 p-4">
-                        <p class="text-xs uppercase tracking-wide text-muted-foreground">Pending Acknowledgement</p>
-                        <p class="mt-2 text-xl font-semibold {{ $pendingAcknowledgementCount > 0 ? 'text-destructive' : 'text-foreground' }}">
-                            {{ $pendingAcknowledgementCount }}
-                        </p>
-                    </div>
-                    <div class="rounded-lg bg-muted/30 p-4">
-                        <p class="text-xs uppercase tracking-wide text-muted-foreground">Open Actions</p>
-                        <p class="mt-2 text-xl font-semibold text-foreground">{{ $openActionCount }}</p>
-                    </div>
-                </div>
+                </x-metronic.card>
             </div>
         </div>
     </section>

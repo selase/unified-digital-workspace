@@ -51,6 +51,8 @@ final class MemoRecipient extends Model
 
     public const string ROLE_CC = 'cc';
 
+    public const string ROLE_BCC = 'bcc';
+
     protected $table = 'memo_recipients';
 
     protected $fillable = [
@@ -80,6 +82,22 @@ final class MemoRecipient extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'recipient_id');
+    }
+
+    /**
+     * @return BelongsTo<User, $this>
+     */
+    public function acknowledgedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'acknowledged_by_id', 'uuid');
+    }
+
+    /**
+     * @return BelongsTo<User, $this>
+     */
+    public function sharedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'shared_by_id', 'uuid');
     }
 
     /**

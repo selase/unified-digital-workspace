@@ -45,6 +45,14 @@ final class MemoMinute extends Model
     }
 
     /**
+     * @return BelongsTo<\App\Models\User, $this>
+     */
+    public function author(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\User::class, 'author_id', 'uuid');
+    }
+
+    /**
      * @return Factory<static>
      */
     protected static function newFactory(): Factory

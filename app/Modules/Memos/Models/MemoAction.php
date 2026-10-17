@@ -51,6 +51,14 @@ final class MemoAction extends Model
     }
 
     /**
+     * @return BelongsTo<\App\Models\User, $this>
+     */
+    public function assignedTo(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\User::class, 'assigned_to_id', 'uuid');
+    }
+
+    /**
      * @return Factory<static>
      */
     protected static function newFactory(): Factory

@@ -94,6 +94,34 @@ final class Memo extends Model
     }
 
     /**
+     * Return only recipients visible to $viewer (stripping BCC rows unless $viewer is the sender
+     * or that specific BCC recipient).
+     *
+     * @return \Illuminate\Support\Collection<int, MemoRecipient>
+     */
+    public function visibleRecipientsFor(?User $viewer): \Illuminate\Support\Collection
+    {
+        $all = $this->relationLoaded('recipients') ? $this->recipients : $this->recipients()->get();
+
+        if ($viewer !== null && (string) $this->sender_id === (string) $viewer->uuid) {
+            return $all->values();
+        }
+
+        return $all->filter(function (MemoRecipient $recipient) use ($viewer): bool {
+            if ($recipient->role !== MemoRecipient::ROLE_BCC) {
+                return true;
+            }
+
+            if ($viewer === null || $recipient->recipient_type !== MemoRecipient::TYPE_USER) {
+                return false;
+            }
+
+            return (string) $recipient->recipient_id === (string) $viewer->id
+                || (string) $recipient->recipient_id === (string) $viewer->uuid;
+        })->values();
+    }
+
+    /**
      * @return HasMany<MemoMinute, $this>
      */
     public function minutes(): HasMany
