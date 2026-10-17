@@ -5,17 +5,23 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Billing;
 
 use App\Http\Controllers\Controller;
+use App\Models\Invoice;
 use App\Models\Tenant;
+use App\Services\Billing\PaymentFulfillmentService;
 use App\Services\Billing\SubscriptionProvisioningService;
 use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use UnexpectedValueException;
 
 final class WebhookController extends Controller
 {
-    public function handleStripe(Request $request, SubscriptionProvisioningService $provisioningService)
-    {
+    public function handleStripe(
+        Request $request,
+        SubscriptionProvisioningService $provisioningService,
+        PaymentFulfillmentService $fulfillmentService
+    ): JsonResponse {
         $payload = $request->getContent();
         $sigHeader = $request->header('Stripe-Signature');
         $endpointSecret = config('services.stripe.webhook_secret');
@@ -68,22 +74,10 @@ final class WebhookController extends Controller
 
                 // If it's an invoice payment
                 if (isset($session->metadata->invoice_id)) {
-                    $invoice = \App\Models\Invoice::find($session->metadata->invoice_id);
-                    if ($invoice && $invoice->status !== \App\Models\Invoice::STATUS_PAID) {
-                        $invoice->update([
-                            'status' => \App\Models\Invoice::STATUS_PAID,
-                            'paid_at' => now(),
-                        ]);
-
-                        \App\Models\Transaction::create([
-                            'tenant_id' => $invoice->tenant_id,
-                            'invoice_id' => $invoice->id,
-                            'amount' => $invoice->total * 100,
-                            'currency' => $invoice->currency,
-                            'status' => 'success',
-                            'provider' => 'stripe',
-                            'provider_transaction_id' => $session->payment_intent,
-                        ]);
+                    $invoice = Invoice::find($session->metadata->invoice_id);
+                    if ($invoice) {
+                        $txId = (string) ($session->payment_intent ?? $session->id ?? $invoice->number);
+                        $fulfillmentService->fulfillInvoicePayment($invoice, $txId, 'stripe');
                         Log::info("Filled invoice {$invoice->id} via Stripe Webhook");
                     }
                 }

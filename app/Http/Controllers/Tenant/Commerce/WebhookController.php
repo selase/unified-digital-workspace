@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Tenant\Commerce;
 
 use App\Http\Controllers\Controller;
-use App\Models\MerchantTransaction;
 use App\Models\Tenant;
 use App\Models\TenantPaymentGateway;
+use App\Services\Billing\PaymentFulfillmentService;
 use Exception;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -17,7 +18,7 @@ final class WebhookController extends Controller
     /**
      * Handle Stripe Webhooks for Merchant accounts.
      */
-    public function handleStripe(Request $request, Tenant $tenant)
+    public function handleStripe(Request $request, Tenant $tenant, PaymentFulfillmentService $fulfillmentService): JsonResponse
     {
         $gateway = TenantPaymentGateway::where('tenant_id', $tenant->id)
             ->where('provider', 'stripe')
@@ -34,7 +35,7 @@ final class WebhookController extends Controller
 
         try {
             $event = \Stripe\Webhook::constructEvent(
-                $payload, $sigHeader, $webhookSecret
+                $payload, (string) $sigHeader, (string) $webhookSecret
             );
         } catch (Exception $e) {
             Log::error('Merchant Stripe webhook verification failed', ['tenant' => $tenant->id, 'error' => $e->getMessage()]);
@@ -45,11 +46,10 @@ final class WebhookController extends Controller
         switch ($event->type) {
             case 'checkout.session.completed':
                 $session = $event->data->object;
-                $this->recordTransaction($tenant, 'stripe', $session);
+                $fulfillmentService->recordMerchantTransaction($tenant, 'stripe', $session);
                 break;
 
             case 'payment_intent.succeeded':
-                $paymentIntent = $event->data->object;
                 // Avoid double counting if using both
                 break;
         }
@@ -60,7 +60,7 @@ final class WebhookController extends Controller
     /**
      * Handle Paystack Webhooks for Merchant accounts.
      */
-    public function handlePaystack(Request $request, Tenant $tenant)
+    public function handlePaystack(Request $request, Tenant $tenant, PaymentFulfillmentService $fulfillmentService): JsonResponse
     {
         $gateway = TenantPaymentGateway::where('tenant_id', $tenant->id)
             ->where('provider', 'paystack')
@@ -74,7 +74,7 @@ final class WebhookController extends Controller
         $signature = $request->header('x-paystack-signature');
         $secret = $gateway->api_key_encrypted; // Paystack uses secret key for hashing
 
-        if (! $signature || ! hash_equals(hash_hmac('sha512', $request->getContent(), $secret), $signature)) {
+        if (! $signature || ! hash_equals(hash_hmac('sha512', $request->getContent(), (string) $secret), (string) $signature)) {
             return response()->json(['error' => 'Invalid signature'], 400);
         }
 
@@ -82,30 +82,9 @@ final class WebhookController extends Controller
         $data = $request->input('data');
 
         if ($event === 'charge.success') {
-            $this->recordTransaction($tenant, 'paystack', json_decode((string) json_encode($data)));
+            $fulfillmentService->recordMerchantTransaction($tenant, 'paystack', (array) $data);
         }
 
         return response()->json(['status' => 'success']);
-    }
-
-    private function recordTransaction(Tenant $tenant, string $provider, $data)
-    {
-        MerchantTransaction::updateOrCreate(
-            [
-                'tenant_id' => $tenant->id,
-                'provider' => $provider,
-                'provider_transaction_id' => $provider === 'stripe' ? ($data->payment_intent ?? $data->id) : $data->reference,
-            ],
-            [
-                'amount' => $provider === 'stripe' ? $data->amount_total : ($data->amount),
-                'currency' => mb_strtoupper($provider === 'stripe' ? $data->currency : ($data->currency ?? 'NGN')),
-                'status' => 'succeeded',
-                'type' => 'payment',
-                'customer_email' => $provider === 'stripe' ? ($data->customer_details->email ?? null) : ($data->customer->email ?? null),
-                'customer_name' => $provider === 'stripe' ? ($data->customer_details->name ?? null) : mb_trim(($data->customer->first_name ?? '').' '.($data->customer->last_name ?? '')),
-                'description' => $provider === 'stripe' ? 'Stripe Checkout' : 'Paystack Charge',
-                'meta' => (array) $data,
-            ]
-        );
     }
 }
