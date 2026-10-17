@@ -214,7 +214,7 @@ final class WorkplanWebController extends Controller
                         'recorded_value' => (float) $validated['value'],
                         'unit' => $kpi->unit,
                     ],
-                    'sent_at' => now(),
+                    'sent_at' => null,
                 ]);
             }
         }
@@ -256,5 +256,97 @@ final class WorkplanWebController extends Controller
             ->route('quality-monitoring.workplans.show', $workplan)
             ->with('status', 'success')
             ->with('message', 'Quality variance and corrective action plan logged.');
+    }
+
+    public function uploadEvidence(Request $request, Workplan $workplan): RedirectResponse
+    {
+        $user = $request->user();
+        abort_if(! $user || (! $user->can('qm.workplans.manage') && ! $user->can('qm.workplans.view')), 403);
+
+        $tenant = app(\App\Services\Tenancy\TenantContext::class)->getTenant();
+        $tenantId = $tenant ? (string) $tenant->id : (string) $user->tenant_id;
+        if ($workplan->tenant_id !== $tenantId) {
+            abort(404, 'Workplan not found in this organization.');
+        }
+
+        $validated = $request->validate([
+            'evidence_file' => [
+                'required',
+                'file',
+                'mimes:pdf,png,jpg,jpeg,docx,xlsx,zip',
+                'max:10240',
+            ],
+            'description' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        /** @var \Illuminate\Http\UploadedFile $file */
+        $file = $validated['evidence_file'];
+        $path = $file->store("evidence/{$workplan->tenant_id}/{$workplan->uuid}", 'local');
+
+        $metadata = is_array($workplan->metadata) ? $workplan->metadata : [];
+        /** @var array<int, array<string, mixed>> $evidenceFiles */
+        $evidenceFiles = isset($metadata['evidence_files']) && is_array($metadata['evidence_files'])
+            ? $metadata['evidence_files']
+            : [];
+
+        $evidenceFiles[] = [
+            'id' => (string) \Illuminate\Support\Str::uuid(),
+            'name' => $file->getClientOriginalName(),
+            'path' => $path,
+            'mime_type' => $file->getClientMimeType(),
+            'size_bytes' => $file->getSize(),
+            'description' => $validated['description'] ?? null,
+            'uploaded_by' => (string) $user->uuid,
+            'uploaded_by_name' => mb_trim($user->first_name.' '.$user->last_name),
+            'uploaded_at' => now()->toIso8601String(),
+        ];
+
+        $metadata['evidence_files'] = $evidenceFiles;
+        $workplan->metadata = $metadata;
+        $workplan->save();
+
+        \Illuminate\Support\Facades\Log::info("Quality Monitoring Evidence uploaded for Workplan [{$workplan->uuid}] by user [{$user->uuid}]: file [{$file->getClientOriginalName()}].");
+
+        return redirect()
+            ->route('quality-monitoring.workplans.show', $workplan)
+            ->with('status', 'success')
+            ->with('message', 'Evidence document securely uploaded to vault.');
+    }
+
+    public function downloadEvidence(Request $request, Workplan $workplan, string $fileId): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        $user = $request->user();
+        abort_if(! $user || (! $user->can('qm.workplans.view') && ! $user->can('qm.workplans.manage')), 403);
+
+        $tenant = app(\App\Services\Tenancy\TenantContext::class)->getTenant();
+        $tenantId = $tenant ? (string) $tenant->id : (string) $user->tenant_id;
+        if ($workplan->tenant_id !== $tenantId) {
+            abort(404, 'Workplan not found in this organization.');
+        }
+
+        $metadata = is_array($workplan->metadata) ? $workplan->metadata : [];
+        /** @var array<int, array{id: string, name: string, path: string, mime_type?: string, size_bytes?: int}> $evidenceFiles */
+        $evidenceFiles = isset($metadata['evidence_files']) && is_array($metadata['evidence_files'])
+            ? $metadata['evidence_files']
+            : [];
+
+        $targetFile = collect($evidenceFiles)->firstWhere('id', $fileId);
+
+        abort_if(! is_array($targetFile), 404, 'Evidence file not found in vault.');
+
+        if (! \Illuminate\Support\Facades\Storage::disk('local')->exists($targetFile['path'])) {
+            abort(404, 'Physical evidence file missing on disk.');
+        }
+
+        \Illuminate\Support\Facades\Log::info("Quality Monitoring Evidence downloaded for Workplan [{$workplan->uuid}] by user [{$user->uuid}]: file [{$targetFile['name']}].");
+
+        return \Illuminate\Support\Facades\Storage::disk('local')->download(
+            $targetFile['path'],
+            $targetFile['name'],
+            [
+                'Cache-Control' => 'private, no-cache, must-revalidate',
+                'Content-Type' => $targetFile['mime_type'] ?? 'application/octet-stream',
+            ]
+        );
     }
 }

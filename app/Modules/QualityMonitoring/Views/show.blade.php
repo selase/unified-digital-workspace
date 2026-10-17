@@ -457,6 +457,59 @@
                     @endforelse
                 </div>
             </x-metronic.card>
+
+            {{-- Quality Monitoring Evidence Vault --}}
+            <x-metronic.card title="Evidence Vault" subtitle="Auditable clinical & operational artifacts">
+                <div class="space-y-3 text-xs">
+                    @php
+                        $evidenceList = $workplan->metadata['evidence_files'] ?? [];
+                    @endphp
+
+                    @forelse($evidenceList as $evidence)
+                        <div class="p-3 rounded-lg border border-border bg-muted/20 space-y-1">
+                            <div class="flex items-center justify-between">
+                                <a href="{{ route('quality-monitoring.workplans.evidence.download', ['workplan' => $workplan, 'fileId' => $evidence['id']]) }}" class="font-semibold text-primary hover:underline truncate max-w-[200px]" title="{{ $evidence['name'] }}">
+                                    {{ $evidence['name'] }}
+                                </a>
+                                <span class="text-[10px] text-muted-foreground">{{ number_format(($evidence['size_bytes'] ?? 0) / 1024, 1) }} KB</span>
+                            </div>
+                            @if(!empty($evidence['description']))
+                                <p class="text-[11px] text-muted-foreground">{{ $evidence['description'] }}</p>
+                            @endif
+                            <div class="flex items-center justify-between text-[10px] text-muted-foreground pt-1">
+                                <span>By: {{ $evidence['uploaded_by_name'] ?? 'User' }}</span>
+                                <span>{{ \Carbon\Carbon::parse($evidence['uploaded_at'])->format('d/m/Y H:i') }}</span>
+                            </div>
+                        </div>
+                    @empty
+                        <div class="py-4 text-center text-muted-foreground text-xs">
+                            No evidence files uploaded to this vault yet.
+                        </div>
+                    @endforelse
+
+                    @can('qm.workplans.manage')
+                        <div class="pt-3 border-t border-border/60">
+                            <form action="{{ route('quality-monitoring.workplans.evidence.upload', $workplan) }}" method="POST" enctype="multipart/form-data" class="space-y-3">
+                                @csrf
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-foreground mb-1">Upload New Evidence</label>
+                                    <input type="file" name="evidence_file" required class="block w-full text-xs text-muted-foreground file:mr-2 file:py-1 file:px-2 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-primary/10 file:text-primary hover:file:bg-primary/20" />
+                                    <p class="text-[10px] text-muted-foreground mt-0.5">PDF, PNG, JPG, DOCX, XLSX, ZIP (Max 10MB)</p>
+                                </div>
+                                <div>
+                                    <input type="text" name="description" placeholder="Brief document description..." class="w-full text-xs rounded-md border border-input bg-background px-2.5 py-1.5 focus:outline-none focus:ring-1 focus:ring-ring" />
+                                </div>
+                                <button type="submit" class="kt-btn kt-btn-outline w-full py-1.5 text-xs justify-center flex items-center gap-1.5">
+                                    <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                                    </svg>
+                                    Upload to Vault
+                                </button>
+                            </form>
+                        </div>
+                    @endcan
+                </div>
+            </x-metronic.card>
         </div>
     </div>
 </div>

@@ -27,6 +27,10 @@ Route::post('/workplans/{workplan}/reject', [WorkplanWebController::class, 'reje
 Route::post('/workplans/{workplan}/kpis/{kpi}/updates', [WorkplanWebController::class, 'storeKpiUpdate'])->name('workplans.kpi-update');
 Route::post('/workplans/{workplan}/variances', [WorkplanWebController::class, 'storeVariance'])->name('workplans.variance');
 
+// Evidence Vault
+Route::post('/workplans/{workplan}/evidence', [WorkplanWebController::class, 'uploadEvidence'])->name('workplans.evidence.upload');
+Route::get('/workplans/{workplan}/evidence/{fileId}', [WorkplanWebController::class, 'downloadEvidence'])->name('workplans.evidence.download');
+
 // Performance Alerts & Triage
 Route::get('/alerts', [AlertListController::class, 'index'])->name('alerts.index');
 Route::post('/alerts/{alert}/acknowledge', [AlertListController::class, 'acknowledge'])->name('alerts.acknowledge');
