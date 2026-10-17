@@ -21,6 +21,10 @@ final class CmsMediaServeController extends Controller
 {
     public function show(Media $media): StreamedResponse
     {
+        if ($media->is_internal && ! auth()->check()) {
+            abort(403, 'Authentication required to access internal media assets.');
+        }
+
         $disk = Storage::disk($media->disk);
 
         if (! $disk->exists($media->path)) {
@@ -30,9 +34,13 @@ final class CmsMediaServeController extends Controller
         $mimeType = $media->mime_type ?: 'application/octet-stream';
         $filename = $media->original_filename ?: $media->filename;
 
+        $cacheControl = $media->is_internal
+            ? 'private, no-cache, no-store, must-revalidate'
+            : 'public, max-age=31536000, immutable';
+
         return $disk->response($media->path, $filename, [
             'Content-Type' => $mimeType,
-            'Cache-Control' => 'public, max-age=31536000, immutable',
+            'Cache-Control' => $cacheControl,
         ]);
     }
 }

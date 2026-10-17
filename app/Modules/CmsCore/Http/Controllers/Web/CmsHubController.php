@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Modules\CmsCore\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Modules\CmsCore\Models\Category;
 use App\Modules\CmsCore\Models\Media;
+use App\Modules\CmsCore\Models\Post;
 use App\Modules\CmsCore\Models\PostType;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
@@ -42,12 +44,32 @@ final class CmsHubController extends Controller
             ->map(fn (array $shortcut): array => $shortcut + ['url' => route($shortcut['route'])])
             ->values();
 
+        $metrics = [
+            'total_posts' => Post::query()->count(),
+            'published_posts' => Post::query()->where('status', 'published')->count(),
+            'draft_posts' => Post::query()->where('status', 'draft')->count(),
+            'scheduled_posts' => Post::query()->where('status', 'scheduled')->count(),
+            'categories_count' => Category::query()->count(),
+            'media_count' => $user->can('cms.media.view') ? Media::query()->count() : 0,
+        ];
+
+        $recentPosts = Post::query()
+            ->with([
+                'postType:id,name,slug',
+                'author:uuid,first_name,last_name,email',
+            ])
+            ->latest('updated_at')
+            ->limit(6)
+            ->get();
+
         return view('cms-core::index', [
             'contentTypes' => $contentTypes,
             'shortcuts' => $shortcuts,
             'mediaCount' => $user->can('cms.media.view') ? Media::query()->count() : null,
             'canCreate' => $user->can('cms.posts.create'),
             'apiLinks' => $user->can('cms.settings.manage') ? $this->apiLinks() : collect(),
+            'metrics' => $metrics,
+            'recentPosts' => $recentPosts,
         ]);
     }
 

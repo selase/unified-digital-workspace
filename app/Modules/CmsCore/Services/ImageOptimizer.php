@@ -179,6 +179,7 @@ final class ImageOptimizer
             })(),
             IMAGETYPE_PNG => imagepng($image, null, 9),
             IMAGETYPE_WEBP => imagewebp($image, null, self::WEBP_QUALITY),
+            default => null,
         };
 
         return (string) ob_get_clean();

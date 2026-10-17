@@ -52,7 +52,7 @@
                 @if($post->published_at)
                     <span>&middot;</span>
                     <time datetime="{{ $post->published_at->toDateString() }}">
-                        {{ $post->published_at->format('F j, Y') }}
+                        {{ $post->published_at->format('d/m/Y') }}
                     </time>
                 @endif
             </div>
@@ -71,10 +71,19 @@
                 </div>
             @endif
 
+            {{-- Visual Layout Blocks --}}
+            @if($post->hasBlocks())
+                <div class="mt-8">
+                    {!! $post->renderBlocks() !!}
+                </div>
+            @endif
+
             {{-- Body --}}
-            <div class="prose mt-8 max-w-none">
-                {!! $post->body !!}
-            </div>
+            @if(!empty(trim(strip_tags((string)$post->body))))
+                <div class="prose mt-8 max-w-none">
+                    {!! $post->body !!}
+                </div>
+            @endif
 
             {{-- Tags --}}
             @if($post->tags->isNotEmpty())

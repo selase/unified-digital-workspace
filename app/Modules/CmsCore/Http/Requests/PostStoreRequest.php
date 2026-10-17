@@ -6,6 +6,8 @@ namespace App\Modules\CmsCore\Http\Requests;
 
 use App\Modules\CmsCore\Models\Category;
 use App\Modules\CmsCore\Models\Media;
+use App\Modules\CmsCore\Models\Menu;
+use App\Modules\CmsCore\Models\MenuItem;
 use App\Modules\CmsCore\Models\Post;
 use App\Modules\CmsCore\Models\PostType;
 use App\Modules\CmsCore\Models\Tag;
@@ -87,6 +89,18 @@ final class PostStoreRequest extends FormRequest
             'cta_url' => ['nullable', 'required_with:cta_label', 'string', 'max:500', 'regex:/^(\/(?!\/)|https?:\/\/)\S*$/'],
             'cta2_label' => ['nullable', 'string', 'max:60'],
             'cta2_url' => ['nullable', 'required_with:cta2_label', 'string', 'max:500', 'regex:/^(\/(?!\/)|https?:\/\/)\S*$/'],
+            'blocks_json' => ['nullable', 'array'],
+            'attach_to_menu_id' => [
+                'nullable',
+                'integer',
+                Rule::exists(Menu::class, 'id')->where('tenant_id', $tenantId),
+            ],
+            'parent_menu_item_id' => [
+                'nullable',
+                'integer',
+                Rule::exists(MenuItem::class, 'id')->where('tenant_id', $tenantId),
+            ],
+            'menu_item_label' => ['nullable', 'string', 'max:255'],
         ];
     }
 

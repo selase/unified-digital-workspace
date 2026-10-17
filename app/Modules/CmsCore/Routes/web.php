@@ -19,6 +19,8 @@ Route::prefix('posts')->name('posts.')->group(function (): void {
     Route::get('/{post}', [CmsPostLibraryController::class, 'show'])->name('show');
     Route::get('/{post}/edit', [CmsPostLibraryController::class, 'edit'])->name('edit');
     Route::put('/{post}', [CmsPostLibraryController::class, 'update'])->name('update');
+    Route::post('/{post}/publish', [CmsPostLibraryController::class, 'publish'])->name('publish');
+    Route::post('/{post}/archive', [CmsPostLibraryController::class, 'archive'])->name('archive');
     Route::delete('/{post}', [CmsPostLibraryController::class, 'destroy'])->name('destroy');
 });
 Route::prefix('media')->name('media.')->group(function (): void {

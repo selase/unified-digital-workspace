@@ -272,3 +272,180 @@
         </div>
     </div>
 </div>
+
+{{-- Navigation Menu & Sub-Menu Attachment --}}
+<div class="mt-8 border-t border-border pt-6">
+    <div class="flex items-center justify-between mb-4">
+        <div>
+            <h3 class="text-sm font-semibold text-foreground">Menu & Sub-Menu Placement</h3>
+            <p class="text-xs text-muted-foreground">Attach this page directly to a public or institutional navigation menu.</p>
+        </div>
+        @if(!empty($attachedMenuItem))
+            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-primary/10 text-primary">
+                Currently in: {{ $attachedMenuItem->menu?->name ?? 'Menu #'.$attachedMenuItem->menu_id }}
+            </span>
+        @endif
+    </div>
+
+    <div class="grid gap-6 lg:grid-cols-3">
+        <div class="kt-form-item">
+            <label class="kt-form-label">Target Menu</label>
+            <div class="kt-form-control">
+                <select class="kt-select" name="attach_to_menu_id">
+                    <option value="">Do not attach to menu</option>
+                    @foreach($menus ?? [] as $m)
+                        <option value="{{ $m->id }}" @selected((int) old('attach_to_menu_id', $attachedMenuItem?->menu_id) === $m->id)>
+                            {{ $m->name }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+            @error('attach_to_menu_id') <p class="text-xs text-destructive mt-1">{{ $message }}</p> @enderror
+        </div>
+
+        <div class="kt-form-item">
+            <label class="kt-form-label">Parent Menu Item (Sub-Menu)</label>
+            <div class="kt-form-control">
+                <select class="kt-select" name="parent_menu_item_id">
+                    <option value="">Top-Level Item</option>
+                    @foreach($menus ?? [] as $m)
+                        <optgroup label="{{ $m->name }}">
+                            @foreach($m->items ?? [] as $item)
+                                @if(empty($item->parent_id))
+                                    <option value="{{ $item->id }}" @selected((int) old('parent_menu_item_id', $attachedMenuItem?->parent_id) === $item->id)>
+                                        {{ $item->label }}
+                                    </option>
+                                @endif
+                            @endforeach
+                        </optgroup>
+                    @endforeach
+                </select>
+            </div>
+            <p class="mt-1 text-xs text-muted-foreground">Select a top-level parent to nest as a dropdown sub-menu item.</p>
+            @error('parent_menu_item_id') <p class="text-xs text-destructive mt-1">{{ $message }}</p> @enderror
+        </div>
+
+        <div class="kt-form-item">
+            <label class="kt-form-label">Menu Item Label</label>
+            <div class="kt-form-control">
+                <input class="kt-input" name="menu_item_label" type="text" value="{{ old('menu_item_label', $attachedMenuItem?->label) }}" placeholder="Leave empty to use Post Title">
+            </div>
+            @error('menu_item_label') <p class="text-xs text-destructive mt-1">{{ $message }}</p> @enderror
+        </div>
+    </div>
+</div>
+
+{{-- Visual Page Builder Blocks --}}
+<div class="mt-8 border-t border-border pt-6" x-data="{
+    blocks: {{ json_encode(old('blocks_json', $post?->blocks_json ?? [])) }},
+    addBlock(type) {
+        if (type === 'hero') {
+            this.blocks.push({ type: 'hero', data: { title: 'Headline Here', subtitle: 'Supporting narrative and value proposition', cta_label: 'Explore', cta_url: '/site/properties' } });
+        } else if (type === 'feature_cards') {
+            this.blocks.push({ type: 'feature_cards', data: { items: [{ title: 'Service Feature 1', description: 'Detailed capability breakdown and guarantee', icon: 'check' }] } });
+        } else if (type === 'stats_grid') {
+            this.blocks.push({ type: 'stats_grid', data: { items: [{ label: 'Completed Deliverables', value: '150', suffix: '+' }] } });
+        } else if (type === 'faq_accordion') {
+            this.blocks.push({ type: 'faq_accordion', data: { items: [{ question: 'What is the required documentation?', answer: 'Official photo ID, land lease consent, and proof of address.' }] } });
+        } else if (type === 'cta_banner') {
+            this.blocks.push({ type: 'cta_banner', data: { headline: 'Ready to Acquire Your Plot?', description: 'Contact our certified land acquisition team today.', button_text: 'Inquire Now', button_url: '/site/properties' } });
+        } else if (type === 'property_listings_grid') {
+            this.blocks.push({ type: 'property_listings_grid', data: { title: 'Featured Land Parcels', limit: 6 } });
+        }
+    },
+    removeBlock(index) {
+        this.blocks.splice(index, 1);
+    }
+}">
+    <div class="flex items-center justify-between mb-4">
+        <div>
+            <h3 class="text-sm font-semibold text-foreground">Visual Block Page Builder</h3>
+            <p class="text-xs text-muted-foreground">Construct modular landing pages with sanitized layout components.</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <button type="button" @click="addBlock('hero')" class="kt-btn kt-btn-xs kt-btn-outline">+ Hero Banner</button>
+            <button type="button" @click="addBlock('feature_cards')" class="kt-btn kt-btn-xs kt-btn-outline">+ Features Grid</button>
+            <button type="button" @click="addBlock('stats_grid')" class="kt-btn kt-btn-xs kt-btn-outline">+ Stats Counters</button>
+            <button type="button" @click="addBlock('faq_accordion')" class="kt-btn kt-btn-xs kt-btn-outline">+ FAQ Accordion</button>
+            <button type="button" @click="addBlock('cta_banner')" class="kt-btn kt-btn-xs kt-btn-outline">+ CTA Banner</button>
+            <button type="button" @click="addBlock('property_listings_grid')" class="kt-btn kt-btn-xs kt-btn-outline">+ Property Grid</button>
+        </div>
+    </div>
+
+    {{-- Rendered Blocks List --}}
+    <div class="space-y-4">
+        <template x-for="(block, idx) in blocks" :key="idx">
+            <div class="p-4 bg-muted/40 rounded-xl border border-border">
+                <div class="flex items-center justify-between mb-3 border-b border-border/60 pb-2">
+                    <span class="text-xs font-bold uppercase tracking-wider text-primary" x-text="'Block #' + (idx + 1) + ': ' + block.type"></span>
+                    <button type="button" @click="removeBlock(idx)" class="text-xs text-destructive hover:underline">Remove Block</button>
+                </div>
+
+                {{-- Hero Block Inputs --}}
+                <div x-if="block.type === 'hero'" class="grid gap-3 lg:grid-cols-2">
+                    <div>
+                        <label class="text-xs font-medium text-foreground">Hero Headline</label>
+                        <input class="kt-input mt-1" type="text" :name="'blocks_json[' + idx + '][data][title]'" x-model="block.data.title">
+                    </div>
+                    <div>
+                        <label class="text-xs font-medium text-foreground">Subtitle</label>
+                        <input class="kt-input mt-1" type="text" :name="'blocks_json[' + idx + '][data][subtitle]'" x-model="block.data.subtitle">
+                    </div>
+                    <div>
+                        <label class="text-xs font-medium text-foreground">CTA Button Label</label>
+                        <input class="kt-input mt-1" type="text" :name="'blocks_json[' + idx + '][data][cta_label]'" x-model="block.data.cta_label">
+                    </div>
+                    <div>
+                        <label class="text-xs font-medium text-foreground">CTA Target URL</label>
+                        <input class="kt-input mt-1" type="text" :name="'blocks_json[' + idx + '][data][cta_url]'" x-model="block.data.cta_url">
+                    </div>
+                    <input type="hidden" :name="'blocks_json[' + idx + '][type]'" :value="block.type">
+                </div>
+
+                {{-- CTA Banner Inputs --}}
+                <div x-if="block.type === 'cta_banner'" class="grid gap-3 lg:grid-cols-2">
+                    <div>
+                        <label class="text-xs font-medium text-foreground">Banner Headline</label>
+                        <input class="kt-input mt-1" type="text" :name="'blocks_json[' + idx + '][data][headline]'" x-model="block.data.headline">
+                    </div>
+                    <div>
+                        <label class="text-xs font-medium text-foreground">Banner Description</label>
+                        <input class="kt-input mt-1" type="text" :name="'blocks_json[' + idx + '][data][description]'" x-model="block.data.description">
+                    </div>
+                    <div>
+                        <label class="text-xs font-medium text-foreground">Button Text</label>
+                        <input class="kt-input mt-1" type="text" :name="'blocks_json[' + idx + '][data][button_text]'" x-model="block.data.button_text">
+                    </div>
+                    <div>
+                        <label class="text-xs font-medium text-foreground">Button Link</label>
+                        <input class="kt-input mt-1" type="text" :name="'blocks_json[' + idx + '][data][button_url]'" x-model="block.data.button_url">
+                    </div>
+                    <input type="hidden" :name="'blocks_json[' + idx + '][type]'" :value="block.type">
+                </div>
+
+                {{-- Property Grid Inputs --}}
+                <div x-if="block.type === 'property_listings_grid'" class="grid gap-3 lg:grid-cols-2">
+                    <div>
+                        <label class="text-xs font-medium text-foreground">Section Title</label>
+                        <input class="kt-input mt-1" type="text" :name="'blocks_json[' + idx + '][data][title]'" x-model="block.data.title">
+                    </div>
+                    <div>
+                        <label class="text-xs font-medium text-foreground">Display Limit</label>
+                        <input class="kt-input mt-1" type="number" min="1" max="20" :name="'blocks_json[' + idx + '][data][limit]'" x-model="block.data.limit">
+                    </div>
+                    <input type="hidden" :name="'blocks_json[' + idx + '][type]'" :value="block.type">
+                </div>
+
+                {{-- Generic hidden type for other blocks --}}
+                <div x-if="!['hero', 'cta_banner', 'property_listings_grid'].includes(block.type)">
+                    <p class="text-xs text-muted-foreground" x-text="'Block configured with ' + (block.data.items ? block.data.items.length : 1) + ' items.'"></p>
+                    <input type="hidden" :name="'blocks_json[' + idx + '][type]'" :value="block.type">
+                </div>
+            </div>
+        </template>
+
+        <div x-show="blocks.length === 0" class="p-6 text-center border border-dashed border-border rounded-xl text-xs text-muted-foreground">
+            No visual blocks added. Use the buttons above to build a block-based landing page or continue with standard rich text body.
+        </div>
+    </div>
+</div>

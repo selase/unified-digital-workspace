@@ -47,6 +47,9 @@ final class CmsEnquiryController extends Controller
             return $this->respond($request, false, 'This form has expired. Please reload the page and try again.', 422);
         }
 
+        $type = EnquiryType::from($data['type']);
+        $this->persistCrmLeadIfAvailable($type, $data);
+
         $recipient = $this->recipient();
 
         if ($recipient === null) {
@@ -54,8 +57,6 @@ final class CmsEnquiryController extends Controller
 
             return $this->respond($request, false, 'We cannot take messages through this form right now. Please contact us directly.', 503);
         }
-
-        $type = EnquiryType::from($data['type']);
 
         try {
             Mail::to($recipient)->send(new SiteEnquiryReceived(
@@ -90,6 +91,43 @@ final class CmsEnquiryController extends Controller
         }
 
         return null;
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function persistCrmLeadIfAvailable(EnquiryType $type, array $data): void
+    {
+        $tenant = $this->tenantContext->getTenant();
+        if (! $tenant) {
+            return;
+        }
+
+        $connection = config('database.default_tenant_connection', 'tenant');
+
+        try {
+            if (! \Illuminate\Support\Facades\Schema::connection($connection)->hasTable('crm_leads')) {
+                return;
+            }
+
+            \App\Modules\Crm\Models\CrmLead::query()->create([
+                'tenant_id' => $tenant->id,
+                'reference_code' => 'LEAD-WEB-'.mb_strtoupper(\Illuminate\Support\Str::random(6)),
+                'source' => \App\Modules\Crm\Models\CrmLead::SOURCE_WEBSITE_ENQUIRY,
+                'enquiry_type' => $type->value,
+                'full_name' => (string) $data['name'],
+                'email' => (string) $data['email'],
+                'phone' => isset($data['phone']) ? (string) $data['phone'] : null,
+                'organisation' => isset($data['organisation']) ? (string) $data['organisation'] : null,
+                'message' => (string) $data['message'],
+                'status' => \App\Modules\Crm\Models\CrmLead::STATUS_NEW,
+            ]);
+        } catch (Throwable $exception) {
+            Log::warning('Could not persist public enquiry to CRM leads table', [
+                'tenant_id' => $tenant->id,
+                'error' => $exception->getMessage(),
+            ]);
+        }
     }
 
     private function respond(EnquiryStoreRequest $request, bool $sent, string $message, int $status = 200): JsonResponse|RedirectResponse

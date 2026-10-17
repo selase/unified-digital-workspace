@@ -9,6 +9,8 @@ use App\Modules\CmsCore\Http\Requests\PostStoreRequest;
 use App\Modules\CmsCore\Http\Requests\PostUpdateRequest;
 use App\Modules\CmsCore\Models\Category;
 use App\Modules\CmsCore\Models\Media;
+use App\Modules\CmsCore\Models\Menu;
+use App\Modules\CmsCore\Models\MenuItem;
 use App\Modules\CmsCore\Models\Post;
 use App\Modules\CmsCore\Models\PostMeta;
 use App\Modules\CmsCore\Models\PostType;
@@ -85,10 +87,11 @@ final class CmsPostLibraryController extends Controller
     public function store(PostStoreRequest $request): RedirectResponse
     {
         $payload = $this->normalizePayload($request->validated(), $request);
-        $attributes = Arr::except($payload, ['category_ids', 'tag_ids', 'media_ids', 'featured_image', 'seo_title', 'seo_description', 'seo_canonical', 'video_url', 'audio_url', 'poster_media_id', ...self::BUTTON_META_KEYS]);
+        $attributes = Arr::except($payload, ['category_ids', 'tag_ids', 'media_ids', 'featured_image', 'seo_title', 'seo_description', 'seo_canonical', 'video_url', 'audio_url', 'poster_media_id', 'attach_to_menu_id', 'parent_menu_item_id', 'menu_item_label', ...self::BUTTON_META_KEYS]);
 
         $post = Post::create($attributes);
         $this->syncRelations($post, $payload);
+        $this->syncMenuAttachment($post, $request);
         $this->seoService->saveForPost($post, $request->only(['seo_title', 'seo_description', 'seo_canonical']));
         $this->saveMeta($post, ['video_url', 'audio_url', 'poster_media_id', ...self::BUTTON_META_KEYS], $request->validated());
 
@@ -108,9 +111,10 @@ final class CmsPostLibraryController extends Controller
             'editor:uuid,first_name,last_name,email',
             'categories:id,name',
             'tags:id,name',
-            'featuredMedia:id,title,original_filename,filename,path,disk',
-            'media:id,title,original_filename,filename,path,disk',
+            'featuredMedia',
+            'media',
             'revisions:id,post_id,title,excerpt,created_at',
+            'menuItems.menu',
         ]);
 
         return view('cms-core::posts-show', [
@@ -130,12 +134,13 @@ final class CmsPostLibraryController extends Controller
     public function update(PostUpdateRequest $request, Post $post): RedirectResponse
     {
         $payload = $this->normalizePayload($request->validated(), $request);
-        $attributes = Arr::except($payload, ['category_ids', 'tag_ids', 'media_ids', 'featured_image', 'seo_title', 'seo_description', 'seo_canonical', 'video_url', 'audio_url', 'poster_media_id', ...self::BUTTON_META_KEYS]);
+        $attributes = Arr::except($payload, ['category_ids', 'tag_ids', 'media_ids', 'featured_image', 'seo_title', 'seo_description', 'seo_canonical', 'video_url', 'audio_url', 'poster_media_id', 'attach_to_menu_id', 'parent_menu_item_id', 'menu_item_label', ...self::BUTTON_META_KEYS]);
 
         $post->fill($attributes);
         $post->save();
 
         $this->syncRelations($post, $payload);
+        $this->syncMenuAttachment($post, $request);
         $this->seoService->saveForPost($post, $request->only(['seo_title', 'seo_description', 'seo_canonical']));
         $this->saveMeta($post, ['video_url', 'audio_url', 'poster_media_id', ...self::BUTTON_META_KEYS], $request->validated());
 
@@ -143,6 +148,39 @@ final class CmsPostLibraryController extends Controller
             ->route('cms-core.posts.show', $post)
             ->with('status', 'success')
             ->with('message', 'Post updated successfully.');
+    }
+
+    public function publish(Request $request, Post $post): RedirectResponse
+    {
+        $user = $request->user();
+        abort_if(! $user?->can('cms.posts.update'), 403);
+
+        $post->forceFill([
+            'status' => 'published',
+            'published_at' => $post->published_at ?? now(),
+            'editor_id' => (string) $user->uuid,
+        ])->save();
+
+        return redirect()
+            ->route('cms-core.posts.show', $post)
+            ->with('status', 'success')
+            ->with('message', 'Post published to the live portal successfully.');
+    }
+
+    public function archive(Request $request, Post $post): RedirectResponse
+    {
+        $user = $request->user();
+        abort_if(! $user?->can('cms.posts.update'), 403);
+
+        $post->forceFill([
+            'status' => 'archived',
+            'editor_id' => (string) $user->uuid,
+        ])->save();
+
+        return redirect()
+            ->route('cms-core.posts.show', $post)
+            ->with('status', 'success')
+            ->with('message', 'Post archived from active circulation.');
     }
 
     public function destroy(Request $request, Post $post): RedirectResponse
@@ -280,7 +318,41 @@ final class CmsPostLibraryController extends Controller
             'seoMeta' => $post ? $this->seoService->getMetaValues($post) : ['seo_title' => '', 'seo_description' => '', 'seo_canonical' => ''],
             'mediaMeta' => $post ? $this->getMediaMeta($post) : ['video_url' => '', 'audio_url' => '', 'poster_media_id' => ''],
             'buttonMeta' => $post ? $this->getButtonMeta($post) : ['cta_label' => '', 'cta_url' => '', 'cta2_label' => '', 'cta2_url' => ''],
+            'menus' => Menu::query()->with('items')->orderBy('name')->get(['id', 'name']),
+            'attachedMenuItem' => $post ? MenuItem::query()->where('post_id', $post->id)->first() : null,
         ];
+    }
+
+    private function syncMenuAttachment(Post $post, Request $request): void
+    {
+        $menuId = $request->input('attach_to_menu_id');
+        $parentId = $request->input('parent_menu_item_id');
+        $label = (string) ($request->input('menu_item_label') ?: $post->title);
+
+        if ($menuId) {
+            $item = MenuItem::query()
+                ->where('post_id', $post->id)
+                ->first();
+
+            if ($item) {
+                $item->update([
+                    'menu_id' => (int) $menuId,
+                    'parent_id' => $parentId ? (int) $parentId : null,
+                    'label' => $label,
+                    'url' => "/site/news/{$post->slug}",
+                ]);
+            } else {
+                MenuItem::create([
+                    'tenant_id' => $post->tenant_id,
+                    'menu_id' => (int) $menuId,
+                    'parent_id' => $parentId ? (int) $parentId : null,
+                    'post_id' => $post->id,
+                    'label' => $label,
+                    'url' => "/site/news/{$post->slug}",
+                    'sort_order' => 10,
+                ]);
+            }
+        }
     }
 
     /**

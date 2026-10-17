@@ -83,7 +83,7 @@
                     </div>
                     <div>
                         <dt class="text-muted-foreground">Uploaded At</dt>
-                        <dd class="mt-0.5 font-medium text-foreground">{{ $media->created_at?->format('M d, Y H:i') }}</dd>
+                        <dd class="mt-0.5 font-medium text-foreground">{{ $media->created_at?->format('d/m/Y H:i') }}</dd>
                     </div>
                 </dl>
 

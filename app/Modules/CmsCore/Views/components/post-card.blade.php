@@ -42,7 +42,7 @@
         <div class="mt-4 flex items-center gap-3 text-xs text-gray-400">
             @if($post->published_at)
                 <time datetime="{{ $post->published_at->toDateString() }}">
-                    {{ $post->published_at->format('M d, Y') }}
+                    {{ $post->published_at->format('d/m/Y') }}
                 </time>
             @endif
 

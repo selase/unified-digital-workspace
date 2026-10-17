@@ -70,6 +70,9 @@ final class Post extends Model
         'featured_media_id',
         'parent_id',
         'sort_order',
+        'audience',
+        'department_id',
+        'blocks_json',
     ];
 
     /**
@@ -199,6 +202,50 @@ final class Post extends Model
     }
 
     /**
+     * @param  Builder<Post>  $query
+     * @return Builder<Post>
+     */
+    public function scopePublicOnly(Builder $query): Builder
+    {
+        return $query->where(function (Builder $q): void {
+            $q->whereNull('audience')->orWhere('audience', 'public');
+        });
+    }
+
+    /**
+     * @param  Builder<Post>  $query
+     * @return Builder<Post>
+     */
+    public function scopeInternal(Builder $query): Builder
+    {
+        return $query->whereIn('audience', ['internal_only', 'departmental']);
+    }
+
+    /**
+     * @return HasMany<MenuItem, $this>
+     */
+    public function menuItems(): HasMany
+    {
+        return $this->hasMany(MenuItem::class, 'post_id');
+    }
+
+    public function setBlocksJsonAttribute(mixed $value): void
+    {
+        $sanitized = \App\Modules\CmsCore\Support\BlockRendererService::sanitizeBlocks($value);
+        $this->attributes['blocks_json'] = json_encode($sanitized);
+    }
+
+    public function renderBlocks(): string
+    {
+        return \App\Modules\CmsCore\Support\BlockRendererService::render($this->blocks_json);
+    }
+
+    public function hasBlocks(): bool
+    {
+        return ! empty($this->blocks_json) && is_array($this->blocks_json);
+    }
+
+    /**
      * @return Factory<static>
      */
     protected static function newFactory(): Factory
@@ -210,6 +257,7 @@ final class Post extends Model
     {
         return [
             'body' => SanitizedHtml::class,
+            'blocks_json' => 'array',
             'published_at' => 'datetime',
             'scheduled_for' => 'datetime',
             'sort_order' => 'integer',

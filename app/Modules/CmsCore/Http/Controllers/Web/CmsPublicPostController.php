@@ -26,6 +26,7 @@ final class CmsPublicPostController extends Controller
 
         $query = Post::query()
             ->published()
+            ->publicOnly()
             ->forType('post')
             ->with(['author:uuid,first_name,last_name', 'featuredMedia', 'categories:id,name,slug']);
 
@@ -55,6 +56,7 @@ final class CmsPublicPostController extends Controller
     {
         $post = Post::query()
             ->published()
+            ->publicOnly()
             ->forType('post')
             ->where('slug', $slug)
             ->with([
@@ -68,6 +70,7 @@ final class CmsPublicPostController extends Controller
 
         $relatedPosts = Post::query()
             ->published()
+            ->publicOnly()
             ->forType('post')
             ->where('id', '!=', $post->id)
             ->whereHas('categories', function ($query) use ($post): void {
@@ -95,6 +98,7 @@ final class CmsPublicPostController extends Controller
 
         $posts = Post::query()
             ->published()
+            ->publicOnly()
             ->forType('post')
             ->whereHas('categories', function ($query) use ($category): void {
                 $query->where('categories.id', $category->id);

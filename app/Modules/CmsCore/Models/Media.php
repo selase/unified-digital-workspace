@@ -87,6 +87,7 @@ final class Media extends Model
         'uploaded_by',
         'source',
         'is_public',
+        'is_internal',
     ];
 
     /**
