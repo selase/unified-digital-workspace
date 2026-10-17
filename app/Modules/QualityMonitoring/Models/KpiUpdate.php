@@ -36,6 +36,14 @@ final class KpiUpdate extends Model
         return $this->belongsTo(Kpi::class);
     }
 
+    /**
+     * @return BelongsTo<\App\Models\User, $this>
+     */
+    public function capturedBy(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\User::class, 'captured_by_id', 'uuid');
+    }
+
     protected function casts(): array
     {
         return [

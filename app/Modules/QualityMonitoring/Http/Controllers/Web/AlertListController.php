@@ -36,4 +36,17 @@ final class AlertListController extends Controller
             'status' => $status,
         ]);
     }
+
+    public function acknowledge(Request $request, Alert $alert): \Illuminate\Http\RedirectResponse
+    {
+        abort_if(! $request->user()?->can('qm.alerts.manage'), 403);
+
+        $alert->update([
+            'status' => 'acknowledged',
+        ]);
+
+        return back()
+            ->with('status', 'success')
+            ->with('message', 'Quality alert acknowledged.');
+    }
 }

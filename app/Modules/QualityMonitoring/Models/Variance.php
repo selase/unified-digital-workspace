@@ -58,6 +58,14 @@ final class Variance extends Model
         return $this->belongsTo(Kpi::class);
     }
 
+    /**
+     * @return BelongsTo<\App\Models\User, $this>
+     */
+    public function reviewedBy(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\User::class, 'reviewed_by_id', 'uuid');
+    }
+
     protected function casts(): array
     {
         return [

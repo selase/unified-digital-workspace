@@ -35,6 +35,14 @@ final class Review extends Model
         return $this->belongsTo(Workplan::class);
     }
 
+    /**
+     * @return BelongsTo<\App\Models\User, $this>
+     */
+    public function reviewer(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\User::class, 'reviewer_id', 'uuid');
+    }
+
     protected function casts(): array
     {
         return [

@@ -54,6 +54,30 @@ final class Workplan extends Model
         return $this->hasMany(Objective::class);
     }
 
+    /**
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo<\App\Models\User, $this>
+     */
+    public function owner(): \Illuminate\Database\Eloquent\Relations\BelongsTo
+    {
+        return $this->belongsTo(\App\Models\User::class, 'owner_id', 'uuid');
+    }
+
+    /**
+     * @return HasMany<Variance, $this>
+     */
+    public function variances(): HasMany
+    {
+        return $this->hasMany(Variance::class);
+    }
+
+    /**
+     * @return HasMany<Alert, $this>
+     */
+    public function alerts(): HasMany
+    {
+        return $this->hasMany(Alert::class);
+    }
+
     protected function casts(): array
     {
         return [

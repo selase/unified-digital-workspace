@@ -39,6 +39,14 @@ final class Activity extends Model
     }
 
     /**
+     * @return BelongsTo<\App\Models\User, $this>
+     */
+    public function responsible(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\User::class, 'responsible_id', 'uuid');
+    }
+
+    /**
      * @return HasMany<Kpi, $this>
      */
     public function kpis(): HasMany
