@@ -10,9 +10,11 @@ use App\Mail\Incidents\IncidentEscalated;
 use App\Models\User;
 use App\Modules\IncidentManagement\Http\Requests\IncidentAssignRequest;
 use App\Modules\IncidentManagement\Http\Requests\IncidentCloseRequest;
+use App\Modules\IncidentManagement\Http\Requests\IncidentCommentStoreRequest;
 use App\Modules\IncidentManagement\Http\Requests\IncidentEscalateRequest;
 use App\Modules\IncidentManagement\Http\Requests\IncidentResolveRequest;
 use App\Modules\IncidentManagement\Http\Requests\IncidentStoreRequest;
+use App\Modules\IncidentManagement\Http\Requests\IncidentTaskStoreRequest;
 use App\Modules\IncidentManagement\Http\Requests\IncidentUpdateRequest;
 use App\Modules\IncidentManagement\Models\Incident;
 use App\Modules\IncidentManagement\Models\IncidentAssignment;
@@ -20,6 +22,7 @@ use App\Modules\IncidentManagement\Models\IncidentCategory;
 use App\Modules\IncidentManagement\Models\IncidentEscalation;
 use App\Modules\IncidentManagement\Models\IncidentPriority;
 use App\Modules\IncidentManagement\Models\IncidentStatus;
+use App\Modules\IncidentManagement\Models\IncidentTask;
 use App\Modules\IncidentManagement\Services\IncidentSlaService;
 use App\Services\Tenancy\TenantContext;
 use Illuminate\Contracts\View\Factory;
@@ -122,6 +125,7 @@ final class IncidentListController extends Controller
             'status',
             'reporter',
             'reporterUser:id,uuid,first_name,last_name,email',
+            'assignedToUser:id,uuid,first_name,last_name,email',
             'tasks.assignedTo:id,uuid,first_name,last_name,email',
             'comments.user:id,uuid,first_name,last_name,email',
             'attachments',
@@ -227,6 +231,41 @@ final class IncidentListController extends Controller
             'escalated_at' => now(),
         ]);
 
+        $escalatedToUserUuid = null;
+
+        if ($incident->assigned_to_id) {
+            $currentAssigneeUser = User::query()
+                ->where('uuid', $incident->assigned_to_id)
+                ->first();
+
+            if ($currentAssigneeUser && \Illuminate\Support\Facades\Schema::connection('tenant')->hasTable('hrms_employees')) {
+                $assigneeEmployee = \App\Modules\HrmsCore\Models\Employees\Employee::query()
+                    ->where('user_id', $currentAssigneeUser->id)
+                    ->where('is_active', true)
+                    ->first();
+
+                if ($assigneeEmployee) {
+                    $nextLeader = app(\App\Modules\HrmsCore\Services\OrgHierarchyResolver::class)
+                        ->resolveEscalationTarget($assigneeEmployee);
+
+                    if ($nextLeader && $nextLeader->user && $nextLeader->user->uuid) {
+                        $escalatedToUserUuid = (string) $nextLeader->user->uuid;
+                        $incident->assigned_to_id = $escalatedToUserUuid;
+                        $incident->save();
+
+                        IncidentAssignment::create([
+                            'incident_id' => $incident->id,
+                            'assigned_to_id' => $escalatedToUserUuid,
+                            'assigned_by_id' => (string) $request->user()?->uuid,
+                            'assigned_at' => now(),
+                            'is_active' => true,
+                            'note' => 'Auto-escalated via organizational hierarchy to '.$nextLeader->displayName(),
+                        ]);
+                    }
+                }
+            }
+        }
+
         $incident->priority_id = $payload['to_priority_id'];
         $incident->save();
 
@@ -245,6 +284,7 @@ final class IncidentListController extends Controller
         $this->logIncidentActivity($incident, 'escalated', (string) $request->user()?->uuid, [
             'from_priority_id' => $fromPriority,
             'to_priority_id' => $payload['to_priority_id'],
+            'escalated_to_user_id' => $escalatedToUserUuid,
             'reason' => $payload['reason'] ?? null,
         ]);
 
@@ -298,6 +338,65 @@ final class IncidentListController extends Controller
             ->route('incident-management.incidents.show', $incident)
             ->with('status', 'success')
             ->with('message', 'Incident closed.');
+    }
+
+    public function storeTask(IncidentTaskStoreRequest $request, Incident $incident): RedirectResponse
+    {
+        $payload = $request->validated();
+        $payload['tenant_id'] = $incident->tenant_id;
+        $payload['status'] = $payload['status'] ?? 'pending';
+
+        $task = $incident->tasks()->create($payload);
+
+        $this->logIncidentActivity($incident, 'task_created', (string) $request->user()?->uuid, [
+            'task_id' => $task->id,
+            'title' => $task->title,
+        ]);
+
+        return redirect()
+            ->route('incident-management.incidents.show', $incident)
+            ->with('status', 'success')
+            ->with('message', 'CAPA action task added successfully.');
+    }
+
+    public function toggleTask(Request $request, Incident $incident, IncidentTask $task): RedirectResponse
+    {
+        abort_if(! $request->user()?->can('incidents.tasks.manage'), 403);
+        abort_if($task->incident_id !== $incident->id, 404);
+
+        $newStatus = $task->status === 'completed' ? 'pending' : 'completed';
+        $task->update([
+            'status' => $newStatus,
+            'completed_at' => $newStatus === 'completed' ? now() : null,
+        ]);
+
+        $this->logIncidentActivity($incident, 'task_updated', (string) $request->user()->uuid, [
+            'task_id' => $task->id,
+            'status' => $newStatus,
+        ]);
+
+        return redirect()
+            ->route('incident-management.incidents.show', $incident)
+            ->with('status', 'success')
+            ->with('message', 'Task status updated.');
+    }
+
+    public function storeComment(IncidentCommentStoreRequest $request, Incident $incident): RedirectResponse
+    {
+        $payload = $request->validated();
+        $payload['tenant_id'] = $incident->tenant_id;
+        $payload['user_id'] = (string) $request->user()?->uuid;
+
+        $incident->comments()->create($payload);
+
+        $this->logIncidentActivity($incident, 'commented', (string) $request->user()?->uuid, [
+            'is_internal' => $payload['is_internal'] ?? true,
+        ]);
+
+        return redirect()
+            ->route('incident-management.incidents.show', $incident)
+            ->with('status', 'success')
+            ->with('message', 'Investigation note posted.');
     }
 
     /**

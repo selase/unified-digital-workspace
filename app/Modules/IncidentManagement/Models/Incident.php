@@ -120,6 +120,14 @@ final class Incident extends Model
     }
 
     /**
+     * @return BelongsTo<User, $this>
+     */
+    public function assignedToUser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_to_id', 'uuid');
+    }
+
+    /**
      * @return BelongsTo<IncidentReporter, $this>
      */
     public function reporter(): BelongsTo

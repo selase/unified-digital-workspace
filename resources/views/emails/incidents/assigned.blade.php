@@ -1,6 +1,5 @@
 @php
-    /** @var \App\Mail\Incidents\IncidentAssigned $mailable */
-    $incident = $mailable->incident;
+    $incident = $incident ?? ($mailable->incident ?? null);
 @endphp
 
 <h2>New Incident Assignment</h2>

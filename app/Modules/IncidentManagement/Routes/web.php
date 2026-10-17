@@ -21,6 +21,9 @@ Route::prefix('incidents')->name('incidents.')->group(function (): void {
     Route::post('/{incident}/escalate', [IncidentListController::class, 'escalate'])->name('escalate');
     Route::post('/{incident}/resolve', [IncidentListController::class, 'resolve'])->name('resolve');
     Route::post('/{incident}/close', [IncidentListController::class, 'close'])->name('close');
+    Route::post('/{incident}/tasks', [IncidentListController::class, 'storeTask'])->name('tasks.store');
+    Route::post('/{incident}/tasks/{task}/toggle', [IncidentListController::class, 'toggleTask'])->name('tasks.toggle');
+    Route::post('/{incident}/comments', [IncidentListController::class, 'storeComment'])->name('comments.store');
 });
 Route::get('/tasks', [IncidentTaskBoardController::class, 'index'])->name('tasks.index');
 Route::get('/reports', [IncidentReportController::class, 'index'])->name('reports.index');

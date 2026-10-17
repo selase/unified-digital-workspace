@@ -1,6 +1,5 @@
 @php
-    /** @var \App\Mail\Incidents\IncidentSlaBreached $mailable */
-    $incident = $mailable->incident;
+    $incident = $incident ?? ($mailable->incident ?? null);
 @endphp
 
 <h2>Incident SLA Breached</h2>

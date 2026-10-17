@@ -1,7 +1,6 @@
 @php
-    /** @var \App\Mail\Incidents\IncidentReminder $mailable */
-    $incident = $mailable->incident;
-    $reminder = $mailable->reminder;
+    $incident = $incident ?? ($mailable->incident ?? null);
+    $reminder = $reminder ?? ($mailable->reminder ?? null);
 @endphp
 
 <h2>Incident Reminder</h2>

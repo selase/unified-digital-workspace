@@ -1,6 +1,5 @@
 @php
-    /** @var \App\Mail\Incidents\IncidentEscalated $mailable */
-    $incident = $mailable->incident;
+    $incident = $incident ?? ($mailable->incident ?? null);
 @endphp
 
 <h2>Incident Escalated</h2>
