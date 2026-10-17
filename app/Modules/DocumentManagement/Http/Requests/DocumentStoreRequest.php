@@ -37,6 +37,11 @@ final class DocumentStoreRequest extends FormRequest
             'tags.*' => ['string'],
             'metadata' => ['nullable', 'array'],
             'published_at' => ['nullable', 'date'],
+            'reviewer_id' => ['nullable', 'string', 'uuid'],
+            'approver_id' => ['nullable', 'string', 'uuid'],
+            'review_due_at' => ['nullable', 'date'],
+            'expires_at' => ['nullable', 'date'],
+            'supersedes_id' => ['nullable', 'integer'],
             'file' => ['nullable', 'file', 'max:20480'],
             'notes' => ['nullable', 'string', 'max:2000'],
         ];

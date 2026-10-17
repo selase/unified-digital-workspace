@@ -43,6 +43,9 @@ final class Kernel extends ConsoleKernel
 
         // Facilities Management
         $schedule->command('facilities:generate-preventive-work-orders')->dailyAt('06:00');
+
+        // Document Management ISO Reviews & Expirations
+        $schedule->command('documents:check-reviews')->dailyAt('07:00');
     }
 
     /**

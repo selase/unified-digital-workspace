@@ -31,6 +31,8 @@ return [
         'documents.update',
         'documents.delete',
         'documents.publish',
+        'documents.review',
+        'documents.approve',
         'documents.manage_quizzes',
         'documents.manage_versions',
         'documents.audit.view',

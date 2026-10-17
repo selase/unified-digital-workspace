@@ -37,6 +37,11 @@ final class DocumentUpdateRequest extends FormRequest
             'tags.*' => ['string'],
             'metadata' => ['sometimes', 'nullable', 'array'],
             'published_at' => ['sometimes', 'nullable', 'date'],
+            'reviewer_id' => ['sometimes', 'nullable', 'string', 'uuid'],
+            'approver_id' => ['sometimes', 'nullable', 'string', 'uuid'],
+            'review_due_at' => ['sometimes', 'nullable', 'date'],
+            'expires_at' => ['sometimes', 'nullable', 'date'],
+            'supersedes_id' => ['sometimes', 'nullable', 'integer'],
         ];
     }
 }

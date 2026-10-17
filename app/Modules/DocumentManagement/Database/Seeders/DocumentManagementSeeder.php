@@ -6,6 +6,7 @@ namespace App\Modules\DocumentManagement\Database\Seeders;
 
 use App\Models\User;
 use App\Modules\DocumentManagement\Models\Document;
+use App\Modules\DocumentManagement\Models\DocumentAcknowledgement;
 use App\Modules\DocumentManagement\Models\DocumentAudit;
 use App\Modules\DocumentManagement\Models\DocumentQuiz;
 use App\Modules\DocumentManagement\Models\DocumentQuizAttempt;
@@ -35,33 +36,43 @@ final class DocumentManagementSeeder extends Seeder
             return;
         }
 
-        $owner = User::query()
+        $users = User::query()
             ->where('tenant_id', $tenant->id)
-            ->first() ?? User::query()->first();
+            ->get();
+
+        $owner = $users->first() ?? User::query()->first();
 
         if (! $owner) {
             return;
         }
 
-        $document = Document::query()->updateOrCreate([
+        $reviewer = $users->skip(1)->first() ?? $owner;
+        $approver = $users->skip(2)->first() ?? $owner;
+
+        // 1. Published Controlled Master: Employee Operating Handbook
+        $handbook = Document::query()->updateOrCreate([
             'tenant_id' => $tenant->id,
             'slug' => 'employee-handbook',
         ], [
             'title' => 'Employee Handbook',
-            'description' => 'Core operating procedures for all teams.',
-            'status' => 'published',
+            'description' => 'Core operating procedures for all clinical and administrative teams.',
+            'status' => Document::STATUS_PUBLISHED,
             'owner_id' => (string) $owner->uuid,
-            'category' => 'policy',
+            'reviewer_id' => (string) $reviewer->uuid,
+            'approver_id' => (string) $approver->uuid,
+            'review_due_at' => now()->addMonths(6),
+            'expires_at' => now()->addYears(2),
+            'category' => 'Institutional Policy',
             'tags' => ['hr', 'operations'],
             'visibility' => [
                 'tenant_wide' => true,
                 'is_private' => false,
             ],
-            'published_at' => now()->subDays(7),
+            'published_at' => now()->subDays(14),
         ]);
 
         $versionOne = DocumentVersion::query()->updateOrCreate([
-            'document_id' => $document->id,
+            'document_id' => $handbook->id,
             'version_number' => 1,
         ], [
             'tenant_id' => $tenant->id,
@@ -76,7 +87,7 @@ final class DocumentManagementSeeder extends Seeder
         ]);
 
         $versionTwo = DocumentVersion::query()->updateOrCreate([
-            'document_id' => $document->id,
+            'document_id' => $handbook->id,
             'version_number' => 2,
         ], [
             'tenant_id' => $tenant->id,
@@ -90,13 +101,26 @@ final class DocumentManagementSeeder extends Seeder
             'notes' => 'Expanded remote work and incident response sections.',
         ]);
 
-        if ((int) $document->current_version_id !== (int) $versionTwo->id) {
-            $document->forceFill(['current_version_id' => $versionTwo->id])->save();
+        if ((int) $handbook->current_version_id !== (int) $versionTwo->id) {
+            $handbook->forceFill(['current_version_id' => $versionTwo->id])->save();
         }
 
+        // Read Acknowledgements for Published Handbook
+        foreach ($users->take(3) as $u) {
+            DocumentAcknowledgement::query()->updateOrCreate([
+                'document_id' => $handbook->id,
+                'user_id' => (string) $u->uuid,
+            ], [
+                'tenant_id' => $tenant->id,
+                'acknowledged_at' => now()->subDays(5),
+                'notes' => 'Mandatory annual policy sign-off.',
+            ]);
+        }
+
+        // Quiz for Handbook
         $quiz = DocumentQuiz::query()->updateOrCreate([
             'tenant_id' => $tenant->id,
-            'document_id' => $document->id,
+            'document_id' => $handbook->id,
             'title' => 'Handbook Readiness Quiz',
         ], [
             'description' => 'Quick readiness assessment after reading the handbook.',
@@ -114,11 +138,11 @@ final class DocumentManagementSeeder extends Seeder
             'tenant_id' => $tenant->id,
             'body' => 'Where should staff report a security incident?',
             'options' => [
-                'A' => 'Public forum channel',
-                'B' => 'Incident management module',
-                'C' => 'Personal email',
+                'Public forum channel',
+                'Incident management module',
+                'Personal email',
             ],
-            'correct_option' => 'B',
+            'correct_option' => '1',
             'points' => 1,
         ]);
 
@@ -127,130 +151,151 @@ final class DocumentManagementSeeder extends Seeder
             'sort_order' => 2,
         ], [
             'tenant_id' => $tenant->id,
-            'body' => 'Who can access tenant-wide policy documents?',
+            'body' => 'What is the required approval workflow for travel expenses?',
             'options' => [
-                'A' => 'Only Org Superadmin',
-                'B' => 'All users in the tenant',
-                'C' => 'Only HR',
+                'Verbal consent only',
+                'Directorate sign-off and finance voucher',
+                'No approvals needed under GHS 500',
             ],
-            'correct_option' => 'B',
+            'correct_option' => '1',
             'points' => 1,
         ]);
 
-        DocumentQuizQuestion::query()->updateOrCreate([
-            'quiz_id' => $quiz->id,
-            'sort_order' => 3,
-        ], [
-            'tenant_id' => $tenant->id,
-            'body' => 'What should happen after a handbook update?',
-            'options' => [
-                'A' => 'No action',
-                'B' => 'Republish and notify users',
-                'C' => 'Delete prior versions',
-            ],
-            'correct_option' => 'B',
-            'points' => 2,
-        ]);
-
         DocumentQuizAttempt::query()->updateOrCreate([
-            'tenant_id' => $tenant->id,
             'quiz_id' => $quiz->id,
             'user_id' => (string) $owner->uuid,
-            'completed_at' => now()->subDay()->startOfHour(),
         ], [
-            'score' => 4,
-            'responses' => [
-                'q1' => 'B',
-                'q2' => 'B',
-                'q3' => 'B',
-            ],
-            'started_at' => now()->subDay()->subMinutes(20),
-        ]);
-
-        DocumentQuizAttempt::query()->updateOrCreate([
             'tenant_id' => $tenant->id,
-            'quiz_id' => $quiz->id,
-            'user_id' => (string) $owner->uuid,
-            'completed_at' => now()->subHours(6)->startOfHour(),
-        ], [
-            'score' => 3,
+            'score' => 2,
             'responses' => [
-                'q1' => 'B',
-                'q2' => 'A',
-                'q3' => 'B',
+                ['question_id' => 1, 'selected_answer' => '1', 'is_correct' => true],
+                ['question_id' => 2, 'selected_answer' => '1', 'is_correct' => true],
             ],
             'started_at' => now()->subHours(6)->subMinutes(12),
+            'completed_at' => now()->subHours(6),
+        ]);
+
+        // 2. In Review: Emergency Code Response & Resuscitation Protocol
+        $inReviewDoc = Document::query()->updateOrCreate([
+            'tenant_id' => $tenant->id,
+            'slug' => 'emergency-code-response-protocol',
+        ], [
+            'title' => 'Emergency Code Response & Resuscitation Protocol',
+            'description' => 'Hospital-wide rapid response team protocols for Code Blue and Code Red activations.',
+            'status' => Document::STATUS_IN_REVIEW,
+            'owner_id' => (string) $owner->uuid,
+            'reviewer_id' => (string) $reviewer->uuid,
+            'approver_id' => (string) $approver->uuid,
+            'review_due_at' => now()->addDays(5),
+            'expires_at' => now()->addYears(1),
+            'category' => 'Standard Operating Procedure (SOP)',
+            'tags' => ['emergency', 'clinical'],
+            'visibility' => ['tenant_wide' => true],
+        ]);
+
+        // 3. Approved: Hospital Radiopharmacy Safety Standard
+        $approvedDoc = Document::query()->updateOrCreate([
+            'tenant_id' => $tenant->id,
+            'slug' => 'radiopharmacy-safety-standard',
+        ], [
+            'title' => 'Hospital Radiopharmacy Safety Standard',
+            'description' => 'Radiation protection, dosimetry monitoring, and isotope handling standards.',
+            'status' => Document::STATUS_APPROVED,
+            'owner_id' => (string) $owner->uuid,
+            'reviewer_id' => (string) $reviewer->uuid,
+            'approver_id' => (string) $approver->uuid,
+            'review_due_at' => now()->subDays(2),
+            'expires_at' => now()->addYears(2),
+            'review_comments' => 'Peer review complete. Approved for catalog publication.',
+            'category' => 'Technical Specification',
+            'tags' => ['radiology', 'safety'],
+            'visibility' => ['tenant_wide' => true],
+        ]);
+
+        // 4. Draft: Telemedicine Clinical Consultation Guideline
+        Document::query()->updateOrCreate([
+            'tenant_id' => $tenant->id,
+            'slug' => 'telemedicine-clinical-guideline',
+        ], [
+            'title' => 'Telemedicine Clinical Consultation Guideline',
+            'description' => 'Standards for remote patient encounters, video charting, and prescription issuance.',
+            'status' => Document::STATUS_DRAFT,
+            'owner_id' => (string) $owner->uuid,
+            'category' => 'Clinical Practice Guideline',
+            'tags' => ['telehealth', 'clinical'],
+            'visibility' => ['tenant_wide' => true],
+        ]);
+
+        // 5. Under Revision: Patient Blood Management & Transfusion Protocol
+        Document::query()->updateOrCreate([
+            'tenant_id' => $tenant->id,
+            'slug' => 'blood-transfusion-protocol',
+        ], [
+            'title' => 'Patient Blood Management & Transfusion Protocol',
+            'description' => 'Cross-matching, cold-chain blood transport, and bedside verification protocol.',
+            'status' => Document::STATUS_UNDER_REVISION,
+            'owner_id' => (string) $owner->uuid,
+            'reviewer_id' => (string) $reviewer->uuid,
+            'review_comments' => 'Needs alignment with the latest national blood bank storage thresholds.',
+            'category' => 'Standard Operating Procedure (SOP)',
+            'tags' => ['hematology', 'transfusion'],
+            'visibility' => ['tenant_wide' => true],
+        ]);
+
+        // 6. Obsolete: Legacy Ward Sanitation Standard (2020)
+        Document::query()->updateOrCreate([
+            'tenant_id' => $tenant->id,
+            'slug' => 'ward-sanitation-standard-2020',
+        ], [
+            'title' => 'Ward Sanitation Standard (2020)',
+            'description' => 'Superseded ward cleaning and disinfection guidelines.',
+            'status' => Document::STATUS_OBSOLETE,
+            'owner_id' => (string) $owner->uuid,
+            'superseded_by_id' => $handbook->id,
+            'category' => 'Administrative Manual',
+            'tags' => ['sanitation', 'legacy'],
+            'visibility' => ['tenant_wide' => true],
+        ]);
+
+        // Audit Trail Entries
+        DocumentAudit::query()->updateOrCreate([
+            'tenant_id' => $tenant->id,
+            'document_id' => $handbook->id,
+            'event' => 'create',
+        ], [
+            'user_id' => (string) $owner->uuid,
+            'metadata' => ['title' => $handbook->title, 'source' => 'seeder'],
+            'created_at' => now()->subDays(14),
         ]);
 
         DocumentAudit::query()->updateOrCreate([
             'tenant_id' => $tenant->id,
-            'document_id' => $document->id,
-            'event' => 'document.created',
+            'document_id' => $handbook->id,
+            'event' => 'publish',
         ], [
-            'user_id' => (string) $owner->uuid,
-            'metadata' => [
-                'source' => 'seeder',
-            ],
-            'created_at' => now()->subDays(7),
+            'user_id' => (string) $approver->uuid,
+            'metadata' => ['status' => 'published'],
+            'created_at' => now()->subDays(14),
         ]);
 
         DocumentAudit::query()->updateOrCreate([
             'tenant_id' => $tenant->id,
-            'document_id' => $document->id,
-            'event' => 'document.version_uploaded',
+            'document_id' => $inReviewDoc->id,
+            'event' => 'submitted_for_review',
         ], [
             'user_id' => (string) $owner->uuid,
-            'metadata' => [
-                'version' => $versionTwo->version_number,
-                'source' => 'seeder',
-            ],
+            'metadata' => ['reviewer_id' => (string) $reviewer->uuid],
+            'created_at' => now()->subDays(1),
+        ]);
+
+        DocumentAudit::query()->updateOrCreate([
+            'tenant_id' => $tenant->id,
+            'document_id' => $approvedDoc->id,
+            'event' => 'approved',
+        ], [
+            'user_id' => (string) $approver->uuid,
+            'metadata' => ['approver_id' => (string) $approver->uuid],
             'created_at' => now()->subDays(2),
-        ]);
-
-        DocumentAudit::query()->updateOrCreate([
-            'tenant_id' => $tenant->id,
-            'document_id' => $document->id,
-            'event' => 'document.quiz_attempted',
-        ], [
-            'user_id' => (string) $owner->uuid,
-            'metadata' => [
-                'quiz_id' => $quiz->id,
-                'source' => 'seeder',
-            ],
-            'created_at' => now()->subHours(6),
-        ]);
-
-        Document::query()->updateOrCreate([
-            'tenant_id' => $tenant->id,
-            'slug' => 'incident-playbook',
-        ], [
-            'title' => 'Incident Response Playbook',
-            'description' => 'Playbook for handling and escalating incidents.',
-            'status' => 'published',
-            'owner_id' => (string) $owner->uuid,
-            'category' => 'playbook',
-            'tags' => ['incident', 'security'],
-            'visibility' => [
-                'tenant_wide' => true,
-                'is_private' => false,
-            ],
-            'published_at' => now()->subDays(3),
-        ]);
-
-        Document::query()->updateOrCreate([
-            'tenant_id' => $tenant->id,
-            'slug' => 'memo-compliance-guide',
-        ], [
-            'title' => 'Memo Compliance Guide',
-            'description' => 'Guidance for signed memo flows and recipient acknowledgements.',
-            'status' => 'draft',
-            'owner_id' => (string) $owner->uuid,
-            'category' => 'guideline',
-            'tags' => ['memos', 'compliance'],
-            'visibility' => [
-                'tenant_wide' => false,
-                'is_private' => false,
-            ],
         ]);
     }
 }

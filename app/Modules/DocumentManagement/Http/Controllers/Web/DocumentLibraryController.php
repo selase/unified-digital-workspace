@@ -17,14 +17,22 @@ final class DocumentLibraryController extends Controller
 
         $search = mb_trim((string) $request->string('search'));
         $status = (string) $request->string('status');
+        $category = (string) $request->string('category');
 
         $documents = Document::query()
-            ->with('currentVersion')
+            ->with(['currentVersion', 'owner:uuid,first_name,last_name,email', 'reviewer:uuid,first_name,last_name,email'])
             ->when($search !== '', function ($query) use ($search): void {
-                $query->where('title', 'like', "%{$search}%");
+                $query->where(function ($q) use ($search): void {
+                    $q->where('title', 'like', "%{$search}%")
+                        ->orWhere('description', 'like', "%{$search}%")
+                        ->orWhere('category', 'like', "%{$search}%");
+                });
             })
-            ->when(in_array($status, ['draft', 'published', 'archived'], true), function ($query) use ($status): void {
+            ->when(in_array($status, Document::STATUSES, true), function ($query) use ($status): void {
                 $query->where('status', $status);
+            })
+            ->when($category !== '', function ($query) use ($category): void {
+                $query->where('category', $category);
             })
             ->latest('updated_at')
             ->paginate(15)
@@ -34,6 +42,9 @@ final class DocumentLibraryController extends Controller
             'documents' => $documents,
             'search' => $search,
             'status' => $status,
+            'category' => $category,
+            'categories' => DocumentWebController::CATEGORIES,
+            'statuses' => Document::STATUS_LABELS,
         ]);
     }
 }

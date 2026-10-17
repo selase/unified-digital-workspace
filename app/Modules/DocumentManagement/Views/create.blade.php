@@ -100,6 +100,103 @@
                         </div>
                     </x-metronic.card>
 
+                    {{-- ISO Review & Governance Assignments --}}
+                    <x-metronic.card title="ISO Review & Governance Workflow" subtitle="Assign designated reviewer, final approver, and compliance timelines">
+                        <div class="space-y-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="reviewer_id" class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">
+                                        Designated Peer / Technical Reviewer
+                                    </label>
+                                    <select id="reviewer_id" name="reviewer_id" class="kt-select w-full text-foreground">
+                                        <option value="">Select Designated Reviewer...</option>
+                                        @foreach($users as $u)
+                                            <option value="{{ $u->uuid }}" @selected(old('reviewer_id') === $u->uuid)>
+                                                {{ $u->name }} ({{ $u->email }})
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    @error('reviewer_id')
+                                        <p class="mt-1 text-xs text-destructive">{{ $message }}</p>
+                                    @enderror
+                                </div>
+
+                                <div>
+                                    <label for="approver_id" class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">
+                                        Final Institutional Approver
+                                    </label>
+                                    <select id="approver_id" name="approver_id" class="kt-select w-full text-foreground">
+                                        <option value="">Select Final Approver...</option>
+                                        @foreach($users as $u)
+                                            <option value="{{ $u->uuid }}" @selected(old('approver_id') === $u->uuid)>
+                                                {{ $u->name }} ({{ $u->email }})
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    @error('approver_id')
+                                        <p class="mt-1 text-xs text-destructive">{{ $message }}</p>
+                                    @enderror
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="review_due_at" class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">
+                                        Review Deadline Date
+                                    </label>
+                                    <input
+                                        type="date"
+                                        id="review_due_at"
+                                        name="review_due_at"
+                                        value="{{ old('review_due_at') }}"
+                                        class="kt-input w-full text-foreground"
+                                    />
+                                    <p class="mt-1 text-2xs text-muted-foreground">Automated scheduled reminder sent if pending review within 3 days.</p>
+                                    @error('review_due_at')
+                                        <p class="mt-1 text-xs text-destructive">{{ $message }}</p>
+                                    @enderror
+                                </div>
+
+                                <div>
+                                    <label for="expires_at" class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">
+                                        Mandatory Expiration / Re-certification Date
+                                    </label>
+                                    <input
+                                        type="date"
+                                        id="expires_at"
+                                        name="expires_at"
+                                        value="{{ old('expires_at') }}"
+                                        class="kt-input w-full text-foreground"
+                                    />
+                                    <p class="mt-1 text-2xs text-muted-foreground">ISO policy cycle requirement (typically 1 to 3 years from effective date).</p>
+                                    @error('expires_at')
+                                        <p class="mt-1 text-xs text-destructive">{{ $message }}</p>
+                                    @enderror
+                                </div>
+                            </div>
+
+                            @if($activeDocuments->isNotEmpty())
+                                <div>
+                                    <label for="supersedes_id" class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">
+                                        Supersedes Existing Controlled Document <span class="text-xs font-normal text-muted-foreground">(Optional)</span>
+                                    </label>
+                                    <select id="supersedes_id" name="supersedes_id" class="kt-select w-full text-foreground">
+                                        <option value="">None (New Standalone Document)</option>
+                                        @foreach($activeDocuments as $ad)
+                                            <option value="{{ $ad->id }}" @selected(old('supersedes_id') == $ad->id)>
+                                                {{ $ad->title }} ({{ $ad->slug }} - {{ $ad->category }})
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    <p class="mt-1 text-2xs text-muted-foreground">When this document is published, the selected document will automatically be marked Obsolete/Superseded.</p>
+                                    @error('supersedes_id')
+                                        <p class="mt-1 text-xs text-destructive">{{ $message }}</p>
+                                    @enderror
+                                </div>
+                            @endif
+                        </div>
+                    </x-metronic.card>
+
                     <x-metronic.card title="Initial Controlled File (Version 1.0)" subtitle="Upload the initial approved or draft master document file">
                         <div class="space-y-4">
                             <div>
@@ -167,7 +264,7 @@
 
                             <div>
                                 <label class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
-                                    Publication Action
+                                    Initial Lifecycle Stage
                                 </label>
                                 <div class="flex flex-col gap-2.5">
                                     <button
@@ -179,6 +276,15 @@
                                         Save as Controlled Draft
                                     </button>
 
+                                    <button
+                                        type="submit"
+                                        name="status"
+                                        value="in_review"
+                                        class="kt-btn kt-btn-warning w-full justify-center"
+                                    >
+                                        Submit Directly for Review
+                                    </button>
+
                                     @can('documents.publish')
                                         <button
                                             type="submit"
@@ -186,11 +292,11 @@
                                             value="published"
                                             class="kt-btn kt-btn-primary w-full justify-center"
                                         >
-                                            Publish to Institutional Catalog
+                                            Publish Directly to Catalog
                                         </button>
                                     @endcan
                                 </div>
-                                <p class="mt-2 text-xs text-center text-muted-foreground">Draft documents are visible for review and version bumping before final publication.</p>
+                                <p class="mt-2 text-xs text-center text-muted-foreground">Documents can be reviewed and approved by assigned officers prior to publishing.</p>
                             </div>
                         </div>
                     </x-metronic.card>
@@ -200,13 +306,12 @@
                             <svg class="h-4 w-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
-                            ISO 9001 / JCI Document Control
+                            ISO 9001 / JCI Controlled Lifecycle
                         </p>
-                        <p>Every uploaded version generates an immutable SHA-256 fingerprint, chronological audit history, and tracked release notes per hospital governance protocols.</p>
+                        <p>Controlled documents follow the 6-stage lifecycle: Draft &rarr; In Review &rarr; Approved &rarr; Published &rarr; Under Revision &rarr; Obsolete. Every transition logs immutable audit trails and verifies mandatory read acknowledgements.</p>
                     </div>
                 </div>
             </div>
         </form>
     </div>
 @endsection
-

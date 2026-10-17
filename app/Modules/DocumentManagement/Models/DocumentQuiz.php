@@ -5,15 +5,26 @@ declare(strict_types=1);
 namespace App\Modules\DocumentManagement\Models;
 
 use App\Traits\BelongsToTenant;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property int $id
+ * @property string $tenant_id
+ * @property int $document_id
+ * @property string $title
+ * @property string|null $description
+ * @property array<string, mixed>|null $settings
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read Document|null $document
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, DocumentQuizQuestion> $questions
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, DocumentQuizAttempt> $attempts
+ */
 final class DocumentQuiz extends Model
 {
     use BelongsToTenant;
-    use HasFactory;
 
     protected $connection;
 

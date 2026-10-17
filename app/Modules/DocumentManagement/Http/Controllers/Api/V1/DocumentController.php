@@ -120,6 +120,18 @@ final class DocumentController extends Controller
         abort_if(! request()->user()?->can('documents.publish'), 403);
         $this->ensureVisible($document, (string) request()->user()?->uuid);
 
+        if ($document->supersedes_id) {
+            $superseded = Document::query()->find($document->supersedes_id);
+            if ($superseded) {
+                $superseded->update([
+                    'status' => Document::STATUS_OBSOLETE,
+                    'superseded_by_id' => $document->id,
+                ]);
+
+                $this->logAudit($superseded, 'obsoleted', (string) request()->user()->uuid);
+            }
+        }
+
         $document->status = 'published';
         $document->published_at = now();
         $document->save();

@@ -17,4 +17,9 @@ final class DocumentManagementServiceProvider extends ModuleServiceProvider
     {
         return 'DocumentManagement';
     }
+
+    protected function bootModule(): void
+    {
+        $this->loadMigrationsFrom(__DIR__.'/../Database/Migrations');
+    }
 }

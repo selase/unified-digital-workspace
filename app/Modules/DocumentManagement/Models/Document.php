@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
@@ -29,20 +30,71 @@ use Illuminate\Support\Str;
  * @property array<string, mixed>|null $visibility
  * @property int|null $current_version_id
  * @property string $owner_id
+ * @property string|null $reviewer_id
+ * @property string|null $approver_id
+ * @property \Illuminate\Support\Carbon|null $review_due_at
+ * @property \Illuminate\Support\Carbon|null $expires_at
+ * @property string|null $review_comments
+ * @property int|null $supersedes_id
+ * @property int|null $superseded_by_id
  * @property string|null $category
  * @property array<int, string>|null $tags
  * @property array<string, mixed>|null $metadata
  * @property \Carbon\CarbonInterface|\Illuminate\Support\Carbon|string|null $published_at
+ * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read User|null $owner
+ * @property-read User|null $reviewer
+ * @property-read User|null $approver
+ * @property-read Document|null $supersedes
+ * @property-read Document|null $supersededBy
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, DocumentAcknowledgement> $acknowledgements
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, DocumentVersion> $versions
+ * @property-read DocumentVersion|null $currentVersion
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, DocumentQuiz> $quizzes
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, DocumentAudit> $audits
  */
 final class Document extends Model
 {
     use BelongsToTenant;
     use HasDocumentUuid;
     use HasFactory;
+    use SoftDeletes;
 
-    public const STATUSES = ['draft', 'published', 'archived'];
+    public const STATUS_DRAFT = 'draft';
+
+    public const STATUS_IN_REVIEW = 'in_review';
+
+    public const STATUS_APPROVED = 'approved';
+
+    public const STATUS_PUBLISHED = 'published';
+
+    public const STATUS_UNDER_REVISION = 'under_revision';
+
+    public const STATUS_OBSOLETE = 'obsolete';
+
+    public const STATUS_ARCHIVED = 'archived';
+
+    public const STATUSES = [
+        self::STATUS_DRAFT,
+        self::STATUS_IN_REVIEW,
+        self::STATUS_APPROVED,
+        self::STATUS_PUBLISHED,
+        self::STATUS_UNDER_REVISION,
+        self::STATUS_OBSOLETE,
+        self::STATUS_ARCHIVED,
+    ];
+
+    public const STATUS_LABELS = [
+        self::STATUS_DRAFT => 'Draft',
+        self::STATUS_IN_REVIEW => 'In Review',
+        self::STATUS_APPROVED => 'Approved',
+        self::STATUS_PUBLISHED => 'Published / Effective',
+        self::STATUS_UNDER_REVISION => 'Under Revision',
+        self::STATUS_OBSOLETE => 'Obsolete / Superseded',
+        self::STATUS_ARCHIVED => 'Archived',
+    ];
 
     protected $connection;
 
@@ -56,6 +108,13 @@ final class Document extends Model
         'visibility',
         'current_version_id',
         'owner_id',
+        'reviewer_id',
+        'approver_id',
+        'review_due_at',
+        'expires_at',
+        'review_comments',
+        'supersedes_id',
+        'superseded_by_id',
         'category',
         'tags',
         'metadata',
@@ -126,6 +185,46 @@ final class Document extends Model
     }
 
     /**
+     * @return BelongsTo<User, $this>
+     */
+    public function reviewer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'reviewer_id', 'uuid');
+    }
+
+    /**
+     * @return BelongsTo<User, $this>
+     */
+    public function approver(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'approver_id', 'uuid');
+    }
+
+    /**
+     * @return BelongsTo<Document, $this>
+     */
+    public function supersedes(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'supersedes_id');
+    }
+
+    /**
+     * @return BelongsTo<Document, $this>
+     */
+    public function supersededBy(): BelongsTo
+    {
+        return $this->belongsTo(self::class, 'superseded_by_id');
+    }
+
+    /**
+     * @return HasMany<DocumentAcknowledgement, $this>
+     */
+    public function acknowledgements(): HasMany
+    {
+        return $this->hasMany(DocumentAcknowledgement::class);
+    }
+
+    /**
      * @return HasMany<DocumentVersion, $this>
      */
     public function versions(): HasMany
@@ -165,6 +264,51 @@ final class Document extends Model
         return $this->belongsTo(DocumentVersion::class, 'current_version_id');
     }
 
+    public function isDraft(): bool
+    {
+        return $this->status === self::STATUS_DRAFT;
+    }
+
+    public function isInReview(): bool
+    {
+        return $this->status === self::STATUS_IN_REVIEW;
+    }
+
+    public function isApproved(): bool
+    {
+        return $this->status === self::STATUS_APPROVED;
+    }
+
+    public function isPublished(): bool
+    {
+        return $this->status === self::STATUS_PUBLISHED;
+    }
+
+    public function isUnderRevision(): bool
+    {
+        return $this->status === self::STATUS_UNDER_REVISION;
+    }
+
+    public function isObsolete(): bool
+    {
+        return in_array($this->status, [self::STATUS_OBSOLETE, self::STATUS_ARCHIVED], true);
+    }
+
+    public function isReviewOverdue(): bool
+    {
+        return $this->isInReview() && $this->review_due_at !== null && $this->review_due_at->isPast();
+    }
+
+    public function isExpired(): bool
+    {
+        return $this->isPublished() && $this->expires_at !== null && $this->expires_at->isPast();
+    }
+
+    public function isAcknowledgedBy(string $userUuid): bool
+    {
+        return $this->acknowledgements()->where('user_id', $userUuid)->exists();
+    }
+
     protected function casts(): array
     {
         return [
@@ -172,6 +316,8 @@ final class Document extends Model
             'tags' => 'array',
             'metadata' => 'array',
             'published_at' => 'datetime',
+            'review_due_at' => 'datetime',
+            'expires_at' => 'datetime',
         ];
     }
 

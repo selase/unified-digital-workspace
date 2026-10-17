@@ -28,34 +28,21 @@
                         </a>
                     @endif
 
-                    @if($document->status === 'draft' && $canPublish)
-                        <form action="{{ route('document-management.documents.publish', $document) }}" method="POST" class="inline">
-                            @csrf
-                            <button
-                                type="submit"
-                                class="kt-btn kt-btn-success flex items-center gap-1.5"
-                                onclick="return confirm('Publish this controlled document to the institutional catalog?')"
-                            >
-                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                                Publish Document
-                            </button>
-                        </form>
+                    @if($canUpdate)
+                        <a href="{{ route('document-management.documents.edit', $document) }}" class="kt-btn kt-btn-outline flex items-center gap-1.5">
+                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                            Edit Specifications
+                        </a>
                     @endif
 
-                    @if($document->status === 'published' && $canUpdate)
-                        <form action="{{ route('document-management.documents.archive', $document) }}" method="POST" class="inline">
+                    @if($canDelete)
+                        <form action="{{ route('document-management.documents.destroy', $document) }}" method="POST" class="inline" onsubmit="return confirm('Soft-delete this controlled document from the catalog?');">
                             @csrf
-                            <button
-                                type="submit"
-                                class="kt-btn kt-btn-outline text-amber-600 dark:text-amber-400 flex items-center gap-1.5"
-                                onclick="return confirm('Archive this document? It will be marked superseded/archived.')"
-                            >
-                                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-                                </svg>
-                                Archive
+                            @method('DELETE')
+                            <button type="submit" class="kt-btn kt-btn-outline text-destructive hover:bg-destructive/10">
+                                Delete
                             </button>
                         </form>
                     @endif
@@ -67,353 +54,459 @@
             </x-slot:actions>
         </x-metronic.page-header>
 
-        {{-- Status and Metadata Strip --}}
-        <div class="flex flex-wrap items-center justify-between gap-3 px-5 py-3.5 rounded-xl border border-border/70 bg-card text-foreground">
-            <div class="flex flex-wrap items-center gap-3">
-                <span class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Document Status:</span>
-                @php
-                    $statusVariant = match ($document->status) {
-                        'published' => 'success',
-                        'archived' => 'warning',
-                        default => 'outline',
-                    };
-                @endphp
-                <x-metronic.badge :variant="$statusVariant" size="md">
-                    {{ ucfirst($document->status) }}
-                </x-metronic.badge>
-
-                @if($document->category)
-                    <span class="text-border">|</span>
-                    <span class="text-xs font-medium text-muted-foreground">Category:</span>
-                    <span class="text-xs font-semibold text-foreground px-2.5 py-1 rounded-md bg-muted/40">
-                        {{ $document->category }}
-                    </span>
-                @endif
-
-                @if($document->currentVersion)
-                    <span class="text-border">|</span>
-                    <span class="text-xs font-medium text-muted-foreground">Active Version:</span>
-                    <x-metronic.badge variant="primary" size="sm">
-                        v{{ $document->currentVersion->version_number }}.0
-                    </x-metronic.badge>
-                @endif
-            </div>
-
-            <div class="text-xs text-muted-foreground">
-                Document Ref: <code class="px-1.5 py-0.5 rounded bg-muted font-mono text-[11px] text-foreground">{{ $document->slug }}</code>
-            </div>
-        </div>
-
-        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
-            {{-- Main Column: Document Details, Active Version, History, and Upload Form --}}
-            <div class="lg:col-span-8 flex flex-col gap-5">
-                {{-- Document Overview --}}
-                <x-metronic.card title="Document Overview & Scope">
-                    <div class="space-y-4">
-                        @if($document->description)
-                            <div>
-                                <h4 class="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">Executive Summary</h4>
-                                <p class="text-sm leading-relaxed text-foreground whitespace-pre-line">{{ $document->description }}</p>
-                            </div>
-                        @else
-                            <p class="text-sm text-muted-foreground italic">No executive description provided for this document record.</p>
-                        @endif
-
-                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-3 border-t border-border">
-                            <div>
-                                <p class="text-xs text-muted-foreground">Classification</p>
-                                <p class="text-xs font-medium text-foreground mt-0.5">
-                                    {{ !empty($document->visibility['is_private']) ? 'Restricted / Departmental' : 'Institution-wide' }}
-                                </p>
-                            </div>
-                            <div>
-                                <p class="text-xs text-muted-foreground">Owner</p>
-                                <p class="text-xs font-medium text-foreground mt-0.5">
-                                    {{ $document->owner ? $document->owner->first_name.' '.$document->owner->last_name : 'System' }}
-                                </p>
-                            </div>
-                            <div>
-                                <p class="text-xs text-muted-foreground">Created</p>
-                                <p class="text-xs font-medium text-foreground mt-0.5">
-                                    {{ $document->created_at?->format('d/m/Y') }}
-                                </p>
-                            </div>
-                            <div>
-                                <p class="text-xs text-muted-foreground">Published</p>
-                                <p class="text-xs font-medium text-foreground mt-0.5">
-                                    {{ $document->published_at ? $document->published_at->format('d/m/Y') : 'Unpublished' }}
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </x-metronic.card>
-
-                {{-- Active Controlled File --}}
-                <x-metronic.card title="Master Controlled File" subtitle="Current authorized version in active institutional circulation">
-                    @if($document->currentVersion)
+        {{-- ISO 9001 6-Stage Lifecycle Pipeline Header Strip --}}
+        <div class="kt-card p-5 bg-card border border-border">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border pb-4 mb-4">
+                <div>
+                    <span class="text-xs uppercase tracking-wider font-semibold text-muted-foreground">Controlled Document Lifecycle</span>
+                    <h2 class="text-lg font-bold text-foreground flex items-center gap-2">
+                        <span>{{ $document->title }}</span>
                         @php
-                            $version = $document->currentVersion;
-                            $sizeFormatted = $version->size_bytes > 1048576
-                                ? round($version->size_bytes / 1048576, 2) . ' MB'
-                                : round($version->size_bytes / 1024, 1) . ' KB';
+                            $badgeMap = [
+                                'draft' => 'kt-badge-secondary',
+                                'in_review' => 'kt-badge-warning',
+                                'approved' => 'kt-badge-primary',
+                                'published' => 'kt-badge-success',
+                                'under_revision' => 'kt-badge-warning',
+                                'obsolete' => 'kt-badge-destructive',
+                                'archived' => 'kt-badge-outline',
+                            ];
                         @endphp
-                        <div class="rounded-xl border border-primary/20 bg-primary/5 p-4 sm:p-5">
-                            <div class="flex flex-wrap items-start justify-between gap-4">
-                                <div class="flex items-start gap-3.5">
-                                    <div class="h-10 w-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                        </svg>
-                                    </div>
-                                    <div>
-                                        <div class="flex items-center gap-2">
-                                            <h3 class="font-semibold text-foreground">{{ $version->filename }}</h3>
-                                            <x-metronic.badge variant="primary" size="sm">
-                                                v{{ $version->version_number }}.0 Active
-                                            </x-metronic.badge>
-                                        </div>
-                                        <p class="text-xs text-muted-foreground mt-1">
-                                            Size: {{ $sizeFormatted }} &bull; MIME: {{ $version->mime_type ?: 'application/octet-stream' }} &bull; Uploaded {{ $version->created_at?->diffForHumans() }}
-                                        </p>
-                                    </div>
-                                </div>
+                        <span class="kt-badge {{ $badgeMap[$document->status] ?? 'kt-badge-outline' }} text-xs px-2.5 py-0.5">
+                            {{ \App\Modules\DocumentManagement\Models\Document::STATUS_LABELS[$document->status] ?? ucfirst($document->status) }}
+                        </span>
+                    </h2>
+                </div>
 
-                                <a
-                                    href="{{ route('document-management.documents.download', ['document' => $document, 'version' => $version->version_number]) }}"
-                                    class="kt-btn kt-btn-primary shrink-0 flex items-center gap-1.5"
-                                >
-                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                                    </svg>
-                                    Download
-                                </a>
-                            </div>
-
-                            @if($version->notes)
-                                <div class="mt-3.5 pt-3 border-t border-primary/15 text-xs text-foreground">
-                                    <span class="font-semibold text-muted-foreground">Version Notes:</span>
-                                    <span class="ml-1 text-muted-foreground">{{ $version->notes }}</span>
-                                </div>
-                            @endif
-
-                            @if($version->checksum_sha256)
-                                <div class="mt-2.5 flex items-center gap-2 text-[11px] text-muted-foreground font-mono bg-background/60 p-2 rounded border border-border">
-                                    <span class="font-bold text-foreground shrink-0 uppercase tracking-wider text-[10px]">SHA-256:</span>
-                                    <span class="truncate select-all text-muted-foreground">{{ $version->checksum_sha256 }}</span>
-                                </div>
-                            @endif
-                        </div>
-                    @else
-                        <div class="py-8 text-center text-muted-foreground space-y-2">
-                            <p class="text-sm">No master file has been uploaded for this document yet.</p>
-                            @if($canManageVersions)
-                                <p class="text-xs">Use the check-in form below to upload Version 1.0.</p>
+                {{-- Key Dates & Review Indicators --}}
+                <div class="flex flex-wrap items-center gap-3 text-xs">
+                    @if($document->review_due_at)
+                        <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border {{ $document->isReviewOverdue() ? 'bg-destructive/10 border-destructive/30 text-destructive' : 'bg-muted/30 border-border text-foreground' }}">
+                            <span class="font-semibold">Review Due:</span>
+                            <span>{{ $document->review_due_at->format('d/m/Y') }}</span>
+                            @if($document->isReviewOverdue())
+                                <span class="kt-badge kt-badge-2xs kt-badge-destructive">OVERDUE</span>
                             @endif
                         </div>
                     @endif
+
+                    @if($document->expires_at)
+                        <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border {{ $document->isExpired() ? 'bg-destructive/10 border-destructive/30 text-destructive' : 'bg-muted/30 border-border text-foreground' }}">
+                            <span class="font-semibold">Expires:</span>
+                            <span>{{ $document->expires_at->format('d/m/Y') }}</span>
+                            @if($document->isExpired())
+                                <span class="kt-badge kt-badge-2xs kt-badge-destructive">EXPIRED</span>
+                            @endif
+                        </div>
+                    @endif
+
+                    @if($document->status === 'published')
+                        <a href="{{ route('document-management.documents.compliance', $document) }}" class="kt-btn kt-btn-xs kt-btn-outline flex items-center gap-1">
+                            <span>Compliance: {{ $ackPercentage }}%</span>
+                            <span class="text-muted-foreground font-normal">({{ $ackCount }}/{{ $tenantUsersCount }})</span>
+                        </a>
+                    @endif
+                </div>
+            </div>
+
+            {{-- 6-Stage Visual Stepper --}}
+            @php
+                $stages = [
+                    'draft' => '1. Draft',
+                    'in_review' => '2. In Review',
+                    'approved' => '3. Approved',
+                    'published' => '4. Published',
+                    'under_revision' => '5. Revision',
+                    'obsolete' => '6. Obsolete',
+                ];
+                $activeIdx = array_search($document->status, array_keys($stages));
+                if ($activeIdx === false && $document->status === 'archived') {
+                    $activeIdx = 5;
+                }
+            @endphp
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
+                @foreach($stages as $key => $label)
+                    @php
+                        $isCurrent = $document->status === $key;
+                    @endphp
+                    <div class="p-2.5 rounded-lg border text-center text-xs transition-colors {{ $isCurrent ? 'bg-primary/10 border-primary text-primary font-bold shadow-sm' : 'bg-muted/10 border-border text-muted-foreground' }}">
+                        <span>{{ $label }}</span>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+
+        {{-- Main Two-Column Layout --}}
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+            {{-- Left: Details, Versions, Quizzes, Audits --}}
+            <div class="lg:col-span-8 flex flex-col gap-5">
+                {{-- ISO Stage Action Controls Banner --}}
+                <div class="kt-card p-5 bg-card border border-border">
+                    <h3 class="text-sm font-semibold text-foreground mb-3 flex items-center gap-1.5">
+                        <svg class="h-4 w-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                        Lifecycle Actions & Workflow Transitions
+                    </h3>
+
+                    <div class="flex flex-wrap items-center gap-3">
+                        {{-- Submit For Review --}}
+                        @if(in_array($document->status, ['draft', 'under_revision'], true))
+                            <form action="{{ route('document-management.documents.submit-review', $document) }}" method="POST" class="inline">
+                                @csrf
+                                <button type="submit" class="kt-btn kt-btn-sm kt-btn-warning flex items-center gap-1.5" onclick="return confirm('Submit this document for technical & peer review?');">
+                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                                    </svg>
+                                    Submit for ISO Review
+                                </button>
+                            </form>
+                        @endif
+
+                        {{-- Approve Review --}}
+                        @if($document->status === 'in_review' && $canApprove)
+                            <form action="{{ route('document-management.documents.approve', $document) }}" method="POST" class="inline">
+                                @csrf
+                                <button type="submit" class="kt-btn kt-btn-sm kt-btn-primary flex items-center gap-1.5" onclick="return confirm('Approve this controlled document?');">
+                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                    Approve Document
+                                </button>
+                            </form>
+                        @endif
+
+                        {{-- Reject Review --}}
+                        @if($document->status === 'in_review' && ($canReview || $canApprove))
+                            <button type="button" class="kt-btn kt-btn-sm kt-btn-outline text-destructive" onclick="document.getElementById('reject-form-modal').classList.toggle('hidden')">
+                                Request Revision (Reject)
+                            </button>
+                        @endif
+
+                        {{-- Publish --}}
+                        @if(in_array($document->status, ['draft', 'approved'], true) && $canPublish)
+                            <form action="{{ route('document-management.documents.publish', $document) }}" method="POST" class="inline">
+                                @csrf
+                                <button type="submit" class="kt-btn kt-btn-sm kt-btn-success flex items-center gap-1.5" onclick="return confirm('Publish this document to institutional catalog?');">
+                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    Publish to Catalog
+                                </button>
+                            </form>
+                        @endif
+
+                        {{-- Revise --}}
+                        @if($document->status === 'published' && $canUpdate)
+                            <form action="{{ route('document-management.documents.revise', $document) }}" method="POST" class="inline">
+                                @csrf
+                                <button type="submit" class="kt-btn kt-btn-sm kt-btn-outline text-amber-600 dark:text-amber-400" onclick="return confirm('Initiate document revision? Status will move to Under Revision.');">
+                                    Initiate Revision
+                                </button>
+                            </form>
+                        @endif
+
+                        {{-- Mark Obsolete --}}
+                        @if(in_array($document->status, ['published', 'under_revision'], true) && $canUpdate)
+                            <form action="{{ route('document-management.documents.obsolete', $document) }}" method="POST" class="inline">
+                                @csrf
+                                <button type="submit" class="kt-btn kt-btn-sm kt-btn-outline text-muted-foreground" onclick="return confirm('Retire this document as Obsolete/Superseded?');">
+                                    Mark Obsolete
+                                </button>
+                            </form>
+                        @endif
+                    </div>
+
+                    {{-- Collapsible Rejection Form --}}
+                    <div id="reject-form-modal" class="hidden mt-4 pt-4 border-t border-border">
+                        <form action="{{ route('document-management.documents.reject', $document) }}" method="POST" class="space-y-3">
+                            @csrf
+                            <label class="block text-xs font-semibold text-foreground">Review Feedback & Required Changes *</label>
+                            <textarea name="review_comments" rows="3" required class="kt-textarea w-full text-xs" placeholder="Detail mandatory corrections before approval..."></textarea>
+                            <div class="flex justify-end gap-2">
+                                <button type="button" class="kt-btn kt-btn-xs kt-btn-outline" onclick="document.getElementById('reject-form-modal').classList.add('hidden')">Cancel</button>
+                                <button type="submit" class="kt-btn kt-btn-xs kt-btn-destructive">Confirm Return for Revision</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                {{-- Document Scope & Description --}}
+                <x-metronic.card title="Executive Summary & Applicability" subtitle="Scope, clinical guidelines, and standard operating instructions">
+                    <div class="text-sm text-foreground leading-relaxed whitespace-pre-line">
+                        {{ $document->description ?: 'No operational description or summary provided for this controlled document.' }}
+                    </div>
                 </x-metronic.card>
 
-                {{-- Version History Table --}}
-                <x-metronic.card title="Version Control & Change History" subtitle="Immutable revision log for ISO 9001 quality audits">
+                {{-- Read Acknowledgement Action Strip (For Published Documents) --}}
+                @if($document->status === 'published')
+                    <div class="kt-card p-5 border border-border bg-card">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                            <div>
+                                <h3 class="font-semibold text-sm text-foreground flex items-center gap-1.5">
+                                    <svg class="h-4 w-4 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                    </svg>
+                                    ISO Read Acknowledgement & Compliance
+                                </h3>
+                                <p class="text-xs text-muted-foreground mt-0.5">
+                                    Employees must confirm they have read, understood, and agree to adhere to this standard.
+                                </p>
+                            </div>
+
+                            <div>
+                                @if($isAcknowledged)
+                                    <div class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-success/10 text-success text-xs font-semibold border border-success/20">
+                                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                        </svg>
+                                        Read Acknowledged
+                                    </div>
+                                @else
+                                    <form action="{{ route('document-management.documents.acknowledge', $document) }}" method="POST" class="inline">
+                                        @csrf
+                                        <button type="submit" class="kt-btn kt-btn-sm kt-btn-primary flex items-center gap-1.5">
+                                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                                            </svg>
+                                            Acknowledge Read & Understood
+                                        </button>
+                                    </form>
+                                @endif
+                            </div>
+                        </div>
+                    </div>
+                @endif
+
+                {{-- Controlled File Versions --}}
+                <x-metronic.card title="Controlled Version History" subtitle="Immutable cryptographic releases, release notes, and master downloads">
+                    <div class="space-y-4">
+                        <div class="overflow-x-auto">
+                            <table class="kt-table table-auto kt-table-border w-full text-xs">
+                                <thead>
+                                    <tr class="border-b border-border text-muted-foreground font-semibold">
+                                        <th class="py-2 text-start">Ver.</th>
+                                        <th class="py-2 text-start">File Name</th>
+                                        <th class="py-2 text-start">Size</th>
+                                        <th class="py-2 text-start">Uploaded By</th>
+                                        <th class="py-2 text-start">Released</th>
+                                        <th class="py-2 text-end">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-border">
+                                    @forelse($document->versions as $ver)
+                                        <tr>
+                                            <td class="py-2.5 font-bold text-foreground">
+                                                v{{ $ver->version_number }}
+                                                @if((int) $document->current_version_id === (int) $ver->id)
+                                                    <span class="kt-badge kt-badge-2xs kt-badge-primary ml-1">Current</span>
+                                                @endif
+                                            </td>
+                                            <td class="py-2.5 text-foreground">
+                                                <div>{{ $ver->filename }}</div>
+                                                @if($ver->notes)
+                                                    <div class="text-2xs text-muted-foreground italic">{{ $ver->notes }}</div>
+                                                @endif
+                                                @if($ver->checksum_sha256)
+                                                    <div class="text-2xs text-muted-foreground font-mono truncate max-w-xs" title="SHA-256: {{ $ver->checksum_sha256 }}">
+                                                        SHA256: {{ substr($ver->checksum_sha256, 0, 16) }}...
+                                                    </div>
+                                                @endif
+                                            </td>
+                                            <td class="py-2.5 text-muted-foreground">{{ number_format($ver->size_bytes / 1024, 1) }} KB</td>
+                                            <td class="py-2.5 text-muted-foreground">{{ $ver->uploadedBy?->name ?? '—' }}</td>
+                                            <td class="py-2.5 text-muted-foreground">{{ $ver->created_at?->format('d/m/Y H:i') }}</td>
+                                            <td class="py-2.5 text-end">
+                                                <a href="{{ route('document-management.documents.download', ['document' => $document, 'version' => $ver->version_number]) }}" class="kt-btn kt-btn-2xs kt-btn-outline">
+                                                    Download
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="6" class="text-center py-4 text-muted-foreground">No file versions uploaded yet.</td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {{-- Upload New Version Form --}}
+                        @if($canManageVersions)
+                            <div class="pt-4 border-t border-border">
+                                <h4 class="text-xs font-semibold text-foreground mb-3 uppercase tracking-wider">Release New Version</h4>
+                                <form action="{{ route('document-management.documents.versions.store', $document) }}" method="POST" enctype="multipart/form-data" class="space-y-3">
+                                    @csrf
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        <div>
+                                            <label class="block text-2xs font-semibold text-muted-foreground mb-1">New File *</label>
+                                            <input type="file" name="file" required class="kt-input w-full text-xs" />
+                                        </div>
+                                        <div>
+                                            <label class="block text-2xs font-semibold text-muted-foreground mb-1">Release Revision Notes *</label>
+                                            <input type="text" name="notes" required placeholder="e.g. Annual clinical audit updates..." class="kt-input w-full text-xs" />
+                                        </div>
+                                    </div>
+                                    <button type="submit" class="kt-btn kt-btn-xs kt-btn-primary">Upload & Bump Version</button>
+                                </form>
+                            </div>
+                        @endif
+                    </div>
+                </x-metronic.card>
+
+                {{-- Comprehension Quizzes --}}
+                <x-metronic.card title="Comprehension Quizzes & Staff Assessments" subtitle="Verify clinical understanding and staff training readiness">
+                    <div class="space-y-4">
+                        @if($document->quizzes->isNotEmpty())
+                            <div class="divide-y divide-border">
+                                @foreach($document->quizzes as $quiz)
+                                    <div class="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                        <div>
+                                            <h4 class="font-semibold text-sm text-foreground">{{ $quiz->title }}</h4>
+                                            <p class="text-xs text-muted-foreground">{{ $quiz->description ?: 'Mandatory verification quiz.' }}</p>
+                                            <div class="flex items-center gap-2 mt-1 text-2xs text-muted-foreground">
+                                                <span>{{ $quiz->questions->count() }} question(s)</span>
+                                                <span>&bull;</span>
+                                                <span>Pass standard: {{ $quiz->settings['pass_percentage'] ?? 80 }}%</span>
+                                            </div>
+                                        </div>
+
+                                        <div class="flex items-center gap-2">
+                                            <a href="{{ route('document-management.quizzes.show', $quiz) }}" class="kt-btn kt-btn-xs kt-btn-primary">
+                                                Take Quiz
+                                            </a>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @else
+                            <p class="text-xs text-muted-foreground py-2">No comprehension quizzes currently attached to this document.</p>
+                        @endif
+
+                        @if($canManageQuizzes)
+                            <div class="pt-3 border-t border-border flex justify-end">
+                                <a href="{{ route('document-management.documents.quizzes.create', $document) }}" class="kt-btn kt-btn-xs kt-btn-outline flex items-center gap-1">
+                                    <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                                    </svg>
+                                    Add Comprehension Quiz
+                                </a>
+                            </div>
+                        @endif
+                    </div>
+                </x-metronic.card>
+
+                {{-- Chronological ISO Audit History Trail --}}
+                <x-metronic.card title="ISO Chronological Audit Trail" subtitle="Comprehensive record of reviews, approvals, downloads, and lifecycle transitions">
                     <div class="overflow-x-auto">
-                        <x-metronic.table>
+                        <table class="kt-table table-auto kt-table-border w-full text-xs">
                             <thead>
-                                <tr class="text-xs uppercase text-muted-foreground">
-                                    <th>Rev</th>
-                                    <th>File Name</th>
-                                    <th>Uploaded By</th>
-                                    <th>Change Notes</th>
-                                    <th>Date</th>
-                                    <th class="text-right">Action</th>
+                                <tr class="border-b border-border text-muted-foreground font-semibold">
+                                    <th class="py-2 text-start">Timestamp</th>
+                                    <th class="py-2 text-start">Event</th>
+                                    <th class="py-2 text-start">User</th>
+                                    <th class="py-2 text-start">Details</th>
                                 </tr>
                             </thead>
-                            <tbody class="text-xs text-foreground divide-y divide-border/60">
-                                @forelse($document->versions->sortByDesc('version_number') as $ver)
-                                    @php
-                                        $isActive = $document->current_version_id === $ver->id;
-                                    @endphp
-                                    <tr class="{{ $isActive ? 'bg-primary/5 font-medium' : '' }}">
-                                        <td>
-                                            <div class="flex items-center gap-1.5">
-                                                <x-metronic.badge :variant="$isActive ? 'primary' : 'outline'" size="sm">
-                                                    v{{ $ver->version_number }}.0
-                                                </x-metronic.badge>
-                                                @if($isActive)
-                                                    <span class="text-[10px] text-primary font-bold uppercase tracking-wider">Active</span>
-                                                @endif
-                                            </div>
+                            <tbody class="divide-y divide-border">
+                                @forelse($document->audits as $audit)
+                                    <tr>
+                                        <td class="py-2 text-muted-foreground">{{ $audit->created_at?->format('d/m/Y H:i:s') }}</td>
+                                        <td class="py-2 font-semibold text-foreground">
+                                            <span class="kt-badge kt-badge-2xs kt-badge-outline uppercase">
+                                                {{ str_replace('_', ' ', $audit->event) }}
+                                            </span>
                                         </td>
-                                        <td>
-                                            <p class="truncate max-w-[180px] font-medium" title="{{ $ver->filename }}">{{ $ver->filename }}</p>
-                                            @if($ver->checksum_sha256)
-                                                <span class="text-[10px] text-muted-foreground font-mono" title="{{ $ver->checksum_sha256 }}">
-                                                    {{ substr($ver->checksum_sha256, 0, 10) }}...
-                                                </span>
+                                        <td class="py-2 text-foreground">{{ $audit->user?->name ?? 'System' }}</td>
+                                        <td class="py-2 text-muted-foreground text-2xs truncate max-w-xs">
+                                            @if(!empty($audit->metadata))
+                                                {{ json_encode($audit->metadata) }}
+                                            @else
+                                                —
                                             @endif
-                                        </td>
-                                        <td>
-                                            {{ $ver->uploadedBy ? $ver->uploadedBy->first_name.' '.$ver->uploadedBy->last_name : 'User' }}
-                                        </td>
-                                        <td>
-                                            <p class="max-w-[220px] truncate text-muted-foreground" title="{{ $ver->notes }}">
-                                                {{ $ver->notes ?: '—' }}
-                                            </p>
-                                        </td>
-                                        <td class="text-muted-foreground whitespace-nowrap">
-                                            {{ $ver->created_at?->format('d/m/Y H:i') }}
-                                        </td>
-                                        <td class="text-right">
-                                            <a
-                                                href="{{ route('document-management.documents.download', ['document' => $document, 'version' => $ver->version_number]) }}"
-                                                class="kt-btn kt-btn-outline py-1 px-2.5 text-xs inline-flex items-center gap-1"
-                                                title="Download version {{ $ver->version_number }}"
-                                            >
-                                                <svg class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                                                </svg>
-                                                Download
-                                            </a>
                                         </td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="6" class="py-6 text-center text-muted-foreground">
-                                            No versions recorded yet.
-                                        </td>
+                                        <td colspan="4" class="text-center py-4 text-muted-foreground">No audit entries recorded.</td>
                                     </tr>
                                 @endforelse
                             </tbody>
-                        </x-metronic.table>
+                        </table>
                     </div>
                 </x-metronic.card>
-
-                {{-- Check-in New Version Form --}}
-                @if($canManageVersions)
-                    @php
-                        $nextVersionNum = ($document->versions->max('version_number') ?? 0) + 1;
-                    @endphp
-                    <x-metronic.card title="Check-in New Version (v{{ $nextVersionNum }}.0)" subtitle="Upload an updated revision to supersede the currently active document">
-                        <form action="{{ route('document-management.documents.versions.store', $document) }}" method="POST" enctype="multipart/form-data" class="space-y-4">
-                            @csrf
-                            <div>
-                                <label for="version_file" class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">
-                                    New Revision File <span class="text-destructive">*</span>
-                                </label>
-                                <input
-                                    type="file"
-                                    id="version_file"
-                                    name="file"
-                                    required
-                                    accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.odt"
-                                    class="kt-input w-full file:mr-4 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-primary file:text-primary-foreground hover:file:opacity-90"
-                                />
-                                @error('file')
-                                    <p class="mt-1 text-xs text-destructive">{{ $message }}</p>
-                                @enderror
-                            </div>
-
-                            <div>
-                                <label for="version_notes" class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">
-                                    Revision Notes & Changes <span class="text-destructive">*</span>
-                                </label>
-                                <textarea
-                                    id="version_notes"
-                                    name="notes"
-                                    rows="3"
-                                    required
-                                    placeholder="Explain the specific changes in this revision, clinical updates, or committee approval references..."
-                                    class="kt-textarea w-full text-foreground"
-                                >{{ old('notes') }}</textarea>
-                                @error('notes')
-                                    <p class="mt-1 text-xs text-destructive">{{ $message }}</p>
-                                @enderror
-                            </div>
-
-                            <div class="flex justify-end pt-2">
-                                <button type="submit" class="kt-btn kt-btn-primary flex items-center gap-1.5">
-                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                                    </svg>
-                                    Check In v{{ $nextVersionNum }}.0
-                                </button>
-                            </div>
-                        </form>
-                    </x-metronic.card>
-                @endif
             </div>
 
-            {{-- Sidebar Column: Quality Status, Document Owner, Training Quizzes, and Audit Trail --}}
+            {{-- Right: Governance, Reviewers, Dates --}}
             <div class="lg:col-span-4 flex flex-col gap-5">
-                {{-- Document Owner & Custodian --}}
-                <x-metronic.card title="Document Custodian">
-                    <div class="flex items-center gap-3">
-                        <div class="h-10 w-10 rounded-full bg-primary/10 text-primary font-semibold flex items-center justify-center shrink-0">
-                            {{ $document->owner ? substr($document->owner->first_name, 0, 1).substr($document->owner->last_name, 0, 1) : 'SY' }}
+                <x-metronic.card title="Governance & Ownership" subtitle="Accountable staff and workflow assignments">
+                    <div class="space-y-4 text-xs">
+                        <div>
+                            <span class="text-muted-foreground block text-2xs uppercase tracking-wider font-semibold">Document Author / Custodian</span>
+                            <span class="font-semibold text-foreground block text-sm">{{ $document->owner?->name ?? 'Unassigned' }}</span>
+                            <span class="text-muted-foreground text-2xs">{{ $document->owner?->email }}</span>
                         </div>
-                        <div class="min-w-0">
-                            <p class="text-sm font-semibold text-foreground truncate">
-                                {{ $document->owner ? $document->owner->first_name.' '.$document->owner->last_name : 'System Administrator' }}
-                            </p>
-                            <p class="text-xs text-muted-foreground truncate">
-                                {{ $document->owner?->email ?: 'No email on record' }}
-                            </p>
-                        </div>
-                    </div>
-                </x-metronic.card>
 
-                {{-- Training Assessments / Quizzes --}}
-                <x-metronic.card title="Staff Comprehension & Quizzes">
-                    @if($document->quizzes->isNotEmpty())
-                        <div class="space-y-2.5">
-                            @foreach($document->quizzes as $quiz)
-                                <div class="p-3 rounded-lg border border-border bg-muted/20 flex items-center justify-between gap-2">
-                                    <div>
-                                        <p class="text-xs font-semibold text-foreground">{{ $quiz->title }}</p>
-                                        <p class="text-[11px] text-muted-foreground">Comprehension Assessment</p>
-                                    </div>
-                                    <span class="kt-badge kt-badge-outline text-[11px]">Active</span>
-                                </div>
-                            @endforeach
-                        </div>
-                    @else
-                        <p class="text-xs text-muted-foreground italic">No training comprehension quizzes linked to this document.</p>
-                    @endif
-                </x-metronic.card>
+                        <hr class="border-border" />
 
-                {{-- Audit Trail (ISO Compliance Log) --}}
-                <x-metronic.card title="Audit & Compliance Trail" subtitle="Chronological record of document access and lifecycle events">
-                    <div class="space-y-3 max-h-[420px] overflow-y-auto pr-1">
-                        @forelse($document->audits->sortByDesc('created_at')->take(15) as $audit)
-                            @php
-                                $badgeColor = match ($audit->event) {
-                                    'publish' => 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
-                                    'version_uploaded' => 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
-                                    'download' => 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20',
-                                    'archive' => 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
-                                    'create' => 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
-                                    default => 'bg-muted text-muted-foreground border-border',
-                                };
-                            @endphp
-                            <div class="flex items-start gap-2.5 text-xs">
-                                <span class="px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider border shrink-0 mt-0.5 {{ $badgeColor }}">
-                                    {{ str_replace('_', ' ', $audit->event) }}
-                                </span>
-                                <div class="min-w-0 flex-1">
-                                    <p class="text-foreground font-medium truncate">
-                                        {{ $audit->user ? $audit->user->first_name.' '.$audit->user->last_name : 'Automated Task' }}
-                                    </p>
-                                    <p class="text-[11px] text-muted-foreground">
-                                        {{ $audit->created_at?->format('d/m/Y H:i') }} &bull; {{ $audit->created_at?->diffForHumans() }}
-                                    </p>
-                                </div>
+                        <div>
+                            <span class="text-muted-foreground block text-2xs uppercase tracking-wider font-semibold">Designated Reviewer</span>
+                            <span class="font-semibold text-foreground block">{{ $document->reviewer?->name ?? 'None Designated' }}</span>
+                            <span class="text-muted-foreground text-2xs">{{ $document->reviewer?->email }}</span>
+                        </div>
+
+                        <div>
+                            <span class="text-muted-foreground block text-2xs uppercase tracking-wider font-semibold">Institutional Approver</span>
+                            <span class="font-semibold text-foreground block">{{ $document->approver?->name ?? 'None Designated' }}</span>
+                            <span class="text-muted-foreground text-2xs">{{ $document->approver?->email }}</span>
+                        </div>
+
+                        @if($document->review_comments)
+                            <div class="p-3 rounded-lg bg-muted/20 border border-border">
+                                <span class="font-semibold text-foreground block text-2xs uppercase tracking-wider mb-1">Review Feedback Notes:</span>
+                                <p class="text-muted-foreground text-xs italic">{{ $document->review_comments }}</p>
                             </div>
-                        @empty
-                            <p class="text-xs text-muted-foreground italic">No audit records recorded yet.</p>
-                        @endforelse
+                        @endif
+
+                        <hr class="border-border" />
+
+                        @if($document->supersedes)
+                            <div>
+                                <span class="text-muted-foreground block text-2xs uppercase tracking-wider font-semibold">Supersedes Previous Policy:</span>
+                                <a href="{{ route('document-management.documents.show', $document->supersedes) }}" class="text-primary hover:underline font-semibold block">
+                                    {{ $document->supersedes->title }} ({{ $document->supersedes->slug }})
+                                </a>
+                            </div>
+                        @endif
+
+                        @if($document->supersededBy)
+                            <div>
+                                <span class="text-muted-foreground block text-2xs uppercase tracking-wider font-semibold">Superseded By Active Master:</span>
+                                <a href="{{ route('document-management.documents.show', $document->supersededBy) }}" class="text-primary hover:underline font-semibold block">
+                                    {{ $document->supersededBy->title }} ({{ $document->supersededBy->slug }})
+                                </a>
+                            </div>
+                        @endif
+
+                        <div>
+                            <span class="text-muted-foreground block text-2xs uppercase tracking-wider font-semibold">Classification & Category</span>
+                            <span class="text-foreground font-semibold">{{ $document->category ?? 'General' }}</span>
+                        </div>
+
+                        <div>
+                            <span class="text-muted-foreground block text-2xs uppercase tracking-wider font-semibold">Registered Date</span>
+                            <span class="text-foreground">{{ $document->created_at?->format('d/m/Y H:i') }}</span>
+                        </div>
+
+                        @if($document->published_at)
+                            <div>
+                                <span class="text-muted-foreground block text-2xs uppercase tracking-wider font-semibold">Effective / Catalog Date</span>
+                                <span class="text-foreground">{{ $document->published_at->format('d/m/Y') }}</span>
+                            </div>
+                        @endif
                     </div>
                 </x-metronic.card>
             </div>
         </div>
     </div>
 @endsection
-
