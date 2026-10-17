@@ -50,7 +50,7 @@
                         <div class="space-y-1">
                             <p class="text-xs uppercase text-muted-foreground">Status</p>
                             <p class="text-sm font-semibold text-success">Enabled</p>
-                            <p class="text-xs text-muted-foreground">Activated on {{ $user->two_factor_confirmed_at?->format('M d, Y H:i') }}</p>
+                            <p class="text-xs text-muted-foreground">Activated on {{ $user->two_factor_confirmed_at?->format('d/m/Y H:i') }}</p>
                         </div>
                         <button type="button" class="kt-btn kt-btn-outline kt-btn-sm" x-on:click="confirmDisable = !confirmDisable">
                             Disable 2FA

@@ -56,7 +56,7 @@
                     </div>
                     <div class="flex items-center justify-between">
                         <span>Created</span>
-                        <span class="font-medium text-foreground">{{ $role->created_at->format('M d, Y') }}</span>
+                        <span class="font-medium text-foreground">{{ $role->created_at->format('d/m/Y') }}</span>
                     </div>
                 </div>
 

@@ -54,7 +54,7 @@
                     </div>
                     <div>
                         <div class="text-xs uppercase text-muted-foreground">{{ __('locale.labels.date_joined') }}</div>
-                        <div class="text-sm text-foreground">{{ $tenant->created_at->format('M d, Y') }}</div>
+                        <div class="text-sm text-foreground">{{ $tenant->created_at->format('d/m/Y') }}</div>
                     </div>
                 </div>
             </div>

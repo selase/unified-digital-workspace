@@ -44,7 +44,7 @@
                 <div>
                     <dt class="text-xs uppercase text-muted-foreground">Created At</dt>
                     <dd class="mt-1 text-sm font-medium text-foreground">
-                        {{ $lead->created_at->format('M d, Y H:i:s') }} ({{ $lead->created_at->diffForHumans() }})
+                        {{ $lead->created_at->format('d/m/Y H:i:s') }} ({{ $lead->created_at->diffForHumans() }})
                     </dd>
                 </div>
                 <div class="md:col-span-2">

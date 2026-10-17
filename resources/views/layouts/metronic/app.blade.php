@@ -20,7 +20,16 @@
         }
     </style>
 
-    @include('layouts.admin.partials.custom-styles')
+    @php
+        $primaryColor = App\Libraries\Helper::getTenantBranding('primary_color', config('app.system_setting.theme_primary_color'));
+    @endphp
+    @if($primaryColor)
+        <style>
+            :root {
+                --primary: {{ $primaryColor }};
+            }
+        </style>
+    @endif
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 </head>
 <body class="antialiased flex h-full text-base text-foreground bg-background demo1 kt-sidebar-fixed kt-header-fixed">
@@ -32,6 +41,12 @@
         themeMode = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
     }
 
+    if (localStorage.getItem('kt-sidebar-collapsed') === 'true') {
+        document.documentElement.classList.add('kt-sidebar-collapse-pending');
+        document.addEventListener('DOMContentLoaded', () => {
+            document.body.classList.add('kt-sidebar-collapse');
+        });
+    }
     document.documentElement.classList.add(themeMode);
 </script>
 
@@ -119,6 +134,18 @@
         })
         ->take(8)
         ->values();
+
+    $unreadNotificationCount = 0;
+    $recentNotifications = collect();
+    if ($user instanceof \App\Models\User) {
+        try {
+            $unreadNotificationCount = $user->unreadNotifications()->count();
+            $recentNotifications = $user->notifications()->latest()->limit(15)->get();
+        } catch (\Throwable) {
+            $unreadNotificationCount = 0;
+            $recentNotifications = collect();
+        }
+    }
 @endphp
 
 <div class="flex grow">
@@ -348,8 +375,13 @@
                         <i class="ki-filled ki-magnifier text-lg"></i>
                     </button>
 
-                    <button class="kt-btn kt-btn-ghost kt-btn-icon size-9 rounded-full hover:bg-primary/10 hover:[&_i]:text-primary" data-kt-drawer-toggle="#notifications_drawer" type="button">
+                    <button class="relative kt-btn kt-btn-ghost kt-btn-icon size-9 rounded-full hover:bg-primary/10 hover:[&_i]:text-primary" data-kt-drawer-toggle="#notifications_drawer" type="button" title="Notifications">
                         <i class="ki-filled ki-notification-status text-lg"></i>
+                        @if($unreadNotificationCount > 0)
+                            <span class="absolute -top-0.5 -end-0.5 flex items-center justify-center min-w-[18px] h-[18px] px-1 rounded-full bg-danger text-[10px] font-bold text-white" data-test="unread-notifications-badge">
+                                {{ $unreadNotificationCount > 99 ? '99+' : $unreadNotificationCount }}
+                            </span>
+                        @endif
                     </button>
 
                     <button class="kt-btn kt-btn-ghost kt-btn-icon size-9 rounded-full hover:bg-primary/10 hover:[&_i]:text-primary" data-kt-drawer-toggle="#chat_drawer" type="button">
@@ -495,23 +527,60 @@
 
 <div class="hidden kt-drawer kt-drawer-end card flex-col max-w-[90%] w-[420px] top-5 bottom-5 end-5 rounded-xl border border-border" data-kt-drawer="true" data-kt-drawer-container="body" id="notifications_drawer">
     <div class="flex items-center justify-between gap-2.5 text-sm text-mono font-semibold px-5 py-3 border-b border-b-border">
-        Notifications
-        <button class="kt-btn kt-btn-sm kt-btn-icon kt-btn-dim shrink-0" data-kt-drawer-dismiss="true" type="button">
-            <i class="ki-filled ki-cross"></i>
-        </button>
-    </div>
-    <div class="kt-scrollable-y-auto grow px-5 py-4 space-y-4" data-kt-scrollable="true" data-kt-scrollable-dependencies="#header" data-kt-scrollable-max-height="auto" data-kt-scrollable-offset="120px">
-        <div class="rounded-lg border border-border bg-accent/40 p-3">
-            <p class="text-sm font-semibold text-foreground">Workspace ready</p>
-            <p class="text-xs text-muted-foreground mt-1">Metronic header actions are enabled for this workspace.</p>
+        <div class="flex items-center gap-2">
+            <span>Notifications</span>
+            @if($unreadNotificationCount > 0)
+                <span class="kt-badge kt-badge-xs kt-badge-primary">{{ $unreadNotificationCount }} unread</span>
+            @endif
         </div>
-        @forelse($quickAccessLinks->take(5) as $quickAccessLink)
-            <a class="flex items-center justify-between rounded-lg border border-border bg-background px-3 py-2 hover:bg-accent/50 transition-colors" href="{{ $quickAccessLink['url'] }}">
-                <span class="text-sm font-medium text-foreground">{{ $quickAccessLink['label'] }}</span>
-                <i class="ki-filled ki-right text-xs text-muted-foreground"></i>
-            </a>
+        <div class="flex items-center gap-2">
+            @if($unreadNotificationCount > 0 && \Illuminate\Support\Facades\Route::has('notifications.mark-all-read'))
+                <form action="{{ route('notifications.mark-all-read') }}" method="POST">
+                    @csrf
+                    <button class="kt-btn kt-btn-xs kt-btn-light" type="submit">Mark all read</button>
+                </form>
+            @endif
+            <button class="kt-btn kt-btn-sm kt-btn-icon kt-btn-dim shrink-0" data-kt-drawer-dismiss="true" type="button">
+                <i class="ki-filled ki-cross"></i>
+            </button>
+        </div>
+    </div>
+    <div class="kt-scrollable-y-auto grow px-5 py-4 space-y-3" data-kt-scrollable="true" data-kt-scrollable-dependencies="#header" data-kt-scrollable-max-height="auto" data-kt-scrollable-offset="120px">
+        @forelse($recentNotifications as $notificationItem)
+            @php
+                $notifData = is_array($notificationItem->data) ? $notificationItem->data : [];
+                $notifTitle = (string) ($notifData['title'] ?? $notifData['subject'] ?? 'Workspace Notification');
+                $notifSender = (string) ($notifData['sender_name'] ?? 'System');
+                $notifUrl = (string) ($notifData['action_url'] ?? '#');
+                $isUnread = $notificationItem->read_at === null;
+            @endphp
+            <div class="rounded-lg border {{ $isUnread ? 'border-primary/40 bg-primary/5' : 'border-border bg-background' }} p-3 space-y-2">
+                <div class="flex items-start justify-between gap-2">
+                    <a class="text-sm font-semibold text-foreground hover:text-primary" href="{{ $notifUrl }}">
+                        {{ $notifTitle }}
+                    </a>
+                    @if($isUnread)
+                        <span class="size-2 rounded-full bg-primary shrink-0 mt-1.5"></span>
+                    @endif
+                </div>
+                <div class="flex items-center justify-between text-xs text-muted-foreground">
+                    <span>From: {{ $notifSender }}</span>
+                    <span>{{ $notificationItem->created_at?->format(config('app.datetime_format', 'd/m/Y H:i')) }}</span>
+                </div>
+                @if($isUnread && \Illuminate\Support\Facades\Route::has('notifications.mark-read'))
+                    <div class="flex justify-end pt-1">
+                        <form action="{{ route('notifications.mark-read', $notificationItem->id) }}" method="POST">
+                            @csrf
+                            <button class="text-xs font-medium text-primary hover:underline" type="submit">Mark as read</button>
+                        </form>
+                    </div>
+                @endif
+            </div>
         @empty
-            <p class="text-sm text-muted-foreground">No new notifications right now.</p>
+            <div class="rounded-lg border border-border bg-accent/40 p-4 text-center">
+                <p class="text-sm font-medium text-foreground">All caught up</p>
+                <p class="text-xs text-muted-foreground mt-1">New memo dispatches, direct messages, and workflow alerts will appear here.</p>
+            </div>
         @endforelse
     </div>
 </div>
@@ -565,7 +634,15 @@
     };
 
     const normalizeWorkspaceChrome = () => {
-        document.body.classList.remove('kt-sidebar-hide', 'kt-sidebar-hidden', 'kt-sidebar-collapse', 'kt-sidebar-collapsed');
+        document.body.classList.remove('kt-sidebar-hide', 'kt-sidebar-hidden');
+
+        if (localStorage.getItem('kt-sidebar-collapsed') === 'true') {
+            document.body.classList.add('kt-sidebar-collapse');
+            const toggleBtn = document.getElementById('sidebar_toggle');
+            if (toggleBtn) {
+                toggleBtn.classList.add('active');
+            }
+        }
 
         const sidebar = document.getElementById('sidebar');
         if (sidebar) {
@@ -584,7 +661,19 @@
         normalizeWorkspaceChrome();
     };
 
-    document.addEventListener('DOMContentLoaded', forceResetUiLayers);
+    document.addEventListener('DOMContentLoaded', () => {
+        forceResetUiLayers();
+
+        const toggleBtn = document.getElementById('sidebar_toggle');
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', () => {
+                setTimeout(() => {
+                    const isCollapsed = document.body.classList.contains('kt-sidebar-collapse');
+                    localStorage.setItem('kt-sidebar-collapsed', isCollapsed ? 'true' : 'false');
+                }, 100);
+            });
+        }
+    });
     document.addEventListener('livewire:navigated', forceResetUiLayers);
     document.addEventListener('turbo:load', forceResetUiLayers);
     window.addEventListener('pageshow', forceResetUiLayers);

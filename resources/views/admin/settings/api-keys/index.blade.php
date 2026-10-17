@@ -69,7 +69,7 @@
                                 <td><code>sk_...{{ $key->key_hint }}</code></td>
                                 <td>{{ $key->user?->displayName() ?? 'System' }}</td>
                                 <td>{{ $key->last_used_at?->diffForHumans() ?? __('Never') }}</td>
-                                <td>{{ $key->created_at->format('Y-m-d H:i') }}</td>
+                                <td>{{ $key->created_at->format('d/m/Y H:i') }}</td>
                                 <td>
                                     @if($key->isRevoked())
                                         <span class="kt-badge kt-badge-outline kt-badge-danger">{{ __('Revoked') }}</span>

@@ -69,7 +69,7 @@
                     <tbody class="text-sm text-foreground">
                         @forelse($recentUsage as $usage)
                             <tr>
-                                <td>{{ $usage->created_at->format('M d, H:i:s') }}</td>
+                                <td>{{ $usage->created_at->format('d/m/Y H:i:s') }}</td>
                                 <td><span class="kt-badge kt-badge-outline kt-badge-primary">{{ $usage->model }}</span></td>
                                 <td>
                                     @if($usage->user)

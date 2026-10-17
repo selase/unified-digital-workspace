@@ -65,7 +65,7 @@
                 </div>
                 <div>
                     <p class="text-xs uppercase text-muted-foreground">Created</p>
-                    <p class="mt-1 text-sm text-foreground">{{ $user->created_at?->format('M d, Y H:i') }}</p>
+                    <p class="mt-1 text-sm text-foreground">{{ $user->created_at?->format('d/m/Y H:i') }}</p>
                 </div>
             </div>
         </div>

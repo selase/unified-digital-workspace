@@ -81,7 +81,7 @@
                         </div>
                         <div>
                             <div class="text-xs uppercase text-muted-foreground">Created At</div>
-                            <div class="text-sm text-foreground">{{ $user->created_at?->format('M d, Y') }}</div>
+                            <div class="text-sm text-foreground">{{ $user->created_at?->format('d/m/Y') }}</div>
                         </div>
                         <div>
                             <div class="text-xs uppercase text-muted-foreground">Last Seen</div>

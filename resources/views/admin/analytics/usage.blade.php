@@ -227,7 +227,7 @@
                                 <td>{{ $metricUnit }}</td>
                                 <td>System</td>
                                 <td>—</td>
-                                <td>{{ now()->format('M d, Y') }}</td>
+                                <td>{{ now()->format('d/m/Y') }}</td>
                             </tr>
                         @empty
                             <tr>

@@ -1057,7 +1057,7 @@ it('renders the admin profile view with the metronic layout', function (): void 
         'breadcrumbs' => [],
     ])->render();
 
-    expect($html)->toContain($user->displayName());
+    expect($html)->toContain(e($user->displayName()));
     expect($html)->toContain('Account Details');
     expect($html)->toContain('assets/metronic/css/styles.css');
 });
