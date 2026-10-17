@@ -514,7 +514,12 @@ final class ModuleManager
         // by an earlier seeder or module — the role-grouping UI relies on stable
         // categories (e.g. existing "user" / "role" groups must not collapse into
         // a single "core" group just because Core now declares those permissions).
-        foreach ($permissions as $permission) {
+        $permissionNames = [];
+        foreach ($permissions as $key => $value) {
+            $permissionNames[] = is_string($key) ? $key : (string) $value;
+        }
+
+        foreach ($permissionNames as $permission) {
             Permission::query()->firstOrCreate([
                 'name' => $permission,
             ], [
@@ -542,15 +547,20 @@ final class ModuleManager
             return;
         }
 
+        $permissionNames = [];
+        foreach ($permissions as $key => $value) {
+            $permissionNames[] = is_string($key) ? $key : (string) $value;
+        }
+
         $previousTeamId = app(PermissionRegistrar::class)->getPermissionsTeamId();
         setPermissionsTeamId($tenant->id);
 
         try {
             $tenant->users()
                 ->get()
-                ->each(function ($user) use ($permissions): void {
+                ->each(function ($user) use ($permissionNames): void {
                     if ($user->hasRole(['Org Superadmin', 'Org Admin'])) {
-                        $user->givePermissionTo($permissions);
+                        $user->givePermissionTo($permissionNames);
                     }
                 });
         } finally {

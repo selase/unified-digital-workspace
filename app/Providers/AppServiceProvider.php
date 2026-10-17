@@ -120,6 +120,34 @@ final class AppServiceProvider extends ServiceProvider
     private function registerBladeDirectives(): void
     {
         \Illuminate\Support\Facades\Blade::if('feature', fn (string $key) => app(\App\Services\Tenancy\FeatureService::class)->enabled($key));
+
+        \Illuminate\Support\Carbon::macro('toInstitutionalDate', function (): string {
+            /** @var \Carbon\CarbonInterface $this */
+            return $this->format((string) config('app.date_format', 'd/m/Y'));
+        });
+
+        \Illuminate\Support\Carbon::macro('toInstitutionalDateTime', function (): string {
+            /** @var \Carbon\CarbonInterface $this */
+            return $this->format((string) config('app.datetime_format', 'd/m/Y H:i'));
+        });
+
+        \Carbon\CarbonImmutable::macro('toInstitutionalDate', function (): string {
+            /** @var \Carbon\CarbonInterface $this */
+            return $this->format((string) config('app.date_format', 'd/m/Y'));
+        });
+
+        \Carbon\CarbonImmutable::macro('toInstitutionalDateTime', function (): string {
+            /** @var \Carbon\CarbonInterface $this */
+            return $this->format((string) config('app.datetime_format', 'd/m/Y H:i'));
+        });
+
+        \Illuminate\Support\Facades\Blade::directive('date', function (string $expression): string {
+            return "<?php echo ({$expression}) ? \Illuminate\Support\Carbon::parse({$expression})->format(config('app.date_format', 'd/m/Y')) : '—'; ?>";
+        });
+
+        \Illuminate\Support\Facades\Blade::directive('datetime', function (string $expression): string {
+            return "<?php echo ({$expression}) ? \Illuminate\Support\Carbon::parse({$expression})->format(config('app.datetime_format', 'd/m/Y H:i')) : '—'; ?>";
+        });
     }
 
     private function configureQueue(): void

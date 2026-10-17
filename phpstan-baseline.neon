@@ -391,12 +391,6 @@ parameters:
 			path: app/Http/Controllers/Admin/ResendAccountPasswordController.php
 
 		-
-			rawMessage: Access to an undefined property App\Models\Role::$tenant_id.
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/Admin/RoleController.php
-
-		-
 			rawMessage: Access to an undefined property Spatie\Permission\Contracts\Role::$tenant_id.
 			identifier: property.notFound
 			count: 1
@@ -937,12 +931,6 @@ parameters:
 			path: app/Http/Controllers/Tenant/UserController.php
 
 		-
-			rawMessage: Access to an undefined property Illuminate\Database\Eloquent\Model::$id.
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/Tenant/UserController.php
-
-		-
 			rawMessage: 'Method App\Http\Controllers\Tenant\UserController::getTenant() has no return type specified.'
 			identifier: missingType.return
 			count: 1
@@ -971,30 +959,6 @@ parameters:
 			identifier: missingType.iterableValue
 			count: 1
 			path: app/Http/Requests/Auth/LoginRequest.php
-
-		-
-			rawMessage: Access to an undefined property Spatie\Permission\Contracts\Role::$tenant_id.
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Requests/User/StoreUserRequest.php
-
-		-
-			rawMessage: Negated boolean expression is always false.
-			identifier: booleanNot.alwaysFalse
-			count: 1
-			path: app/Http/Requests/User/StoreUserRequest.php
-
-		-
-			rawMessage: Access to an undefined property Spatie\Permission\Contracts\Role::$tenant_id.
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Requests/User/UpdateUserRequest.php
-
-		-
-			rawMessage: Negated boolean expression is always false.
-			identifier: booleanNot.alwaysFalse
-			count: 1
-			path: app/Http/Requests/User/UpdateUserRequest.php
 
 		-
 			rawMessage: Instanceof between App\Models\Tenant and App\Models\Tenant will always evaluate to true.
@@ -1501,12 +1465,6 @@ parameters:
 			path: app/Models/Permission.php
 
 		-
-			rawMessage: Access to an undefined property App\Models\Role::$tenant_id.
-			identifier: property.notFound
-			count: 1
-			path: app/Models/Role.php
-
-		-
 			rawMessage: 'Method App\Models\Role::generateUuid() has no return type specified.'
 			identifier: missingType.return
 			count: 1
@@ -1897,22 +1855,10 @@ parameters:
 			path: app/Models/WebhookEndpoint.php
 
 		-
-			rawMessage: Expression on left side of ?? is not nullable.
-			identifier: nullCoalesce.expr
-			count: 1
-			path: app/Modules/CmsCore/Http/Controllers/Web/CmsMediaLibraryController.php
-
-		-
 			rawMessage: Using nullsafe property access on non-nullable type App\Models\User. Use -> instead.
 			identifier: nullsafe.neverNull
 			count: 2
 			path: app/Modules/CmsCore/Http/Controllers/Web/CmsMediaLibraryController.php
-
-		-
-			rawMessage: 'Method App\Modules\CmsCore\Http\Controllers\Web\CmsPostLibraryController::formOptions() should return array{post: App\Modules\CmsCore\Models\Post|null, postTypes: Illuminate\Database\Eloquent\Collection<int, App\Modules\CmsCore\Models\PostType>, categories: Illuminate\Database\Eloquent\Collection<int, App\Modules\CmsCore\Models\Category>, tags: Illuminate\Database\Eloquent\Collection<int, App\Modules\CmsCore\Models\Tag>, mediaItems: Illuminate\Database\Eloquent\Collection<int, App\Modules\CmsCore\Models\Media>, parentPosts: Illuminate\Database\Eloquent\Collection<int, App\Modules\CmsCore\Models\Post>, statusOptions: array<int, string>, seoMeta: array{seo_title: string, seo_description: string, seo_canonical: string}} but returns array{post: App\Modules\CmsCore\Models\Post|null, postTypes: Illuminate\Database\Eloquent\Collection<int, App\Modules\CmsCore\Models\PostType>, categories: Illuminate\Database\Eloquent\Collection<int, App\Modules\CmsCore\Models\Category>, tags: Illuminate\Database\Eloquent\Collection<int, App\Modules\CmsCore\Models\Tag>, mediaItems: Illuminate\Database\Eloquent\Collection<int, App\Modules\CmsCore\Models\Media>, parentPosts: Illuminate\Database\Eloquent\Collection<int, App\Modules\CmsCore\Models\Post>, statusOptions: array{''draft'', ''published'', ''scheduled'', ''archived''}, seoMeta: array{seo_title: string, seo_description: string, seo_canonical: string}, ...}.'
-			identifier: return.type
-			count: 1
-			path: app/Modules/CmsCore/Http/Controllers/Web/CmsPostLibraryController.php
 
 		-
 			rawMessage: 'Parameter #2 $values of method App\Modules\CmsCore\Services\CmsSeoService::saveForPost() expects array{seo_title?: string|null, seo_description?: string|null, seo_canonical?: string|null}, array given.'
@@ -2233,32 +2179,14 @@ parameters:
 			path: app/Modules/Forums/Http/Controllers/Api/V1/ForumThreadController.php
 
 		-
-			rawMessage: Using nullsafe property access on non-nullable type App\Models\User. Use -> instead.
-			identifier: nullsafe.neverNull
-			count: 1
-			path: app/Modules/Forums/Http/Controllers/Web/ForumMessageCenterController.php
-
-		-
 			rawMessage: 'Class App\Modules\Forums\Models\ForumChannel uses generic trait Illuminate\Database\Eloquent\Factories\HasFactory but does not specify its types: TFactory'
 			identifier: missingType.generics
 			count: 1
 			path: app/Modules/Forums/Models/ForumChannel.php
 
 		-
-			rawMessage: 'Method App\Modules\Forums\Models\ForumChannel::generateUuid() has no return type specified.'
-			identifier: missingType.return
-			count: 1
-			path: app/Modules/Forums/Models/ForumChannel.php
-
-		-
 			rawMessage: 'Class App\Modules\Forums\Models\ForumMessage uses generic trait Illuminate\Database\Eloquent\Factories\HasFactory but does not specify its types: TFactory'
 			identifier: missingType.generics
-			count: 1
-			path: app/Modules/Forums/Models/ForumMessage.php
-
-		-
-			rawMessage: 'Method App\Modules\Forums\Models\ForumMessage::generateUuid() has no return type specified.'
-			identifier: missingType.return
 			count: 1
 			path: app/Modules/Forums/Models/ForumMessage.php
 
@@ -2289,12 +2217,6 @@ parameters:
 		-
 			rawMessage: 'Class App\Modules\Forums\Models\ForumThread uses generic trait Illuminate\Database\Eloquent\Factories\HasFactory but does not specify its types: TFactory'
 			identifier: missingType.generics
-			count: 1
-			path: app/Modules/Forums/Models/ForumThread.php
-
-		-
-			rawMessage: 'Method App\Modules\Forums\Models\ForumThread::generateUuid() has no return type specified.'
-			identifier: missingType.return
 			count: 1
 			path: app/Modules/Forums/Models/ForumThread.php
 
@@ -2349,12 +2271,6 @@ parameters:
 		-
 			rawMessage: 'Class App\Modules\Memos\Models\Memo uses generic trait Illuminate\Database\Eloquent\Factories\HasFactory but does not specify its types: TFactory'
 			identifier: missingType.generics
-			count: 1
-			path: app/Modules/Memos/Models/Memo.php
-
-		-
-			rawMessage: 'Method App\Modules\Memos\Models\Memo::generateUuid() has no return type specified.'
-			identifier: missingType.return
 			count: 1
 			path: app/Modules/Memos/Models/Memo.php
 
@@ -2424,17 +2340,6 @@ parameters:
 			count: 1
 			path: app/Modules/ProjectManagement/Http/Resources/ProjectMemberResource.php
 
-		-
-			rawMessage: 'Cannot call method toDateString() on string.'
-			identifier: method.nonObject
-			count: 2
-			path: app/Modules/ProjectManagement/Http/Resources/ProjectResource.php
-
-		-
-			rawMessage: 'Cannot call method toIso8601String() on string.'
-			identifier: method.nonObject
-			count: 1
-			path: app/Modules/ProjectManagement/Http/Resources/ProjectResource.php
 
 		-
 			rawMessage: 'Cannot call method toDateString() on string.'
@@ -2673,12 +2578,6 @@ parameters:
 		-
 			rawMessage: 'Class App\Modules\QualityMonitoring\Models\Workplan uses generic trait Illuminate\Database\Eloquent\Factories\HasFactory but does not specify its types: TFactory'
 			identifier: missingType.generics
-			count: 1
-			path: app/Modules/QualityMonitoring/Models/Workplan.php
-
-		-
-			rawMessage: 'Method App\Modules\QualityMonitoring\Models\Workplan::generateUuid() has no return type specified.'
-			identifier: missingType.return
 			count: 1
 			path: app/Modules/QualityMonitoring/Models/Workplan.php
 

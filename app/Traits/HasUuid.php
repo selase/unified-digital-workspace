@@ -19,7 +19,7 @@ trait HasUuid
         });
     }
 
-    public static function generateUuid()
+    public static function generateUuid(): \Ramsey\Uuid\UuidInterface
     {
         return Str::uuid();
     }

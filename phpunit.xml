@@ -9,6 +9,7 @@
     </testsuite>
   </testsuites>
   <php>
+    <ini name="memory_limit" value="512M"/>
     <!--
       Tests run against PostgreSQL to match production. The dedicated test DB
       (default name `unified_digital_workspace_testing` locally, `testing` in

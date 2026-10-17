@@ -63,6 +63,10 @@ final class AuthServiceProvider extends ServiceProvider
         // Returning null falls through to Spatie's normal permission check
         // so a tenant that already has the new-style row works without alias.
         \Illuminate\Support\Facades\Gate::before(function ($user, string $ability) {
+            if ($user instanceof \App\Models\User && app(\App\Services\Auth\OrgPermissionResolver::class)->userHasInheritedPermission($user, $ability)) {
+                return true;
+            }
+
             if (! \App\Services\Auth\AbilityAliasService::isNewStyle($ability)) {
                 return null;
             }

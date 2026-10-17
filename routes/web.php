@@ -108,6 +108,13 @@ Route::group(['middleware' => ['auth', '2fa_challenge', 'onboarding']], function
         Route::post('switch', [App\Http\Controllers\Tenancy\TenantSwitchController::class, 'switch'])->name('switch');
     });
 
+    // Unified In-App & Email Notification Center routes
+    Route::group(['prefix' => 'notifications', 'as' => 'notifications.'], function (): void {
+        Route::get('/', [App\Http\Controllers\Tenant\NotificationCenterController::class, 'index'])->name('index');
+        Route::post('/read-all', [App\Http\Controllers\Tenant\NotificationCenterController::class, 'markAllAsRead'])->name('mark-all-read');
+        Route::post('/{notification}/read', [App\Http\Controllers\Tenant\NotificationCenterController::class, 'markAsRead'])->name('mark-read');
+    });
+
     // User impersonation routes
     Route::group(['prefix' => 'impersonation'], function (): void {
         Route::get('stop-impersonation', [ImpersonateUserController::class, 'stopImpersonation'])

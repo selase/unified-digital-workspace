@@ -105,6 +105,10 @@ return [
 
     'timezone' => 'UTC',
 
+    'date_format' => env('APP_DATE_FORMAT', 'd/m/Y'),
+
+    'datetime_format' => env('APP_DATETIME_FORMAT', 'd/m/Y H:i'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Locale Configuration

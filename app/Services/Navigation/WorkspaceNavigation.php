@@ -659,6 +659,175 @@ final class WorkspaceNavigation
                     ],
                 ],
             ],
+            'crm' => [
+                'label' => 'CRM & Clients',
+                'icon' => 'ki-filled ki-Briefcase',
+                'permission' => 'crm.view',
+                'home_route' => 'crm.index',
+                'sidebar' => [
+                    ['label' => 'CRM Pipeline Hub', 'route' => 'crm.index'],
+                ],
+                'top_menu' => [
+                    [
+                        'label' => 'Client Operations',
+                        'items' => [
+                            ['label' => 'CRM Pipeline Hub', 'route' => 'crm.index'],
+                        ],
+                    ],
+                ],
+            ],
+            'vendor-marketplace' => [
+                'label' => 'Vendors & Escrow',
+                'icon' => 'ki-filled ki-shop',
+                'permission' => 'vendors.view',
+                'home_route' => 'vendor-marketplace.index',
+                'sidebar' => [
+                    ['label' => 'Marketplace & Escrow Hub', 'route' => 'vendor-marketplace.index'],
+                ],
+                'top_menu' => [
+                    [
+                        'label' => 'Marketplace & Escrow',
+                        'items' => [
+                            ['label' => 'Marketplace & Escrow Hub', 'route' => 'vendor-marketplace.index'],
+                        ],
+                    ],
+                ],
+            ],
+            'real-estate' => [
+                'label' => 'Real Estate & Land',
+                'icon' => 'ki-filled ki-map',
+                'permission' => 'realestate.view',
+                'home_route' => 'real-estate.index',
+                'sidebar' => [
+                    ['label' => 'Land Compliance Hub', 'route' => 'real-estate.index'],
+                    ['label' => 'Client Portal', 'route' => 'real-estate.portal.index'],
+                    ['label' => 'Public Listings', 'route' => 'real-estate.public.catalog'],
+                ],
+                'top_menu' => [
+                    [
+                        'label' => 'Real Estate Operations',
+                        'items' => [
+                            ['label' => 'Land Compliance Hub', 'route' => 'real-estate.index'],
+                            ['label' => 'Client Portal', 'route' => 'real-estate.portal.index'],
+                            ['label' => 'Public Listings', 'route' => 'real-estate.public.catalog'],
+                        ],
+                    ],
+                ],
+            ],
+            'facilities-management' => [
+                'label' => 'Facilities & Assets',
+                'icon' => 'ki-filled ki-element-11',
+                'permission' => 'facilities.view',
+                'home_route' => 'facilities-management.index',
+                'sidebar' => [
+                    ['label' => 'Facilities & Asset Hub', 'route' => 'facilities-management.index'],
+                ],
+                'top_menu' => [
+                    [
+                        'label' => 'Facilities Operations',
+                        'items' => [
+                            ['label' => 'Facilities & Asset Hub', 'route' => 'facilities-management.index'],
+                        ],
+                    ],
+                ],
+            ],
+            'intranet' => [
+                'label' => 'Intranet Hub',
+                'icon' => 'ki-filled ki-compass',
+                'permission' => 'intranet.view',
+                'home_route' => 'intranet.index',
+                'sidebar' => [
+                    ['label' => 'Intranet Portal', 'route' => 'intranet.index'],
+                ],
+                'top_menu' => [
+                    [
+                        'label' => 'Intranet Operations',
+                        'items' => [
+                            ['label' => 'Intranet Portal', 'route' => 'intranet.index'],
+                        ],
+                    ],
+                ],
+            ],
+            'forms' => [
+                'label' => 'Forms & Surveys',
+                'icon' => 'ki-filled ki-clipboard-check',
+                'permission' => 'forms.view',
+                'home_route' => 'forms.index',
+                'sidebar' => [
+                    ['label' => 'Forms Directory', 'route' => 'forms.index'],
+                    ['label' => 'Create New Form', 'route' => 'forms.create'],
+                ],
+                'top_menu' => [
+                    [
+                        'label' => 'Forms Operations',
+                        'items' => [
+                            ['label' => 'Forms Directory', 'route' => 'forms.index'],
+                            ['label' => 'Create Form', 'route' => 'forms.create'],
+                        ],
+                    ],
+                ],
+            ],
+            'store' => [
+                'label' => 'Store & Quotas',
+                'icon' => 'ki-filled ki-handcart',
+                'permission' => 'store.view',
+                'home_route' => 'store.index',
+                'sidebar' => [
+                    ['label' => 'Store & Quota Hub', 'route' => 'store.index'],
+                    ['label' => 'Platform Add-On Store', 'route' => 'store.platform'],
+                    ['label' => 'Catalog Products', 'route' => 'store.products'],
+                    ['label' => 'Order Register', 'route' => 'store.orders'],
+                ],
+                'top_menu' => [
+                    [
+                        'label' => 'Store Operations',
+                        'items' => [
+                            ['label' => 'Store Hub', 'route' => 'store.index'],
+                            ['label' => 'Platform Quotas', 'route' => 'store.platform'],
+                            ['label' => 'Catalog Products', 'route' => 'store.products'],
+                            ['label' => 'Order Register', 'route' => 'store.orders'],
+                        ],
+                    ],
+                ],
+            ],
+            'reports' => [
+                'label' => 'Reports & Analytics',
+                'icon' => 'ki-filled ki-chart-simple',
+                'permission' => 'reports.view',
+                'home_route' => 'reports.index',
+                'sidebar' => [
+                    ['label' => 'Saved Reports', 'route' => 'reports.index'],
+                    ['label' => 'Create Custom Report', 'route' => 'reports.create'],
+                ],
+                'top_menu' => [
+                    [
+                        'label' => 'Reporting Operations',
+                        'items' => [
+                            ['label' => 'Saved Reports', 'route' => 'reports.index'],
+                            ['label' => 'Create Report', 'route' => 'reports.create'],
+                        ],
+                    ],
+                ],
+            ],
+            'workflow-automation' => [
+                'label' => 'Workflow Automation',
+                'icon' => 'ki-filled ki-technology-4',
+                'permission' => 'workflows.view',
+                'home_route' => 'workflow-automation.index',
+                'sidebar' => [
+                    ['label' => 'Automation Rules', 'route' => 'workflow-automation.index'],
+                    ['label' => 'Create Rule', 'route' => 'workflow-automation.create'],
+                ],
+                'top_menu' => [
+                    [
+                        'label' => 'Workflow Engine',
+                        'items' => [
+                            ['label' => 'Automation Rules', 'route' => 'workflow-automation.index'],
+                            ['label' => 'Create Rule', 'route' => 'workflow-automation.create'],
+                        ],
+                    ],
+                ],
+            ],
         ];
     }
 }
