@@ -22,6 +22,8 @@ final class ReportGeneratorService
 
     /**
      * Builds query for report definition.
+     *
+     * @return Builder<\Illuminate\Database\Eloquent\Model>
      */
     public function buildQuery(ReportDefinition $report, User $user, string $tenantId): Builder
     {
@@ -32,7 +34,7 @@ final class ReportGeneratorService
         $config = $this->registry->getSourceConfig($report->data_source);
         $modelClass = $config['model'];
 
-        /** @var Builder $query */
+        /** @var Builder<\Illuminate\Database\Eloquent\Model> $query */
         $query = $modelClass::query()->where('tenant_id', $tenantId);
 
         // Date filter
@@ -93,7 +95,7 @@ final class ReportGeneratorService
      *     total: int
      * }
      */
-    public function runPreview(ReportDefinition $report, User $user, string $tenantId, int $limit = 50): array
+    public function getReportData(ReportDefinition $report, User $user, string $tenantId, int $limit = 50): array
     {
         $query = $this->buildQuery($report, $user, $tenantId);
         $total = $query->count();
@@ -120,21 +122,63 @@ final class ReportGeneratorService
             $rows[] = $row;
         }
 
-        // Log execution
-        ReportExecutionLog::create([
-            'tenant_id' => $tenantId,
-            'report_definition_id' => $report->id,
-            'user_id' => $user->uuid !== null ? (string) $user->uuid : null,
-            'export_format' => 'preview',
-            'rows_count' => count($rows),
-            'executed_at' => now(),
-        ]);
-
         return [
             'headers' => $headers,
             'rows' => $rows,
             'total' => $total,
         ];
+    }
+
+    /**
+     * @return array{
+     *     headers: array<string, string>,
+     *     rows: list<array<string, mixed>>,
+     *     total: int
+     * }
+     */
+    public function runPreview(ReportDefinition $report, User $user, string $tenantId, int $limit = 50): array
+    {
+        $data = $this->getReportData($report, $user, $tenantId, $limit);
+
+        // Log execution
+        ReportExecutionLog::create([
+            'tenant_id' => $tenantId,
+            'report_definition_id' => $report->id,
+            'user_id' => (string) $user->uuid,
+            'export_format' => 'preview',
+            'rows_count' => count($data['rows']),
+            'executed_at' => now(),
+        ]);
+
+        return $data;
+    }
+
+    public function generatePdf(ReportDefinition $report, User $user, string $tenantId, int $limit = 500): \Illuminate\Http\Response
+    {
+        $data = $this->getReportData($report, $user, $tenantId, $limit);
+
+        $filename = 'report-'.str_replace(' ', '-', mb_strtolower($report->name)).'-'.date('YmdHis').'.pdf';
+
+        ReportExecutionLog::create([
+            'tenant_id' => $tenantId,
+            'report_definition_id' => $report->id,
+            'user_id' => (string) $user->uuid,
+            'export_format' => 'pdf',
+            'rows_count' => count($data['rows']),
+            'executed_at' => now(),
+        ]);
+
+        /** @var \Barryvdh\DomPDF\PDF $pdf */
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('reports::pdf', [
+            'report' => $report,
+            'headers' => $data['headers'],
+            'rows' => $data['rows'],
+            'total' => $data['total'],
+        ]);
+
+        $pdf->setPaper('a4', 'landscape');
+
+        return $pdf->download($filename);
     }
 
     public function streamCsv(ReportDefinition $report, User $user, string $tenantId): StreamedResponse
@@ -185,7 +229,7 @@ final class ReportGeneratorService
             ReportExecutionLog::create([
                 'tenant_id' => $tenantId,
                 'report_definition_id' => $report->id,
-                'user_id' => $user->uuid !== null ? (string) $user->uuid : null,
+                'user_id' => (string) $user->uuid,
                 'export_format' => 'csv',
                 'rows_count' => $rowCount,
                 'executed_at' => now(),

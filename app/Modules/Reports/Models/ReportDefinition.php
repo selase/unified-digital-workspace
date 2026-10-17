@@ -10,6 +10,20 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property int $id
+ * @property string $tenant_id
+ * @property string $name
+ * @property string|null $description
+ * @property string $data_source
+ * @property array<int, string> $selected_columns
+ * @property array<string, mixed>|null $filters
+ * @property string|null $date_column
+ * @property bool $is_public
+ * @property string|null $created_by_user_id
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ */
 final class ReportDefinition extends Model
 {
     use HasFactory;

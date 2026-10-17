@@ -12,8 +12,11 @@
             <a href="{{ route('reports.index') }}" class="btn btn-sm btn-light me-2">
                 <i class="ki-duotone ki-arrow-left fs-2"></i> All Reports
             </a>
-            <a href="{{ route('reports.export.csv', $report) }}" class="btn btn-sm btn-success">
+            <a href="{{ route('reports.export.csv', $report) }}" class="btn btn-sm btn-success me-2">
                 <i class="ki-duotone ki-file-down fs-2"></i> Export CSV
+            </a>
+            <a href="{{ route('reports.export.pdf', $report) }}" class="btn btn-sm btn-danger">
+                <i class="ki-duotone ki-document fs-2"></i> Export PDF
             </a>
         </x-slot:actions>
     </x-metronic.page-header>

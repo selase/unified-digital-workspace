@@ -13,7 +13,7 @@ use Spatie\Permission\Models\Role;
 
 describe('Phase 26: Cross-Module Custom Report Builder & CSV Exporter (TRK-REPORT-BUILDER)', function () {
     beforeEach(function () {
-        foreach (['reports.view', 'reports.create', 'reports.export', 'incidents.view', 'crm.inquiries.view'] as $name) {
+        foreach (['reports.view', 'reports.create', 'reports.manage', 'reports.export', 'incidents.view', 'crm.inquiries.view'] as $name) {
             Permission::firstOrCreate(
                 ['name' => $name, 'guard_name' => 'web'],
                 ['uuid' => (string) Str::uuid(), 'category' => 'reports']
@@ -32,6 +32,7 @@ describe('Phase 26: Cross-Module Custom Report Builder & CSV Exporter (TRK-REPOR
 
         $superAdminRole = Role::firstOrCreate(['name' => 'Super Admin', 'guard_name' => 'web'], ['uuid' => (string) Str::uuid()]);
         $admin->assignRole($superAdminRole);
+        $admin->givePermissionTo(['reports.view', 'reports.create', 'reports.export', 'incidents.view']);
 
         // Seed 3 incidents for Tenant A
         Incident::create([
@@ -140,6 +141,7 @@ describe('Phase 26: Cross-Module Custom Report Builder & CSV Exporter (TRK-REPOR
         $admin = User::factory()->create(['tenant_id' => $tenant->id]);
         $tenant->users()->attach($admin->id);
         $admin->assignRole(Role::firstOrCreate(['name' => 'Super Admin', 'guard_name' => 'web'], ['uuid' => (string) Str::uuid()]));
+        $admin->givePermissionTo(['reports.view', 'reports.create', 'incidents.view']);
 
         $response = $this->actingAs($admin)
             ->withSession(['current_tenant_id' => $tenant->id])
@@ -183,6 +185,7 @@ describe('Phase 26: Cross-Module Custom Report Builder & CSV Exporter (TRK-REPOR
         $userB = User::factory()->create(['tenant_id' => $tenantB->id]);
         $tenantB->users()->attach($userB->id);
         $userB->assignRole(Role::firstOrCreate(['name' => 'Super Admin', 'guard_name' => 'web'], ['uuid' => (string) Str::uuid()]));
+        $userB->givePermissionTo(['reports.view', 'incidents.view']);
 
         $reportA = ReportDefinition::create([
             'tenant_id' => $tenantA->id,
@@ -196,5 +199,55 @@ describe('Phase 26: Cross-Module Custom Report Builder & CSV Exporter (TRK-REPOR
             ->get(route('reports.show', $reportA));
 
         $response->assertStatus(404);
+    });
+
+    test('adversarial reject: private report is inaccessible to other non-manager users (IDOR prevention)', function () {
+        $tenant = Tenant::factory()->create(['slug' => 'test-reports-idor']);
+
+        $owner = User::factory()->create(['tenant_id' => $tenant->id]);
+        $tenant->users()->attach($owner->id);
+        $owner->givePermissionTo(['reports.view', 'incidents.view']);
+
+        $otherUser = User::factory()->create(['tenant_id' => $tenant->id]);
+        $tenant->users()->attach($otherUser->id);
+        $otherUser->givePermissionTo(['reports.view', 'incidents.view', 'reports.export']);
+
+        $manager = User::factory()->create(['tenant_id' => $tenant->id]);
+        $tenant->users()->attach($manager->id);
+        $manager->givePermissionTo(['reports.view', 'reports.manage', 'incidents.view']);
+
+        // Create private report owned by $owner
+        $privateReport = ReportDefinition::create([
+            'tenant_id' => $tenant->id,
+            'name' => 'Confidential Safety Investigation',
+            'data_source' => 'incidents',
+            'selected_columns' => ['reference_code', 'title'],
+            'is_public' => false,
+            'created_by_user_id' => (string) $owner->uuid,
+        ]);
+
+        // 1. Other user without reports.manage attempting to view gets 403
+        $this->actingAs($otherUser)
+            ->withSession(['current_tenant_id' => $tenant->id])
+            ->get(route('reports.show', $privateReport))
+            ->assertStatus(403);
+
+        // 2. Other user attempting to export CSV gets 403
+        $this->actingAs($otherUser)
+            ->withSession(['current_tenant_id' => $tenant->id])
+            ->get(route('reports.export.csv', $privateReport))
+            ->assertStatus(403);
+
+        // 3. Owner can view and export
+        $this->actingAs($owner)
+            ->withSession(['current_tenant_id' => $tenant->id])
+            ->get(route('reports.show', $privateReport))
+            ->assertStatus(200);
+
+        // 4. Manager with reports.manage can view private report
+        $this->actingAs($manager)
+            ->withSession(['current_tenant_id' => $tenant->id])
+            ->get(route('reports.show', $privateReport))
+            ->assertStatus(200);
     });
 });

@@ -24,6 +24,9 @@ final class ReportsWebController extends Controller
 
     public function index(Request $request): View
     {
+        $user = $request->user();
+        abort_if(! $user?->can('reports.view') && ! $user?->can('reports.manage'), 403);
+
         $tenant = $request->attributes->get('tenant');
         $tenantId = $tenant instanceof Tenant ? (string) $tenant->id : (string) $request->user()?->tenant_id;
 
@@ -38,9 +41,10 @@ final class ReportsWebController extends Controller
 
     public function create(Request $request): View
     {
-        $tenant = $request->attributes->get('tenant');
         $user = $request->user();
+        abort_if(! ($user?->can('reports.create') || $user?->can('reports.manage')), 403);
 
+        $tenant = $request->attributes->get('tenant');
         $availableSources = $this->registry->getAvailableSources($user);
 
         return view('reports::create', compact('availableSources', 'tenant'));
@@ -48,9 +52,11 @@ final class ReportsWebController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
+        $user = $request->user();
+        abort_if(! ($user?->can('reports.create') || $user?->can('reports.manage')), 403);
+
         $tenant = $request->attributes->get('tenant');
         $tenantId = $tenant instanceof Tenant ? (string) $tenant->id : (string) $request->user()?->tenant_id;
-        $user = $request->user();
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -68,7 +74,7 @@ final class ReportsWebController extends Controller
             return back()->withErrors(['data_source' => 'Invalid data source selected.'])->withInput();
         }
 
-        if ($user && ! $this->registry->userCanAccessSource($user, $validated['data_source'])) {
+        if (! $this->registry->userCanAccessSource($user, $validated['data_source'])) {
             abort(403, 'You do not have permission to build reports on this data source.');
         }
 
@@ -89,7 +95,7 @@ final class ReportsWebController extends Controller
             'date_column' => $validated['date_column'] ?? null,
             'filters' => $filters,
             'is_public' => $request->boolean('is_public'),
-            'created_by_user_id' => $user?->uuid !== null ? (string) $user->uuid : null,
+            'created_by_user_id' => (string) $user->uuid,
         ]);
 
         return redirect()->route('reports.show', $report)
@@ -97,15 +103,22 @@ final class ReportsWebController extends Controller
             ->with('message', "Report [{$report->name}] created successfully.");
     }
 
-    public function show(Request $request, ReportDefinition $report): View|RedirectResponse
+    public function show(Request $request, ReportDefinition $report): View
     {
-        $tenant = $request->attributes->get('tenant');
-        $tenantId = $tenant instanceof Tenant ? (string) $tenant->id : (string) $request->user()?->tenant_id;
         $user = $request->user();
+        abort_if(! $user?->can('reports.view') && ! $user?->can('reports.manage'), 403);
+
+        $tenant = $request->attributes->get('tenant');
+        $tenantId = $tenant instanceof Tenant ? (string) $tenant->id : (string) $user->tenant_id;
 
         if ($report->tenant_id !== $tenantId) {
             abort(404, 'Report not found in this tenant.');
         }
+
+        // Privacy IDOR check: non-public reports are restricted to author or report managers
+        $isOwner = $report->created_by_user_id === (string) $user->uuid;
+        $isManager = (bool) $user->can('reports.manage');
+        abort_if(! $report->is_public && ! $isOwner && ! $isManager, 403, 'This private report can only be viewed by its author or report managers.');
 
         try {
             $preview = $this->generator->runPreview($report, $user, $tenantId, 50);
@@ -118,13 +131,20 @@ final class ReportsWebController extends Controller
 
     public function exportCsv(Request $request, ReportDefinition $report): StreamedResponse
     {
-        $tenant = $request->attributes->get('tenant');
-        $tenantId = $tenant instanceof Tenant ? (string) $tenant->id : (string) $request->user()?->tenant_id;
         $user = $request->user();
+        abort_if(! $user?->can('reports.view') && ! $user?->can('reports.manage'), 403);
+
+        $tenant = $request->attributes->get('tenant');
+        $tenantId = $tenant instanceof Tenant ? (string) $tenant->id : (string) $user->tenant_id;
 
         if ($report->tenant_id !== $tenantId) {
             abort(404, 'Report not found in this tenant.');
         }
+
+        // Privacy IDOR check: non-public reports are restricted to author or report managers
+        $isOwner = $report->created_by_user_id === (string) $user->uuid;
+        $isManager = (bool) $user->can('reports.manage');
+        abort_if(! $report->is_public && ! $isOwner && ! $isManager, 403, 'This private report can only be exported by its author or report managers.');
 
         try {
             return $this->generator->streamCsv($report, $user, $tenantId);
@@ -133,14 +153,43 @@ final class ReportsWebController extends Controller
         }
     }
 
+    public function exportPdf(Request $request, ReportDefinition $report): \Illuminate\Http\Response
+    {
+        $user = $request->user();
+        abort_if(! $user?->can('reports.view') && ! $user?->can('reports.manage'), 403);
+
+        $tenant = $request->attributes->get('tenant');
+        $tenantId = $tenant instanceof Tenant ? (string) $tenant->id : (string) $user->tenant_id;
+
+        if ($report->tenant_id !== $tenantId) {
+            abort(404, 'Report not found in this tenant.');
+        }
+
+        // Privacy IDOR check: non-public reports are restricted to author or report managers
+        $isOwner = $report->created_by_user_id === (string) $user->uuid;
+        $isManager = (bool) $user->can('reports.manage');
+        abort_if(! $report->is_public && ! $isOwner && ! $isManager, 403, 'This private report can only be exported by its author or report managers.');
+
+        try {
+            return $this->generator->generatePdf($report, $user, $tenantId);
+        } catch (DomainException $e) {
+            abort(403, $e->getMessage());
+        }
+    }
+
     public function destroy(Request $request, ReportDefinition $report): RedirectResponse
     {
+        $user = $request->user();
         $tenant = $request->attributes->get('tenant');
         $tenantId = $tenant instanceof Tenant ? (string) $tenant->id : (string) $request->user()?->tenant_id;
 
         if ($report->tenant_id !== $tenantId) {
             abort(404, 'Report not found in this tenant.');
         }
+
+        $isOwner = $report->created_by_user_id === (string) $user?->uuid;
+        $isManager = (bool) ($user?->can('reports.manage') || $user?->can('reports.delete'));
+        abort_if(! $isOwner && ! $isManager, 403, 'Unauthorized to delete this report.');
 
         $name = $report->name;
         $report->delete();

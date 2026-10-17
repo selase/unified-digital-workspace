@@ -10,4 +10,5 @@ Route::get('/create', [ReportsWebController::class, 'create'])->name('create');
 Route::post('/', [ReportsWebController::class, 'store'])->name('store');
 Route::get('/{report}', [ReportsWebController::class, 'show'])->name('show');
 Route::get('/{report}/export/csv', [ReportsWebController::class, 'exportCsv'])->name('export.csv');
+Route::get('/{report}/export/pdf', [ReportsWebController::class, 'exportPdf'])->name('export.pdf');
 Route::delete('/{report}', [ReportsWebController::class, 'destroy'])->name('destroy');
