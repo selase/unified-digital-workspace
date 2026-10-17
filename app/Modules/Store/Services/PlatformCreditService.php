@@ -13,13 +13,28 @@ final class PlatformCreditService
     /**
      * Atomically purchases and credits a platform package to a tenant wallet.
      */
-    public function purchasePackage(string $tenantId, int|string $packageId): TenantCreditWallet
+    public function purchasePackage(string $tenantId, int|string $packageId, ?string $paymentReference = null): TenantCreditWallet
     {
         $package = PlatformCreditPackage::where('id', $packageId)
             ->where('is_active', true)
             ->firstOrFail();
 
-        return DB::transaction(function () use ($tenantId, $package): TenantCreditWallet {
+        return DB::transaction(function () use ($tenantId, $package, $paymentReference): TenantCreditWallet {
+            if ($paymentReference !== null) {
+                $existing = \App\Modules\Store\Models\PlatformCreditPurchase::where('tenant_id', $tenantId)
+                    ->where('payment_reference', $paymentReference)
+                    ->first();
+
+                if ($existing) {
+                    /** @var TenantCreditWallet $existingWallet */
+                    $existingWallet = TenantCreditWallet::where('tenant_id', $tenantId)
+                        ->where('credit_type', $package->credit_type)
+                        ->firstOrFail();
+
+                    return $existingWallet;
+                }
+            }
+
             $wallet = TenantCreditWallet::firstOrCreate(
                 [
                     'tenant_id' => $tenantId,
@@ -35,8 +50,61 @@ final class PlatformCreditService
             $wallet->increment('balance', $package->amount_credits);
             $wallet->increment('total_purchased', $package->amount_credits);
 
-            return $wallet->fresh();
+            if ($paymentReference !== null) {
+                \App\Modules\Store\Models\PlatformCreditPurchase::create([
+                    'tenant_id' => $tenantId,
+                    'package_id' => $package->id,
+                    'payment_reference' => $paymentReference,
+                    'amount_paid_cents' => (int) $package->price_cents,
+                    'credits_awarded' => (int) $package->amount_credits,
+                    'status' => 'succeeded',
+                ]);
+            }
+
+            return $wallet->fresh() ?? $wallet;
         });
+    }
+
+    /**
+     * Checks if a tenant has sufficient credit balance.
+     */
+    public function hasBalance(string $tenantId, string $creditType, int $amount = 1): bool
+    {
+        $wallet = TenantCreditWallet::where('tenant_id', $tenantId)
+            ->where(function ($q) use ($creditType): void {
+                $q->where('credit_type', $creditType);
+                if ($creditType === 'ai_token') {
+                    $q->orWhere('credit_type', 'ai_tokens');
+                } elseif ($creditType === 'ai_tokens') {
+                    $q->orWhere('credit_type', 'ai_token');
+                }
+            })
+            ->first();
+
+        if (! $wallet) {
+            return false;
+        }
+
+        return $wallet->balance >= $amount;
+    }
+
+    /**
+     * Get current balance for tenant and credit type.
+     */
+    public function getBalance(string $tenantId, string $creditType): int
+    {
+        $wallet = TenantCreditWallet::where('tenant_id', $tenantId)
+            ->where(function ($q) use ($creditType): void {
+                $q->where('credit_type', $creditType);
+                if ($creditType === 'ai_token') {
+                    $q->orWhere('credit_type', 'ai_tokens');
+                } elseif ($creditType === 'ai_tokens') {
+                    $q->orWhere('credit_type', 'ai_token');
+                }
+            })
+            ->first();
+
+        return $wallet ? (int) $wallet->balance : 0;
     }
 
     /**
@@ -48,19 +116,28 @@ final class PlatformCreditService
             return true;
         }
 
-        $affected = TenantCreditWallet::where('tenant_id', $tenantId)
-            ->where('credit_type', $creditType)
-            ->where('balance', '>=', $amount)
-            ->decrement('balance', $amount);
+        return DB::transaction(function () use ($tenantId, $creditType, $amount): bool {
+            $wallet = TenantCreditWallet::where('tenant_id', $tenantId)
+                ->where(function ($q) use ($creditType): void {
+                    $q->where('credit_type', $creditType);
+                    if ($creditType === 'ai_token') {
+                        $q->orWhere('credit_type', 'ai_tokens');
+                    } elseif ($creditType === 'ai_tokens') {
+                        $q->orWhere('credit_type', 'ai_token');
+                    }
+                })
+                ->where('balance', '>=', $amount)
+                ->lockForUpdate()
+                ->first();
 
-        if ($affected > 0) {
-            TenantCreditWallet::where('tenant_id', $tenantId)
-                ->where('credit_type', $creditType)
-                ->increment('total_consumed', $amount);
+            if (! $wallet) {
+                return false;
+            }
+
+            $wallet->decrement('balance', $amount);
+            $wallet->increment('total_consumed', $amount);
 
             return true;
-        }
-
-        return false;
+        });
     }
 }

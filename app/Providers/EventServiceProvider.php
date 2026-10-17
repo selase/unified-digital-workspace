@@ -35,6 +35,14 @@ final class EventServiceProvider extends ServiceProvider
         Logout::class => [
             LogoutLogs::class,
         ],
+
+        \Illuminate\Notifications\Events\NotificationSending::class => [
+            [\App\Listeners\NotificationDeliveryCreditListener::class, 'handleSending'],
+        ],
+
+        \Illuminate\Notifications\Events\NotificationSent::class => [
+            [\App\Listeners\NotificationDeliveryCreditListener::class, 'handleSent'],
+        ],
     ];
 
     /**

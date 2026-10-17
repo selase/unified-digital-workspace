@@ -74,6 +74,8 @@ final class StoreInventoryService
                 ];
             }
 
+            $status = ! empty($customerData['payment_reference']) ? 'paid' : 'pending';
+
             $order = StoreOrder::create([
                 'tenant_id' => $tenantId,
                 'order_number' => 'ORD-'.mb_strtoupper(Str::random(8)),
@@ -82,8 +84,9 @@ final class StoreInventoryService
                 'customer_email' => $customerData['customer_email'],
                 'total_amount_cents' => $totalAmountCents,
                 'currency' => 'GHS',
-                'status' => 'paid',
+                'status' => $status,
                 'payment_method' => $customerData['payment_method'] ?? 'portal_balance',
+                'payment_reference' => $customerData['payment_reference'] ?? null,
             ]);
 
             foreach ($itemsToCreate as $it) {
@@ -98,6 +101,66 @@ final class StoreInventoryService
             }
 
             return $order->load('items.product');
+        });
+    }
+
+    /**
+     * Atomically confirms payment for a pending order.
+     */
+    public function confirmPayment(StoreOrder $order, string $paymentReference): StoreOrder
+    {
+        return DB::transaction(function () use ($order, $paymentReference): StoreOrder {
+            /** @var StoreOrder $locked */
+            $locked = StoreOrder::where('id', $order->id)->lockForUpdate()->firstOrFail();
+
+            if ($locked->status === 'paid') {
+                return $locked;
+            }
+
+            $locked->update([
+                'status' => 'paid',
+                'payment_reference' => $paymentReference,
+            ]);
+
+            \App\Modules\WorkflowAutomation\Events\WorkflowDomainEvent::dispatch(
+                (string) $locked->tenant_id,
+                'store.order.paid',
+                [
+                    'order_id' => $locked->id,
+                    'order_number' => $locked->order_number,
+                    'total_amount_cents' => $locked->total_amount_cents,
+                    'customer_name' => $locked->customer_name,
+                    'customer_email' => $locked->customer_email,
+                ]
+            );
+
+            return $locked->fresh() ?? $locked;
+        });
+    }
+
+    /**
+     * Atomically cancels an order and restores reserved stock.
+     */
+    public function cancelOrder(StoreOrder $order): StoreOrder
+    {
+        return DB::transaction(function () use ($order): StoreOrder {
+            /** @var StoreOrder $locked */
+            $locked = StoreOrder::where('id', $order->id)->with('items')->lockForUpdate()->firstOrFail();
+
+            if ($locked->status === 'cancelled') {
+                return $locked;
+            }
+
+            // Restore stock for all order items
+            foreach ($locked->items as $item) {
+                StoreProduct::where('id', $item->store_product_id)
+                    ->where('tenant_id', $locked->tenant_id)
+                    ->increment('stock_quantity', (int) $item->quantity);
+            }
+
+            $locked->update(['status' => 'cancelled']);
+
+            return $locked->fresh() ?? $locked;
         });
     }
 }

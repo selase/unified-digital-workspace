@@ -12,3 +12,5 @@ Route::get('/products', [StoreWebController::class, 'products'])->name('products
 Route::post('/products', [StoreWebController::class, 'storeProduct'])->name('products.store');
 Route::get('/orders', [StoreWebController::class, 'orders'])->name('orders');
 Route::post('/checkout', [StoreWebController::class, 'checkout'])->name('checkout');
+Route::post('/orders/{order}/confirm-payment', [StoreWebController::class, 'confirmPayment'])->name('orders.confirm-payment');
+Route::post('/orders/{order}/cancel', [StoreWebController::class, 'cancelOrder'])->name('orders.cancel');

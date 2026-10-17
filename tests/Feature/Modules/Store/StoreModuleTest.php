@@ -27,6 +27,14 @@ function createStoreTestContext(): array
     $user->givePermissionTo(['store.view', 'store.manage', 'store.platform.purchase', 'store.orders.manage']);
     app(ModuleManager::class)->enableForTenant('store', $tenant);
 
+    app(App\Services\Tenancy\TenantDatabaseManager::class)->configure($tenant);
+    Illuminate\Support\Facades\Artisan::call('migrate', [
+        '--database' => 'tenant',
+        '--path' => app_path('Modules/Store/Database/Migrations'),
+        '--realpath' => true,
+        '--force' => true,
+    ]);
+
     return [$user, $tenant];
 }
 
@@ -186,5 +194,138 @@ describe('Phase 25: Two-Tier Store: Platform Quota Store & Per-Tenant Product St
         // Product B stock must remain untouched
         $productB->refresh();
         expect($productB->stock_quantity)->toBe(10);
+    });
+
+    test('platform credit purchase is strictly idempotent on payment_reference and prevents double-crediting', function (): void {
+        [$user, $tenant] = createStoreTestContext();
+
+        $pkg = PlatformCreditPackage::create([
+            'name' => 'Bulk SMS Tier 1',
+            'credit_type' => 'sms',
+            'amount_credits' => 1000,
+            'price_cents' => 5000,
+            'currency' => 'GHS',
+            'is_active' => true,
+        ]);
+
+        $creditService = app(PlatformCreditService::class);
+
+        // First purchase with reference
+        $wallet1 = $creditService->purchasePackage((string) $tenant->id, $pkg->id, 'PAY-SMS-IDEMP-01');
+        expect($wallet1->balance)->toBe(1000)
+            ->and(App\Modules\Store\Models\PlatformCreditPurchase::where('payment_reference', 'PAY-SMS-IDEMP-01')->count())->toBe(1);
+
+        // Replay with identical reference
+        $wallet2 = $creditService->purchasePackage((string) $tenant->id, $pkg->id, 'PAY-SMS-IDEMP-01');
+        expect($wallet2->balance)->toBe(1000) // Did NOT increase to 2000!
+            ->and(App\Modules\Store\Models\PlatformCreditPurchase::where('payment_reference', 'PAY-SMS-IDEMP-01')->count())->toBe(1);
+    });
+
+    test('checkout enforces product audience check rejecting unauthorized guests for staff_only products', function (): void {
+        [$adminUser, $tenant] = createStoreTestContext();
+
+        $staffProduct = StoreProduct::create([
+            'tenant_id' => $tenant->id,
+            'name' => 'Internal Staff Uniform',
+            'slug' => 'internal-staff-uniform',
+            'price_cents' => 10000,
+            'stock_quantity' => 10,
+            'audience' => 'staff_only',
+            'is_active' => true,
+        ]);
+
+        // Unauthorized external user (no store/staff permissions)
+        $externalUser = User::factory()->create([
+            'tenant_id' => $tenant->id,
+            'email' => 'external.guest@example.com',
+        ]);
+        $externalUser->tenants()->syncWithoutDetaching([$tenant->id]);
+
+        $response = $this->actingAs($externalUser)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->post(route('store.checkout'), [
+                'customer_name' => 'Guest User',
+                'customer_email' => 'external.guest@example.com',
+                'items' => [
+                    ['product_id' => $staffProduct->id, 'quantity' => 1],
+                ],
+            ]);
+
+        $response->assertForbidden();
+        expect(StoreOrder::where('customer_email', 'external.guest@example.com')->count())->toBe(0);
+    });
+
+    test('order lifecycle: placed as pending with stock reserved, confirmed to paid, or cancelled with stock restored', function (): void {
+        [$user, $tenant] = createStoreTestContext();
+
+        $product = StoreProduct::create([
+            'tenant_id' => $tenant->id,
+            'name' => 'Stationery Pack',
+            'slug' => 'stationery-pack',
+            'price_cents' => 2000,
+            'stock_quantity' => 10,
+            'audience' => 'public',
+            'is_active' => true,
+        ]);
+
+        // 1. Place order without payment reference -> creates as pending and reserves 4 units
+        $this->actingAs($user)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->post(route('store.checkout'), [
+                'customer_name' => 'Kweku Mensah',
+                'customer_email' => 'kweku@example.com',
+                'items' => [
+                    ['product_id' => $product->id, 'quantity' => 4],
+                ],
+            ])
+            ->assertRedirect();
+
+        $order = StoreOrder::where('customer_email', 'kweku@example.com')->firstOrFail();
+        expect($order->status)->toBe('pending');
+
+        $product->refresh();
+        expect($product->stock_quantity)->toBe(6); // 10 - 4 reserved
+
+        // 2. Confirm payment
+        $this->actingAs($user)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->post(route('store.orders.confirm-payment', $order), [
+                'payment_reference' => 'PAY-CONFIRMED-999',
+            ])
+            ->assertRedirect();
+
+        $order->refresh();
+        expect($order->status)->toBe('paid')
+            ->and($order->payment_reference)->toBe('PAY-CONFIRMED-999');
+
+        // 3. Second order cancelled: stock restored
+        $this->actingAs($user)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->post(route('store.checkout'), [
+                'customer_name' => 'Adwoa Mansa',
+                'customer_email' => 'adwoa@example.com',
+                'items' => [
+                    ['product_id' => $product->id, 'quantity' => 3],
+                ],
+            ]);
+
+        $order2 = StoreOrder::where('customer_email', 'adwoa@example.com')->firstOrFail();
+        expect($order2->status)->toBe('pending');
+
+        $product->refresh();
+        expect($product->stock_quantity)->toBe(3); // 6 - 3 reserved
+
+        // Cancel order 2
+        $this->actingAs($user)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->post(route('store.orders.cancel', $order2))
+            ->assertRedirect();
+
+        $order2->refresh();
+        expect($order2->status)->toBe('cancelled');
+
+        // Stock restored back to 6!
+        $product->refresh();
+        expect($product->stock_quantity)->toBe(6);
     });
 });

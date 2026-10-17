@@ -8,6 +8,17 @@ use App\Traits\BelongsToTenant;
 use App\Traits\HasUuid;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * @property int $id
+ * @property string $uuid
+ * @property string $tenant_id
+ * @property string $credit_type
+ * @property int $balance
+ * @property int $total_purchased
+ * @property int $total_consumed
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ */
 final class TenantCreditWallet extends Model
 {
     use BelongsToTenant;

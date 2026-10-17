@@ -29,6 +29,7 @@ final class StoreOrder extends Model
         'currency',
         'status',
         'payment_method',
+        'payment_reference',
     ];
 
     /**

@@ -71,6 +71,7 @@ final class StoreWebController extends Controller
 
         $validated = $request->validate([
             'package_id' => ['required', 'integer', Rule::exists('platform_credit_packages', 'id')->where('is_active', true)],
+            'payment_reference' => ['nullable', 'string', 'max:120'],
         ]);
 
         $tenant = $this->tenantContext->getTenant();
@@ -78,7 +79,9 @@ final class StoreWebController extends Controller
             abort(403, 'No active tenant context.');
         }
 
-        $wallet = $this->creditService->purchasePackage((string) $tenant->id, $validated['package_id']);
+        $paymentRef = $validated['payment_reference'] ?? 'PAY-CREDIT-'.mb_strtoupper(Str::random(10));
+
+        $wallet = $this->creditService->purchasePackage((string) $tenant->id, $validated['package_id'], $paymentRef);
 
         return back()
             ->with('status', 'success')
@@ -163,10 +166,24 @@ final class StoreWebController extends Controller
             'customer_name' => ['required', 'string', 'max:255'],
             'customer_email' => ['required', 'email', 'max:255'],
             'payment_method' => ['nullable', 'string'],
+            'payment_reference' => ['nullable', 'string', 'max:120'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'integer'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
         ]);
+
+        // Audience check: if any product is staff_only, verify user is an authorized staff member
+        $productIds = collect($validated['items'])->pluck('product_id')->all();
+        $hasStaffOnly = StoreProduct::whereIn('id', $productIds)
+            ->where('tenant_id', (string) $tenant->id)
+            ->where('audience', 'staff_only')
+            ->exists();
+
+        if ($hasStaffOnly) {
+            $user = $request->user();
+            $isStaff = (bool) ($user?->can('store.view') || $user?->can('store.manage') || $user?->can('core.dashboard.access'));
+            abort_if(! $isStaff, 403, 'One or more items in your cart are restricted to internal staff members.');
+        }
 
         try {
             $order = $this->inventoryService->placeOrder(
@@ -175,6 +192,7 @@ final class StoreWebController extends Controller
                     'customer_name' => $validated['customer_name'],
                     'customer_email' => $validated['customer_email'],
                     'payment_method' => $validated['payment_method'] ?? 'portal_balance',
+                    'payment_reference' => $validated['payment_reference'] ?? null,
                 ],
                 $validated['items'],
                 $request->user()?->uuid !== null ? (string) $request->user()->uuid : null
@@ -182,9 +200,34 @@ final class StoreWebController extends Controller
 
             return back()
                 ->with('status', 'success')
-                ->with('message', "Order #{$order->order_number} confirmed! Total: GHS ".number_format($order->total_amount_cents / 100, 2));
+                ->with('message', "Order #{$order->order_number} placed ({$order->status})! Total: GHS ".number_format($order->total_amount_cents / 100, 2));
         } catch (DomainException $e) {
             abort(422, $e->getMessage());
         }
+    }
+
+    public function confirmPayment(Request $request, StoreOrder $order): RedirectResponse
+    {
+        abort_if(! $request->user()?->can('store.orders.manage'), 403);
+
+        $validated = $request->validate([
+            'payment_reference' => ['required', 'string', 'max:120'],
+        ]);
+
+        $this->inventoryService->confirmPayment($order, $validated['payment_reference']);
+
+        return back()->with('status', 'success')->with('message', "Order #{$order->order_number} marked as paid.");
+    }
+
+    public function cancelOrder(Request $request, StoreOrder $order): RedirectResponse
+    {
+        $user = $request->user();
+        $isStaff = (bool) $user?->can('store.orders.manage');
+        $isOwner = (bool) ($order->user_id && $order->user_id === (string) $user?->uuid);
+        abort_if(! $isStaff && ! $isOwner, 403);
+
+        $this->inventoryService->cancelOrder($order);
+
+        return back()->with('status', 'success')->with('message', "Order #{$order->order_number} cancelled and stock returned.");
     }
 }
