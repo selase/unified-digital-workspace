@@ -37,6 +37,8 @@ final class DocumentStoreRequest extends FormRequest
             'tags.*' => ['string'],
             'metadata' => ['nullable', 'array'],
             'published_at' => ['nullable', 'date'],
+            'file' => ['nullable', 'file', 'max:20480'],
+            'notes' => ['nullable', 'string', 'max:2000'],
         ];
     }
 }

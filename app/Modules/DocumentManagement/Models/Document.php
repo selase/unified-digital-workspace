@@ -100,6 +100,14 @@ final class Document extends Model
     }
 
     /**
+     * @return BelongsTo<User, $this>
+     */
+    public function owner(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'owner_id', 'uuid');
+    }
+
+    /**
      * @return HasMany<DocumentVersion, $this>
      */
     public function versions(): HasMany
@@ -201,8 +209,8 @@ final class Document extends Model
             ->first();
 
         if ($employee) {
-            $departments = $employee->departmentTypes()->pluck('department_id')->filter()->values()->all();
-            $directorates = $employee->directorates()->pluck('id')->filter()->values()->all();
+            $departments = $employee->departmentTypes()->pluck('hrms_department_types.department_id')->filter()->values()->all();
+            $directorates = $employee->directorates()->pluck('hrms_directorates.id')->filter()->values()->all();
         }
 
         return [

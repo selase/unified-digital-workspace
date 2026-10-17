@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\DocumentManagement\Models;
 
+use App\Models\User;
 use App\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -36,5 +37,13 @@ final class DocumentVersion extends Model
     public function document(): BelongsTo
     {
         return $this->belongsTo(Document::class);
+    }
+
+    /**
+     * @return BelongsTo<User, $this>
+     */
+    public function uploadedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'uploaded_by_id', 'uuid');
     }
 }

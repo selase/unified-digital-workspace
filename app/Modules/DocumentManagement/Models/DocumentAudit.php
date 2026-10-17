@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\DocumentManagement\Models;
 
+use App\Models\User;
 use App\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -31,6 +32,14 @@ final class DocumentAudit extends Model
     public function document(): BelongsTo
     {
         return $this->belongsTo(Document::class);
+    }
+
+    /**
+     * @return BelongsTo<User, $this>
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id', 'uuid');
     }
 
     protected function casts(): array
