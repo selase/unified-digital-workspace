@@ -74,6 +74,14 @@ final class EmploymentStatus extends Model
     }
 
     /**
+     * @return array<string, string>
+     */
+    public static function statuses(): array
+    {
+        return self::statusOptions();
+    }
+
+    /**
      * Get the employee this status belongs to.
      *
      * @return BelongsTo<Employee, $this>

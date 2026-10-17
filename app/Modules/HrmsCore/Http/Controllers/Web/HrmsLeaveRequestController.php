@@ -119,7 +119,7 @@ final class HrmsLeaveRequestController extends Controller
         ]);
 
         // Send queued notification to supervisor or HOD
-        $targetApprover = $approvers['supervisor'] ?? $approvers['hod'] ?? null;
+        $targetApprover = $approvers['supervisor'] ?? $approvers['hod'];
         if ($targetApprover && $targetApprover->user) {
             $targetApprover->user->notify(new \App\Notifications\LeaveApprovalRequiredNotification($createdLeave));
         }

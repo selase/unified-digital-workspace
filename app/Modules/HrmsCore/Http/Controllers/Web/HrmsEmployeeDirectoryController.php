@@ -71,7 +71,15 @@ final class HrmsEmployeeDirectoryController extends Controller
 
     public function show(Request $request, Employee $employee): View
     {
-        abort_if(! $request->user()?->can('hrms.employees.view'), 403);
+        $user = $request->user();
+        if (! $user || ! $user->can('hrms.employees.view')) {
+            abort(403);
+        }
+
+        $activeTenantId = (string) (session('active_tenant_id') ?? $user->tenant_id);
+        if ($activeTenantId !== '' && (string) $employee->tenant_id !== $activeTenantId) {
+            abort(403, 'Cross-tenant access denied.');
+        }
 
         $employee->load([
             'grade:id,name',
@@ -79,6 +87,16 @@ final class HrmsEmployeeDirectoryController extends Controller
             'departments:id,name',
             'directorates:id,name',
             'units:id,name',
+            'bankDetails',
+            'nextOfKin',
+            'parent',
+            'children',
+            'emergencyContacts',
+            'educationalBackgrounds',
+            'professionalQualifications',
+            'previousWorkExperiences',
+            'employmentStatuses',
+            'currentEmploymentStatus',
         ]);
 
         return view('hrms-core::employees-show', [
