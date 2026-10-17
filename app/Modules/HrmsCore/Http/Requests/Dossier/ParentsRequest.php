@@ -39,4 +39,3 @@ final class ParentsRequest extends FormRequest
         ];
     }
 }
-

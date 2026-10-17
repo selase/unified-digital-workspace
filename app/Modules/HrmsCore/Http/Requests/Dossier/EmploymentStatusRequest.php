@@ -42,4 +42,3 @@ final class EmploymentStatusRequest extends FormRequest
         ];
     }
 }
-
