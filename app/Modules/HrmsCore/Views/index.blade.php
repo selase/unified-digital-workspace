@@ -19,6 +19,12 @@
             <a href="{{ route('hrms-core.departments.index') }}" class="kt-btn kt-btn-outline">
                 Departments
             </a>
+            <a href="{{ route('hrms-core.appraisals.index') }}" class="kt-btn kt-btn-outline">
+                Appraisals
+            </a>
+            <a href="{{ route('hrms-core.appraisals.index', ['scope' => 'mine']) }}" class="kt-btn kt-btn-outline">
+                My Appraisals
+            </a>
             @can('hrms.employees.create')
                 <a href="{{ route('hrms-core.employees.create') }}" class="kt-btn kt-btn-primary flex items-center gap-1.5">
                     <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

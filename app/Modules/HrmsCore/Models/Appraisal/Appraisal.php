@@ -366,13 +366,16 @@ final class Appraisal extends Model
      */
     public function calculateSelfScore(): float
     {
-        $responses = $this->responses()->whereNotNull('self_rating')->get();
+        $ratings = collect()
+            ->concat($this->responses()->whereNotNull('self_rating')->pluck('self_rating'))
+            ->concat($this->competencies()->whereNotNull('self_rating')->pluck('self_rating'))
+            ->concat($this->goals()->whereNotNull('self_rating')->pluck('self_rating'));
 
-        if ($responses->isEmpty()) {
+        if ($ratings->isEmpty()) {
             return 0.0;
         }
 
-        return round($responses->avg('self_rating'), 2);
+        return round((float) $ratings->avg(), 2);
     }
 
     /**
@@ -380,13 +383,16 @@ final class Appraisal extends Model
      */
     public function calculateSupervisorScore(): float
     {
-        $responses = $this->responses()->whereNotNull('supervisor_rating')->get();
+        $ratings = collect()
+            ->concat($this->responses()->whereNotNull('supervisor_rating')->pluck('supervisor_rating'))
+            ->concat($this->competencies()->whereNotNull('supervisor_rating')->pluck('supervisor_rating'))
+            ->concat($this->goals()->whereNotNull('supervisor_rating')->pluck('supervisor_rating'));
 
-        if ($responses->isEmpty()) {
+        if ($ratings->isEmpty()) {
             return 0.0;
         }
 
-        return round($responses->avg('supervisor_rating'), 2);
+        return round((float) $ratings->avg(), 2);
     }
 
     /**
@@ -394,14 +400,16 @@ final class Appraisal extends Model
      */
     public function calculateFinalScore(): float
     {
-        $responses = $this->responses()->whereNotNull('final_rating')->get();
+        $ratings = collect()
+            ->concat($this->responses()->whereNotNull('final_rating')->pluck('final_rating'))
+            ->concat($this->competencies()->whereNotNull('final_rating')->pluck('final_rating'));
 
-        if ($responses->isEmpty()) {
+        if ($ratings->isEmpty()) {
             // Fall back to supervisor score if no final ratings
             return $this->calculateSupervisorScore();
         }
 
-        return round($responses->avg('final_rating'), 2);
+        return round((float) $ratings->avg(), 2);
     }
 
     /**

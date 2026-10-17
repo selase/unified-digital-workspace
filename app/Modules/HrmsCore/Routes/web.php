@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Modules\HrmsCore\Http\Controllers\Web\HrmsAppraisalWebController;
 use App\Modules\HrmsCore\Http\Controllers\Web\HrmsDepartmentDirectoryController;
 use App\Modules\HrmsCore\Http\Controllers\Web\HrmsEmployeeDirectoryController;
 use App\Modules\HrmsCore\Http\Controllers\Web\HrmsHubController;
@@ -97,4 +98,35 @@ Route::prefix('recruitment')->name('recruitment.')->group(function (): void {
     Route::post('/offers/{offer}/send', [HrmsRecruitmentController::class, 'sendOffer'])->name('offers.send');
     Route::post('/offers/{offer}/decision', [HrmsRecruitmentController::class, 'recordOfferDecision'])->name('offers.decision');
     Route::delete('/offers/{offer}', [HrmsRecruitmentController::class, 'destroyOffer'])->name('offers.destroy');
+});
+
+Route::prefix('appraisals')->name('appraisals.')->group(function (): void {
+    Route::get('/', [HrmsAppraisalWebController::class, 'index'])->name('index');
+    Route::post('/', [HrmsAppraisalWebController::class, 'storeAppraisal'])->name('store');
+    Route::get('/{appraisal}', [HrmsAppraisalWebController::class, 'show'])->name('show');
+    Route::post('/{appraisal}/status', [HrmsAppraisalWebController::class, 'transitionStatus'])->name('status');
+    Route::delete('/{appraisal}', [HrmsAppraisalWebController::class, 'destroyAppraisal'])->name('destroy');
+
+    Route::post('/periods', [HrmsAppraisalWebController::class, 'storePeriod'])->name('periods.store');
+    Route::put('/periods/{period}', [HrmsAppraisalWebController::class, 'updatePeriod'])->name('periods.update');
+
+    Route::post('/templates', [HrmsAppraisalWebController::class, 'storeTemplate'])->name('templates.store');
+
+    Route::post('/rating-scales', [HrmsAppraisalWebController::class, 'storeRatingScale'])->name('rating-scales.store');
+    Route::delete('/rating-scales/{ratingScale}', [HrmsAppraisalWebController::class, 'destroyRatingScale'])->name('rating-scales.destroy');
+
+    Route::post('/{appraisal}/competencies', [HrmsAppraisalWebController::class, 'storeCompetency'])->name('competencies.store');
+    Route::put('/{appraisal}/competencies/{competency}', [HrmsAppraisalWebController::class, 'updateCompetency'])->name('competencies.update');
+    Route::delete('/{appraisal}/competencies/{competency}', [HrmsAppraisalWebController::class, 'destroyCompetency'])->name('competencies.destroy');
+
+    Route::post('/{appraisal}/goals', [HrmsAppraisalWebController::class, 'storeGoal'])->name('goals.store');
+    Route::put('/{appraisal}/goals/{goal}', [HrmsAppraisalWebController::class, 'updateGoal'])->name('goals.update');
+    Route::delete('/{appraisal}/goals/{goal}', [HrmsAppraisalWebController::class, 'destroyGoal'])->name('goals.destroy');
+
+    Route::post('/{appraisal}/reviews', [HrmsAppraisalWebController::class, 'storeReview'])->name('reviews.store');
+
+    Route::post('/{appraisal}/comments', [HrmsAppraisalWebController::class, 'storeComment'])->name('comments.store');
+    Route::delete('/{appraisal}/comments/{comment}', [HrmsAppraisalWebController::class, 'destroyComment'])->name('comments.destroy');
+
+    Route::post('/{appraisal}/recommendations', [HrmsAppraisalWebController::class, 'storeRecommendation'])->name('recommendations.store');
 });
