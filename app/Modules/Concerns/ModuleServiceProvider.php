@@ -60,6 +60,16 @@ abstract class ModuleServiceProvider extends ServiceProvider
             $this->registerCommands();
             $this->registerPublishing();
         }
+
+        $this->bootModule();
+    }
+
+    /**
+     * Optional hook for module-specific boot operations.
+     */
+    protected function bootModule(): void
+    {
+        // Override in child classes
     }
 
     /**

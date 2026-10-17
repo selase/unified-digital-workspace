@@ -7,6 +7,12 @@ namespace App\Models;
 use App\Traits\HasUuid;
 use Spatie\Permission\Models\Role as SpatieRole;
 
+/**
+ * @property string|null $tenant_id
+ * @property string $name
+ * @property string $guard_name
+ * @property string $uuid
+ */
 final class Role extends SpatieRole
 {
     use HasUuid;

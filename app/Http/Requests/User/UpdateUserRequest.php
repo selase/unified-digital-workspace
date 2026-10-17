@@ -37,7 +37,8 @@ final class UpdateUserRequest extends FormRequest
                 'array',
                 function ($attribute, $value, $fail) {
                     foreach ($value as $roleId) {
-                        $role = \App\Models\Role::query()->find($roleId);
+                        /** @var \App\Models\Role|null $role */
+                        $role = \App\Models\Role::query()->whereKey($roleId)->first();
                         if (! $role) {
                             $fail('The selected role is invalid.');
 
