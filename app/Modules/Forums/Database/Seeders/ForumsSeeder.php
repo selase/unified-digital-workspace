@@ -44,12 +44,16 @@ final class ForumsSeeder extends Seeder
             return;
         }
 
-        $channel = ForumChannel::factory()
-            ->forTenant($tenant->id)
-            ->create([
-                'name' => 'General',
-                'slug' => 'general',
-            ]);
+        $channel = ForumChannel::query()->updateOrCreate([
+            'tenant_id' => $tenant->id,
+            'slug' => 'general',
+        ], [
+            'name' => 'General',
+            'description' => 'General institutional discussion channel.',
+            'visibility' => ['tenant_wide' => true],
+            'is_locked' => false,
+            'sort_order' => 1,
+        ]);
 
         $thread = ForumThread::query()->updateOrCreate([
             'tenant_id' => $tenant->id,

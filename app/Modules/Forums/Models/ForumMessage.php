@@ -64,6 +64,33 @@ final class ForumMessage extends Model
         return $this->hasMany(ForumMessageRecipient::class, 'message_id');
     }
 
+    /**
+     * Return only recipients visible to $viewer (stripping BCC rows unless $viewer is the sender
+     * or that specific BCC recipient).
+     *
+     * @return \Illuminate\Support\Collection<int, ForumMessageRecipient>
+     */
+    public function visibleRecipientsFor(?User $viewer): \Illuminate\Support\Collection
+    {
+        $all = $this->relationLoaded('recipients') ? $this->recipients : $this->recipients()->get();
+
+        if ($viewer !== null && (string) $this->sender_id === (string) $viewer->uuid) {
+            return $all->values();
+        }
+
+        return $all->filter(function (ForumMessageRecipient $recipient) use ($viewer): bool {
+            if (($recipient->role ?? ForumMessageRecipient::ROLE_TO) !== ForumMessageRecipient::ROLE_BCC) {
+                return true;
+            }
+
+            if ($viewer === null) {
+                return false;
+            }
+
+            return (string) $recipient->user_id === (string) $viewer->uuid;
+        })->values();
+    }
+
     public function getRouteKeyName(): string
     {
         return 'uuid';

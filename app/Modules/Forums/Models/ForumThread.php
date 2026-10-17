@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Forums\Models;
 
+use App\Models\User;
 use App\Modules\Forums\Database\Factories\ForumThreadFactory;
 use App\Traits\BelongsToTenant;
 use App\Traits\HasUuid;
@@ -94,6 +95,14 @@ final class ForumThread extends Model
     public function channel(): BelongsTo
     {
         return $this->belongsTo(ForumChannel::class, 'channel_id');
+    }
+
+    /**
+     * @return BelongsTo<User, $this>
+     */
+    public function author(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'user_id', 'uuid');
     }
 
     /**

@@ -29,12 +29,19 @@ final class ForumMessageRecipient extends Model
     use BelongsToTenant;
     use HasFactory;
 
+    public const string ROLE_TO = 'to';
+
+    public const string ROLE_CC = 'cc';
+
+    public const string ROLE_BCC = 'bcc';
+
     protected $table = 'forum_message_recipients';
 
     protected $fillable = [
         'tenant_id',
         'message_id',
         'user_id',
+        'role',
         'read_at',
         'deleted_at',
     ];
