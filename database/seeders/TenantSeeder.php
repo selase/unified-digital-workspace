@@ -17,7 +17,10 @@ final class TenantSeeder extends Seeder
      */
     public function run(): void
     {
-        Tenant::query()->updateOrCreate(['slug' => 'purpledot'], [
+        $enterprise = \App\Models\Package::where('slug', 'enterprise')->first();
+        $enterpriseId = $enterprise?->id;
+
+        $purpledot = Tenant::query()->updateOrCreate(['slug' => 'purpledot'], [
             'name' => 'Purpledot',
             'email' => 'hello@wearepurpledot.com',
             'status' => \App\Enum\TenantStatusEnum::ACTIVE,
@@ -26,9 +29,13 @@ final class TenantSeeder extends Seeder
             'country' => 'Ghana',
             'city' => 'Accra',
             'state' => 'Greater Accra',
+            'package_id' => $enterpriseId,
         ]);
+        if ($enterprise) {
+            $purpledot->syncFeaturesFromPackage();
+        }
 
-        Tenant::query()->updateOrCreate(['slug' => 'ugmc'], [
+        $ugmc = Tenant::query()->updateOrCreate(['slug' => 'ugmc'], [
             'name' => 'UGMC',
             'email' => 'support@ugmedicalcentre.org',
             'status' => \App\Enum\TenantStatusEnum::ACTIVE,
@@ -37,7 +44,11 @@ final class TenantSeeder extends Seeder
             'country' => 'Ghana',
             'city' => 'Accra',
             'state' => 'Greater Accra',
+            'package_id' => $enterpriseId,
         ]);
+        if ($enterprise) {
+            $ugmc->syncFeaturesFromPackage();
+        }
 
         $tgf = Tenant::query()->updateOrCreate(['slug' => 'thyroid-ghana-foundation'], [
             'name' => 'Thyroid Ghana Foundation',
@@ -48,7 +59,11 @@ final class TenantSeeder extends Seeder
             'country' => 'Ghana',
             'city' => 'Accra',
             'state' => 'Greater Accra',
+            'package_id' => $enterpriseId,
         ]);
+        if ($enterprise) {
+            $tgf->syncFeaturesFromPackage();
+        }
 
         $moduleManager = app(ModuleManager::class);
         foreach (['cms-core', 'site-thyroid-ghana-foundation'] as $slug) {

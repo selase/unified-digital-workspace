@@ -27,6 +27,7 @@ final class DatabaseSeeder extends Seeder
             PackageSeeder::class,
             TenantSeeder::class,
             UserSeeder::class,
+            InstitutionalMasterSeeder::class,
         ]);
     }
 }
