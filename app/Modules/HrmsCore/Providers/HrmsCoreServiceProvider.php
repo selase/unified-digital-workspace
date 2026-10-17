@@ -7,6 +7,7 @@ namespace App\Modules\HrmsCore\Providers;
 use App\Modules\Concerns\ModuleServiceProvider;
 use App\Modules\HrmsCore\Services\ApprovalWorkflowService;
 use App\Modules\HrmsCore\Services\EmployeeService;
+use App\Modules\HrmsCore\Services\LeaveAccrualService;
 use App\Modules\HrmsCore\Services\LeaveCalculationService;
 
 final class HrmsCoreServiceProvider extends ModuleServiceProvider
@@ -34,6 +35,7 @@ final class HrmsCoreServiceProvider extends ModuleServiceProvider
     {
         $this->app->singleton(EmployeeService::class);
         $this->app->singleton(LeaveCalculationService::class);
+        $this->app->singleton(LeaveAccrualService::class);
         $this->app->singleton(ApprovalWorkflowService::class);
     }
 
@@ -42,6 +44,8 @@ final class HrmsCoreServiceProvider extends ModuleServiceProvider
      */
     protected function registerCommands(): void
     {
-        // Future: Register HRMS-specific commands here
+        $this->commands([
+            \App\Modules\HrmsCore\Console\Commands\HrmsLeaveRolloverCommand::class,
+        ]);
     }
 }

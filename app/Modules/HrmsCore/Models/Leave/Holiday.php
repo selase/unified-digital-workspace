@@ -100,7 +100,7 @@ final class Holiday extends Model
     /**
      * Check if this holiday falls on a specific date.
      */
-    public function isOnDate(Carbon $date): bool
+    public function isOnDate(\Carbon\CarbonInterface $date): bool
     {
         if ($this->is_recurring) {
             // For recurring holidays, compare month and day only

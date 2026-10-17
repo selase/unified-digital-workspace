@@ -46,6 +46,9 @@ final class Kernel extends ConsoleKernel
 
         // Document Management ISO Reviews & Expirations
         $schedule->command('documents:check-reviews')->dailyAt('07:00');
+
+        // HRMS Annual Leave Rollover
+        $schedule->command('hrms:leave-rollover')->yearlyOn(1, 1, '00:05');
     }
 
     /**

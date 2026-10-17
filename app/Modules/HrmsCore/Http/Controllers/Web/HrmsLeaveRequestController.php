@@ -99,26 +99,85 @@ final class HrmsLeaveRequestController extends Controller
 
         $startDate = Carbon::parse($validated['proposed_start_date']);
         $endDate = Carbon::parse($validated['proposed_end_date']);
-        $days = (int) $startDate->diffInDays($endDate) + 1;
 
-        $approvers = app(\App\Modules\HrmsCore\Services\OrgHierarchyResolver::class)
-            ->resolveApproversForLeave($employee, $startDate);
+        $calculationService = app(\App\Modules\HrmsCore\Services\LeaveCalculationService::class);
+        $isHalfDay = $request->boolean('is_half_day');
 
-        $createdLeave = LeaveRequest::create([
-            'employee_id' => $employee->id,
-            'leave_category_id' => $validated['leave_category_id'],
-            'proposed_start_date' => $validated['proposed_start_date'],
-            'proposed_end_date' => $validated['proposed_end_date'],
-            'no_requested_days' => $days,
-            'leave_reasons' => $validated['leave_reasons'] ?? null,
-            'contact_when_away' => $validated['contact_when_away'] ?? null,
-            'relieving_officer_id' => $validated['relieving_officer_id'] ?? null,
-            'supervisor_id' => $approvers['supervisor']?->id,
-            'hod_id' => $approvers['hod']?->id,
-            'status' => LeaveStatus::Pending,
-        ]);
+        // Working days grouped by calendar year (e.g. for leave spanning 31 December)
+        $daysByYear = $calculationService->calculateWorkingDaysByYear(
+            $startDate,
+            $endDate,
+            (string) $employee->tenant_id,
+            $isHalfDay
+        );
+
+        $totalDays = array_sum($daysByYear);
+        if ($totalDays <= 0) {
+            $totalDays = (float) ($startDate->diffInDays($endDate) + 1);
+            $daysByYear = [(int) $startDate->year => $totalDays];
+        }
+
+        // Validate sufficient balance across each spanned year before mutating state
+        foreach ($daysByYear as $year => $daysForYear) {
+            if ($daysForYear <= 0) {
+                continue;
+            }
+
+            $balance = \App\Modules\HrmsCore\Models\Leave\LeaveBalance::getOrCreateForEmployee(
+                $employee->id,
+                (int) $validated['leave_category_id'],
+                $year
+            );
+
+            if (! $balance->hasEnoughDays($daysForYear)) {
+                return back()->withErrors([
+                    'leave_category_id' => "Insufficient leave balance for {$year}. You have {$balance->remaining_days} day(s) remaining, but requested {$daysForYear} day(s).",
+                ])->withInput();
+            }
+        }
+
+        $createdLeave = \Illuminate\Support\Facades\DB::transaction(function () use (
+            $daysByYear,
+            $employee,
+            $validated,
+            $totalDays,
+            $startDate
+        ): LeaveRequest {
+            // Atomically add pending days to balances of each spanned year
+            foreach ($daysByYear as $year => $daysForYear) {
+                if ($daysForYear <= 0) {
+                    continue;
+                }
+
+                $balance = \App\Modules\HrmsCore\Models\Leave\LeaveBalance::getOrCreateForEmployee(
+                    $employee->id,
+                    (int) $validated['leave_category_id'],
+                    $year
+                );
+                $balance->addPendingDays($daysForYear);
+            }
+
+            $approvers = app(\App\Modules\HrmsCore\Services\OrgHierarchyResolver::class)
+                ->resolveApproversForLeave($employee, $startDate);
+
+            return LeaveRequest::create([
+                'employee_id' => $employee->id,
+                'leave_category_id' => $validated['leave_category_id'],
+                'proposed_start_date' => $validated['proposed_start_date'],
+                'proposed_end_date' => $validated['proposed_end_date'],
+                'no_requested_days' => $totalDays,
+                'leave_reasons' => $validated['leave_reasons'] ?? null,
+                'contact_when_away' => $validated['contact_when_away'] ?? null,
+                'relieving_officer_id' => $validated['relieving_officer_id'] ?? null,
+                'supervisor_id' => $approvers['supervisor']?->id,
+                'hod_id' => $approvers['hod']?->id,
+                'status' => LeaveStatus::Pending,
+            ]);
+        });
 
         // Send queued notification to supervisor or HOD
+        $approvers = app(\App\Modules\HrmsCore\Services\OrgHierarchyResolver::class)
+            ->resolveApproversForLeave($employee, $startDate);
         $targetApprover = $approvers['supervisor'] ?? $approvers['hod'];
         if ($targetApprover && $targetApprover->user) {
             $targetApprover->user->notify(new \App\Notifications\LeaveApprovalRequiredNotification($createdLeave));
@@ -132,7 +191,7 @@ final class HrmsLeaveRequestController extends Controller
                 'leave_request_id' => $createdLeave->id,
                 'employee_id' => $employee->id,
                 'employee_name' => $employee->displayName(),
-                'days' => $days,
+                'days' => $totalDays,
                 'status' => 'pending',
             ]
         );
@@ -148,15 +207,45 @@ final class HrmsLeaveRequestController extends Controller
         abort_if(! $request->user()?->can('hrms.leave.approve'), 403);
 
         $comments = $request->string('comments', 'Leave approved')->toString();
+        $startDate = Carbon::parse($leaveRequest->proposed_start_date);
+        $endDate = Carbon::parse($leaveRequest->proposed_end_date);
+        $calculationService = app(\App\Modules\HrmsCore\Services\LeaveCalculationService::class);
+        $isHalfDay = ((float) $leaveRequest->no_requested_days === 0.5) && $startDate->isSameDay($endDate);
 
-        $leaveRequest->update([
-            'status' => LeaveStatus::Approved,
-            'approved_start_date' => $leaveRequest->proposed_start_date,
-            'approved_end_date' => $leaveRequest->proposed_end_date,
-            'no_of_days_approved' => $leaveRequest->no_requested_days,
-            'hod_comments' => $comments,
-            'hod_decision_at' => now(),
-        ]);
+        $daysByYear = $calculationService->calculateWorkingDaysByYear(
+            $startDate,
+            $endDate,
+            (string) $leaveRequest->tenant_id,
+            $isHalfDay
+        );
+
+        if (array_sum($daysByYear) <= 0) {
+            $daysByYear = [(int) $startDate->year => (float) $leaveRequest->no_requested_days];
+        }
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($leaveRequest, $comments, $daysByYear): void {
+            $leaveRequest->update([
+                'status' => LeaveStatus::Approved,
+                'approved_start_date' => $leaveRequest->proposed_start_date,
+                'approved_end_date' => $leaveRequest->proposed_end_date,
+                'no_of_days_approved' => $leaveRequest->no_requested_days,
+                'hod_comments' => $comments,
+                'hod_decision_at' => now(),
+            ]);
+
+            foreach ($daysByYear as $year => $daysForYear) {
+                if ($daysForYear <= 0) {
+                    continue;
+                }
+
+                $balance = \App\Modules\HrmsCore\Models\Leave\LeaveBalance::getOrCreateForEmployee(
+                    $leaveRequest->employee_id,
+                    $leaveRequest->leave_category_id,
+                    $year
+                );
+                $balance->convertPendingToUsed($daysForYear);
+            }
+        });
 
         \App\Modules\WorkflowAutomation\Events\WorkflowDomainEvent::dispatch(
             (string) $leaveRequest->tenant_id,
@@ -179,12 +268,42 @@ final class HrmsLeaveRequestController extends Controller
         abort_if(! $request->user()?->can('hrms.leave.approve'), 403);
 
         $comments = $request->string('comments', 'Leave rejected')->toString();
+        $startDate = Carbon::parse($leaveRequest->proposed_start_date);
+        $endDate = Carbon::parse($leaveRequest->proposed_end_date);
+        $calculationService = app(\App\Modules\HrmsCore\Services\LeaveCalculationService::class);
+        $isHalfDay = ((float) $leaveRequest->no_requested_days === 0.5) && $startDate->isSameDay($endDate);
 
-        $leaveRequest->update([
-            'status' => LeaveStatus::Rejected,
-            'hod_comments' => $comments,
-            'hod_decision_at' => now(),
-        ]);
+        $daysByYear = $calculationService->calculateWorkingDaysByYear(
+            $startDate,
+            $endDate,
+            (string) $leaveRequest->tenant_id,
+            $isHalfDay
+        );
+
+        if (array_sum($daysByYear) <= 0) {
+            $daysByYear = [(int) $startDate->year => (float) $leaveRequest->no_requested_days];
+        }
+
+        \Illuminate\Support\Facades\DB::transaction(function () use ($leaveRequest, $comments, $daysByYear): void {
+            $leaveRequest->update([
+                'status' => LeaveStatus::Rejected,
+                'hod_comments' => $comments,
+                'hod_decision_at' => now(),
+            ]);
+
+            foreach ($daysByYear as $year => $daysForYear) {
+                if ($daysForYear <= 0) {
+                    continue;
+                }
+
+                $balance = \App\Modules\HrmsCore\Models\Leave\LeaveBalance::getOrCreateForEmployee(
+                    $leaveRequest->employee_id,
+                    $leaveRequest->leave_category_id,
+                    $year
+                );
+                $balance->removePendingDays($daysForYear);
+            }
+        });
 
         return redirect()
             ->route('hrms-core.leave-requests.index')

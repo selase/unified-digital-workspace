@@ -64,4 +64,11 @@ Route::prefix('leave-requests')->name('leave-requests.')->group(function (): voi
     Route::post('/{leaveRequest}/reject', [HrmsLeaveRequestController::class, 'reject'])->name('reject');
 });
 
+Route::prefix('holidays')->name('holidays.')->group(function (): void {
+    Route::get('/', [App\Modules\HrmsCore\Http\Controllers\Web\HrmsHolidayWebController::class, 'index'])->name('index');
+    Route::post('/', [App\Modules\HrmsCore\Http\Controllers\Web\HrmsHolidayWebController::class, 'store'])->name('store');
+    Route::put('/{holiday}', [App\Modules\HrmsCore\Http\Controllers\Web\HrmsHolidayWebController::class, 'update'])->name('update');
+    Route::delete('/{holiday}', [App\Modules\HrmsCore\Http\Controllers\Web\HrmsHolidayWebController::class, 'destroy'])->name('destroy');
+});
+
 Route::get('/recruitment', [HrmsRecruitmentController::class, 'index'])->name('recruitment.index');

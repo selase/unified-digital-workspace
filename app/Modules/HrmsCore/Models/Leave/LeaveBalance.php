@@ -19,11 +19,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $employee_id
  * @property int $leave_category_id
  * @property int $year
- * @property int $entitled_days
- * @property int $carried_forward_days
- * @property int $used_days
- * @property int $pending_days
- * @property int $remaining_days
+ * @property float $entitled_days
+ * @property float $carried_forward_days
+ * @property float $used_days
+ * @property float $pending_days
+ * @property float $remaining_days
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  */
@@ -51,14 +51,14 @@ final class LeaveBalance extends Model
      * @var array<string, mixed>
      */
     protected $attributes = [
-        'entitled_days' => 0,
-        'carried_forward_days' => 0,
-        'used_days' => 0,
-        'pending_days' => 0,
+        'entitled_days' => 0.0,
+        'carried_forward_days' => 0.0,
+        'used_days' => 0.0,
+        'pending_days' => 0.0,
     ];
 
     /**
-     * Get or create a balance for an employee, category, and year.
+     * Get or create a balance for an employee, category, and year with mid-year joiner proration.
      */
     public static function getOrCreateForEmployee(
         int $employeeId,
@@ -66,22 +66,37 @@ final class LeaveBalance extends Model
         ?int $year = null
     ): self {
         $year ??= (int) date('Y');
-        $category = LeaveCategory::find($leaveCategoryId);
-        $defaultDays = $category !== null ? $category->default_days : 0;
 
-        return self::firstOrCreate(
-            [
-                'employee_id' => $employeeId,
-                'leave_category_id' => $leaveCategoryId,
-                'year' => $year,
-            ],
-            [
-                'entitled_days' => $defaultDays,
-                'carried_forward_days' => 0,
-                'used_days' => 0,
-                'pending_days' => 0,
-            ]
-        );
+        $existing = self::where([
+            'employee_id' => $employeeId,
+            'leave_category_id' => $leaveCategoryId,
+            'year' => $year,
+        ])->first();
+
+        if ($existing !== null) {
+            return $existing;
+        }
+
+        $employee = Employee::with('currentJob')->find($employeeId);
+        $category = LeaveCategory::find($leaveCategoryId);
+        $defaultDays = $category !== null ? (float) $category->default_days : 0.0;
+
+        $startDate = $employee?->currentJob?->start_date;
+        if ($startDate && (int) $startDate->year === $year) {
+            $service = app(\App\Modules\HrmsCore\Services\LeaveAccrualService::class);
+            $defaultDays = $service->calculateProratedEntitlement($defaultDays, $startDate, $year);
+        }
+
+        return self::create([
+            'tenant_id' => $employee?->tenant_id,
+            'employee_id' => $employeeId,
+            'leave_category_id' => $leaveCategoryId,
+            'year' => $year,
+            'entitled_days' => $defaultDays,
+            'carried_forward_days' => 0.0,
+            'used_days' => 0.0,
+            'pending_days' => 0.0,
+        ]);
     }
 
     /**
@@ -104,26 +119,70 @@ final class LeaveBalance extends Model
         return $this->belongsTo(LeaveCategory::class);
     }
 
+    public function getEntitledDaysAttribute(mixed $value): int|float
+    {
+        $val = (float) $value;
+
+        return fmod($val, 1.0) === 0.0 ? (int) $val : $val;
+    }
+
+    public function getCarriedForwardDaysAttribute(mixed $value): int|float
+    {
+        $val = (float) $value;
+
+        return fmod($val, 1.0) === 0.0 ? (int) $val : $val;
+    }
+
+    public function getUsedDaysAttribute(mixed $value): int|float
+    {
+        $val = (float) $value;
+
+        return fmod($val, 1.0) === 0.0 ? (int) $val : $val;
+    }
+
+    public function getPendingDaysAttribute(mixed $value): int|float
+    {
+        $val = (float) $value;
+
+        return fmod($val, 1.0) === 0.0 ? (int) $val : $val;
+    }
+
     /**
      * Get total available days (entitled + carry forward).
      */
-    public function getTotalAvailable(): int
+    public function getTotalAvailable(): int|float
     {
-        return $this->entitled_days + $this->carried_forward_days;
+        $val = (float) ($this->entitled_days + $this->carried_forward_days);
+
+        return fmod($val, 1.0) === 0.0 ? (int) $val : $val;
     }
 
     /**
      * Get total consumed days (used + pending).
      */
-    public function getTotalConsumed(): int
+    public function getTotalConsumed(): int|float
     {
-        return $this->used_days + $this->pending_days;
+        $val = (float) ($this->used_days + $this->pending_days);
+
+        return fmod($val, 1.0) === 0.0 ? (int) $val : $val;
+    }
+
+    /**
+     * Get remaining days attribute with in-memory fallback for un-refreshed instances.
+     */
+    public function getRemainingDaysAttribute(mixed $value): int|float
+    {
+        $val = $value !== null && is_numeric($value)
+            ? (float) $value
+            : max(0.0, (float) ($this->entitled_days + $this->carried_forward_days - $this->used_days - $this->pending_days));
+
+        return fmod($val, 1.0) === 0.0 ? (int) $val : $val;
     }
 
     /**
      * Check if the balance has enough days for a request.
      */
-    public function hasEnoughDays(int $requestedDays): bool
+    public function hasEnoughDays(float $requestedDays): bool
     {
         return $this->remaining_days >= $requestedDays;
     }
@@ -131,7 +190,7 @@ final class LeaveBalance extends Model
     /**
      * Add pending days for a new leave request.
      */
-    public function addPendingDays(int $days): void
+    public function addPendingDays(float $days): void
     {
         $this->pending_days += $days;
         $this->save();
@@ -140,18 +199,18 @@ final class LeaveBalance extends Model
     /**
      * Remove pending days when request is rejected or cancelled.
      */
-    public function removePendingDays(int $days): void
+    public function removePendingDays(float $days): void
     {
-        $this->pending_days = max(0, $this->pending_days - $days);
+        $this->pending_days = max(0.0, (float) ($this->pending_days - $days));
         $this->save();
     }
 
     /**
      * Convert pending days to used days when request is approved.
      */
-    public function convertPendingToUsed(int $days): void
+    public function convertPendingToUsed(float $days): void
     {
-        $this->pending_days = max(0, $this->pending_days - $days);
+        $this->pending_days = max(0.0, (float) ($this->pending_days - $days));
         $this->used_days += $days;
         $this->save();
     }
@@ -159,9 +218,9 @@ final class LeaveBalance extends Model
     /**
      * Restore days when a leave is recalled.
      */
-    public function restoreRecalledDays(int $days): void
+    public function restoreRecalledDays(float $days): void
     {
-        $this->used_days = max(0, $this->used_days - $days);
+        $this->used_days = max(0.0, (float) ($this->used_days - $days));
         $this->save();
     }
 
@@ -216,11 +275,11 @@ final class LeaveBalance extends Model
     {
         return [
             'year' => 'integer',
-            'entitled_days' => 'integer',
-            'carried_forward_days' => 'integer',
-            'used_days' => 'integer',
-            'pending_days' => 'integer',
-            'remaining_days' => 'integer',
+            'entitled_days' => 'float',
+            'carried_forward_days' => 'float',
+            'used_days' => 'float',
+            'pending_days' => 'float',
+            'remaining_days' => 'float',
         ];
     }
 }

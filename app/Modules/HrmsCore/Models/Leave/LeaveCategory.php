@@ -21,6 +21,7 @@ use Illuminate\Support\Str;
  * @property string $name
  * @property string $slug
  * @property int $default_days
+ * @property int|null $max_carry_forward_days
  * @property string|null $description
  * @property bool $is_paid
  * @property bool $requires_documentation
@@ -47,6 +48,7 @@ final class LeaveCategory extends Model
         'name',
         'slug',
         'default_days',
+        'max_carry_forward_days',
         'description',
         'is_paid',
         'requires_documentation',
@@ -139,6 +141,7 @@ final class LeaveCategory extends Model
     {
         return [
             'default_days' => 'integer',
+            'max_carry_forward_days' => 'integer',
             'is_paid' => 'boolean',
             'requires_documentation' => 'boolean',
             'is_active' => 'boolean',

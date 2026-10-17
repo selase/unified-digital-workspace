@@ -17,6 +17,9 @@
                 Employee Directory
             </a>
             @can('hrms.leave.view')
+                <a href="{{ route('hrms-core.holidays.index') }}" class="kt-btn kt-btn-outline flex items-center gap-1.5">
+                    Public Holidays
+                </a>
                 <a href="{{ route('hrms-core.leave-requests.create') }}" class="kt-btn kt-btn-primary flex items-center gap-1.5">
                     <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />

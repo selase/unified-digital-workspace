@@ -24,14 +24,14 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int $leave_category_id
  * @property \Illuminate\Support\Carbon $proposed_start_date
  * @property \Illuminate\Support\Carbon $proposed_end_date
- * @property int $no_requested_days
+ * @property float $no_requested_days
  * @property string|null $leave_reasons
  * @property string|null $contact_when_away
  * @property int|null $supervisor_id
  * @property int|null $hod_id
  * @property int|null $hr_verifier_id
  * @property int|null $relieving_officer_id
- * @property int|null $no_recommended_days
+ * @property float|null $no_recommended_days
  * @property \Illuminate\Support\Carbon|null $recommended_start_date
  * @property \Illuminate\Support\Carbon|null $recommended_end_date
  * @property string|null $supervisor_comments
@@ -40,7 +40,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property \Illuminate\Support\Carbon|null $hr_verified_at
  * @property LeaveStatus $status
  * @property string|null $hr_verification_status
- * @property int|null $no_of_days_approved
+ * @property float|null $no_of_days_approved
  * @property \Illuminate\Support\Carbon|null $approved_start_date
  * @property \Illuminate\Support\Carbon|null $approved_end_date
  * @property string|null $hod_comments
@@ -50,11 +50,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int $no_of_weekends_in_period
  * @property bool $is_recalled
  * @property \Illuminate\Support\Carbon|null $recall_date
- * @property int|null $no_of_days_recalled
+ * @property float|null $no_of_days_recalled
  * @property string|null $recall_reason
  * @property \Illuminate\Support\Carbon|null $recalled_at
- * @property int|null $balance_at_request
- * @property int|null $carry_forward_at_request
+ * @property float|null $balance_at_request
+ * @property float|null $carry_forward_at_request
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
@@ -264,12 +264,32 @@ final class LeaveRequest extends Model
         return $this->approved_end_date ?? $this->proposed_end_date;
     }
 
+    public function getNoRequestedDaysAttribute(mixed $value): int|float
+    {
+        $val = (float) $value;
+
+        return fmod($val, 1.0) === 0.0 ? (int) $val : $val;
+    }
+
+    public function getNoOfDaysApprovedAttribute(mixed $value): int|float|null
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        $val = (float) $value;
+
+        return fmod($val, 1.0) === 0.0 ? (int) $val : $val;
+    }
+
     /**
      * Get the effective number of days (approved or requested).
      */
-    public function getEffectiveDays(): int
+    public function getEffectiveDays(): int|float
     {
-        return $this->no_of_days_approved ?? $this->no_requested_days;
+        $val = (float) ($this->no_of_days_approved ?? $this->no_requested_days);
+
+        return fmod($val, 1.0) === 0.0 ? (int) $val : $val;
     }
 
     /**
@@ -358,14 +378,14 @@ final class LeaveRequest extends Model
         return [
             'proposed_start_date' => 'date',
             'proposed_end_date' => 'date',
-            'no_requested_days' => 'integer',
-            'no_recommended_days' => 'integer',
+            'no_requested_days' => 'float',
+            'no_recommended_days' => 'float',
             'recommended_start_date' => 'date',
             'recommended_end_date' => 'date',
             'supervisor_verified_at' => 'datetime',
             'hr_verified_at' => 'datetime',
             'status' => LeaveStatus::class,
-            'no_of_days_approved' => 'integer',
+            'no_of_days_approved' => 'float',
             'approved_start_date' => 'date',
             'approved_end_date' => 'date',
             'hod_decision_at' => 'datetime',
@@ -374,10 +394,10 @@ final class LeaveRequest extends Model
             'no_of_weekends_in_period' => 'integer',
             'is_recalled' => 'boolean',
             'recall_date' => 'date',
-            'no_of_days_recalled' => 'integer',
+            'no_of_days_recalled' => 'float',
             'recalled_at' => 'datetime',
-            'balance_at_request' => 'integer',
-            'carry_forward_at_request' => 'integer',
+            'balance_at_request' => 'float',
+            'carry_forward_at_request' => 'float',
         ];
     }
 }
