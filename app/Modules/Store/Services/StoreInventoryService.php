@@ -17,7 +17,7 @@ final class StoreInventoryService
     /**
      * Atomically locks stock and places an order.
      *
-     * @param  array{customer_name: string, customer_email: string, payment_method?: string}  $customerData
+     * @param  array{customer_name: string, customer_email: string, payment_method?: string, payment_reference?: string|null}  $customerData
      * @param  array<int, array{product_id: int, quantity: int}>  $cartItems
      */
     public function placeOrder(string $tenantId, array $customerData, array $cartItems, string|Stringable|null $userUuid = null): StoreOrder
@@ -99,6 +99,19 @@ final class StoreInventoryService
                     'total_price_cents' => $it['total_price_cents'],
                 ]);
             }
+
+            \App\Modules\WorkflowAutomation\Events\WorkflowDomainEvent::dispatch(
+                (string) $tenantId,
+                'store.order.placed',
+                [
+                    'order_id' => $order->id,
+                    'order_number' => $order->order_number,
+                    'customer_name' => $order->customer_name,
+                    'customer_email' => $order->customer_email,
+                    'total_amount_cents' => $order->total_amount_cents,
+                    'status' => $order->status,
+                ]
+            );
 
             return $order->load('items.product');
         });

@@ -210,6 +210,19 @@ final class CrmWebController extends Controller
             'occurred_at' => now(),
         ]);
 
+        \App\Modules\WorkflowAutomation\Events\WorkflowDomainEvent::dispatch(
+            (string) ($lead->tenant_id ?? app(TenantContext::class)->getTenant()?->id),
+            'crm.lead.converted',
+            [
+                'lead_id' => $lead->id,
+                'reference_code' => $lead->reference_code,
+                'account_id' => $account->id,
+                'account_name' => $account->name,
+                'contact_id' => $contact->id,
+                'status' => $lead->status,
+            ]
+        );
+
         return redirect()
             ->route('crm.index')
             ->with('status', 'success')
@@ -268,7 +281,8 @@ final class CrmWebController extends Controller
         $user = $request->user();
         abort_if(! $user?->can('crm.deals.manage'), 403);
 
-        $tenantId = (string) (app(TenantContext::class)->getTenant()?->id ?? '');
+        $activeTenant = app(TenantContext::class)->getTenant();
+        $tenantId = $activeTenant !== null ? (string) $activeTenant->id : '';
 
         $validated = $request->validate([
             'account_id' => [

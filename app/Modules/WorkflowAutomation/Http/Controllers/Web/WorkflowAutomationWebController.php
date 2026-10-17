@@ -52,8 +52,12 @@ final class WorkflowAutomationWebController extends Controller
             'incident.logged' => 'Incident Logged (Safety & CAPA)',
             'leave.submitted' => 'HR Leave Request Submitted',
             'crm.inquiry.created' => 'CRM Lead / Inquiry Received',
+            'crm.lead.converted' => 'CRM Lead Converted to Client Account',
+            'store.order.placed' => 'Store Order Placed',
             'store.order.paid' => 'Store Order Paid & Confirmed',
             'facilities.request.created' => 'Facility Maintenance Requested',
+            'memo.dispatched' => 'Institutional Memo Dispatched',
+            'document.published' => 'Controlled Document Published',
             'form.submitted' => 'Dynamic Form / Survey Submitted',
         ];
 
@@ -114,7 +118,7 @@ final class WorkflowAutomationWebController extends Controller
             'conditions' => $conditions,
             'actions' => $actions,
             'is_active' => true,
-            'created_by_user_id' => $user?->uuid !== null ? (string) $user->uuid : null,
+            'created_by_user_id' => (string) $user->uuid,
         ]);
 
         return redirect()->route('workflow-automation.show', $rule)

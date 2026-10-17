@@ -11,6 +11,24 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property int $id
+ * @property string $uuid
+ * @property string|null $tenant_id
+ * @property string $order_number
+ * @property string|null $user_id
+ * @property string $customer_name
+ * @property string $customer_email
+ * @property int $total_amount_cents
+ * @property string $currency
+ * @property string $status
+ * @property string|null $payment_method
+ * @property string|null $payment_reference
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, StoreOrderItem> $items
+ * @property-read User|null $user
+ */
 final class StoreOrder extends Model
 {
     use BelongsToTenant;

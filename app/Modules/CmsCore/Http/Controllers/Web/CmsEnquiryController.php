@@ -110,7 +110,8 @@ final class CmsEnquiryController extends Controller
                 return;
             }
 
-            \App\Modules\Crm\Models\CrmLead::query()->create([
+            /** @var \App\Modules\Crm\Models\CrmLead $lead */
+            $lead = \App\Modules\Crm\Models\CrmLead::query()->create([
                 'tenant_id' => $tenant->id,
                 'reference_code' => 'LEAD-WEB-'.mb_strtoupper(\Illuminate\Support\Str::random(6)),
                 'source' => \App\Modules\Crm\Models\CrmLead::SOURCE_WEBSITE_ENQUIRY,
@@ -122,6 +123,19 @@ final class CmsEnquiryController extends Controller
                 'message' => (string) $data['message'],
                 'status' => \App\Modules\Crm\Models\CrmLead::STATUS_NEW,
             ]);
+
+            \App\Modules\WorkflowAutomation\Events\WorkflowDomainEvent::dispatch(
+                (string) $tenant->id,
+                'crm.inquiry.created',
+                [
+                    'id' => $lead->id,
+                    'reference_code' => $lead->reference_code,
+                    'source' => $lead->source,
+                    'full_name' => $lead->full_name,
+                    'email' => $lead->email,
+                    'status' => $lead->status,
+                ]
+            );
         } catch (Throwable $exception) {
             Log::warning('Could not persist public enquiry to CRM leads table', [
                 'tenant_id' => $tenant->id,

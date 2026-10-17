@@ -13,6 +13,27 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * @property int $id
+ * @property string $uuid
+ * @property string|null $tenant_id
+ * @property string $name
+ * @property string $code
+ * @property string|null $account_type
+ * @property string|null $industry
+ * @property string|null $email
+ * @property string|null $phone
+ * @property string|null $address
+ * @property string|null $owner_id
+ * @property string|null $portal_user_id
+ * @property string $status
+ * @property array<string, mixed>|null $metadata
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property-read User|null $owner
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, CrmDeal> $deals
+ */
 final class CrmAccount extends Model
 {
     use BelongsToTenant;

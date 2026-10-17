@@ -9,6 +9,8 @@ use App\Modules\WorkflowAutomation\Listeners\WorkflowDomainEventListener;
 use App\Modules\WorkflowAutomation\Models\WorkflowRule;
 use App\Modules\WorkflowAutomation\Services\WorkflowEngineService;
 use App\Notifications\InstitutionalWorkflowAlert;
+use App\Services\ModuleManager;
+use App\Services\Tenancy\TenantContext;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
@@ -314,5 +316,148 @@ describe('P1-1: Real Workflow Event Bus & Downstream Chaining Test', function ()
 
         // Disabled rule never delivered alert
         Notification::assertNotSentTo($contractor, InstitutionalWorkflowAlert::class);
+    });
+
+    test('crm.inquiry.created is dispatched from CmsEnquiryController::store', function () {
+        Event::fake([WorkflowDomainEvent::class]);
+        Illuminate\Support\Facades\Mail::fake();
+
+        $tenant = Tenant::factory()->create(['name' => 'CMS Inquiry Tenant', 'slug' => 'cms-inquiry-tenant', 'email' => 'admin@cms-inquiry.test']);
+        app(TenantContext::class)->setTenant($tenant);
+        app(ModuleManager::class)->enableForTenant('cms-core', $tenant);
+
+        $token = App\Modules\CmsCore\Support\EnquiryToken::issue(time() - 10);
+
+        $response = $this->withSession(['active_tenant_id' => $tenant->id])
+            ->postJson(route('cms-core.public.enquiries.store'), [
+                'type' => App\Modules\CmsCore\Support\EnquiryType::Partnership->value,
+                'name' => 'Kwame Mensah',
+                'email' => 'kwame@example.com',
+                'phone' => '+233201234567',
+                'organisation' => 'Health Systems Africa',
+                'message' => 'We would like to partner on community healthcare initiatives.',
+                'form_token' => $token,
+            ]);
+
+        $response->assertOk();
+
+        Event::assertDispatched(WorkflowDomainEvent::class, function (WorkflowDomainEvent $event) use ($tenant) {
+            return $event->tenantId === (string) $tenant->id
+                && $event->eventName === 'crm.inquiry.created'
+                && $event->payload['full_name'] === 'Kwame Mensah'
+                && $event->payload['email'] === 'kwame@example.com';
+        });
+    });
+
+    test('crm.inquiry.created is dispatched from PublicRealEstateWebController::inquire', function () {
+        Event::fake([WorkflowDomainEvent::class]);
+
+        $tenant = Tenant::factory()->create(['name' => 'Real Estate Inquiry Tenant', 'slug' => 're-inquiry-tenant']);
+        app(TenantContext::class)->setTenant($tenant);
+        app(ModuleManager::class)->enableForTenant('crm', $tenant);
+
+        $listing = App\Modules\RealEstate\Models\PropertyListing::create([
+            'tenant_id' => (string) $tenant->id,
+            'title' => 'Prime Commercial Plot - Airport City',
+            'location' => 'Airport Residential Area, Accra',
+            'price_pesewas' => 50000000,
+            'is_published' => true,
+        ]);
+
+        $response = $this->post(route('real-estate.public.inquire', $listing), [
+            'full_name' => 'Abena Serwaa',
+            'email' => 'abena@example.com',
+            'phone' => '+233241234567',
+            'message' => 'Interested in inspecting this commercial plot.',
+        ]);
+
+        $response->assertSessionHasNoErrors();
+
+        Event::assertDispatched(WorkflowDomainEvent::class, function (WorkflowDomainEvent $event) use ($tenant) {
+            return $event->tenantId === (string) $tenant->id
+                && $event->eventName === 'crm.inquiry.created'
+                && $event->payload['full_name'] === 'Abena Serwaa'
+                && $event->payload['email'] === 'abena@example.com';
+        });
+    });
+
+    test('crm.lead.converted is dispatched from CrmWebController::convertLead', function () {
+        Event::fake([WorkflowDomainEvent::class]);
+
+        Permission::firstOrCreate(['name' => 'crm.convert', 'guard_name' => 'web'], ['uuid' => (string) Str::uuid(), 'category' => 'crm']);
+        Permission::firstOrCreate(['name' => 'crm.view', 'guard_name' => 'web'], ['uuid' => (string) Str::uuid(), 'category' => 'crm']);
+
+        $user = User::factory()->create();
+        $tenant = setActiveTenantForTest($user);
+        app(TenantContext::class)->setTenant($tenant);
+        app(ModuleManager::class)->enableForTenant('crm', $tenant);
+        $user->givePermissionTo('crm.convert', 'crm.view');
+
+        $lead = App\Modules\Crm\Models\CrmLead::create([
+            'tenant_id' => (string) $tenant->id,
+            'reference_code' => 'LEAD-TEST-001',
+            'source' => 'direct',
+            'full_name' => 'Kofi Annan',
+            'organisation' => 'Annan Global Foundation',
+            'email' => 'kofi@annan-foundation.org',
+            'status' => App\Modules\Crm\Models\CrmLead::STATUS_NEW,
+        ]);
+
+        $response = $this->actingAs($user)->post(route('crm.leads.convert', $lead), [
+            'account_name' => 'Annan Global Foundation',
+            'account_type' => 'enterprise',
+            'currency' => 'GHS',
+        ]);
+
+        $response->assertSessionHasNoErrors();
+
+        Event::assertDispatched(WorkflowDomainEvent::class, function (WorkflowDomainEvent $event) use ($tenant, $lead) {
+            return $event->tenantId === (string) $tenant->id
+                && $event->eventName === 'crm.lead.converted'
+                && $event->payload['lead_id'] === $lead->id
+                && $event->payload['account_name'] === 'Annan Global Foundation';
+        });
+    });
+
+    test('store.order.placed is dispatched from StoreInventoryService::placeOrder', function () {
+        Event::fake([WorkflowDomainEvent::class]);
+
+        $tenant = Tenant::factory()->create(['name' => 'Store Event Tenant', 'slug' => 'store-evt-tenant']);
+
+        $product = App\Modules\Store\Models\StoreProduct::create([
+            'tenant_id' => (string) $tenant->id,
+            'name' => 'Institutional Lanyard Pack',
+            'slug' => 'lanyard-pack',
+            'sku' => 'LAN-001',
+            'price_cents' => 2500,
+            'stock_quantity' => 100,
+            'is_active' => true,
+        ]);
+
+        $service = app(App\Modules\Store\Services\StoreInventoryService::class);
+        $order = $service->placeOrder(
+            tenantId: (string) $tenant->id,
+            customerData: [
+                'customer_name' => 'Esi Dapaah',
+                'customer_email' => 'esi@store.test',
+                'payment_method' => 'portal_balance',
+            ],
+            cartItems: [
+                [
+                    'product_id' => $product->id,
+                    'quantity' => 2,
+                ],
+            ]
+        );
+
+        expect($order->status)->toBe('pending');
+
+        Event::assertDispatched(WorkflowDomainEvent::class, function (WorkflowDomainEvent $event) use ($tenant, $order) {
+            return $event->tenantId === (string) $tenant->id
+                && $event->eventName === 'store.order.placed'
+                && $event->payload['order_id'] === $order->id
+                && $event->payload['customer_email'] === 'esi@store.test'
+                && $event->payload['total_amount_cents'] === 5000;
+        });
     });
 });

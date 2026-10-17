@@ -9,6 +9,23 @@ use App\Traits\HasUuid;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property int $id
+ * @property string $uuid
+ * @property string|null $tenant_id
+ * @property string $name
+ * @property string $slug
+ * @property string $sku
+ * @property string|null $description
+ * @property int $price_cents
+ * @property string $currency
+ * @property int $stock_quantity
+ * @property bool $is_active
+ * @property string $audience
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, StoreOrderItem> $orderItems
+ */
 final class StoreProduct extends Model
 {
     use BelongsToTenant;

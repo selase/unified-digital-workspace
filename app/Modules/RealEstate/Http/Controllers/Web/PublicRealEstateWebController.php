@@ -54,7 +54,7 @@ final class PublicRealEstateWebController extends Controller
 
         // Companion writer: if CRM module is active for tenant, persist as CrmLead
         if ($tenant && $moduleManager->isEnabledForTenant('crm', $tenant)) {
-            CrmLead::create([
+            $lead = CrmLead::create([
                 'tenant_id' => (string) $tenant->id,
                 'reference_code' => 'LEAD-PROP-'.mb_strtoupper(Str::random(6)),
                 'source' => 'website_enquiry',
@@ -65,6 +65,19 @@ final class PublicRealEstateWebController extends Controller
                 'message' => "Inquiry on {$listing->title} ({$listing->location}): ".($validated['message'] ?? 'Client requested details/inspection.'),
                 'status' => CrmLead::STATUS_NEW,
             ]);
+
+            \App\Modules\WorkflowAutomation\Events\WorkflowDomainEvent::dispatch(
+                (string) $tenant->id,
+                'crm.inquiry.created',
+                [
+                    'id' => $lead->id,
+                    'reference_code' => $lead->reference_code,
+                    'source' => $lead->source,
+                    'full_name' => $lead->full_name,
+                    'email' => $lead->email,
+                    'status' => $lead->status,
+                ]
+            );
         }
 
         return back()

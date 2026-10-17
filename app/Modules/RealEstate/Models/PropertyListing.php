@@ -9,6 +9,25 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
 
+/**
+ * @property int $id
+ * @property string $uuid
+ * @property string|null $tenant_id
+ * @property int|null $land_parcel_id
+ * @property string $title
+ * @property string $slug
+ * @property string $location
+ * @property string|null $description
+ * @property int $price_pesewas
+ * @property string|null $size_dimension
+ * @property string $tenure_type
+ * @property string $compliance_stage
+ * @property array<string, mixed>|null $features_json
+ * @property bool $is_featured
+ * @property bool $is_published
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ */
 final class PropertyListing extends Model
 {
     use BelongsToTenant;

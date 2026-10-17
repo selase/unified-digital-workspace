@@ -12,6 +12,28 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * @property int $id
+ * @property string $uuid
+ * @property string $tenant_id
+ * @property string $reference_code
+ * @property string $source
+ * @property string|null $enquiry_type
+ * @property string $full_name
+ * @property string $email
+ * @property string|null $phone
+ * @property string|null $organisation
+ * @property int|null $interested_listing_id
+ * @property string|null $message
+ * @property string $status
+ * @property string|null $assigned_to_id
+ * @property int|null $converted_account_id
+ * @property int|null $converted_contact_id
+ * @property \Illuminate\Support\Carbon|null $converted_at
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property \Illuminate\Support\Carbon|null $deleted_at
+ */
 final class CrmLead extends Model
 {
     use BelongsToTenant;
