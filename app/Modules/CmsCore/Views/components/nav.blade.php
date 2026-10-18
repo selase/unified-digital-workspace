@@ -4,7 +4,7 @@
     /**
      * Resolve a menu item's URL — use explicit url first, then derive from linked post.
      */
-    $resolveUrl = function (\App\Modules\CmsCore\Models\MenuItem $item): string {
+    $resolveUrl = function (\App\Modules\CmsCore\Models\MenuItem $item) use ($cmsUrl): string {
         if ($item->url) {
             return $cmsUrl->normalizeUrl($item->url);
         }
