@@ -185,6 +185,12 @@ final class IntranetWebController extends Controller
             'is_pinned' => ! empty($validated['is_pinned']),
         ]);
 
+        activity('intranet')
+            ->performedOn($board)
+            ->causedBy($user)
+            ->withProperties(['title' => $board->title, 'audience' => $board->audience])
+            ->log('intranet.board.created');
+
         return redirect()
             ->route('intranet.boards.show', $board)
             ->with('status', 'success')
@@ -276,6 +282,11 @@ final class IntranetWebController extends Controller
 
         $boardTitle = $board->title;
         $board->delete();
+
+        activity('intranet')
+            ->causedBy($user)
+            ->withProperties(['title' => $boardTitle])
+            ->log('intranet.board.deleted');
 
         return redirect()
             ->route('intranet.index')
@@ -401,9 +412,11 @@ final class IntranetWebController extends Controller
             'content' => ['required', 'string', 'max:5000'],
         ]);
 
+        $rootPostId = $post->parent_id ?? $post->id;
+
         IntranetBoardPost::create([
             'intranet_message_board_id' => $post->intranet_message_board_id,
-            'parent_id' => $post->id,
+            'parent_id' => $rootPostId,
             'author_id' => (string) $user->uuid,
             'title' => 'Re: '.$post->title,
             'content' => $validated['content'],
@@ -448,6 +461,12 @@ final class IntranetWebController extends Controller
             'meeting_link' => $validated['meeting_link'] ?? null,
         ]);
 
+        activity('intranet')
+            ->performedOn($event)
+            ->causedBy($user)
+            ->withProperties(['title' => $event->title, 'event_date' => $event->event_date->toDateString()])
+            ->log('intranet.event.created');
+
         return redirect()
             ->route('intranet.index')
             ->with('status', 'success')
@@ -484,6 +503,12 @@ final class IntranetWebController extends Controller
             'meeting_link' => $validated['meeting_link'] ?? null,
         ]);
 
+        activity('intranet')
+            ->performedOn($event)
+            ->causedBy($user)
+            ->withProperties(['title' => $event->title, 'event_date' => $event->event_date->toDateString()])
+            ->log('intranet.event.updated');
+
         return redirect()
             ->route('intranet.index')
             ->with('status', 'success')
@@ -498,6 +523,11 @@ final class IntranetWebController extends Controller
 
         $title = $event->title;
         $event->delete();
+
+        activity('intranet')
+            ->causedBy($user)
+            ->withProperties(['title' => $title])
+            ->log('intranet.event.deleted');
 
         return redirect()
             ->route('intranet.index')
@@ -518,6 +548,7 @@ final class IntranetWebController extends Controller
 
         IntranetEventRsvp::updateOrCreate(
             [
+                'tenant_id' => $event->tenant_id,
                 'intranet_event_id' => $event->id,
                 'user_id' => (string) $user->uuid,
             ],
@@ -526,6 +557,12 @@ final class IntranetWebController extends Controller
                 'notes' => $validated['notes'] ?? null,
             ]
         );
+
+        activity('intranet')
+            ->performedOn($event)
+            ->causedBy($user)
+            ->withProperties(['status' => $validated['status']])
+            ->log('intranet.event.rsvp');
 
         $statusLabel = match ($validated['status']) {
             IntranetEventRsvp::STATUS_ATTENDING => 'attending',
