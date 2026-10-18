@@ -16,8 +16,10 @@ use App\Services\Tenancy\TenantContext;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use RuntimeException;
 
 final class FacilitiesManagementWebController extends Controller
 {
@@ -157,7 +159,12 @@ final class FacilitiesManagementWebController extends Controller
             ->limit(25)
             ->get();
 
+        $tenantId = (string) $building->tenant_id;
         $users = User::query()
+            ->where(function ($q) use ($tenantId): void {
+                $q->where('tenant_id', $tenantId)
+                    ->orWhereHas('tenants', fn ($t) => $t->where('tenants.id', $tenantId));
+            })
             ->select(['id', 'uuid', 'first_name', 'last_name', 'email'])
             ->orderBy('first_name')
             ->get();
@@ -301,7 +308,9 @@ final class FacilitiesManagementWebController extends Controller
             'facility_space_id' => [
                 'nullable',
                 'integer',
-                Rule::exists('tenant.facility_spaces', 'id')->where('tenant_id', $tenantId),
+                Rule::exists('tenant.facility_spaces', 'id')
+                    ->where('tenant_id', $tenantId)
+                    ->where('facility_building_id', $request->input('facility_building_id')),
             ],
             'name' => ['required', 'string', 'max:255'],
             'category' => ['required', 'string', Rule::in(array_keys(self::ASSET_CATEGORIES))],
@@ -314,7 +323,18 @@ final class FacilitiesManagementWebController extends Controller
         ]);
 
         $costPesewas = isset($validated['purchase_cost_ghs']) ? (int) round(((float) $validated['purchase_cost_ghs']) * 100) : 0;
-        $assetTag = 'AST-'.mb_strtoupper(Str::random(6));
+
+        $assetTag = null;
+        for ($i = 0; $i < 10; $i++) {
+            $candidate = 'AST-'.mb_strtoupper(Str::random(6));
+            if (! FacilityAsset::query()->where('asset_tag', $candidate)->exists()) {
+                $assetTag = $candidate;
+                break;
+            }
+        }
+        if ($assetTag === null) {
+            throw new RuntimeException('Failed to generate a unique asset tag after 10 attempts.');
+        }
 
         $asset = FacilityAsset::create([
             'facility_building_id' => (int) $validated['facility_building_id'],
@@ -358,7 +378,12 @@ final class FacilitiesManagementWebController extends Controller
             ->where('facility_building_id', $asset->facility_building_id)
             ->get();
 
+        $tenantId = (string) $asset->tenant_id;
         $users = User::query()
+            ->where(function ($q) use ($tenantId): void {
+                $q->where('tenant_id', $tenantId)
+                    ->orWhereHas('tenants', fn ($t) => $t->where('tenants.id', $tenantId));
+            })
             ->select(['id', 'uuid', 'first_name', 'last_name', 'email'])
             ->orderBy('first_name')
             ->get();
@@ -529,7 +554,9 @@ final class FacilitiesManagementWebController extends Controller
             'facility_asset_id' => [
                 'nullable',
                 'integer',
-                Rule::exists('tenant.facility_assets', 'id')->where('tenant_id', $tenantId),
+                Rule::exists('tenant.facility_assets', 'id')
+                    ->where('tenant_id', $tenantId)
+                    ->where('facility_building_id', $request->input('facility_building_id')),
             ],
             'title' => ['required', 'string', 'max:255'],
             'category' => ['required', 'string', Rule::in(['electrical', 'plumbing', 'hvac', 'landscaping', 'water_delivery', 'general_maintenance'])],
@@ -538,8 +565,20 @@ final class FacilitiesManagementWebController extends Controller
             'due_date' => ['nullable', 'date'],
         ]);
 
+        $workOrderNumber = null;
+        for ($i = 0; $i < 10; $i++) {
+            $candidate = 'WO-INST-'.mb_strtoupper(Str::random(6));
+            if (! FacilityWorkOrder::query()->where('work_order_number', $candidate)->exists()) {
+                $workOrderNumber = $candidate;
+                break;
+            }
+        }
+        if ($workOrderNumber === null) {
+            throw new RuntimeException('Failed to generate a unique work order number after 10 attempts.');
+        }
+
         $order = FacilityWorkOrder::create([
-            'work_order_number' => 'WO-INST-'.mb_strtoupper(Str::random(6)),
+            'work_order_number' => $workOrderNumber,
             'mode' => FacilityWorkOrder::MODE_INSTITUTIONAL,
             'facility_building_id' => (int) $validated['facility_building_id'],
             'facility_asset_id' => ! empty($validated['facility_asset_id']) ? (int) $validated['facility_asset_id'] : null,
@@ -584,31 +623,50 @@ final class FacilitiesManagementWebController extends Controller
             'location' => ['required', 'string', 'max:255'],
         ]);
 
-        // 1. Dispatch ServiceJob in VendorMarketplace
-        $job = ServiceJob::create([
-            'job_number' => 'JOB-FAC-'.mb_strtoupper(Str::random(6)),
-            'requester_id' => (string) $user->uuid,
-            'source_module' => 'facilities',
-            'category' => $validated['category'],
-            'title' => $validated['title'],
-            'description' => $validated['description'],
-            'location' => $validated['location'],
-            'status' => ServiceJob::STATUS_OPEN,
-        ]);
+        $workOrderNumber = null;
+        for ($i = 0; $i < 10; $i++) {
+            $candidate = 'WO-OCC-'.mb_strtoupper(Str::random(6));
+            if (! FacilityWorkOrder::query()->where('work_order_number', $candidate)->exists()) {
+                $workOrderNumber = $candidate;
+                break;
+            }
+        }
+        if ($workOrderNumber === null) {
+            throw new RuntimeException('Failed to generate a unique work order number after 10 attempts.');
+        }
 
-        // 2. Create FacilityWorkOrder linking ServiceJob
-        $order = FacilityWorkOrder::create([
-            'work_order_number' => 'WO-OCC-'.mb_strtoupper(Str::random(6)),
-            'mode' => FacilityWorkOrder::MODE_OCCUPANT_MARKETPLACE,
-            'requester_id' => (string) $user->uuid,
-            'category' => $validated['category'],
-            'title' => $validated['title'],
-            'description' => $validated['description'],
-            'priority' => 'medium',
-            'status' => FacilityWorkOrder::STATUS_OPEN,
-            'due_date' => now()->addDays(2)->toDateString(),
-            'service_job_id' => $job->id,
-        ]);
+        /** @var array{0: ServiceJob, 1: FacilityWorkOrder} $created */
+        $created = DB::transaction(function () use ($validated, $user, $workOrderNumber): array {
+            // 1. Dispatch ServiceJob in VendorMarketplace
+            $job = ServiceJob::create([
+                'job_number' => 'JOB-FAC-'.mb_strtoupper(Str::random(6)),
+                'requester_id' => (string) $user->uuid,
+                'source_module' => 'facilities',
+                'category' => $validated['category'],
+                'title' => $validated['title'],
+                'description' => $validated['description'],
+                'location' => $validated['location'],
+                'status' => ServiceJob::STATUS_OPEN,
+            ]);
+
+            // 2. Create FacilityWorkOrder linking ServiceJob
+            $order = FacilityWorkOrder::create([
+                'work_order_number' => $workOrderNumber,
+                'mode' => FacilityWorkOrder::MODE_OCCUPANT_MARKETPLACE,
+                'requester_id' => (string) $user->uuid,
+                'category' => $validated['category'],
+                'title' => $validated['title'],
+                'description' => $validated['description'],
+                'priority' => 'medium',
+                'status' => FacilityWorkOrder::STATUS_OPEN,
+                'due_date' => now()->addDays(2)->toDateString(),
+                'service_job_id' => $job->id,
+            ]);
+
+            return [$job, $order];
+        });
+
+        [$job, $order] = $created;
 
         \App\Modules\WorkflowAutomation\Events\WorkflowDomainEvent::dispatch(
             (string) $order->tenant_id,
@@ -641,7 +699,7 @@ final class FacilitiesManagementWebController extends Controller
 
         // Occupant requesting users can only view their own work orders
         if (! $canManage && ! $canView && $canRequest) {
-            abort_if((string) $workOrder->requester_id !== (string) $user?->uuid, 403);
+            abort_if((string) $workOrder->requester_id !== (string) $user->uuid, 403);
         }
 
         $workOrder->load([
@@ -653,7 +711,12 @@ final class FacilitiesManagementWebController extends Controller
             'serviceJob',
         ]);
 
+        $tenantId = (string) $workOrder->tenant_id;
         $technicians = User::query()
+            ->where(function ($q) use ($tenantId): void {
+                $q->where('tenant_id', $tenantId)
+                    ->orWhereHas('tenants', fn ($t) => $t->where('tenants.id', $tenantId));
+            })
             ->select(['id', 'uuid', 'first_name', 'last_name', 'email'])
             ->orderBy('first_name')
             ->get();
@@ -669,10 +732,21 @@ final class FacilitiesManagementWebController extends Controller
     {
         $user = $request->user();
         abort_if(! $user?->can('facilities.manage'), 403);
+        abort_if($workOrder->status === FacilityWorkOrder::STATUS_COMPLETED, 422, 'Cannot assign a completed work order.');
 
         $validated = $request->validate([
             'assigned_technician_id' => ['required', 'uuid', Rule::exists('users', 'uuid')],
         ]);
+
+        $technicianExists = User::query()
+            ->where('uuid', $validated['assigned_technician_id'])
+            ->where(function ($q) use ($workOrder): void {
+                $q->where('tenant_id', $workOrder->tenant_id)
+                    ->orWhereHas('tenants', fn ($t) => $t->where('tenants.id', $workOrder->tenant_id));
+            })
+            ->exists();
+
+        abort_if(! $technicianExists, 404, 'The selected technician does not belong to this tenant.');
 
         $status = $workOrder->status === FacilityWorkOrder::STATUS_OPEN
             ? FacilityWorkOrder::STATUS_ASSIGNED
@@ -693,6 +767,7 @@ final class FacilitiesManagementWebController extends Controller
     {
         $user = $request->user();
         abort_if(! $user?->can('facilities.manage'), 403);
+        abort_if($workOrder->status === FacilityWorkOrder::STATUS_COMPLETED, 422, 'Cannot update a completed work order.');
 
         $validated = $request->validate([
             'status' => ['required', 'string', Rule::in([
@@ -717,20 +792,23 @@ final class FacilitiesManagementWebController extends Controller
     {
         $user = $request->user();
         abort_if(! $user?->can('facilities.manage'), 403);
+        abort_if($workOrder->status === FacilityWorkOrder::STATUS_COMPLETED, 422, 'Work order is already completed.');
 
         $validated = $request->validate([
             'completion_notes' => ['required', 'string', 'max:2000'],
         ]);
 
-        $workOrder->update([
-            'status' => FacilityWorkOrder::STATUS_COMPLETED,
-            'completed_at' => now(),
-            'completion_notes' => $validated['completion_notes'],
-        ]);
+        DB::transaction(function () use ($workOrder, $validated): void {
+            $workOrder->update([
+                'status' => FacilityWorkOrder::STATUS_COMPLETED,
+                'completed_at' => now(),
+                'completion_notes' => $validated['completion_notes'],
+            ]);
 
-        if ($workOrder->serviceJob) {
-            $workOrder->serviceJob->update(['status' => ServiceJob::STATUS_COMPLETED]);
-        }
+            if ($workOrder->serviceJob) {
+                $workOrder->serviceJob->update(['status' => ServiceJob::STATUS_COMPLETED]);
+            }
+        });
 
         $redirect = $request->filled('redirect_to')
             ? redirect($request->input('redirect_to'))

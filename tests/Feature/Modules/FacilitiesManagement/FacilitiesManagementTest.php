@@ -738,6 +738,119 @@ describe('Phase 21: Dual-Mode Facilities Management (Institutional Asset Lifecyc
             ->assertNotFound();
     });
 
+    test('adversarial negative tests assert cross-building integrity, foreign technician isolation, and completed work order immutability', function (): void {
+        [$user, $tenant] = createFacilitiesTestContext();
+
+        // Setup two buildings in the same tenant
+        $bld1 = FacilityBuilding::create([
+            'name' => 'Main Hospital Block',
+            'code' => 'BLD-MHB',
+            'floors_count' => 5,
+            'total_area_sqm' => 5000.00,
+        ]);
+        $space1 = FacilitySpace::create([
+            'facility_building_id' => $bld1->id,
+            'name' => 'Block 1 Ward A',
+            'code' => 'B1-WA',
+            'floor_number' => 1,
+            'space_type' => 'ward',
+        ]);
+        $asset1 = FacilityAsset::create([
+            'facility_building_id' => $bld1->id,
+            'asset_tag' => 'AST-MHB-001',
+            'name' => 'Main Chiller',
+            'category' => 'hvac',
+            'criticality' => 'mission_critical',
+            'status' => 'operational',
+        ]);
+
+        $bld2 = FacilityBuilding::create([
+            'name' => 'Dental Clinic Outpost',
+            'code' => 'BLD-DCO',
+            'floors_count' => 2,
+            'total_area_sqm' => 1200.00,
+        ]);
+
+        // 1. Adversarial: Attempt to register asset in Building 2 with Space from Building 1 -> Validation error
+        $this->actingAs($user)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->post(route('facilities-management.assets.store'), [
+                'facility_building_id' => $bld2->id,
+                'facility_space_id' => $space1->id, // Belongs to Building 1!
+                'name' => 'Mismatched Space Asset',
+                'category' => 'hvac',
+                'criticality' => 'medium',
+            ])
+            ->assertSessionHasErrors('facility_space_id');
+
+        // 2. Adversarial: Attempt to create work order for Building 2 with Asset from Building 1 -> Validation error
+        $this->actingAs($user)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->post(route('facilities-management.work-orders.institutional.store'), [
+                'facility_building_id' => $bld2->id,
+                'facility_asset_id' => $asset1->id, // Belongs to Building 1!
+                'title' => 'Cross-Building Work Order Attack',
+                'category' => 'hvac',
+                'priority' => 'high',
+            ])
+            ->assertSessionHasErrors('facility_asset_id');
+
+        // 3. Adversarial: Attempt to assign foreign tenant technician to work order -> 404 rejection
+        $foreignTenant = Tenant::factory()->create(['isolation_mode' => 'shared']);
+        $foreignUser = User::factory()->create(['tenant_id' => $foreignTenant->id]);
+        $foreignUser->tenants()->syncWithoutDetaching([$foreignTenant->id]);
+
+        $workOrder = FacilityWorkOrder::create([
+            'work_order_number' => 'WO-TEST-001',
+            'mode' => FacilityWorkOrder::MODE_INSTITUTIONAL,
+            'facility_building_id' => $bld1->id,
+            'facility_asset_id' => $asset1->id,
+            'requester_id' => (string) $user->uuid,
+            'title' => 'Routine Maintenance Inspection',
+            'category' => 'hvac',
+            'priority' => 'low',
+            'status' => FacilityWorkOrder::STATUS_OPEN,
+        ]);
+
+        $this->actingAs($user)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->post(route('facilities-management.work-orders.assign', $workOrder->uuid), [
+                'assigned_technician_id' => (string) $foreignUser->uuid,
+            ])
+            ->assertNotFound();
+
+        // 4. Adversarial: Terminal state immutability on completed work order
+        $workOrder->update([
+            'status' => FacilityWorkOrder::STATUS_COMPLETED,
+            'completed_at' => now(),
+            'completion_notes' => 'Authorized sign-off and completion.',
+        ]);
+
+        // Attempting to re-assign a completed work order -> 422
+        $this->actingAs($user)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->post(route('facilities-management.work-orders.assign', $workOrder->uuid), [
+                'assigned_technician_id' => (string) $user->uuid,
+            ])
+            ->assertStatus(422);
+
+        // Attempting to transition status on a completed work order -> 422
+        $this->actingAs($user)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->post(route('facilities-management.work-orders.status', $workOrder->uuid), [
+                'status' => FacilityWorkOrder::STATUS_IN_PROGRESS,
+            ])
+            ->assertStatus(422);
+
+        // Attempting to re-complete an already completed work order -> 422
+        $this->actingAs($user)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->post(route('facilities-management.work-orders.complete', $workOrder), [
+                'completion_notes' => 'Attempting to overwrite completed notes.',
+            ])
+            ->assertStatus(422);
+    });
+
     test('seeds facilities management data cleanly via FacilitiesManagementSeeder', function (): void {
         [$user, $tenant] = createFacilitiesTestContext();
 
