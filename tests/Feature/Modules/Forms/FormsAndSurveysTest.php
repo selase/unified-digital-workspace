@@ -728,4 +728,85 @@ describe('Phase 24: General Form Builder, HR Forms, Surveys & Live Polls (TRK-FO
             ->assertSee('General Feedback Intake')
             ->assertDontSee('Internal HR Equipment Requisition');
     });
+
+    test('adversarial reject: reviewing submission under mismatched parent form returns 404', function (): void {
+        [$user, $tenant] = createFormsTestContext();
+
+        $formA = FormDefinition::create([
+            'tenant_id' => $tenant->id,
+            'title' => 'Form One',
+            'slug' => 'form-one',
+            'type' => 'general',
+            'status' => 'published',
+            'created_by' => (string) $user->uuid,
+        ]);
+
+        $formB = FormDefinition::create([
+            'tenant_id' => $tenant->id,
+            'title' => 'Form Two',
+            'slug' => 'form-two',
+            'type' => 'general',
+            'status' => 'published',
+            'created_by' => (string) $user->uuid,
+        ]);
+
+        $submission = FormSubmission::create([
+            'tenant_id' => $tenant->id,
+            'form_definition_id' => $formA->id,
+            'responses_json' => ['test' => 'data'],
+            'status' => 'submitted',
+        ]);
+
+        // Attempting to review submission under Form B must return 404
+        $this->actingAs($user)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->post(route('forms.submissions.review', [$formB, $submission]), [
+                'status' => 'approved',
+                'reviewer_notes' => 'Attempted review under mismatched form',
+            ])
+            ->assertNotFound();
+
+        // Ensure status was not altered
+        $submission->refresh();
+        expect($submission->status)->toBe('submitted');
+    });
+
+    test('adversarial reject: staff member outside department is rejected from viewing results and exporting CSV', function (): void {
+        [$admin, $tenant] = createFormsTestContext();
+
+        $secretDept = App\Modules\HrmsCore\Models\Organization\Department::create([
+            'tenant_id' => $tenant->id,
+            'name' => 'Internal Audit & Fraud',
+            'slug' => 'audit-fraud-'.uniqid(),
+            'is_active' => true,
+        ]);
+
+        $form = FormDefinition::create([
+            'tenant_id' => $tenant->id,
+            'title' => 'Whistleblower Case Triage',
+            'slug' => 'whistleblower-case-triage',
+            'type' => 'general',
+            'target_audience' => 'departmental',
+            'target_department_id' => $secretDept->id,
+            'status' => 'published',
+            'created_by' => (string) $admin->uuid,
+        ]);
+
+        // Staff user with forms.view but NO department and NO forms.manage
+        $outsideStaff = User::factory()->create();
+        $outsideStaff->tenants()->syncWithoutDetaching([$tenant->id]);
+        $outsideStaff->givePermissionTo('forms.view');
+
+        // Results view must be rejected with 403
+        $this->actingAs($outsideStaff)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->get(route('forms.results', $form))
+            ->assertStatus(403);
+
+        // CSV export must be rejected with 403
+        $this->actingAs($outsideStaff)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->get(route('forms.export-csv', $form))
+            ->assertStatus(403);
+    });
 });

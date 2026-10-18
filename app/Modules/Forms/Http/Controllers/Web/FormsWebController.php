@@ -16,6 +16,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use RuntimeException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class FormsWebController extends Controller
@@ -127,7 +128,7 @@ final class FormsWebController extends Controller
         if (! $foundUnique) {
             $slug = "{$originalSlug}-".Str::lower(Str::random(6));
             if (FormDefinition::where('slug', $slug)->exists()) {
-                throw new \RuntimeException('Unable to generate unique slug for form after bounded retries.');
+                throw new RuntimeException('Unable to generate unique slug for form after bounded retries.');
             }
         }
 
@@ -184,6 +185,7 @@ final class FormsWebController extends Controller
     public function show(Request $request, FormDefinition $form): View
     {
         abort_if(! $request->user()?->can('forms.view'), 403);
+        $this->authorizeAudience($request, $form);
 
         $form->load([
             'fields',
@@ -301,6 +303,7 @@ final class FormsWebController extends Controller
     public function results(Request $request, FormDefinition $form): View
     {
         abort_if(! $request->user()?->can('forms.view'), 403);
+        $this->authorizeAudience($request, $form);
 
         $form->load(['fields', 'department:id,name', 'creator:uuid,first_name,last_name']);
 
@@ -401,6 +404,7 @@ final class FormsWebController extends Controller
     public function exportCsv(Request $request, FormDefinition $form): StreamedResponse
     {
         abort_if(! $request->user()?->can('forms.view'), 403);
+        $this->authorizeAudience($request, $form);
 
         $slug = $form->slug;
 
@@ -416,20 +420,22 @@ final class FormsWebController extends Controller
                     return;
                 }
 
-                fputcsv($handle, ['Vote UUID', 'Voted At', 'User Name', 'User Email', 'IP Address', 'Selected Option']);
+                try {
+                    fputcsv($handle, ['Vote UUID', 'Voted At', 'User Name', 'User Email', 'IP Address', 'Selected Option']);
 
-                foreach ($votes as $vote) {
-                    fputcsv($handle, [
-                        $vote->uuid,
-                        $vote->created_at?->toIso8601String() ?? '',
-                        $vote->user ? "{$vote->user->first_name} {$vote->user->last_name}" : 'Anonymous Guest',
-                        $vote->user ? (string) $vote->user->email : '',
-                        $vote->ip_address ?? '',
-                        $vote->selected_option,
-                    ]);
+                    foreach ($votes as $vote) {
+                        fputcsv($handle, [
+                            $vote->uuid,
+                            $vote->created_at?->toIso8601String() ?? '',
+                            $vote->user ? "{$vote->user->first_name} {$vote->user->last_name}" : 'Anonymous Guest',
+                            $vote->user ? (string) $vote->user->email : '',
+                            $vote->ip_address ?? '',
+                            $vote->selected_option,
+                        ]);
+                    }
+                } finally {
+                    fclose($handle);
                 }
-
-                fclose($handle);
             }, "poll-results-{$slug}.csv", [
                 'Content-Type' => 'text/csv',
             ]);
@@ -447,35 +453,37 @@ final class FormsWebController extends Controller
                 return;
             }
 
-            $headers = ['Submission UUID', 'Submitted At', 'User Name', 'User Email', 'IP Address', 'Status', 'Reviewer', 'Reviewed At'];
-            foreach ($fields as $field) {
-                $headers[] = $field->label;
-            }
-
-            fputcsv($handle, $headers);
-
-            foreach ($submissions as $sub) {
-                $row = [
-                    $sub->uuid,
-                    $sub->created_at?->toIso8601String() ?? '',
-                    $sub->user ? "{$sub->user->first_name} {$sub->user->last_name}" : 'Anonymous Guest',
-                    $sub->user ? (string) $sub->user->email : '',
-                    $sub->ip_address ?? '',
-                    $sub->status,
-                    $sub->reviewer ? "{$sub->reviewer->first_name} {$sub->reviewer->last_name}" : '',
-                    $sub->reviewed_at?->toIso8601String() ?? '',
-                ];
-
-                $responses = $sub->responses_json;
+            try {
+                $headers = ['Submission UUID', 'Submitted At', 'User Name', 'User Email', 'IP Address', 'Status', 'Reviewer', 'Reviewed At'];
                 foreach ($fields as $field) {
-                    $val = $responses[$field->field_name] ?? '';
-                    $row[] = is_array($val) ? implode(', ', $val) : (string) $val;
+                    $headers[] = $field->label;
                 }
 
-                fputcsv($handle, $row);
-            }
+                fputcsv($handle, $headers);
 
-            fclose($handle);
+                foreach ($submissions as $sub) {
+                    $row = [
+                        $sub->uuid,
+                        $sub->created_at?->toIso8601String() ?? '',
+                        $sub->user ? "{$sub->user->first_name} {$sub->user->last_name}" : 'Anonymous Guest',
+                        $sub->user ? (string) $sub->user->email : '',
+                        $sub->ip_address ?? '',
+                        $sub->status,
+                        $sub->reviewer ? "{$sub->reviewer->first_name} {$sub->reviewer->last_name}" : '',
+                        $sub->reviewed_at?->toIso8601String() ?? '',
+                    ];
+
+                    $responses = $sub->responses_json;
+                    foreach ($fields as $field) {
+                        $val = $responses[$field->field_name] ?? '';
+                        $row[] = is_array($val) ? implode(', ', $val) : (string) $val;
+                    }
+
+                    fputcsv($handle, $row);
+                }
+            } finally {
+                fclose($handle);
+            }
         }, "form-results-{$slug}.csv", [
             'Content-Type' => 'text/csv',
         ]);
@@ -485,6 +493,7 @@ final class FormsWebController extends Controller
     {
         abort_if(! ($request->user()?->can('forms.view') || $request->user()?->can('forms.review')), 403);
         abort_if((int) $submission->form_definition_id !== (int) $form->id, 404);
+        $this->authorizeAudience($request, $form);
 
         $submission->load([
             'user:uuid,first_name,last_name,email',
@@ -520,6 +529,8 @@ final class FormsWebController extends Controller
     {
         $user = $request->user();
         abort_if(! $user?->can('forms.review'), 403);
+        abort_if((int) $submission->form_definition_id !== (int) $form->id, 404);
+        $this->authorizeAudience($request, $form);
 
         $validated = $request->validate([
             'status' => ['required', 'string', Rule::in(['under_review', 'approved', 'rejected'])],
