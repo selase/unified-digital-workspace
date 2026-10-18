@@ -29,5 +29,6 @@ parameters:
         - app/Modules/Memos/Database/Migrations
         - app/Modules/ProjectManagement/Database/Migrations
         - app/Modules/QualityMonitoring/Database/Migrations
+        - app/Modules/RealEstate/Database/Migrations
 
     tmpDir: /tmp/phpstan

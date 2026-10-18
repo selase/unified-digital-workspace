@@ -19,6 +19,13 @@
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div class="lg:col-span-2 space-y-6">
+            {{-- Showcase Image --}}
+            @if($listing->image_path)
+                <div class="rounded-xl overflow-hidden border border-border shadow-sm max-h-96">
+                    <img src="{{ Storage::url($listing->image_path) }}" alt="{{ $listing->title }}" class="w-full h-full object-cover">
+                </div>
+            @endif
+
             <div class="kt-card p-6 space-y-4">
                 <div class="flex items-center gap-2">
                     <span class="kt-badge kt-badge-primary font-mono text-xs">{{ $listing->size_dimension }}</span>
@@ -74,4 +81,3 @@
     </div>
 </div>
 @endsection
-

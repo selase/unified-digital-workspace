@@ -59,7 +59,7 @@ final class LandAcquisitionStateMachine
             throw new DomainException('Cannot advance: Lands Commission search issue date is required.');
         }
 
-        if ($parcel->search_issue_date->diffInDays(now()) > 30) {
+        if (\Carbon\Carbon::parse($parcel->search_issue_date)->diffInDays(now()) > 30) {
             throw new DomainException('Lands Commission search report is older than 30 days and requires re-validation.');
         }
 

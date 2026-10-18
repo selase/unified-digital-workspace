@@ -7,6 +7,7 @@ namespace App\Modules\RealEstate\Models;
 use App\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
 /**
@@ -18,6 +19,7 @@ use Illuminate\Support\Str;
  * @property string $slug
  * @property string $location
  * @property string|null $description
+ * @property string|null $image_path
  * @property int $price_pesewas
  * @property string|null $size_dimension
  * @property string $tenure_type
@@ -27,10 +29,12 @@ use Illuminate\Support\Str;
  * @property bool $is_published
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property \Illuminate\Support\Carbon|null $deleted_at
  */
 final class PropertyListing extends Model
 {
     use BelongsToTenant;
+    use SoftDeletes;
 
     protected $table = 'property_listings';
 
@@ -42,6 +46,7 @@ final class PropertyListing extends Model
         'slug',
         'location',
         'description',
+        'image_path',
         'price_pesewas',
         'size_dimension',
         'tenure_type',
@@ -76,7 +81,16 @@ final class PropertyListing extends Model
                 $model->uuid = (string) Str::uuid();
             }
             if (empty($model->slug)) {
-                $model->slug = Str::slug($model->title).'-'.mb_strtolower(Str::random(6));
+                $base = Str::slug($model->title);
+                $uniqueSlug = null;
+                for ($attempt = 0; $attempt < 20; $attempt++) {
+                    $candidate = $base.'-'.mb_strtolower(Str::random(6));
+                    if (! self::withoutGlobalScopes()->where('slug', $candidate)->exists()) {
+                        $uniqueSlug = $candidate;
+                        break;
+                    }
+                }
+                $model->slug = $uniqueSlug ?? ($base.'-'.(string) Str::uuid());
             }
         });
     }

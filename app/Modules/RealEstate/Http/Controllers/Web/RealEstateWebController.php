@@ -11,6 +11,7 @@ use App\Modules\RealEstate\Models\ClientPlotAllocation;
 use App\Modules\RealEstate\Models\InstallmentSchedule;
 use App\Modules\RealEstate\Models\LandDocument;
 use App\Modules\RealEstate\Models\LandParcel;
+use App\Modules\RealEstate\Models\PropertyListing;
 use App\Modules\RealEstate\Models\RealEstateProject;
 use App\Modules\RealEstate\Services\LandAcquisitionStateMachine;
 use App\Modules\RealEstate\Services\SpatialOverlapDetectorService;
@@ -30,24 +31,101 @@ final class RealEstateWebController extends Controller
     public function index(Request $request): View
     {
         $user = $request->user();
-        abort_if(! $user?->can('realestate.view') && ! $user?->can('realestate.manage'), 403);
+        abort_if(! $user || (! $user->can('realestate.view') && ! $user->can('realestate.manage')), 403);
 
-        $projects = RealEstateProject::query()->latest()->get();
-        $parcels = LandParcel::query()
-            ->with(['project', 'allocation.client', 'documents'])
-            ->latest()
-            ->limit(30)
-            ->get();
-        $allocations = ClientPlotAllocation::query()
-            ->with(['parcel.project', 'client', 'installments'])
-            ->latest()
-            ->limit(20)
-            ->get();
-        $documents = LandDocument::query()
-            ->with(['parcel.project', 'uploader'])
-            ->latest()
-            ->limit(20)
-            ->get();
+        // All projects for dropdown selectors
+        $allProjects = RealEstateProject::query()->orderBy('name')->get();
+
+        // 1. Projects Query with Search, Filters and Pagination
+        $projectsQuery = RealEstateProject::query()->withCount('parcels');
+        if ($request->filled('project_search')) {
+            $search = (string) $request->input('project_search');
+            $projectsQuery->where(function ($q) use ($search): void {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('code', 'like', "%{$search}%")
+                    ->orWhere('location', 'like', "%{$search}%")
+                    ->orWhere('region', 'like', "%{$search}%");
+            });
+        }
+        if ($request->filled('project_status')) {
+            $projectsQuery->where('status', $request->input('project_status'));
+        }
+        $projects = $projectsQuery->latest()->paginate(10, ['*'], 'projects_page')->withQueryString();
+
+        // 2. Land Parcels Query with Search, Filters and Pagination
+        $parcelsQuery = LandParcel::query()->with(['project', 'allocation.client', 'documents']);
+        if ($request->filled('parcel_search')) {
+            $search = (string) $request->input('parcel_search');
+            $parcelsQuery->where(function ($q) use ($search): void {
+                $q->where('plot_number', 'like', "%{$search}%")
+                    ->orWhere('block_number', 'like', "%{$search}%")
+                    ->orWhereHas('project', function ($pq) use ($search): void {
+                        $pq->where('name', 'like', "%{$search}%");
+                    });
+            });
+        }
+        if ($request->filled('parcel_project_id')) {
+            $parcelsQuery->where('real_estate_project_id', $request->input('parcel_project_id'));
+        }
+        if ($request->filled('parcel_stage')) {
+            $parcelsQuery->where('current_stage', $request->input('parcel_stage'));
+        }
+        if ($request->filled('parcel_tenure')) {
+            $parcelsQuery->where('tenure_type', $request->input('parcel_tenure'));
+        }
+        if ($request->filled('parcel_status')) {
+            $parcelsQuery->where('status', $request->input('parcel_status'));
+        }
+        $parcels = $parcelsQuery->latest()->paginate(10, ['*'], 'parcels_page')->withQueryString();
+
+        // 3. Allocations Query with Search, Filters and Pagination
+        $allocationsQuery = ClientPlotAllocation::query()->with(['parcel.project', 'client', 'installments']);
+        if ($request->filled('allocation_search')) {
+            $search = (string) $request->input('allocation_search');
+            $allocationsQuery->where(function ($q) use ($search): void {
+                $q->where('allocation_number', 'like', "%{$search}%")
+                    ->orWhereHas('client', function ($cq) use ($search): void {
+                        $cq->where('first_name', 'like', "%{$search}%")
+                            ->orWhere('last_name', 'like', "%{$search}%")
+                            ->orWhere('email', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('parcel', function ($pq) use ($search): void {
+                        $pq->where('plot_number', 'like', "%{$search}%");
+                    });
+            });
+        }
+        if ($request->filled('allocation_status')) {
+            $allocationsQuery->where('status', $request->input('allocation_status'));
+        }
+        $allocations = $allocationsQuery->latest()->paginate(10, ['*'], 'allocations_page')->withQueryString();
+
+        // 4. Documents Query with Search, Filters and Pagination
+        $documentsQuery = LandDocument::query()->with(['parcel.project', 'uploader']);
+        if ($request->filled('doc_search')) {
+            $search = (string) $request->input('doc_search');
+            $documentsQuery->where(function ($q) use ($search): void {
+                $q->where('title', 'like', "%{$search}%")
+                    ->orWhere('document_type', 'like', "%{$search}%")
+                    ->orWhereHas('parcel', function ($pq) use ($search): void {
+                        $pq->where('plot_number', 'like', "%{$search}%");
+                    });
+            });
+        }
+        if ($request->filled('doc_type')) {
+            $documentsQuery->where('document_type', $request->input('doc_type'));
+        }
+        $documents = $documentsQuery->latest()->paginate(10, ['*'], 'documents_page')->withQueryString();
+
+        // 5. Listings Query with Search, Filters and Pagination
+        $listingsQuery = PropertyListing::query()->with(['parcel.project']);
+        if ($request->filled('listing_search')) {
+            $search = (string) $request->input('listing_search');
+            $listingsQuery->where(function ($q) use ($search): void {
+                $q->where('title', 'like', "%{$search}%")
+                    ->orWhere('location', 'like', "%{$search}%");
+            });
+        }
+        $listings = $listingsQuery->latest()->paginate(10, ['*'], 'listings_page')->withQueryString();
 
         $metrics = [
             'total_projects' => RealEstateProject::query()->count(),
@@ -63,10 +141,12 @@ final class RealEstateWebController extends Controller
         ];
 
         return view('real-estate::index', [
+            'allProjects' => $allProjects,
             'projects' => $projects,
             'parcels' => $parcels,
             'allocations' => $allocations,
             'documents' => $documents,
+            'listings' => $listings,
             'metrics' => $metrics,
         ]);
     }
@@ -74,9 +154,10 @@ final class RealEstateWebController extends Controller
     public function storeProject(Request $request): RedirectResponse
     {
         $user = $request->user();
-        abort_if(! $user?->can('realestate.manage'), 403);
+        abort_if(! $user || ! $user->can('realestate.manage'), 403);
 
-        $tenantId = (string) (app(TenantContext::class)->getTenant()?->id ?? '');
+        $tenant = app(TenantContext::class)->getTenant();
+        $tenantId = (string) ($tenant ? $tenant->id : '');
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -108,14 +189,80 @@ final class RealEstateWebController extends Controller
             ->with('message', "Real Estate Project {$project->name} ({$project->code}) created.");
     }
 
+    public function editProject(Request $request, RealEstateProject $project): View
+    {
+        $user = $request->user();
+        abort_if(! $user || ! $user->can('realestate.manage'), 403);
+
+        return view('real-estate::projects.edit', [
+            'project' => $project,
+        ]);
+    }
+
+    public function updateProject(Request $request, RealEstateProject $project): RedirectResponse
+    {
+        $user = $request->user();
+        abort_if(! $user || ! $user->can('realestate.manage'), 403);
+
+        $tenant = app(TenantContext::class)->getTenant();
+        $tenantId = (string) ($tenant ? $tenant->id : '');
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'code' => [
+                'required',
+                'string',
+                'max:64',
+                Rule::unique('tenant.real_estate_projects', 'code')
+                    ->where('tenant_id', $tenantId)
+                    ->ignore($project->id),
+            ],
+            'location' => ['required', 'string', 'max:255'],
+            'region' => ['required', 'string', 'max:100'],
+            'total_acreage' => ['required', 'numeric', 'min:0'],
+            'status' => ['required', 'string', Rule::in(['active', 'planning', 'sold_out'])],
+            'description' => ['nullable', 'string', 'max:2000'],
+        ]);
+
+        $project->update([
+            'name' => $validated['name'],
+            'code' => mb_strtoupper($validated['code']),
+            'location' => $validated['location'],
+            'region' => $validated['region'],
+            'total_acreage' => $validated['total_acreage'],
+            'status' => $validated['status'],
+            'description' => $validated['description'] ?? null,
+        ]);
+
+        return redirect()
+            ->route('real-estate.index')
+            ->with('status', 'success')
+            ->with('message', "Real Estate Project {$project->name} updated successfully.");
+    }
+
+    public function destroyProject(Request $request, RealEstateProject $project): RedirectResponse
+    {
+        $user = $request->user();
+        abort_if(! $user || ! $user->can('realestate.manage'), 403);
+
+        $name = $project->name;
+        $project->delete();
+
+        return redirect()
+            ->route('real-estate.index')
+            ->with('status', 'success')
+            ->with('message', "Project {$name} soft-deleted successfully.");
+    }
+
     public function storeParcel(
         Request $request,
         SpatialOverlapDetectorService $overlapDetector,
     ): RedirectResponse {
         $user = $request->user();
-        abort_if(! $user?->can('realestate.manage'), 403);
+        abort_if(! $user || ! $user->can('realestate.manage'), 403);
 
-        $tenantId = (string) (app(TenantContext::class)->getTenant()?->id ?? '');
+        $tenant = app(TenantContext::class)->getTenant();
+        $tenantId = (string) ($tenant ? $tenant->id : '');
 
         $validated = $request->validate([
             'real_estate_project_id' => [
@@ -138,7 +285,6 @@ final class RealEstateWebController extends Controller
 
         $projectId = (int) $validated['real_estate_project_id'];
 
-        // Enforce spatial overlap verification if coordinates are supplied
         if (
             isset($validated['min_lat'], $validated['max_lat'], $validated['min_lng'], $validated['max_lng'])
         ) {
@@ -179,10 +325,109 @@ final class RealEstateWebController extends Controller
             ->with('message', "Plot {$parcel->plot_number} registered in Due Diligence stage.");
     }
 
+    public function editParcel(Request $request, LandParcel $parcel): View
+    {
+        $user = $request->user();
+        abort_if(! $user || ! $user->can('realestate.manage'), 403);
+
+        $allProjects = RealEstateProject::query()->orderBy('name')->get();
+
+        return view('real-estate::parcels.edit', [
+            'parcel' => $parcel,
+            'projects' => $allProjects,
+        ]);
+    }
+
+    public function updateParcel(
+        Request $request,
+        LandParcel $parcel,
+        SpatialOverlapDetectorService $overlapDetector,
+    ): RedirectResponse {
+        $user = $request->user();
+        abort_if(! $user || ! $user->can('realestate.manage'), 403);
+
+        $tenant = app(TenantContext::class)->getTenant();
+        $tenantId = (string) ($tenant ? $tenant->id : '');
+
+        $validated = $request->validate([
+            'real_estate_project_id' => [
+                'required',
+                'integer',
+                Rule::exists('tenant.real_estate_projects', 'id')->where('tenant_id', $tenantId),
+            ],
+            'plot_number' => ['required', 'string', 'max:64'],
+            'block_number' => ['nullable', 'string', 'max:64'],
+            'size_dimension' => ['required', 'string', 'max:64'],
+            'acreage' => ['required', 'numeric', 'min:0.01'],
+            'price_ghs' => ['required', 'numeric', 'min:1'],
+            'tenure_type' => ['required', Rule::in(['STOOL', 'FAMILY', 'PRIVATE', 'STATE'])],
+            'status' => ['required', Rule::in(['available', 'reserved', 'allocated', 'sold'])],
+            'is_legacy' => ['nullable', 'boolean'],
+            'min_lat' => ['nullable', 'numeric'],
+            'max_lat' => ['nullable', 'numeric'],
+            'min_lng' => ['nullable', 'numeric'],
+            'max_lng' => ['nullable', 'numeric'],
+        ]);
+
+        $projectId = (int) $validated['real_estate_project_id'];
+
+        if (
+            isset($validated['min_lat'], $validated['max_lat'], $validated['min_lng'], $validated['max_lng'])
+        ) {
+            try {
+                $overlapDetector->assertNoOverlap($projectId, [
+                    'min_lat' => (float) $validated['min_lat'],
+                    'max_lat' => (float) $validated['max_lat'],
+                    'min_lng' => (float) $validated['min_lng'],
+                    'max_lng' => (float) $validated['max_lng'],
+                ], $parcel->id);
+            } catch (DomainException $e) {
+                return back()->withInput()->withErrors(['spatial' => $e->getMessage()]);
+            }
+        }
+
+        $pricePesewas = (int) round(((float) $validated['price_ghs']) * 100);
+
+        $parcel->update([
+            'real_estate_project_id' => $projectId,
+            'plot_number' => mb_strtoupper($validated['plot_number']),
+            'block_number' => ! empty($validated['block_number']) ? mb_strtoupper($validated['block_number']) : null,
+            'size_dimension' => $validated['size_dimension'],
+            'acreage' => $validated['acreage'],
+            'price_pesewas' => $pricePesewas,
+            'tenure_type' => $validated['tenure_type'],
+            'status' => $validated['status'],
+            'is_legacy' => ! empty($validated['is_legacy']),
+            'min_lat' => $validated['min_lat'] ?? null,
+            'max_lat' => $validated['max_lat'] ?? null,
+            'min_lng' => $validated['min_lng'] ?? null,
+            'max_lng' => $validated['max_lng'] ?? null,
+        ]);
+
+        return redirect()
+            ->route('real-estate.index')
+            ->with('status', 'success')
+            ->with('message', "Plot {$parcel->plot_number} updated successfully.");
+    }
+
+    public function destroyParcel(Request $request, LandParcel $parcel): RedirectResponse
+    {
+        $user = $request->user();
+        abort_if(! $user || ! $user->can('realestate.manage'), 403);
+
+        $plotNumber = $parcel->plot_number;
+        $parcel->delete();
+
+        return redirect()
+            ->route('real-estate.index')
+            ->with('status', 'success')
+            ->with('message', "Plot {$plotNumber} soft-deleted successfully.");
+    }
+
     public function updateCompliance(Request $request, LandParcel $parcel): RedirectResponse
     {
         $user = $request->user();
-        abort_if(! $user?->can('realestate.compliance.verify'), 403);
+        abort_if(! $user || ! $user->can('realestate.compliance.verify'), 403);
 
         $validated = $request->validate([
             // Due Diligence Fields
@@ -235,7 +480,7 @@ final class RealEstateWebController extends Controller
         LandAcquisitionStateMachine $stateMachine,
     ): RedirectResponse {
         $user = $request->user();
-        abort_if(! $user?->can('realestate.compliance.verify'), 403);
+        abort_if(! $user || ! $user->can('realestate.compliance.verify'), 403);
 
         $validated = $request->validate([
             'target_stage' => ['required', 'string', Rule::in([
@@ -260,7 +505,7 @@ final class RealEstateWebController extends Controller
     public function storeDocument(Request $request, LandParcel $parcel): RedirectResponse
     {
         $user = $request->user();
-        abort_if(! $user?->can('realestate.documents.manage'), 403);
+        abort_if(! $user || ! $user->can('realestate.documents.manage'), 403);
 
         $validated = $request->validate([
             'document_type' => ['required', 'string', 'max:64'],
@@ -295,10 +540,10 @@ final class RealEstateWebController extends Controller
     public function downloadDocument(Request $request, LandDocument $document): BinaryFileResponse
     {
         $user = $request->user();
+        abort_if(! $user, 401);
 
-        // Security check: staff with realestate permission OR specifically the allocated client
-        $isStaff = (bool) ($user?->can('realestate.view') || $user?->can('realestate.manage'));
-        $isAllocatedClient = (bool) ($user?->can('realestate.client.portal') && $document->parcel?->allocation?->client_user_id === (string) $user?->uuid);
+        $isStaff = (bool) ($user->can('realestate.view') || $user->can('realestate.manage'));
+        $isAllocatedClient = (bool) ($user->can('realestate.client.portal') && $document->parcel?->allocation?->client_user_id === (string) $user->uuid);
         abort_if(! $isStaff && ! $isAllocatedClient, 403);
 
         if (! Storage::disk('local')->exists($document->file_path)) {
@@ -321,9 +566,10 @@ final class RealEstateWebController extends Controller
     public function allocatePlot(Request $request, LandParcel $parcel): RedirectResponse
     {
         $user = $request->user();
-        abort_if(! $user?->can('realestate.manage'), 403);
+        abort_if(! $user || ! $user->can('realestate.manage'), 403);
 
-        $tenantId = (string) (app(TenantContext::class)->getTenant()?->id ?? '');
+        $tenant = app(TenantContext::class)->getTenant();
+        $tenantId = (string) ($tenant ? $tenant->id : '');
 
         $validated = $request->validate([
             'client_email' => ['required', 'email'],
@@ -331,8 +577,8 @@ final class RealEstateWebController extends Controller
             'number_of_installments' => ['required', 'integer', 'min:1', 'max:24'],
         ]);
 
-        // Find or provision client user
-        $clientUser = User::query()->where('email', $validated['client_email'])->first();
+        // Find or provision client user without tenant scope since users is global
+        $clientUser = User::withoutGlobalScopes()->where('email', $validated['client_email'])->first();
         if (! $clientUser instanceof User) {
             $nameParts = explode(' ', mb_trim($validated['client_name']), 2);
             $clientUser = new User();
@@ -350,10 +596,21 @@ final class RealEstateWebController extends Controller
         $numInstallments = (int) $validated['number_of_installments'];
         $installmentAmount = (int) intdiv($totalPrice, $numInstallments);
 
+        // Bounded retry for unique allocation_number
+        $allocationNumber = null;
+        for ($attempt = 0; $attempt < 20; $attempt++) {
+            $candidate = 'ALC-'.mb_strtoupper(Str::random(6));
+            if (! ClientPlotAllocation::withoutGlobalScopes()->where('allocation_number', $candidate)->exists()) {
+                $allocationNumber = $candidate;
+                break;
+            }
+        }
+        $allocationNumber = $allocationNumber ?? ('ALC-'.mb_strtoupper(Str::random(10)));
+
         $allocation = ClientPlotAllocation::create([
             'land_parcel_id' => $parcel->id,
             'client_user_id' => (string) $clientUser->uuid,
-            'allocation_number' => 'ALC-'.mb_strtoupper(Str::random(6)),
+            'allocation_number' => $allocationNumber,
             'total_price_pesewas' => $totalPrice,
             'amount_paid_pesewas' => 0,
             'status' => 'active',
@@ -390,11 +647,13 @@ final class RealEstateWebController extends Controller
         PaymentGateway $gateway
     ): RedirectResponse {
         $user = $request->user();
+        abort_if(! $user, 401);
+
         /** @var ClientPlotAllocation $allocation */
         $allocation = $installment->allocation()->firstOrFail();
 
-        $isStaff = (bool) $user?->can('realestate.manage');
-        $isClient = (bool) ($user?->can('realestate.client.portal') && $allocation->client_user_id === (string) $user?->uuid);
+        $isStaff = (bool) $user->can('realestate.manage');
+        $isClient = (bool) ($user->can('realestate.client.portal') && $allocation->client_user_id === (string) $user->uuid);
         abort_if(! $isStaff && ! $isClient, 403);
 
         $validated = $request->validate([
@@ -454,11 +713,37 @@ final class RealEstateWebController extends Controller
             ->with('message', "Payment of GHS {$validated['amount_ghs']} recorded against Installment #{$installment->installment_number}.");
     }
 
+    public function receipt(Request $request, InstallmentSchedule $installment): View
+    {
+        $user = $request->user();
+        abort_if(! $user, 401);
+
+        /** @var ClientPlotAllocation $allocation */
+        $allocation = $installment->allocation()->with(['parcel.project', 'client'])->firstOrFail();
+
+        $isStaff = (bool) ($user->can('realestate.view') || $user->can('realestate.manage'));
+        $isClient = (bool) ($user->can('realestate.client.portal') && (string) $allocation->client_user_id === (string) $user->uuid);
+        abort_if(! $isStaff && ! $isClient, 403);
+
+        abort_if($installment->status !== 'paid' && $installment->amount_paid_pesewas <= 0, 404, 'No payments recorded for this installment.');
+
+        return view('real-estate::receipt', [
+            'installment' => $installment,
+            'allocation' => $allocation,
+            'parcel' => $allocation->parcel,
+            'project' => $allocation->parcel?->project,
+            'client' => $allocation->client,
+            'tenant' => app(TenantContext::class)->getTenant(),
+        ]);
+    }
+
     public function orderExpertOrMaterial(Request $request, LandParcel $parcel): RedirectResponse
     {
         $user = $request->user();
-        $isStaff = (bool) $user?->can('realestate.manage');
-        $isAllocatedClient = (bool) ($user?->can('realestate.client.portal') && $parcel->allocation?->client_user_id === (string) $user?->uuid);
+        abort_if(! $user, 401);
+
+        $isStaff = (bool) $user->can('realestate.manage');
+        $isAllocatedClient = (bool) ($user->can('realestate.client.portal') && $parcel->allocation?->client_user_id === (string) $user->uuid);
         abort_if(! $isStaff && ! $isAllocatedClient, 403);
 
         $validated = $request->validate([
@@ -472,8 +757,19 @@ final class RealEstateWebController extends Controller
             'description' => ['nullable', 'string', 'max:2000'],
         ]);
 
+        // Bounded retry for unique job_number
+        $jobNumber = null;
+        for ($attempt = 0; $attempt < 20; $attempt++) {
+            $candidate = 'JOB-RE-'.mb_strtoupper(Str::random(6));
+            if (! ServiceJob::withoutGlobalScopes()->where('job_number', $candidate)->exists()) {
+                $jobNumber = $candidate;
+                break;
+            }
+        }
+        $jobNumber = $jobNumber ?? ('JOB-RE-'.mb_strtoupper(Str::random(10)));
+
         $job = ServiceJob::create([
-            'job_number' => 'JOB-RE-'.mb_strtoupper(Str::random(6)),
+            'job_number' => $jobNumber,
             'requester_id' => (string) $user->uuid,
             'source_module' => 'real_estate',
             'category' => $validated['category'],
@@ -486,5 +782,122 @@ final class RealEstateWebController extends Controller
         return back()
             ->with('status', 'success')
             ->with('message', "Service request {$job->job_number} dispatched to Vendor Marketplace.");
+    }
+
+    public function storeListing(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+        abort_if(! $user || ! $user->can('realestate.manage'), 403);
+
+        $validated = $request->validate([
+            'title' => ['required', 'string', 'max:255'],
+            'location' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string', 'max:3000'],
+            'price_ghs' => ['required', 'numeric', 'min:1'],
+            'size_dimension' => ['required', 'string', 'max:64'],
+            'tenure_type' => ['required', Rule::in(['STOOL', 'FAMILY', 'PRIVATE', 'STATE'])],
+            'compliance_stage' => ['required', 'string', 'max:64'],
+            'land_parcel_id' => ['nullable', 'integer'],
+            'is_featured' => ['nullable', 'boolean'],
+            'is_published' => ['nullable', 'boolean'],
+            'image' => ['nullable', 'image', 'max:5120'], // max 5MB
+        ]);
+
+        $imagePath = null;
+        if ($request->hasFile('image')) {
+            $imagePath = $request->file('image')?->store('real-estate/listings', 'public');
+        }
+
+        $pricePesewas = (int) round(((float) $validated['price_ghs']) * 100);
+
+        $listing = PropertyListing::create([
+            'title' => $validated['title'],
+            'location' => $validated['location'],
+            'description' => $validated['description'] ?? null,
+            'image_path' => $imagePath,
+            'price_pesewas' => $pricePesewas,
+            'size_dimension' => $validated['size_dimension'],
+            'tenure_type' => $validated['tenure_type'],
+            'compliance_stage' => $validated['compliance_stage'],
+            'land_parcel_id' => ! empty($validated['land_parcel_id']) ? (int) $validated['land_parcel_id'] : null,
+            'is_featured' => ! empty($validated['is_featured']),
+            'is_published' => isset($validated['is_published']) ? (bool) $validated['is_published'] : true,
+        ]);
+
+        return redirect()
+            ->route('real-estate.index')
+            ->with('status', 'success')
+            ->with('message', "Listing '{$listing->title}' published successfully.");
+    }
+
+    public function editListing(Request $request, PropertyListing $listing): View
+    {
+        $user = $request->user();
+        abort_if(! $user || ! $user->can('realestate.manage'), 403);
+
+        $parcels = LandParcel::query()->with('project')->orderBy('plot_number')->get();
+
+        return view('real-estate::listings.edit', [
+            'listing' => $listing,
+            'parcels' => $parcels,
+        ]);
+    }
+
+    public function updateListing(Request $request, PropertyListing $listing): RedirectResponse
+    {
+        $user = $request->user();
+        abort_if(! $user || ! $user->can('realestate.manage'), 403);
+
+        $validated = $request->validate([
+            'title' => ['required', 'string', 'max:255'],
+            'location' => ['required', 'string', 'max:255'],
+            'description' => ['nullable', 'string', 'max:3000'],
+            'price_ghs' => ['required', 'numeric', 'min:1'],
+            'size_dimension' => ['required', 'string', 'max:64'],
+            'tenure_type' => ['required', Rule::in(['STOOL', 'FAMILY', 'PRIVATE', 'STATE'])],
+            'compliance_stage' => ['required', 'string', 'max:64'],
+            'land_parcel_id' => ['nullable', 'integer'],
+            'is_featured' => ['nullable', 'boolean'],
+            'is_published' => ['nullable', 'boolean'],
+            'image' => ['nullable', 'image', 'max:5120'],
+        ]);
+
+        $updateData = [
+            'title' => $validated['title'],
+            'location' => $validated['location'],
+            'description' => $validated['description'] ?? null,
+            'price_pesewas' => (int) round(((float) $validated['price_ghs']) * 100),
+            'size_dimension' => $validated['size_dimension'],
+            'tenure_type' => $validated['tenure_type'],
+            'compliance_stage' => $validated['compliance_stage'],
+            'land_parcel_id' => ! empty($validated['land_parcel_id']) ? (int) $validated['land_parcel_id'] : null,
+            'is_featured' => ! empty($validated['is_featured']),
+            'is_published' => isset($validated['is_published']) ? (bool) $validated['is_published'] : false,
+        ];
+
+        if ($request->hasFile('image')) {
+            $updateData['image_path'] = $request->file('image')?->store('real-estate/listings', 'public');
+        }
+
+        $listing->update($updateData);
+
+        return redirect()
+            ->route('real-estate.index')
+            ->with('status', 'success')
+            ->with('message', "Listing '{$listing->title}' updated successfully.");
+    }
+
+    public function destroyListing(Request $request, PropertyListing $listing): RedirectResponse
+    {
+        $user = $request->user();
+        abort_if(! $user || ! $user->can('realestate.manage'), 403);
+
+        $title = $listing->title;
+        $listing->delete();
+
+        return redirect()
+            ->route('real-estate.index')
+            ->with('status', 'success')
+            ->with('message', "Listing '{$title}' soft-deleted successfully.");
     }
 }

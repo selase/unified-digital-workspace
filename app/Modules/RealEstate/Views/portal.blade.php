@@ -12,9 +12,12 @@
                 Track compliance stage, inspect cadastral documentation, manage installment payments, and order building artisans &amp; materials.
             </p>
         </div>
-        <div>
+        <div class="flex items-center gap-2">
             <a href="{{ route('real-estate.index') }}" class="kt-btn kt-btn-outline kt-btn-sm">
-                &larr; Back to Admin Desk
+                &larr; Real Estate Desk
+            </a>
+            <a href="{{ route('real-estate.public.catalog') }}" target="_blank" class="kt-btn kt-btn-primary kt-btn-sm">
+                Browse More Plots
             </a>
         </div>
     </div>
@@ -25,6 +28,25 @@
             {{ session('message') }}
         </div>
     @endif
+
+    {{-- Search & Filter Bar for Allocations --}}
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-4 bg-card p-4 rounded-xl border border-border">
+        <form action="{{ route('real-estate.portal.index') }}" method="GET" class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
+            <input type="text" name="search" value="{{ request('search') }}" placeholder="Search by allocation # or plot..." class="kt-input kt-input-sm text-xs w-56">
+            <select name="status" class="kt-select kt-select-sm text-xs w-36">
+                <option value="">All Statuses</option>
+                <option value="active" @selected(request('status') === 'active')>Active</option>
+                <option value="completed" @selected(request('status') === 'completed')>Completed</option>
+            </select>
+            <button type="submit" class="kt-btn kt-btn-xs kt-btn-primary">Filter</button>
+            @if(request()->anyFilled(['search', 'status']))
+                <a href="{{ route('real-estate.portal.index') }}" class="kt-btn kt-btn-xs kt-btn-outline">Reset</a>
+            @endif
+        </form>
+        <div class="text-xs text-muted-foreground">
+            Showing <span class="font-semibold text-foreground">{{ $allocations->total() }}</span> allocated parcel(s)
+        </div>
+    </div>
 
     {{-- Allocated Plots Cards --}}
     @forelse($allocations as $alloc)
@@ -41,6 +63,38 @@
                     </h3>
                 </div>
                 <div class="flex items-center gap-2">
+                    {{-- Spatial Overlap Badge --}}
+                    @if($parcel)
+                        @php
+                            $overlapConflict = $parcel->checkSpatialOverlap();
+                        @endphp
+                        @if($overlapConflict)
+                            <span class="kt-badge kt-badge-xs kt-badge-danger">
+                                <i class="ki-filled ki-cross-circle text-[10px] mr-1"></i>
+                                Spatial Overlap Warning
+                            </span>
+                        @elseif($parcel->hasSpatialCoordinates())
+                            <span class="kt-badge kt-badge-xs kt-badge-success">
+                                <i class="ki-filled ki-check-circle text-[10px] mr-1"></i>
+                                Coordinates Verified
+                            </span>
+                        @endif
+
+                        {{-- 30-Day Search Badge --}}
+                        @if($parcel->is_legacy)
+                            <span class="kt-badge kt-badge-xs kt-badge-secondary">Legacy Title</span>
+                        @elseif($parcel->isSearchExpired())
+                            <span class="kt-badge kt-badge-xs kt-badge-danger">
+                                <i class="ki-filled ki-information text-[10px] mr-1"></i>
+                                Search Expired (&gt;30d)
+                            </span>
+                        @elseif($parcel->search_issue_date)
+                            <span class="kt-badge kt-badge-xs kt-badge-success">
+                                Search Valid ({{ $parcel->searchDaysRemaining() }}d)
+                            </span>
+                        @endif
+                    @endif
+
                     <span class="kt-badge kt-badge-outline uppercase">{{ $parcel?->tenure_type }}</span>
                     <span class="kt-badge kt-badge-success uppercase">{{ $alloc->status }}</span>
                 </div>
@@ -124,6 +178,30 @@
                             </div>
                         </div>
 
+                        {{-- Installment Schedule Items & Receipts --}}
+                        <div class="pt-3 border-t border-border space-y-1.5">
+                            <div class="text-[10px] font-bold uppercase text-muted-foreground">Installment Schedule</div>
+                            @foreach($alloc->installments as $inst)
+                                <div class="flex items-center justify-between text-xs p-1.5 rounded bg-card border border-border">
+                                    <div>
+                                        <span class="font-mono font-semibold">#{{ $inst->installment_number }}:</span>
+                                        <span>{{ $inst->formattedAmountDue() }}</span>
+                                    </div>
+                                    <div class="flex items-center gap-1.5">
+                                        @if($inst->status === 'paid')
+                                            <span class="kt-badge kt-badge-xs kt-badge-success">Paid</span>
+                                            <a href="{{ route('real-estate.installments.receipt', $inst) }}" class="text-[10px] text-primary hover:underline font-semibold flex items-center gap-0.5">
+                                                <i class="ki-filled ki-printer text-[10px]"></i>
+                                                Receipt
+                                            </a>
+                                        @else
+                                            <span class="kt-badge kt-badge-xs kt-badge-warning">{{ $inst->status }}</span>
+                                        @endif
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+
                         @php
                             $pending = $alloc->installments->firstWhere('status', 'pending');
                         @endphp
@@ -195,6 +273,11 @@
             <p class="text-xs mt-1">Please contact the estate sales office or browse our public property listings.</p>
         </div>
     @endforelse
+
+    @if($allocations->hasPages())
+        <div class="p-4 bg-card rounded-xl border border-border">
+            {{ $allocations->links() }}
+        </div>
+    @endif
 </div>
 @endsection
-

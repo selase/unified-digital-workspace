@@ -18,11 +18,24 @@ final class PublicRealEstateWebController extends Controller
 {
     public function catalog(Request $request): View
     {
-        $listings = PropertyListing::query()
+        $query = PropertyListing::query()
             ->where('is_published', true)
-            ->with(['parcel.project'])
-            ->latest()
-            ->get();
+            ->with(['parcel.project']);
+
+        if ($request->filled('search')) {
+            $search = (string) $request->input('search');
+            $query->where(function ($q) use ($search): void {
+                $q->where('title', 'like', "%{$search}%")
+                    ->orWhere('location', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('tenure_type')) {
+            $query->where('tenure_type', $request->input('tenure_type'));
+        }
+
+        $listings = $query->latest()->paginate(9)->withQueryString();
 
         return view('real-estate::public.catalog', [
             'listings' => $listings,
@@ -54,9 +67,19 @@ final class PublicRealEstateWebController extends Controller
 
         // Companion writer: if CRM module is active for tenant, persist as CrmLead
         if ($tenant && $moduleManager->isEnabledForTenant('crm', $tenant)) {
+            $leadRef = null;
+            for ($attempt = 0; $attempt < 20; $attempt++) {
+                $candidate = 'LEAD-PROP-'.mb_strtoupper(Str::random(6));
+                if (! CrmLead::withoutGlobalScopes()->where('reference_code', $candidate)->exists()) {
+                    $leadRef = $candidate;
+                    break;
+                }
+            }
+            $leadRef = $leadRef ?? ('LEAD-PROP-'.mb_strtoupper(Str::random(10)));
+
             $lead = CrmLead::create([
                 'tenant_id' => (string) $tenant->id,
-                'reference_code' => 'LEAD-PROP-'.mb_strtoupper(Str::random(6)),
+                'reference_code' => $leadRef,
                 'source' => 'website_enquiry',
                 'enquiry_type' => 'real_estate_listing',
                 'full_name' => $validated['full_name'],

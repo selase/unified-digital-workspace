@@ -611,4 +611,458 @@ describe('Phase 20: Real Estate Management, Public Land Listings, Client Portal,
             ])
             ->assertRedirect('https://checkout.paystack.test/pay/session_abc123');
     });
+
+    test('manages project edit and soft-delete with authorization gates', function (): void {
+        [$user, $tenant] = createRealEstateTestContext();
+
+        $project = RealEstateProject::create([
+            'name' => 'Legacy Garden Enclave',
+            'code' => 'LGC-GARDEN',
+            'location' => 'Oyibi',
+            'region' => 'Greater Accra',
+            'total_acreage' => 12.50,
+            'status' => 'planning',
+        ]);
+
+        $unauthorized = User::factory()->create(['tenant_id' => $tenant->id]);
+        $unauthorized->tenants()->syncWithoutDetaching([$tenant->id]);
+
+        // Unauthorized checks
+        $this->actingAs($unauthorized)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->get(route('real-estate.projects.edit', $project))
+            ->assertForbidden();
+
+        $this->actingAs($unauthorized)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->put(route('real-estate.projects.update', $project), [
+                'name' => 'Hacked Enclave',
+                'code' => 'HACK-01',
+                'location' => 'Accra',
+                'region' => 'Greater Accra',
+                'total_acreage' => 10,
+                'status' => 'active',
+            ])
+            ->assertForbidden();
+
+        $this->actingAs($unauthorized)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->delete(route('real-estate.projects.destroy', $project))
+            ->assertForbidden();
+
+        // Authorized edit and update
+        $this->actingAs($user)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->get(route('real-estate.projects.edit', $project))
+            ->assertOk()
+            ->assertSee('Legacy Garden Enclave');
+
+        $this->actingAs($user)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->put(route('real-estate.projects.update', $project), [
+                'name' => 'Legacy Garden Enclave Phase 2',
+                'code' => 'LGC-GARDEN-2',
+                'location' => 'Oyibi Valley',
+                'region' => 'Greater Accra',
+                'total_acreage' => 20.00,
+                'status' => 'active',
+                'description' => 'Updated master plan for phase 2',
+            ])
+            ->assertRedirect(route('real-estate.index'));
+
+        $project->refresh();
+        expect($project->name)->toBe('Legacy Garden Enclave Phase 2')
+            ->and($project->code)->toBe('LGC-GARDEN-2')
+            ->and((float) $project->total_acreage)->toBe(20.00)
+            ->and($project->status)->toBe('active');
+
+        // Authorized soft-delete
+        $this->actingAs($user)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->delete(route('real-estate.projects.destroy', $project))
+            ->assertRedirect(route('real-estate.index'));
+
+        expect($project->fresh()?->trashed())->toBeTrue();
+    });
+
+    test('manages parcel edit, spatial overlap re-validation on update, and soft-delete', function (): void {
+        [$user, $tenant] = createRealEstateTestContext();
+
+        $project = RealEstateProject::create([
+            'name' => 'Ridge Haven Enclave',
+            'code' => 'RDG-HVN',
+            'location' => 'Aburi Foothills',
+            'region' => 'Eastern Region',
+            'total_acreage' => 30.00,
+        ]);
+
+        $parcel1 = LandParcel::create([
+            'real_estate_project_id' => $project->id,
+            'plot_number' => 'PLT-RH-01',
+            'size_dimension' => '70x100 ft',
+            'acreage' => 0.1600,
+            'price_pesewas' => 12000000,
+            'tenure_type' => 'PRIVATE',
+            'current_stage' => LandParcel::STAGE_DUE_DILIGENCE,
+            'status' => 'available',
+            'min_lat' => 5.8000000,
+            'max_lat' => 5.8050000,
+            'min_lng' => -0.1500000,
+            'max_lng' => -0.1450000,
+        ]);
+
+        $parcel2 = LandParcel::create([
+            'real_estate_project_id' => $project->id,
+            'plot_number' => 'PLT-RH-02',
+            'size_dimension' => '70x100 ft',
+            'acreage' => 0.1600,
+            'price_pesewas' => 12000000,
+            'tenure_type' => 'PRIVATE',
+            'current_stage' => LandParcel::STAGE_DUE_DILIGENCE,
+            'status' => 'available',
+            'min_lat' => 5.8200000,
+            'max_lat' => 5.8250000,
+            'min_lng' => -0.1300000,
+            'max_lng' => -0.1250000,
+        ]);
+
+        $unauthorized = User::factory()->create(['tenant_id' => $tenant->id]);
+        $unauthorized->tenants()->syncWithoutDetaching([$tenant->id]);
+
+        $this->actingAs($unauthorized)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->get(route('real-estate.parcels.edit', $parcel2))
+            ->assertForbidden();
+
+        // Updating parcel 2 to overlap parcel 1 coordinates MUST trigger spatial validation failure
+        $overlapUpdate = $this->actingAs($user)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->put(route('real-estate.parcels.update', $parcel2), [
+                'real_estate_project_id' => $project->id,
+                'plot_number' => 'PLT-RH-02',
+                'size_dimension' => '70x100 ft',
+                'acreage' => 0.1600,
+                'price_ghs' => 130000,
+                'tenure_type' => 'PRIVATE',
+                'status' => 'available',
+                'min_lat' => 5.8020000, // Conflicts with parcel 1!
+                'max_lat' => 5.8070000,
+                'min_lng' => -0.1480000,
+                'max_lng' => -0.1420000,
+            ]);
+
+        $overlapUpdate->assertSessionHasErrors('spatial');
+
+        // Valid update succeeds
+        $this->actingAs($user)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->put(route('real-estate.parcels.update', $parcel2), [
+                'real_estate_project_id' => $project->id,
+                'plot_number' => 'PLT-RH-02-MOD',
+                'block_number' => 'BLK-C',
+                'size_dimension' => '100x100 ft',
+                'acreage' => 0.2300,
+                'price_ghs' => 180000,
+                'tenure_type' => 'FAMILY',
+                'status' => 'reserved',
+                'min_lat' => 5.8200000,
+                'max_lat' => 5.8250000,
+                'min_lng' => -0.1300000,
+                'max_lng' => -0.1250000,
+            ])
+            ->assertRedirect(route('real-estate.index'));
+
+        $parcel2->refresh();
+        expect($parcel2->plot_number)->toBe('PLT-RH-02-MOD')
+            ->and($parcel2->block_number)->toBe('BLK-C')
+            ->and($parcel2->size_dimension)->toBe('100x100 ft')
+            ->and($parcel2->tenure_type)->toBe('FAMILY')
+            ->and($parcel2->status)->toBe('reserved');
+
+        // Soft-delete parcel
+        $this->actingAs($user)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->delete(route('real-estate.parcels.destroy', $parcel2))
+            ->assertRedirect(route('real-estate.index'));
+
+        expect($parcel2->fresh()?->trashed())->toBeTrue();
+    });
+
+    test('supports property listing image upload, public display, edit, and soft-delete', function (): void {
+        Storage::fake('public');
+        [$user, $tenant] = createRealEstateTestContext();
+
+        $dummyImage = UploadedFile::fake()->image('plot_showcase.jpg', 800, 600);
+
+        // 1. Create listing with image
+        $createResponse = $this->actingAs($user)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->post(route('real-estate.listings.store'), [
+                'title' => 'Prime Waterfront Plot Prampram',
+                'location' => 'Prampram Beach Road',
+                'description' => 'Direct beachfront plot ready for residential villa development.',
+                'price_ghs' => 250000,
+                'size_dimension' => '100x100 ft',
+                'tenure_type' => 'PRIVATE',
+                'compliance_stage' => 'PROJECT_READY_FOR_BUILD',
+                'is_featured' => 1,
+                'is_published' => 1,
+                'image' => $dummyImage,
+            ]);
+
+        $createResponse->assertRedirect(route('real-estate.index'));
+
+        $listing = PropertyListing::query()->where('title', 'Prime Waterfront Plot Prampram')->firstOrFail();
+        expect($listing->image_path)->not->toBeNull()
+            ->and(Storage::disk('public')->exists($listing->image_path))->toBeTrue();
+
+        // 2. Public Catalog and Show render the listing and image
+        $catalogResponse = $this->get(route('real-estate.public.catalog'));
+        $catalogResponse->assertOk()
+            ->assertSee('Prime Waterfront Plot Prampram')
+            ->assertSee(Storage::url($listing->image_path));
+
+        $showResponse = $this->get(route('real-estate.public.show', $listing));
+        $showResponse->assertOk()
+            ->assertSee('Prime Waterfront Plot Prampram')
+            ->assertSee(Storage::url($listing->image_path));
+
+        // 3. Edit listing with a new image
+        $replacementImage = UploadedFile::fake()->image('updated_showcase.png', 1024, 768);
+        $this->actingAs($user)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->put(route('real-estate.listings.update', $listing), [
+                'title' => 'Prime Waterfront Villa Plot Prampram Updated',
+                'location' => 'Prampram Beach Road, Greater Accra',
+                'description' => 'Updated luxury beachfront parcel.',
+                'price_ghs' => 280000,
+                'size_dimension' => '100x100 ft',
+                'tenure_type' => 'PRIVATE',
+                'compliance_stage' => 'PROJECT_READY_FOR_BUILD',
+                'is_featured' => 1,
+                'is_published' => 1,
+                'image' => $replacementImage,
+            ])
+            ->assertRedirect(route('real-estate.index'));
+
+        $listing->refresh();
+        expect($listing->title)->toBe('Prime Waterfront Villa Plot Prampram Updated')
+            ->and($listing->price_pesewas)->toBe(28000000)
+            ->and(Storage::disk('public')->exists($listing->image_path))->toBeTrue();
+
+        // 4. Soft-delete listing
+        $this->actingAs($user)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->delete(route('real-estate.listings.destroy', $listing))
+            ->assertRedirect(route('real-estate.index'));
+
+        expect($listing->fresh()?->trashed())->toBeTrue();
+
+        // Trashed listing is not shown in public catalog
+        $this->flushSession();
+        $this->get(route('real-estate.public.catalog'))
+            ->assertDontSee('Prime Waterfront Villa Plot Prampram Updated');
+    });
+
+    test('enforces allocation payment history and printable receipts with adversarial IDOR check', function (): void {
+        [$user, $tenant] = createRealEstateTestContext();
+
+        $clientA = User::factory()->create([
+            'tenant_id' => $tenant->id,
+            'first_name' => 'Kojo',
+            'last_name' => 'Mensah',
+            'email' => 'kojo@clientA.com',
+        ]);
+        $clientB = User::factory()->create([
+            'tenant_id' => $tenant->id,
+            'first_name' => 'Ama',
+            'last_name' => 'Osei',
+            'email' => 'ama@clientB.com',
+        ]);
+
+        $clientA->tenants()->syncWithoutDetaching([$tenant->id]);
+        $clientB->tenants()->syncWithoutDetaching([$tenant->id]);
+        $clientA->givePermissionTo('realestate.client.portal');
+        $clientB->givePermissionTo('realestate.client.portal');
+
+        $project = RealEstateProject::create([
+            'name' => 'Crown Valley Enclave',
+            'code' => 'CRN-VLY',
+            'location' => 'Airport Hills',
+            'region' => 'Greater Accra',
+            'total_acreage' => 15.00,
+        ]);
+
+        $parcel = LandParcel::create([
+            'real_estate_project_id' => $project->id,
+            'plot_number' => 'PLT-CV-07',
+            'size_dimension' => '100x100 ft',
+            'acreage' => 0.2300,
+            'price_pesewas' => 10000000,
+            'tenure_type' => 'PRIVATE',
+            'current_stage' => LandParcel::STAGE_REGISTRATION,
+            'status' => 'allocated',
+        ]);
+
+        $allocation = ClientPlotAllocation::create([
+            'land_parcel_id' => $parcel->id,
+            'client_user_id' => (string) $clientA->uuid,
+            'allocation_number' => 'ALC-CV-007',
+            'total_price_pesewas' => 10000000,
+            'amount_paid_pesewas' => 5000000,
+            'status' => 'active',
+            'allocated_at' => now(),
+        ]);
+
+        // Paid installment #1
+        $paidInstallment = InstallmentSchedule::create([
+            'client_plot_allocation_id' => $allocation->id,
+            'installment_number' => 1,
+            'due_date' => now()->subMonth()->toDateString(),
+            'amount_due_pesewas' => 5000000,
+            'amount_paid_pesewas' => 5000000,
+            'status' => 'paid',
+            'paid_at' => now()->subWeeks(2),
+            'payment_reference' => 'PAY-CRN-001',
+        ]);
+
+        // Unpaid installment #2
+        $unpaidInstallment = InstallmentSchedule::create([
+            'client_plot_allocation_id' => $allocation->id,
+            'installment_number' => 2,
+            'due_date' => now()->addMonth()->toDateString(),
+            'amount_due_pesewas' => 5000000,
+            'amount_paid_pesewas' => 0,
+            'status' => 'pending',
+        ]);
+
+        // 1. Client A views their own receipt: 200 OK
+        $receiptResponse = $this->actingAs($clientA)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->get(route('real-estate.installments.receipt', $paidInstallment));
+
+        $receiptResponse->assertOk()
+            ->assertSee('Official Payment Receipt')
+            ->assertSee('PAY-CRN-001')
+            ->assertSee('Kojo Mensah')
+            ->assertSee('Plot PLT-CV-07');
+
+        // 2. ADVERSARIAL IDOR TEST: Client B attempts to view Client A\'s receipt -> 403 Forbidden!
+        $this->actingAs($clientB)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->get(route('real-estate.installments.receipt', $paidInstallment))
+            ->assertForbidden();
+
+        // 3. Requesting receipt for an unpaid installment returns 404
+        $this->actingAs($clientA)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->get(route('real-estate.installments.receipt', $unpaidInstallment))
+            ->assertNotFound();
+
+        // 4. Staff with realestate.view can access receipt
+        $this->actingAs($user)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->get(route('real-estate.installments.receipt', $paidInstallment))
+            ->assertOk();
+    });
+
+    test('evaluates 30-day search expiry rule and spatial overlap status badges accurately', function (): void {
+        [$user, $tenant] = createRealEstateTestContext();
+
+        $project = RealEstateProject::create([
+            'name' => 'Tema Golf Enclave',
+            'code' => 'TMA-GLF',
+            'location' => 'Tema Community 25',
+            'region' => 'Greater Accra',
+            'total_acreage' => 20.00,
+        ]);
+
+        // Parcel with fresh search (10 days old)
+        $freshParcel = LandParcel::create([
+            'real_estate_project_id' => $project->id,
+            'plot_number' => 'PLT-TMA-01',
+            'size_dimension' => '70x100 ft',
+            'acreage' => 0.1600,
+            'price_pesewas' => 10000000,
+            'tenure_type' => 'PRIVATE',
+            'search_issue_date' => now()->subDays(10)->toDateString(),
+            'is_legacy' => false,
+            'min_lat' => 5.7000000,
+            'max_lat' => 5.7050000,
+            'min_lng' => -0.0100000,
+            'max_lng' => -0.0050000,
+        ]);
+
+        expect($freshParcel->isSearchExpired())->toBeFalse()
+            ->and($freshParcel->searchDaysRemaining())->toBe(20)
+            ->and($freshParcel->checkSpatialOverlap())->toBeNull();
+
+        // Parcel with expired search (35 days old)
+        $expiredParcel = LandParcel::create([
+            'real_estate_project_id' => $project->id,
+            'plot_number' => 'PLT-TMA-02',
+            'size_dimension' => '70x100 ft',
+            'acreage' => 0.1600,
+            'price_pesewas' => 10000000,
+            'tenure_type' => 'PRIVATE',
+            'search_issue_date' => now()->subDays(35)->toDateString(),
+            'is_legacy' => false,
+            'min_lat' => 5.7200000,
+            'max_lat' => 5.7250000,
+            'min_lng' => -0.0200000,
+            'max_lng' => -0.0150000,
+        ]);
+
+        expect($expiredParcel->isSearchExpired())->toBeTrue()
+            ->and($expiredParcel->searchDaysRemaining())->toBe(0);
+
+        // Legacy parcel is exempt from expiry
+        $legacyParcel = LandParcel::create([
+            'real_estate_project_id' => $project->id,
+            'plot_number' => 'PLT-TMA-LGC',
+            'size_dimension' => '70x100 ft',
+            'acreage' => 0.1600,
+            'price_pesewas' => 10000000,
+            'tenure_type' => 'PRIVATE',
+            'search_issue_date' => now()->subDays(60)->toDateString(),
+            'is_legacy' => true,
+        ]);
+
+        expect($legacyParcel->isSearchExpired())->toBeFalse();
+
+        // Parcel overlapping with freshParcel
+        $overlapParcel = LandParcel::create([
+            'real_estate_project_id' => $project->id,
+            'plot_number' => 'PLT-TMA-OVERLAP',
+            'size_dimension' => '70x100 ft',
+            'acreage' => 0.1600,
+            'price_pesewas' => 10000000,
+            'tenure_type' => 'PRIVATE',
+            'min_lat' => 5.7020000, // Inside freshParcel 5.7000000 - 5.7050000
+            'max_lat' => 5.7070000,
+            'min_lng' => -0.0080000, // Inside freshParcel -0.0100000 - -0.0050000
+            'max_lng' => -0.0030000,
+        ]);
+
+        $conflict = $overlapParcel->checkSpatialOverlap();
+        expect($conflict)->not->toBeNull()
+            ->and($conflict?->id)->toBe($freshParcel->id);
+    });
+
+    test('RealEstateSeeder executes idempotently and populates master enclaves, plots, allocations, and listings', function (): void {
+        [$user, $tenant] = createRealEstateTestContext();
+
+        $seeder = new App\Modules\RealEstate\Database\Seeders\RealEstateSeeder();
+        $seeder->run();
+
+        expect(RealEstateProject::query()->where('code', 'ELH-PRIME')->exists())->toBeTrue()
+            ->and(RealEstateProject::query()->where('code', 'PRAM-COAST')->exists())->toBeTrue()
+            ->and(LandParcel::query()->where('plot_number', 'ELH-PLT-101')->exists())->toBeTrue()
+            ->and(PropertyListing::query()->where('slug', 'prime-70x100-residential-plot-east-legon-hills')->exists())->toBeTrue()
+            ->and(ClientPlotAllocation::query()->where('allocation_number', 'ALC-ELH-001')->exists())->toBeTrue();
+
+        // Run second time to verify idempotency
+        $seeder->run();
+        expect(RealEstateProject::query()->where('code', 'ELH-PRIME')->count())->toBe(1);
+    });
 });
