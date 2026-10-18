@@ -22,7 +22,8 @@ final class ProjectUpdateRequest extends FormRequest
     public function rules(): array
     {
         $tenantId = $this->tenantId();
-        $projectId = $this->route('project')?->id;
+        $project = $this->route('project');
+        $projectId = $project instanceof Project ? $project->id : (is_numeric($project) ? (int) $project : null);
 
         return [
             'name' => ['sometimes', 'required', 'string', 'max:255'],
@@ -40,6 +41,7 @@ final class ProjectUpdateRequest extends FormRequest
             'end_date' => ['sometimes', 'nullable', 'date', 'after_or_equal:start_date'],
             'completed_at' => ['sometimes', 'nullable', 'date'],
             'budget_amount' => ['sometimes', 'nullable', 'numeric', 'min:0'],
+            'actual_cost_amount' => ['sometimes', 'nullable', 'numeric', 'min:0'],
             'currency' => ['sometimes', 'nullable', 'string', 'size:3'],
             'owner_id' => ['sometimes', 'nullable', 'uuid'],
             'metadata' => ['sometimes', 'nullable', 'array'],
