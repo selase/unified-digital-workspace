@@ -851,6 +851,410 @@ describe('Phase 21: Dual-Mode Facilities Management (Institutional Asset Lifecyc
             ->assertStatus(422);
     });
 
+    test('supports paginated lists and multi-attribute filtering across assets, work orders, spaces, and schedules on facilities hub', function (): void {
+        [$user, $tenant] = createFacilitiesTestContext();
+
+        $building = FacilityBuilding::create([
+            'name' => 'Main Engineering Pavilion',
+            'code' => 'BLD-ENG',
+            'floors_count' => 5,
+            'total_area_sqm' => 6000.0,
+            'status' => 'active',
+            'manager_id' => (string) $user->uuid,
+        ]);
+
+        $secondBuilding = FacilityBuilding::create([
+            'name' => 'Secondary Science Pavilion',
+            'code' => 'BLD-SCI',
+            'floors_count' => 3,
+            'total_area_sqm' => 3000.0,
+            'status' => 'active',
+            'manager_id' => (string) $user->uuid,
+        ]);
+
+        // Seed 20 spaces across buildings
+        for ($i = 1; $i <= 20; $i++) {
+            FacilitySpace::create([
+                'facility_building_id' => $i <= 10 ? $building->id : $secondBuilding->id,
+                'name' => "Laboratory Space {$i}",
+                'code' => "SPC-LAB-{$i}",
+                'floor_number' => $i % 5,
+                'space_type' => $i % 2 === 0 ? 'laboratory' : 'office',
+                'is_occupied' => false,
+            ]);
+        }
+
+        // Seed 20 assets across buildings and spaces
+        for ($i = 1; $i <= 20; $i++) {
+            FacilityAsset::create([
+                'facility_building_id' => $i <= 10 ? $building->id : $secondBuilding->id,
+                'asset_tag' => "AST-GEN-{$i}",
+                'name' => "Industrial Air Chiller Unit {$i}",
+                'category' => $i % 2 === 0 ? 'hvac' : 'electrical',
+                'purchase_cost_pesewas' => 1500000,
+                'criticality' => 'high',
+                'status' => $i === 20 ? 'needs_repair' : 'operational',
+            ]);
+        }
+
+        $firstAsset = FacilityAsset::query()->where('asset_tag', 'AST-GEN-1')->firstOrFail();
+
+        // Seed 20 schedules
+        for ($i = 1; $i <= 20; $i++) {
+            PreventiveMaintenanceSchedule::create([
+                'facility_asset_id' => $firstAsset->id,
+                'title' => "Compressor Fluid Inspection Routine {$i}",
+                'frequency' => $i % 2 === 0 ? 'monthly' : 'quarterly',
+                'interval_days' => 90,
+                'next_due_date' => now()->addDays(30)->toDateString(),
+                'is_active' => $i <= 15,
+            ]);
+        }
+
+        // Seed 20 work orders
+        for ($i = 1; $i <= 20; $i++) {
+            FacilityWorkOrder::create([
+                'work_order_number' => "WO-AUTO-{$i}",
+                'mode' => FacilityWorkOrder::MODE_INSTITUTIONAL,
+                'facility_building_id' => $i <= 10 ? $building->id : $secondBuilding->id,
+                'facility_asset_id' => $firstAsset->id,
+                'requester_id' => (string) $user->uuid,
+                'category' => $i % 2 === 0 ? 'plumbing' : 'electrical',
+                'title' => "Routine Maintenance Inspection Order {$i}",
+                'description' => "Inspection description {$i}",
+                'priority' => $i === 20 ? 'emergency' : 'medium',
+                'status' => $i === 20 ? FacilityWorkOrder::STATUS_COMPLETED : FacilityWorkOrder::STATUS_OPEN,
+                'due_date' => now()->addDays(5)->toDateString(),
+            ]);
+        }
+
+        // 1. Assert Assets Pagination (Page 2) & Filtering
+        $this->actingAs($user)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->get(route('facilities-management.index', ['assets_page' => 2]))
+            ->assertOk()
+            ->assertSee('AST-GEN-1')
+            ->assertSee('AST-GEN-5');
+
+        $this->actingAs($user)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->get(route('facilities-management.index', ['asset_status' => 'needs_repair']))
+            ->assertOk()
+            ->assertSee('AST-GEN-20')
+            ->assertDontSee('AST-GEN-1<');
+
+        $this->actingAs($user)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->get(route('facilities-management.index', [
+                'asset_building_id' => $secondBuilding->id,
+                'asset_category' => 'electrical',
+            ]))
+            ->assertOk()
+            ->assertSee('Secondary Science Pavilion');
+
+        // 2. Assert Spaces Pagination (Page 2) & Filtering
+        $this->actingAs($user)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->get(route('facilities-management.index', ['spaces_page' => 2]))
+            ->assertOk()
+            ->assertSee('SPC-LAB-1')
+            ->assertSee('SPC-LAB-5');
+
+        $this->actingAs($user)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->get(route('facilities-management.index', [
+                'space_search' => 'SPC-LAB-5',
+                'space_type' => 'office',
+            ]))
+            ->assertOk()
+            ->assertSee('SPC-LAB-5')
+            ->assertDontSee('SPC-LAB-6<');
+
+        // 3. Assert Schedules Pagination (Page 2) & Filtering
+        $this->actingAs($user)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->get(route('facilities-management.index', ['schedules_page' => 2]))
+            ->assertOk()
+            ->assertSee('Compressor Fluid Inspection Routine 1')
+            ->assertSee('Compressor Fluid Inspection Routine 5');
+
+        $this->actingAs($user)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->get(route('facilities-management.index', [
+                'schedule_status' => 'paused',
+            ]))
+            ->assertOk()
+            ->assertSee('Compressor Fluid Inspection Routine 16')
+            ->assertSee('Paused');
+
+        // 4. Assert Work Orders Pagination (Page 2) & Filtering
+        $this->actingAs($user)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->get(route('facilities-management.index', ['work_orders_page' => 2]))
+            ->assertOk()
+            ->assertSee('WO-AUTO-1')
+            ->assertSee('WO-AUTO-5');
+
+        $this->actingAs($user)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->get(route('facilities-management.index', [
+                'work_order_priority' => 'emergency',
+            ]))
+            ->assertOk()
+            ->assertSee('WO-AUTO-20')
+            ->assertDontSee('WO-AUTO-1<');
+    });
+
+    test('supports updating spaces and prevents duplicate space codes within same building', function (): void {
+        [$user, $tenant] = createFacilitiesTestContext();
+
+        $building = FacilityBuilding::create([
+            'name' => 'Diagnostic Imaging Wing',
+            'code' => 'BLD-DIW',
+            'floors_count' => 3,
+            'total_area_sqm' => 2500.0,
+            'status' => 'active',
+            'manager_id' => (string) $user->uuid,
+        ]);
+
+        $spaceA = FacilitySpace::create([
+            'facility_building_id' => $building->id,
+            'name' => 'Ultrasound Room 1',
+            'code' => 'US-01',
+            'floor_number' => 1,
+            'space_type' => 'ward',
+            'is_occupied' => false,
+        ]);
+
+        $spaceB = FacilitySpace::create([
+            'facility_building_id' => $building->id,
+            'name' => 'MRI Scanner Room',
+            'code' => 'MRI-01',
+            'floor_number' => 1,
+            'space_type' => 'laboratory',
+            'is_occupied' => false,
+        ]);
+
+        // Happy path edit space A
+        $this->actingAs($user)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->put(route('facilities-management.spaces.update', $spaceA->uuid), [
+                'name' => 'Advanced 4D Ultrasound Suite',
+                'code' => 'US-01-A',
+                'floor_number' => 2,
+                'space_type' => 'office',
+                'occupant_user_id' => (string) $user->uuid,
+            ])
+            ->assertRedirect(route('facilities-management.buildings.show', $building->uuid));
+
+        $spaceA->refresh();
+        expect($spaceA->name)->toBe('Advanced 4D Ultrasound Suite')
+            ->and($spaceA->code)->toBe('US-01-A')
+            ->and($spaceA->floor_number)->toBe(2)
+            ->and($spaceA->space_type)->toBe('office')
+            ->and($spaceA->occupant_user_id)->toBe((string) $user->uuid)
+            ->and($spaceA->is_occupied)->toBeTrue();
+
+        // Adversarial duplicate code check: updating space B to code 'US-01-A' in the same building must be rejected
+        $this->actingAs($user)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->put(route('facilities-management.spaces.update', $spaceB->uuid), [
+                'name' => 'MRI Scanner Suite Duplicate',
+                'code' => 'US-01-A',
+                'floor_number' => 1,
+                'space_type' => 'laboratory',
+            ])
+            ->assertSessionHasErrors('code');
+    });
+
+    test('supports preventive maintenance schedule editing and parameter updates', function (): void {
+        [$user, $tenant] = createFacilitiesTestContext();
+
+        $building = FacilityBuilding::create([
+            'name' => 'Power Plant House',
+            'code' => 'BLD-PWR',
+            'floors_count' => 1,
+            'total_area_sqm' => 800.0,
+            'status' => 'active',
+            'manager_id' => (string) $user->uuid,
+        ]);
+
+        $asset = FacilityAsset::create([
+            'facility_building_id' => $building->id,
+            'asset_tag' => 'AST-PWR-GEN',
+            'name' => '750kVA Standby Diesel Generator',
+            'category' => 'electrical',
+            'criticality' => 'mission_critical',
+            'status' => 'operational',
+        ]);
+
+        $schedule = PreventiveMaintenanceSchedule::create([
+            'facility_asset_id' => $asset->id,
+            'title' => 'Initial 250hr Oil Filter Service',
+            'frequency' => 'monthly',
+            'interval_days' => 30,
+            'next_due_date' => now()->addDays(30)->toDateString(),
+            'is_active' => true,
+        ]);
+
+        // Happy path edit schedule
+        $this->actingAs($user)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->put(route('facilities-management.schedules.update', $schedule->uuid), [
+                'title' => 'Calibrated 500hr Heavy Service & Oil Analysis',
+                'frequency' => 'quarterly',
+                'interval_days' => 90,
+                'description' => 'Test alternator windings and change main fuel water separators.',
+            ])
+            ->assertRedirect(route('facilities-management.assets.show', $asset->uuid));
+
+        $schedule->refresh();
+        expect($schedule->title)->toBe('Calibrated 500hr Heavy Service & Oil Analysis')
+            ->and($schedule->frequency)->toBe('quarterly')
+            ->and($schedule->interval_days)->toBe(90)
+            ->and($schedule->description)->toBe('Test alternator windings and change main fuel water separators.');
+    });
+
+    test('supports work order editing, cancellation, and cross-module sync to Vendor Marketplace', function (): void {
+        [$user, $tenant] = createFacilitiesTestContext();
+
+        // Dispatch Mode B work order (creating linked ServiceJob)
+        $this->actingAs($user)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->post(route('facilities-management.work-orders.occupant.store'), [
+                'category' => 'plumbing',
+                'title' => 'Kitchen Tap High Pressure Burst',
+                'location' => 'Block 7, Apartment 3C',
+                'description' => 'Water gushing from flexible connector pipe underneath kitchen sink.',
+            ])
+            ->assertRedirect(route('facilities-management.index'));
+
+        $workOrder = FacilityWorkOrder::query()->where('title', 'Kitchen Tap High Pressure Burst')->firstOrFail();
+        expect($workOrder->service_job_id)->not->toBeNull();
+        $job = $workOrder->serviceJob;
+        expect($job)->not->toBeNull()
+            ->and($job->status)->toBe(ServiceJob::STATUS_OPEN);
+
+        // 1. Happy path: Edit active work order and assert companion ServiceJob sync
+        $this->actingAs($user)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->put(route('facilities-management.work-orders.update', $workOrder->uuid), [
+                'title' => 'Kitchen Tap High Pressure Burst & Valve Leak',
+                'category' => 'plumbing',
+                'priority' => 'high',
+                'description' => 'Updated: Water valve won\'t close completely.',
+            ])
+            ->assertRedirect(route('facilities-management.work-orders.show', $workOrder->uuid));
+
+        $workOrder->refresh();
+        $job->refresh();
+        expect($workOrder->title)->toBe('Kitchen Tap High Pressure Burst & Valve Leak')
+            ->and($workOrder->priority)->toBe('high')
+            ->and($job->title)->toBe('Kitchen Tap High Pressure Burst & Valve Leak')
+            ->and($job->description)->toBe('Updated: Water valve won\'t close completely.');
+
+        // 2. Happy path: Cancel active work order and assert companion ServiceJob is cancelled
+        $this->actingAs($user)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->post(route('facilities-management.work-orders.cancel', $workOrder->uuid), [
+                'cancellation_reason' => 'Tenant resolved issue with on-site building caretaker.',
+            ])
+            ->assertRedirect(route('facilities-management.work-orders.show', $workOrder->uuid));
+
+        $workOrder->refresh();
+        $job->refresh();
+        expect($workOrder->status)->toBe(FacilityWorkOrder::STATUS_CANCELLED)
+            ->and($workOrder->completion_notes)->toContain('Tenant resolved issue with on-site building caretaker.')
+            ->and($job->status)->toBe(ServiceJob::STATUS_CANCELLED);
+
+        // 3. Adversarial guards on cancelled work order
+        // Re-cancelling a cancelled work order -> 422
+        $this->actingAs($user)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->post(route('facilities-management.work-orders.cancel', $workOrder->uuid))
+            ->assertStatus(422);
+
+        // Editing a cancelled work order -> 422
+        $this->actingAs($user)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->put(route('facilities-management.work-orders.update', $workOrder->uuid), [
+                'title' => 'Attempted Edit After Cancel',
+                'category' => 'plumbing',
+                'priority' => 'low',
+            ])
+            ->assertStatus(422);
+
+        // 4. Adversarial guards on completed work order
+        $completedOrder = FacilityWorkOrder::create([
+            'work_order_number' => 'WO-COMP-TEST-1',
+            'mode' => FacilityWorkOrder::MODE_INSTITUTIONAL,
+            'requester_id' => (string) $user->uuid,
+            'category' => 'electrical',
+            'title' => 'Completed Circuit Repair',
+            'priority' => 'low',
+            'status' => FacilityWorkOrder::STATUS_COMPLETED,
+            'completed_at' => now(),
+            'completion_notes' => 'Successfully closed out.',
+        ]);
+
+        // Editing a completed work order -> 422
+        $this->actingAs($user)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->put(route('facilities-management.work-orders.update', $completedOrder->uuid), [
+                'title' => 'Attempt to edit completed order',
+                'category' => 'electrical',
+                'priority' => 'medium',
+            ])
+            ->assertStatus(422);
+
+        // Cancelling a completed work order -> 422
+        $this->actingAs($user)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->post(route('facilities-management.work-orders.cancel', $completedOrder->uuid), [
+                'cancellation_reason' => 'Should fail',
+            ])
+            ->assertStatus(422);
+    });
+
+    test('completing a vendor service job automatically synchronizes and completes the companion facility work order', function (): void {
+        [$user, $tenant] = createFacilitiesTestContext();
+
+        // 1. Dispatch Mode B occupant work order linked to ServiceJob
+        $this->actingAs($user)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->post(route('facilities-management.work-orders.occupant.store'), [
+                'category' => 'electrical',
+                'title' => 'Distribution Board Circuit Breaker Tripping',
+                'location' => 'Executive Chalet #4',
+                'description' => 'Main 63A RCCB trips whenever air conditioning unit starts.',
+            ])
+            ->assertRedirect(route('facilities-management.index'));
+
+        $workOrder = FacilityWorkOrder::query()->where('title', 'Distribution Board Circuit Breaker Tripping')->firstOrFail();
+        expect($workOrder->status)->toBe(FacilityWorkOrder::STATUS_OPEN)
+            ->and($workOrder->completed_at)->toBeNull();
+
+        $serviceJob = $workOrder->serviceJob;
+        expect($serviceJob)->not->toBeNull()
+            ->and($serviceJob->status)->toBe(ServiceJob::STATUS_OPEN);
+
+        // 2. Complete job from Vendor Marketplace side via web controller action
+        $this->actingAs($user)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->post(route('vendor-marketplace.jobs.complete', $serviceJob->uuid), [
+                'notes' => 'Electrician replaced faulty RCCB and tested phase balance.',
+            ])
+            ->assertRedirect(route('vendor-marketplace.index'));
+
+        $serviceJob->refresh();
+        $workOrder->refresh();
+
+        expect($serviceJob->status)->toBe(ServiceJob::STATUS_COMPLETED)
+            ->and($workOrder->status)->toBe(FacilityWorkOrder::STATUS_COMPLETED)
+            ->and($workOrder->completed_at)->not->toBeNull()
+            ->and($workOrder->completion_notes)->toContain('Electrician replaced faulty RCCB');
+    });
+
     test('seeds facilities management data cleanly via FacilitiesManagementSeeder', function (): void {
         [$user, $tenant] = createFacilitiesTestContext();
 

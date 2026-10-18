@@ -99,6 +99,92 @@
                     </div>
                 </details>
 
+                {{-- Edit Work Order Modal --}}
+                <details class="relative inline-block text-start">
+                    <summary class="kt-btn kt-btn-outline kt-btn-sm cursor-pointer list-none">
+                        <i class="ki-filled ki-pencil text-xs mr-1"></i> Edit Order
+                    </summary>
+                    <div class="absolute right-0 mt-2 w-80 p-4 bg-card rounded-xl shadow-xl border border-border z-30 space-y-3">
+                        <div class="text-xs font-semibold text-foreground">Edit Work Order</div>
+                        <form action="{{ route('facilities-management.work-orders.update', $workOrder->uuid) }}" method="POST" class="space-y-2.5">
+                            @csrf
+                            @method('PUT')
+                            <div>
+                                <label class="kt-form-label text-[11px]">Title *</label>
+                                <input type="text" name="title" value="{{ $workOrder->title }}" class="kt-input kt-input-sm text-xs" required>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="kt-form-label text-[11px]">Category *</label>
+                                    <select name="category" class="kt-select kt-select-sm text-xs" required>
+                                        <option value="plumbing" @selected($workOrder->category === 'plumbing')>Plumbing</option>
+                                        <option value="electrical" @selected($workOrder->category === 'electrical')>Electrical</option>
+                                        <option value="hvac" @selected($workOrder->category === 'hvac')>HVAC</option>
+                                        <option value="landscaping" @selected($workOrder->category === 'landscaping')>Landscaping</option>
+                                        <option value="water_delivery" @selected($workOrder->category === 'water_delivery')>Water Delivery</option>
+                                        <option value="general_maintenance" @selected($workOrder->category === 'general_maintenance')>General Maintenance</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="kt-form-label text-[11px]">Priority *</label>
+                                    <select name="priority" class="kt-select kt-select-sm text-xs" required>
+                                        <option value="low" @selected($workOrder->priority === 'low')>Low</option>
+                                        <option value="medium" @selected($workOrder->priority === 'medium')>Medium</option>
+                                        <option value="high" @selected($workOrder->priority === 'high')>High</option>
+                                        <option value="emergency" @selected($workOrder->priority === 'emergency')>Emergency</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="kt-form-label text-[11px]">Building</label>
+                                <select name="facility_building_id" class="kt-select kt-select-sm text-xs">
+                                    <option value="">Unassigned</option>
+                                    @foreach($buildings as $bld)
+                                        <option value="{{ $bld->id }}" @selected($workOrder->facility_building_id === $bld->id)>{{ $bld->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div>
+                                <label class="kt-form-label text-[11px]">Associated Asset</label>
+                                <select name="facility_asset_id" class="kt-select kt-select-sm text-xs">
+                                    <option value="">No specific asset</option>
+                                    @foreach($assets as $ast)
+                                        <option value="{{ $ast->id }}" @selected($workOrder->facility_asset_id === $ast->id)>{{ $ast->asset_tag }} - {{ $ast->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div>
+                                <label class="kt-form-label text-[11px]">Due Date</label>
+                                <input type="date" name="due_date" value="{{ $workOrder->due_date?->toDateString() }}" class="kt-input kt-input-sm text-xs">
+                            </div>
+                            <div>
+                                <label class="kt-form-label text-[11px]">Description</label>
+                                <textarea name="description" class="kt-input kt-input-sm text-xs" rows="2">{{ $workOrder->description }}</textarea>
+                            </div>
+                            <button type="submit" class="kt-btn kt-btn-primary kt-btn-xs w-full justify-center">Save Changes</button>
+                        </form>
+                    </div>
+                </details>
+
+                {{-- Cancel Work Order Modal --}}
+                <details class="relative inline-block text-start">
+                    <summary class="kt-btn kt-btn-outline kt-btn-sm text-rose-500 hover:bg-rose-500/10 cursor-pointer list-none">
+                        Cancel Order
+                    </summary>
+                    <div class="absolute right-0 mt-2 w-72 p-4 bg-card rounded-xl shadow-xl border border-border z-30 space-y-3">
+                        <div class="text-xs font-semibold text-rose-500">Cancel Work Order</div>
+                        <p class="text-[11px] text-muted-foreground">This will cancel the work order and any linked marketplace service job.</p>
+                        <form action="{{ route('facilities-management.work-orders.cancel', $workOrder->uuid) }}" method="POST" class="space-y-2.5">
+                            @csrf
+                            <div>
+                                <label class="kt-form-label text-[11px]">Reason for Cancellation</label>
+                                <textarea name="cancellation_reason" class="kt-input kt-input-sm text-xs" rows="2" placeholder="e.g. Issue resolved independently, duplicate request..."></textarea>
+                            </div>
+                            <button type="submit" class="kt-btn kt-btn-destructive kt-btn-xs w-full justify-center">Confirm Cancellation</button>
+                        </form>
+                    </div>
+                </details>
+
                 {{-- Complete Order Action --}}
                 <details class="relative inline-block text-start">
                     <summary class="kt-btn kt-btn-success kt-btn-sm cursor-pointer list-none">

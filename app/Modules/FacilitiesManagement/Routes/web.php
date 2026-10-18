@@ -15,6 +15,7 @@ Route::delete('/buildings/{building:uuid}', [FacilitiesManagementWebController::
 
 // Spaces
 Route::post('/buildings/{building:uuid}/spaces', [FacilitiesManagementWebController::class, 'storeSpace'])->name('buildings.spaces.store');
+Route::put('/spaces/{space:uuid}', [FacilitiesManagementWebController::class, 'updateSpace'])->name('spaces.update');
 Route::delete('/spaces/{space:uuid}', [FacilitiesManagementWebController::class, 'destroySpace'])->name('spaces.destroy');
 
 // Assets
@@ -25,6 +26,7 @@ Route::delete('/assets/{asset:uuid}', [FacilitiesManagementWebController::class,
 
 // Schedules
 Route::post('/assets/{asset}/schedules', [FacilitiesManagementWebController::class, 'storeSchedule'])->name('assets.schedules.store');
+Route::put('/schedules/{schedule:uuid}', [FacilitiesManagementWebController::class, 'updateSchedule'])->name('schedules.update');
 Route::post('/schedules/{schedule:uuid}/toggle', [FacilitiesManagementWebController::class, 'toggleSchedule'])->name('schedules.toggle');
 Route::delete('/schedules/{schedule:uuid}', [FacilitiesManagementWebController::class, 'destroySchedule'])->name('schedules.destroy');
 
@@ -32,6 +34,8 @@ Route::delete('/schedules/{schedule:uuid}', [FacilitiesManagementWebController::
 Route::post('/work-orders/institutional', [FacilitiesManagementWebController::class, 'storeInstitutionalWorkOrder'])->name('work-orders.institutional.store');
 Route::post('/work-orders/occupant', [FacilitiesManagementWebController::class, 'storeOccupantWorkOrder'])->name('work-orders.occupant.store');
 Route::get('/work-orders/{workOrder:uuid}', [FacilitiesManagementWebController::class, 'showWorkOrder'])->name('work-orders.show');
+Route::put('/work-orders/{workOrder:uuid}', [FacilitiesManagementWebController::class, 'updateWorkOrder'])->name('work-orders.update');
 Route::post('/work-orders/{workOrder:uuid}/assign', [FacilitiesManagementWebController::class, 'assignWorkOrder'])->name('work-orders.assign');
 Route::post('/work-orders/{workOrder:uuid}/status', [FacilitiesManagementWebController::class, 'updateWorkOrderStatus'])->name('work-orders.status');
+Route::post('/work-orders/{workOrder:uuid}/cancel', [FacilitiesManagementWebController::class, 'cancelWorkOrder'])->name('work-orders.cancel');
 Route::post('/work-orders/{workOrder}/complete', [FacilitiesManagementWebController::class, 'completeWorkOrder'])->name('work-orders.complete');

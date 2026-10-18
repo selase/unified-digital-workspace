@@ -101,4 +101,39 @@ final class ServiceJob extends Model
     {
         return $this->hasMany(ProformaInvoice::class, 'service_job_id');
     }
+
+    public function markCompleted(?string $notes = null): void
+    {
+        if ($this->source_module === 'facilities') {
+            $workOrder = \App\Modules\FacilitiesManagement\Models\FacilityWorkOrder::query()
+                ->where('service_job_id', $this->id)
+                ->first();
+
+            $workOrder?->update([
+                'status' => \App\Modules\FacilitiesManagement\Models\FacilityWorkOrder::STATUS_COMPLETED,
+                'completed_at' => now(),
+                'completion_notes' => $notes ?? "Completed via linked Vendor Marketplace Job {$this->job_number}.",
+            ]);
+        }
+
+        $this->update(['status' => self::STATUS_COMPLETED]);
+    }
+
+    protected static function booted(): void
+    {
+        self::updated(function (self $job): void {
+            if ($job->wasChanged('status') && $job->status === self::STATUS_COMPLETED && $job->source_module === 'facilities') {
+                $workOrder = \App\Modules\FacilitiesManagement\Models\FacilityWorkOrder::query()
+                    ->where('service_job_id', $job->id)
+                    ->where('status', '!=', \App\Modules\FacilitiesManagement\Models\FacilityWorkOrder::STATUS_COMPLETED)
+                    ->first();
+
+                $workOrder?->update([
+                    'status' => \App\Modules\FacilitiesManagement\Models\FacilityWorkOrder::STATUS_COMPLETED,
+                    'completed_at' => now(),
+                    'completion_notes' => $workOrder->completion_notes ?? "Completed via linked Vendor Marketplace Job {$job->job_number}.",
+                ]);
+            }
+        });
+    }
 }

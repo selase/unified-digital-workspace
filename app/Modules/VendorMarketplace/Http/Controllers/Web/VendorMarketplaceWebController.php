@@ -382,4 +382,19 @@ final class VendorMarketplaceWebController extends Controller
             ->with('status', 'success')
             ->with('message', 'Escrow dispute resolved and ledger settled.');
     }
+
+    public function completeJob(Request $request, ServiceJob $job): RedirectResponse
+    {
+        $user = $request->user();
+        abort_if(! $user?->can('vendors.manage') && ! $user?->can('vendors.portal.access'), 403);
+        abort_if($job->status === ServiceJob::STATUS_COMPLETED, 422, 'Service job is already completed.');
+
+        $notes = $request->filled('notes') ? (string) $request->input('notes') : null;
+        $job->markCompleted($notes);
+
+        return redirect()
+            ->route('vendor-marketplace.index')
+            ->with('status', 'success')
+            ->with('message', "Service Job {$job->job_number} marked as completed.");
+    }
 }

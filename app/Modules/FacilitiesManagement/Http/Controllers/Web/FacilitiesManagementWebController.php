@@ -66,18 +66,99 @@ final class FacilitiesManagementWebController extends Controller
     public function index(Request $request): View
     {
         $user = $request->user();
-        abort_if(
-            ! $user?->can('facilities.view')
-            && ! $user?->can('facilities.manage')
-            && ! $user?->can('facilities.occupant.request'),
-            403
-        );
+        $canManage = $user?->can('facilities.manage') ?? false;
+        $canView = $user?->can('facilities.view') ?? false;
+        $canRequest = $user?->can('facilities.occupant.request') ?? false;
+
+        abort_if(! $canView && ! $canManage && ! $canRequest, 403);
 
         $buildings = FacilityBuilding::query()->with('manager')->latest()->get();
-        $spaces = FacilitySpace::query()->with('building')->latest()->limit(50)->get();
-        $assets = FacilityAsset::query()->with(['building', 'space'])->latest()->limit(50)->get();
-        $workOrders = FacilityWorkOrder::query()->with(['building', 'asset', 'requester', 'technician', 'serviceJob'])->latest()->limit(50)->get();
-        $schedules = PreventiveMaintenanceSchedule::query()->with('asset.building')->latest()->limit(30)->get();
+
+        // 1. Assets Query with Search & Filters
+        $assetsQuery = FacilityAsset::query()->with(['building', 'space'])->latest('id');
+        if ($request->filled('asset_search')) {
+            $search = (string) $request->query('asset_search');
+            $assetsQuery->where(function ($q) use ($search): void {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('asset_tag', 'like', "%{$search}%")
+                    ->orWhere('serial_number', 'like', "%{$search}%")
+                    ->orWhere('manufacturer', 'like', "%{$search}%")
+                    ->orWhere('model_number', 'like', "%{$search}%");
+            });
+        }
+        if ($request->filled('asset_status')) {
+            $assetsQuery->where('status', (string) $request->query('asset_status'));
+        }
+        if ($request->filled('asset_building_id')) {
+            $assetsQuery->where('facility_building_id', (int) $request->query('asset_building_id'));
+        }
+        if ($request->filled('asset_category')) {
+            $assetsQuery->where('category', (string) $request->query('asset_category'));
+        }
+        $assets = $assetsQuery->paginate(15, ['*'], 'assets_page')->withQueryString();
+
+        // 2. Work Orders Query with Search & Filters & Occupant Scoping
+        $workOrdersQuery = FacilityWorkOrder::query()->with(['building', 'asset', 'requester', 'technician', 'serviceJob'])->latest('id');
+        if (! $canManage && ! $canView && $canRequest) {
+            $workOrdersQuery->where('requester_id', (string) $user->uuid);
+        }
+        if ($request->filled('work_order_search')) {
+            $search = (string) $request->query('work_order_search');
+            $workOrdersQuery->where(function ($q) use ($search): void {
+                $q->where('work_order_number', 'like', "%{$search}%")
+                    ->orWhere('title', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%");
+            });
+        }
+        if ($request->filled('work_order_status')) {
+            $workOrdersQuery->where('status', (string) $request->query('work_order_status'));
+        }
+        if ($request->filled('work_order_building_id')) {
+            $workOrdersQuery->where('facility_building_id', (int) $request->query('work_order_building_id'));
+        }
+        if ($request->filled('work_order_priority')) {
+            $workOrdersQuery->where('priority', (string) $request->query('work_order_priority'));
+        }
+        $workOrders = $workOrdersQuery->paginate(15, ['*'], 'work_orders_page')->withQueryString();
+
+        // 3. Spaces Query with Search & Filters
+        $spacesQuery = FacilitySpace::query()->with(['building', 'occupant'])->latest('id');
+        if ($request->filled('space_search')) {
+            $search = (string) $request->query('space_search');
+            $spacesQuery->where(function ($q) use ($search): void {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('code', 'like', "%{$search}%");
+            });
+        }
+        if ($request->filled('space_building_id')) {
+            $spacesQuery->where('facility_building_id', (int) $request->query('space_building_id'));
+        }
+        if ($request->filled('space_type')) {
+            $spacesQuery->where('space_type', (string) $request->query('space_type'));
+        }
+        $spaces = $spacesQuery->paginate(15, ['*'], 'spaces_page')->withQueryString();
+
+        // 4. Schedules Query with Search & Filters
+        $schedulesQuery = PreventiveMaintenanceSchedule::query()->with('asset.building')->latest('id');
+        if ($request->filled('schedule_search')) {
+            $search = (string) $request->query('schedule_search');
+            $schedulesQuery->where(function ($q) use ($search): void {
+                $q->where('title', 'like', "%{$search}%")
+                    ->orWhere('description', 'like', "%{$search}%");
+            });
+        }
+        if ($request->filled('schedule_status')) {
+            $status = (string) $request->query('schedule_status');
+            if ($status === 'active') {
+                $schedulesQuery->where('is_active', true);
+            } elseif ($status === 'paused') {
+                $schedulesQuery->where('is_active', false);
+            }
+        }
+        if ($request->filled('schedule_frequency')) {
+            $schedulesQuery->where('frequency', (string) $request->query('schedule_frequency'));
+        }
+        $schedules = $schedulesQuery->paginate(15, ['*'], 'schedules_page')->withQueryString();
 
         $metrics = [
             'buildings_count' => FacilityBuilding::query()->count(),
@@ -92,6 +173,19 @@ final class FacilitiesManagementWebController extends Controller
             'due_schedules' => PreventiveMaintenanceSchedule::query()->where('is_active', true)->where('next_due_date', '<=', now()->addDays(7))->count(),
         ];
 
+        $tenant = app(TenantContext::class)->getTenant();
+        $tenantId = (string) ($tenant !== null ? $tenant->id : '');
+        $users = User::query()
+            ->where(function ($q) use ($tenantId): void {
+                if ($tenantId !== '') {
+                    $q->where('tenant_id', $tenantId)
+                        ->orWhereHas('tenants', fn ($t) => $t->where('tenants.id', $tenantId));
+                }
+            })
+            ->select(['id', 'uuid', 'first_name', 'last_name', 'email'])
+            ->orderBy('first_name')
+            ->get();
+
         return view('facilities-management::index', [
             'categories' => self::ASSET_CATEGORIES,
             'buildings' => $buildings,
@@ -100,6 +194,10 @@ final class FacilitiesManagementWebController extends Controller
             'workOrders' => $workOrders,
             'schedules' => $schedules,
             'metrics' => $metrics,
+            'users' => $users,
+            'spaceTypes' => self::SPACE_TYPES,
+            'criticalityLevels' => self::CRITICALITY_LEVELS,
+            'assetStatuses' => self::ASSET_STATUSES,
         ]);
     }
 
@@ -289,6 +387,50 @@ final class FacilitiesManagementWebController extends Controller
         return redirect($redirectRoute)
             ->with('status', 'success')
             ->with('message', "Space {$name} removed.");
+    }
+
+    public function updateSpace(Request $request, FacilitySpace $space): RedirectResponse
+    {
+        $user = $request->user();
+        abort_if(! $user?->can('facilities.manage'), 403);
+
+        $tenant = app(TenantContext::class)->getTenant();
+        $tenantId = (string) ($tenant !== null ? $tenant->id : '');
+
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'code' => [
+                'required',
+                'string',
+                'max:64',
+                Rule::unique('tenant.facility_spaces', 'code')
+                    ->where('tenant_id', $tenantId)
+                    ->where('facility_building_id', $space->facility_building_id)
+                    ->ignore($space->id),
+            ],
+            'floor_number' => ['required', 'integer', 'min:0', 'max:120'],
+            'space_type' => ['required', 'string', Rule::in(array_keys(self::SPACE_TYPES))],
+            'occupant_user_id' => ['nullable', 'uuid', Rule::exists('users', 'uuid')],
+        ]);
+
+        $space->update([
+            'name' => $validated['name'],
+            'code' => mb_strtoupper($validated['code']),
+            'floor_number' => (int) $validated['floor_number'],
+            'space_type' => $validated['space_type'],
+            'occupant_user_id' => $validated['occupant_user_id'] ?? null,
+            'is_occupied' => ! empty($validated['occupant_user_id']),
+        ]);
+
+        $redirect = $request->filled('redirect_to')
+            ? redirect($request->input('redirect_to'))
+            : ($space->building !== null
+                ? redirect()->route('facilities-management.buildings.show', $space->building->uuid)
+                : redirect()->route('facilities-management.index'));
+
+        return $redirect
+            ->with('status', 'success')
+            ->with('message', "Space {$space->name} ({$space->code}) updated.");
     }
 
     public function storeAsset(Request $request): RedirectResponse
@@ -496,6 +638,36 @@ final class FacilitiesManagementWebController extends Controller
         return $redirect
             ->with('status', 'success')
             ->with('message', "Preventive Maintenance Schedule '{$validated['title']}' created for Asset {$asset->asset_tag}.");
+    }
+
+    public function updateSchedule(Request $request, PreventiveMaintenanceSchedule $schedule): RedirectResponse
+    {
+        $user = $request->user();
+        abort_if(! $user?->can('facilities.maintenance.manage') && ! $user?->can('facilities.manage'), 403);
+
+        $validated = $request->validate([
+            'title' => ['required', 'string', 'max:255'],
+            'frequency' => ['required', 'string', Rule::in(['daily', 'weekly', 'monthly', 'quarterly', 'biannual', 'annual'])],
+            'interval_days' => ['required', 'integer', 'min:1', 'max:365'],
+            'description' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        $schedule->update([
+            'title' => $validated['title'],
+            'frequency' => $validated['frequency'],
+            'interval_days' => (int) $validated['interval_days'],
+            'description' => $validated['description'] ?? null,
+        ]);
+
+        $redirect = $request->filled('redirect_to')
+            ? redirect($request->input('redirect_to'))
+            : ($schedule->asset !== null
+                ? redirect()->route('facilities-management.assets.show', $schedule->asset->uuid)
+                : redirect()->route('facilities-management.index'));
+
+        return $redirect
+            ->with('status', 'success')
+            ->with('message', "Preventive Maintenance Schedule '{$schedule->title}' updated.");
     }
 
     public function toggleSchedule(Request $request, PreventiveMaintenanceSchedule $schedule): RedirectResponse
@@ -721,10 +893,15 @@ final class FacilitiesManagementWebController extends Controller
             ->orderBy('first_name')
             ->get();
 
+        $buildings = FacilityBuilding::query()->latest()->get(['id', 'uuid', 'name', 'code']);
+        $assets = FacilityAsset::query()->latest()->get(['id', 'uuid', 'name', 'asset_tag', 'facility_building_id']);
+
         return view('facilities-management::work-order-detail', [
             'workOrder' => $workOrder,
             'technicians' => $technicians,
             'categories' => self::ASSET_CATEGORIES,
+            'buildings' => $buildings,
+            'assets' => $assets,
         ]);
     }
 
@@ -786,6 +963,94 @@ final class FacilitiesManagementWebController extends Controller
             ->route('facilities-management.work-orders.show', $workOrder->uuid)
             ->with('status', 'success')
             ->with('message', "Work Order status updated to {$validated['status']}.");
+    }
+
+    public function updateWorkOrder(Request $request, FacilityWorkOrder $workOrder): RedirectResponse
+    {
+        $user = $request->user();
+        abort_if(! $user?->can('facilities.manage'), 403);
+        abort_if($workOrder->status === FacilityWorkOrder::STATUS_COMPLETED, 422, 'Cannot edit a completed work order.');
+        abort_if($workOrder->status === FacilityWorkOrder::STATUS_CANCELLED, 422, 'Cannot edit a cancelled work order.');
+
+        $tenant = app(TenantContext::class)->getTenant();
+        $tenantId = (string) ($tenant !== null ? $tenant->id : '');
+
+        $validated = $request->validate([
+            'title' => ['required', 'string', 'max:255'],
+            'category' => ['required', 'string', Rule::in(['electrical', 'plumbing', 'hvac', 'landscaping', 'water_delivery', 'general_maintenance'])],
+            'priority' => ['required', 'string', Rule::in(['low', 'medium', 'high', 'emergency'])],
+            'description' => ['nullable', 'string', 'max:2000'],
+            'facility_building_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('tenant.facility_buildings', 'id')->where('tenant_id', $tenantId),
+            ],
+            'facility_asset_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('tenant.facility_assets', 'id')->where('tenant_id', $tenantId),
+            ],
+            'due_date' => ['nullable', 'date'],
+        ]);
+
+        DB::transaction(function () use ($workOrder, $validated): void {
+            $workOrder->update([
+                'title' => $validated['title'],
+                'category' => $validated['category'],
+                'priority' => $validated['priority'],
+                'description' => $validated['description'] ?? null,
+                'facility_building_id' => ! empty($validated['facility_building_id']) ? (int) $validated['facility_building_id'] : $workOrder->facility_building_id,
+                'facility_asset_id' => ! empty($validated['facility_asset_id']) ? (int) $validated['facility_asset_id'] : $workOrder->facility_asset_id,
+                'due_date' => $validated['due_date'] ?? $workOrder->due_date,
+            ]);
+
+            if ($workOrder->serviceJob) {
+                $workOrder->serviceJob->update([
+                    'title' => $validated['title'],
+                    'category' => $validated['category'],
+                    'description' => $validated['description'] ?? $workOrder->serviceJob->description,
+                ]);
+            }
+        });
+
+        return redirect()
+            ->route('facilities-management.work-orders.show', $workOrder->uuid)
+            ->with('status', 'success')
+            ->with('message', "Work Order {$workOrder->work_order_number} updated.");
+    }
+
+    public function cancelWorkOrder(Request $request, FacilityWorkOrder $workOrder): RedirectResponse
+    {
+        $user = $request->user();
+        $canManage = $user?->can('facilities.manage') ?? false;
+        $isRequester = (string) $workOrder->requester_id === (string) $user?->uuid;
+        abort_if(! $canManage && ! ($isRequester && $user?->can('facilities.occupant.request')), 403);
+
+        abort_if($workOrder->status === FacilityWorkOrder::STATUS_COMPLETED, 422, 'Cannot cancel a completed work order.');
+        abort_if($workOrder->status === FacilityWorkOrder::STATUS_CANCELLED, 422, 'Work order is already cancelled.');
+
+        $validated = $request->validate([
+            'cancellation_reason' => ['nullable', 'string', 'max:1000'],
+        ]);
+
+        DB::transaction(function () use ($workOrder, $validated): void {
+            $reason = ! empty($validated['cancellation_reason']) ? $validated['cancellation_reason'] : 'Cancelled by user';
+            $workOrder->update([
+                'status' => FacilityWorkOrder::STATUS_CANCELLED,
+                'completion_notes' => "Cancelled: {$reason}",
+            ]);
+
+            if ($workOrder->serviceJob && $workOrder->serviceJob->status !== ServiceJob::STATUS_CANCELLED) {
+                $workOrder->serviceJob->update([
+                    'status' => ServiceJob::STATUS_CANCELLED,
+                ]);
+            }
+        });
+
+        return redirect()
+            ->route('facilities-management.work-orders.show', $workOrder->uuid)
+            ->with('status', 'success')
+            ->with('message', "Work Order {$workOrder->work_order_number} has been cancelled.");
     }
 
     public function completeWorkOrder(Request $request, FacilityWorkOrder $workOrder): RedirectResponse

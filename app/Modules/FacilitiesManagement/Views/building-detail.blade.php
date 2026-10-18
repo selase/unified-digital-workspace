@@ -203,7 +203,49 @@
                                     <span class="text-muted-foreground italic">Common / Unassigned</span>
                                 @endif
                             </td>
-                            <td class="text-end">
+                            <td class="text-end space-x-1">
+                                <details class="relative inline-block text-start">
+                                    <summary class="kt-btn kt-btn-xs kt-btn-outline cursor-pointer list-none">Edit</summary>
+                                    <div class="absolute right-0 mt-1 w-72 p-3 bg-card rounded-lg shadow-lg border border-border z-30 space-y-2">
+                                        <div class="text-xs font-semibold text-foreground">Edit Space {{ $space->code }}</div>
+                                        <form action="{{ route('facilities-management.spaces.update', $space->uuid) }}" method="POST" class="space-y-2">
+                                            @csrf
+                                            @method('PUT')
+                                            <div>
+                                                <label class="kt-form-label text-[11px]">Space Name *</label>
+                                                <input type="text" name="name" value="{{ $space->name }}" class="kt-input kt-input-sm text-xs" required>
+                                            </div>
+                                            <div class="grid grid-cols-2 gap-2">
+                                                <div>
+                                                    <label class="kt-form-label text-[11px]">Code *</label>
+                                                    <input type="text" name="code" value="{{ $space->code }}" class="kt-input kt-input-sm text-xs font-mono" required>
+                                                </div>
+                                                <div>
+                                                    <label class="kt-form-label text-[11px]">Floor # *</label>
+                                                    <input type="number" min="0" max="120" name="floor_number" value="{{ $space->floor_number }}" class="kt-input kt-input-sm text-xs" required>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label class="kt-form-label text-[11px]">Type *</label>
+                                                <select name="space_type" class="kt-select kt-select-sm text-xs" required>
+                                                    @foreach($spaceTypes as $typeKey => $typeLabel)
+                                                        <option value="{{ $typeKey }}" @selected($space->space_type === $typeKey)>{{ $typeLabel }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label class="kt-form-label text-[11px]">Occupant Lead</label>
+                                                <select name="occupant_user_id" class="kt-select kt-select-sm text-xs">
+                                                    <option value="">None / Common Area</option>
+                                                    @foreach($users as $user)
+                                                        <option value="{{ $user->uuid }}" @selected($space->occupant_user_id === (string) $user->uuid)>{{ $user->first_name }} {{ $user->last_name }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                            <button type="submit" class="kt-btn kt-btn-xs kt-btn-primary w-full justify-center">Update Space</button>
+                                        </form>
+                                    </div>
+                                </details>
                                 <form action="{{ route('facilities-management.spaces.destroy', $space->uuid) }}" method="POST" onsubmit="return confirm('Remove this space?');" class="inline">
                                     @csrf
                                     @method('DELETE')

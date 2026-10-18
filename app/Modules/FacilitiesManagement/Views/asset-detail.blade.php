@@ -240,14 +240,50 @@
                                     <span class="kt-badge kt-badge-xs kt-badge-secondary">Paused</span>
                                 @endif
                             </td>
-                            <td class="text-end">
+                            <td class="text-end space-x-1">
                                 <form action="{{ route('facilities-management.schedules.toggle', $sched->uuid) }}" method="POST" class="inline">
                                     @csrf
                                     <button type="submit" class="kt-btn kt-btn-xs kt-btn-outline" title="Toggle active status">
                                         {{ $sched->is_active ? 'Pause' : 'Activate' }}
                                     </button>
                                 </form>
-                                <form action="{{ route('facilities-management.schedules.destroy', $sched->uuid) }}" method="POST" onsubmit="return confirm('Delete this schedule?');" class="inline ml-1">
+                                <details class="relative inline-block text-start">
+                                    <summary class="kt-btn kt-btn-xs kt-btn-outline cursor-pointer list-none">Edit</summary>
+                                    <div class="absolute right-0 mt-1 w-64 p-3 bg-card rounded-lg shadow-lg border border-border z-30 space-y-2">
+                                        <div class="text-xs font-semibold text-foreground">Edit Schedule</div>
+                                        <form action="{{ route('facilities-management.schedules.update', $sched->uuid) }}" method="POST" class="space-y-2">
+                                            @csrf
+                                            @method('PUT')
+                                            <div>
+                                                <label class="kt-form-label text-[11px]">Title *</label>
+                                                <input type="text" name="title" value="{{ $sched->title }}" class="kt-input kt-input-sm text-xs" required>
+                                            </div>
+                                            <div class="grid grid-cols-2 gap-2">
+                                                <div>
+                                                    <label class="kt-form-label text-[11px]">Frequency *</label>
+                                                    <select name="frequency" class="kt-select kt-select-sm text-xs" required>
+                                                        <option value="daily" @selected($sched->frequency === 'daily')>Daily</option>
+                                                        <option value="weekly" @selected($sched->frequency === 'weekly')>Weekly</option>
+                                                        <option value="monthly" @selected($sched->frequency === 'monthly')>Monthly</option>
+                                                        <option value="quarterly" @selected($sched->frequency === 'quarterly')>Quarterly</option>
+                                                        <option value="biannual" @selected($sched->frequency === 'biannual')>Biannual</option>
+                                                        <option value="annual" @selected($sched->frequency === 'annual')>Annual</option>
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label class="kt-form-label text-[11px]">Interval (d) *</label>
+                                                    <input type="number" min="1" max="365" name="interval_days" value="{{ $sched->interval_days }}" class="kt-input kt-input-sm text-xs" required>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label class="kt-form-label text-[11px]">Description</label>
+                                                <textarea name="description" class="kt-input kt-input-sm text-xs" rows="2">{{ $sched->description }}</textarea>
+                                            </div>
+                                            <button type="submit" class="kt-btn kt-btn-xs kt-btn-primary w-full justify-center">Save Changes</button>
+                                        </form>
+                                    </div>
+                                </details>
+                                <form action="{{ route('facilities-management.schedules.destroy', $sched->uuid) }}" method="POST" onsubmit="return confirm('Delete this schedule?');" class="inline">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="kt-btn kt-btn-xs kt-btn-outline text-destructive hover:bg-destructive/10" title="Delete Schedule">

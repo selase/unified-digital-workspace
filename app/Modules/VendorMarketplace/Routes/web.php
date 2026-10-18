@@ -9,6 +9,7 @@ Route::get('/', [VendorMarketplaceWebController::class, 'index'])->name('index')
 Route::post('/rate-cards', [VendorMarketplaceWebController::class, 'upsertRateCard'])->name('rate-cards.upsert');
 Route::post('/vendors', [VendorMarketplaceWebController::class, 'storeVendor'])->name('vendors.store');
 Route::post('/jobs', [VendorMarketplaceWebController::class, 'storeJob'])->name('jobs.store');
+Route::post('/jobs/{job:uuid}/complete', [VendorMarketplaceWebController::class, 'completeJob'])->name('jobs.complete');
 Route::post('/jobs/{job}/proformas', [VendorMarketplaceWebController::class, 'storeProforma'])->name('proformas.store');
 Route::post('/proformas/{proforma}/fund-escrow', [VendorMarketplaceWebController::class, 'fundEscrow'])->name('escrows.fund');
 Route::post('/escrows/{escrow}/release', [VendorMarketplaceWebController::class, 'releaseEscrow'])->name('escrows.release');

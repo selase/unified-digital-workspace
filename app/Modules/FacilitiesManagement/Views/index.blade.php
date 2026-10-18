@@ -215,8 +215,34 @@
 
     {{-- Master Asset Register Table --}}
     <div class="kt-card">
-        <div class="kt-card-header">
+        <div class="kt-card-header flex flex-col md:flex-row md:items-center justify-between gap-3">
             <h3 class="kt-card-title">Institutional Asset Register &amp; Lifecycle Ledger</h3>
+            {{-- Asset Search & Filter Form --}}
+            <form method="GET" action="{{ route('facilities-management.index') }}" class="flex flex-wrap items-center gap-2">
+                <input type="text" name="asset_search" value="{{ request('asset_search') }}" class="kt-input kt-input-sm text-xs w-44" placeholder="Search asset tag/name...">
+                <select name="asset_building_id" class="kt-select kt-select-sm text-xs w-36">
+                    <option value="">All Buildings</option>
+                    @foreach($buildings as $bld)
+                        <option value="{{ $bld->id }}" @selected((string) request('asset_building_id') === (string) $bld->id)>{{ $bld->name }}</option>
+                    @endforeach
+                </select>
+                <select name="asset_category" class="kt-select kt-select-sm text-xs w-32">
+                    <option value="">All Categories</option>
+                    @foreach($categories as $catKey => $catLabel)
+                        <option value="{{ $catKey }}" @selected(request('asset_category') === $catKey)>{{ $catLabel }}</option>
+                    @endforeach
+                </select>
+                <select name="asset_status" class="kt-select kt-select-sm text-xs w-32">
+                    <option value="">All Statuses</option>
+                    @foreach($assetStatuses as $stKey => $stLabel)
+                        <option value="{{ $stKey }}" @selected(request('asset_status') === $stKey)>{{ $stLabel }}</option>
+                    @endforeach
+                </select>
+                <button type="submit" class="kt-btn kt-btn-xs kt-btn-primary">Filter</button>
+                @if(request()->anyFilled(['asset_search', 'asset_building_id', 'asset_category', 'asset_status']))
+                    <a href="{{ route('facilities-management.index') }}" class="kt-btn kt-btn-xs kt-btn-outline">Reset</a>
+                @endif
+            </form>
         </div>
         <div class="kt-card-table kt-scrollable-x-auto">
             <table class="kt-table table-auto kt-table-border">
@@ -286,18 +312,52 @@
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="text-center py-6 text-sm text-muted-foreground">No assets registered yet.</td>
+                            <td colspan="7" class="text-center py-6 text-sm text-muted-foreground">No assets found matching the criteria.</td>
                         </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
+        @if($assets->hasPages())
+            <div class="p-4 border-t border-border">
+                {{ $assets->links() }}
+            </div>
+        @endif
     </div>
 
     {{-- Work Orders Desk (Dual Mode: Institutional vs Occupant Marketplace) --}}
     <div class="kt-card">
-        <div class="kt-card-header">
+        <div class="kt-card-header flex flex-col md:flex-row md:items-center justify-between gap-3">
             <h3 class="kt-card-title">Dual-Mode Work Orders Desk</h3>
+            {{-- Work Orders Search & Filter Form --}}
+            <form method="GET" action="{{ route('facilities-management.index') }}" class="flex flex-wrap items-center gap-2">
+                <input type="text" name="work_order_search" value="{{ request('work_order_search') }}" class="kt-input kt-input-sm text-xs w-44" placeholder="Search order #/title...">
+                <select name="work_order_building_id" class="kt-select kt-select-sm text-xs w-36">
+                    <option value="">All Buildings</option>
+                    @foreach($buildings as $bld)
+                        <option value="{{ $bld->id }}" @selected((string) request('work_order_building_id') === (string) $bld->id)>{{ $bld->name }}</option>
+                    @endforeach
+                </select>
+                <select name="work_order_priority" class="kt-select kt-select-sm text-xs w-28">
+                    <option value="">All Priority</option>
+                    <option value="low" @selected(request('work_order_priority') === 'low')>Low</option>
+                    <option value="medium" @selected(request('work_order_priority') === 'medium')>Medium</option>
+                    <option value="high" @selected(request('work_order_priority') === 'high')>High</option>
+                    <option value="emergency" @selected(request('work_order_priority') === 'emergency')>Emergency</option>
+                </select>
+                <select name="work_order_status" class="kt-select kt-select-sm text-xs w-32">
+                    <option value="">All Statuses</option>
+                    <option value="open" @selected(request('work_order_status') === 'open')>Open</option>
+                    <option value="assigned" @selected(request('work_order_status') === 'assigned')>Assigned</option>
+                    <option value="in_progress" @selected(request('work_order_status') === 'in_progress')>In Progress</option>
+                    <option value="completed" @selected(request('work_order_status') === 'completed')>Completed</option>
+                    <option value="cancelled" @selected(request('work_order_status') === 'cancelled')>Cancelled</option>
+                </select>
+                <button type="submit" class="kt-btn kt-btn-xs kt-btn-primary">Filter</button>
+                @if(request()->anyFilled(['work_order_search', 'work_order_building_id', 'work_order_priority', 'work_order_status']))
+                    <a href="{{ route('facilities-management.index') }}" class="kt-btn kt-btn-xs kt-btn-outline">Reset</a>
+                @endif
+            </form>
         </div>
         <div class="kt-card-table kt-scrollable-x-auto">
             <table class="kt-table table-auto kt-table-border">
@@ -349,7 +409,7 @@
                                 <a href="{{ route('facilities-management.work-orders.show', $order->uuid) }}" class="kt-btn kt-btn-xs kt-btn-outline">
                                     View &rarr;
                                 </a>
-                                @if($order->status !== 'completed')
+                                @if($order->status !== 'completed' && $order->status !== 'cancelled')
                                     <details class="relative inline-block text-start">
                                         <summary class="kt-btn kt-btn-xs kt-btn-success cursor-pointer list-none">&check; Complete</summary>
                                         <div class="absolute right-0 mt-1 w-64 p-3 bg-card rounded-lg shadow-lg border border-border z-30 space-y-2">
@@ -361,19 +421,289 @@
                                             </form>
                                         </div>
                                     </details>
-                                @else
+                                @elseif($order->status === 'completed')
                                     <span class="text-xs text-emerald-600 font-semibold">Done</span>
+                                @else
+                                    <span class="text-xs text-rose-500 font-semibold">Cancelled</span>
                                 @endif
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="text-center py-6 text-sm text-muted-foreground">No work orders dispatched.</td>
+                            <td colspan="7" class="text-center py-6 text-sm text-muted-foreground">No work orders found matching the criteria.</td>
                         </tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
+        @if($workOrders->hasPages())
+            <div class="p-4 border-t border-border">
+                {{ $workOrders->links() }}
+            </div>
+        @endif
+    </div>
+
+    {{-- Spaces, Rooms & Wards Register Table --}}
+    <div class="kt-card">
+        <div class="kt-card-header flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <h3 class="kt-card-title">Spaces, Rooms &amp; Wards Register</h3>
+            {{-- Spaces Search & Filter Form --}}
+            <form method="GET" action="{{ route('facilities-management.index') }}" class="flex flex-wrap items-center gap-2">
+                <input type="text" name="space_search" value="{{ request('space_search') }}" class="kt-input kt-input-sm text-xs w-44" placeholder="Search code/name...">
+                <select name="space_building_id" class="kt-select kt-select-sm text-xs w-36">
+                    <option value="">All Buildings</option>
+                    @foreach($buildings as $bld)
+                        <option value="{{ $bld->id }}" @selected((string) request('space_building_id') === (string) $bld->id)>{{ $bld->name }}</option>
+                    @endforeach
+                </select>
+                <select name="space_type" class="kt-select kt-select-sm text-xs w-36">
+                    <option value="">All Space Types</option>
+                    @foreach($spaceTypes as $typeKey => $typeLabel)
+                        <option value="{{ $typeKey }}" @selected(request('space_type') === $typeKey)>{{ $typeLabel }}</option>
+                    @endforeach
+                </select>
+                <button type="submit" class="kt-btn kt-btn-xs kt-btn-primary">Filter</button>
+                @if(request()->anyFilled(['space_search', 'space_building_id', 'space_type']))
+                    <a href="{{ route('facilities-management.index') }}" class="kt-btn kt-btn-xs kt-btn-outline">Reset</a>
+                @endif
+            </form>
+        </div>
+        <div class="kt-card-table kt-scrollable-x-auto">
+            <table class="kt-table table-auto kt-table-border">
+                <thead>
+                    <tr>
+                        <th>Code &amp; Name</th>
+                        <th>Building</th>
+                        <th>Floor</th>
+                        <th>Space Type</th>
+                        <th>Occupant</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($spaces as $sp)
+                        <tr>
+                            <td>
+                                <span class="font-mono text-xs font-bold text-foreground">{{ $sp->code }}</span>
+                                <div class="text-xs text-foreground font-semibold mt-0.5">{{ $sp->name }}</div>
+                            </td>
+                            <td class="text-xs">
+                                @if($sp->building)
+                                    <a href="{{ route('facilities-management.buildings.show', $sp->building->uuid) }}" class="text-foreground hover:text-primary hover:underline font-medium">
+                                        {{ $sp->building->name }}
+                                    </a>
+                                @else
+                                    <span class="text-muted-foreground italic">Unassigned</span>
+                                @endif
+                            </td>
+                            <td class="text-xs">Floor {{ $sp->floor_number }}</td>
+                            <td>
+                                <span class="kt-badge kt-badge-xs kt-badge-outline">{{ $spaceTypes[$sp->space_type] ?? $sp->space_type }}</span>
+                            </td>
+                            <td class="text-xs">
+                                @if($sp->occupant)
+                                    <span class="font-semibold text-foreground">{{ $sp->occupant->first_name }} {{ $sp->occupant->last_name }}</span>
+                                @else
+                                    <span class="text-muted-foreground italic">Common / Unassigned</span>
+                                @endif
+                            </td>
+                            <td class="text-end space-x-1">
+                                <details class="relative inline-block text-start">
+                                    <summary class="kt-btn kt-btn-xs kt-btn-outline cursor-pointer list-none">Edit</summary>
+                                    <div class="absolute right-0 mt-1 w-72 p-3 bg-card rounded-lg shadow-lg border border-border z-30 space-y-2">
+                                        <div class="text-xs font-semibold text-foreground">Edit Space {{ $sp->code }}</div>
+                                        <form action="{{ route('facilities-management.spaces.update', $sp->uuid) }}" method="POST" class="space-y-2">
+                                            @csrf
+                                            @method('PUT')
+                                            <div>
+                                                <label class="kt-form-label text-[11px]">Space Name *</label>
+                                                <input type="text" name="name" value="{{ $sp->name }}" class="kt-input kt-input-sm text-xs" required>
+                                            </div>
+                                            <div class="grid grid-cols-2 gap-2">
+                                                <div>
+                                                    <label class="kt-form-label text-[11px]">Code *</label>
+                                                    <input type="text" name="code" value="{{ $sp->code }}" class="kt-input kt-input-sm text-xs font-mono" required>
+                                                </div>
+                                                <div>
+                                                    <label class="kt-form-label text-[11px]">Floor # *</label>
+                                                    <input type="number" min="0" max="120" name="floor_number" value="{{ $sp->floor_number }}" class="kt-input kt-input-sm text-xs" required>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label class="kt-form-label text-[11px]">Type *</label>
+                                                <select name="space_type" class="kt-select kt-select-sm text-xs" required>
+                                                    @foreach($spaceTypes as $typeKey => $typeLabel)
+                                                        <option value="{{ $typeKey }}" @selected($sp->space_type === $typeKey)>{{ $typeLabel }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label class="kt-form-label text-[11px]">Occupant Lead</label>
+                                                <select name="occupant_user_id" class="kt-select kt-select-sm text-xs">
+                                                    <option value="">None / Common Area</option>
+                                                    @foreach($users as $user)
+                                                        <option value="{{ $user->uuid }}" @selected($sp->occupant_user_id === (string) $user->uuid)>{{ $user->first_name }} {{ $user->last_name }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                            <button type="submit" class="kt-btn kt-btn-xs kt-btn-primary w-full justify-center">Update Space</button>
+                                        </form>
+                                    </div>
+                                </details>
+                                <form action="{{ route('facilities-management.spaces.destroy', $sp->uuid) }}" method="POST" onsubmit="return confirm('Remove this space?');" class="inline">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="kt-btn kt-btn-xs kt-btn-outline text-destructive hover:bg-destructive/10" title="Delete Space">&times;</button>
+                                </form>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="6" class="text-center py-6 text-sm text-muted-foreground">No spaces found matching the criteria.</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+        @if($spaces->hasPages())
+            <div class="p-4 border-t border-border">
+                {{ $spaces->links() }}
+            </div>
+        @endif
+    </div>
+
+    {{-- Preventive Maintenance Schedules Register Table --}}
+    <div class="kt-card">
+        <div class="kt-card-header flex flex-col md:flex-row md:items-center justify-between gap-3">
+            <h3 class="kt-card-title">Preventive Maintenance Schedules Ledger</h3>
+            {{-- Schedules Search & Filter Form --}}
+            <form method="GET" action="{{ route('facilities-management.index') }}" class="flex flex-wrap items-center gap-2">
+                <input type="text" name="schedule_search" value="{{ request('schedule_search') }}" class="kt-input kt-input-sm text-xs w-44" placeholder="Search title/desc...">
+                <select name="schedule_frequency" class="kt-select kt-select-sm text-xs w-32">
+                    <option value="">All Frequency</option>
+                    <option value="daily" @selected(request('schedule_frequency') === 'daily')>Daily</option>
+                    <option value="weekly" @selected(request('schedule_frequency') === 'weekly')>Weekly</option>
+                    <option value="monthly" @selected(request('schedule_frequency') === 'monthly')>Monthly</option>
+                    <option value="quarterly" @selected(request('schedule_frequency') === 'quarterly')>Quarterly</option>
+                    <option value="biannual" @selected(request('schedule_frequency') === 'biannual')>Biannual</option>
+                    <option value="annual" @selected(request('schedule_frequency') === 'annual')>Annual</option>
+                </select>
+                <select name="schedule_status" class="kt-select kt-select-sm text-xs w-28">
+                    <option value="">All Status</option>
+                    <option value="active" @selected(request('schedule_status') === 'active')>Active</option>
+                    <option value="paused" @selected(request('schedule_status') === 'paused')>Paused</option>
+                </select>
+                <button type="submit" class="kt-btn kt-btn-xs kt-btn-primary">Filter</button>
+                @if(request()->anyFilled(['schedule_search', 'schedule_frequency', 'schedule_status']))
+                    <a href="{{ route('facilities-management.index') }}" class="kt-btn kt-btn-xs kt-btn-outline">Reset</a>
+                @endif
+            </form>
+        </div>
+        <div class="kt-card-table kt-scrollable-x-auto">
+            <table class="kt-table table-auto kt-table-border">
+                <thead>
+                    <tr>
+                        <th>Schedule Title</th>
+                        <th>Associated Asset</th>
+                        <th>Frequency</th>
+                        <th>Interval</th>
+                        <th>Next Due Date</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($schedules as $sched)
+                        <tr>
+                            <td>
+                                <div class="text-xs font-semibold text-foreground">{{ $sched->title }}</div>
+                                @if($sched->description)
+                                    <div class="text-[11px] text-muted-foreground line-clamp-1">{{ $sched->description }}</div>
+                                @endif
+                            </td>
+                            <td>
+                                @if($sched->asset)
+                                    <a href="{{ route('facilities-management.assets.show', $sched->asset->uuid) }}" class="font-mono text-xs font-bold text-primary hover:underline">
+                                        {{ $sched->asset->asset_tag }}
+                                    </a>
+                                    <div class="text-[11px] text-muted-foreground">{{ $sched->asset->name }} ({{ $sched->asset->building?->name ?? 'Unassigned' }})</div>
+                                @else
+                                    <span class="text-xs text-muted-foreground italic">N/A</span>
+                                @endif
+                            </td>
+                            <td class="text-xs uppercase font-medium">{{ $sched->frequency }}</td>
+                            <td class="text-xs">{{ $sched->interval_days }} Days</td>
+                            <td class="text-xs font-mono font-semibold text-foreground">{{ $sched->next_due_date?->format('d/m/Y') ?? 'Pending' }}</td>
+                            <td>
+                                @if($sched->is_active)
+                                    <span class="kt-badge kt-badge-xs kt-badge-success">Active</span>
+                                @else
+                                    <span class="kt-badge kt-badge-xs kt-badge-secondary">Paused</span>
+                                @endif
+                            </td>
+                            <td class="text-end space-x-1">
+                                <form action="{{ route('facilities-management.schedules.toggle', $sched->uuid) }}" method="POST" class="inline">
+                                    @csrf
+                                    <button type="submit" class="kt-btn kt-btn-xs kt-btn-outline" title="Toggle active status">
+                                        {{ $sched->is_active ? 'Pause' : 'Activate' }}
+                                    </button>
+                                </form>
+                                <details class="relative inline-block text-start">
+                                    <summary class="kt-btn kt-btn-xs kt-btn-outline cursor-pointer list-none">Edit</summary>
+                                    <div class="absolute right-0 mt-1 w-64 p-3 bg-card rounded-lg shadow-lg border border-border z-30 space-y-2">
+                                        <div class="text-xs font-semibold text-foreground">Edit Schedule</div>
+                                        <form action="{{ route('facilities-management.schedules.update', $sched->uuid) }}" method="POST" class="space-y-2">
+                                            @csrf
+                                            @method('PUT')
+                                            <div>
+                                                <label class="kt-form-label text-[11px]">Title *</label>
+                                                <input type="text" name="title" value="{{ $sched->title }}" class="kt-input kt-input-sm text-xs" required>
+                                            </div>
+                                            <div class="grid grid-cols-2 gap-2">
+                                                <div>
+                                                    <label class="kt-form-label text-[11px]">Frequency *</label>
+                                                    <select name="frequency" class="kt-select kt-select-sm text-xs" required>
+                                                        <option value="daily" @selected($sched->frequency === 'daily')>Daily</option>
+                                                        <option value="weekly" @selected($sched->frequency === 'weekly')>Weekly</option>
+                                                        <option value="monthly" @selected($sched->frequency === 'monthly')>Monthly</option>
+                                                        <option value="quarterly" @selected($sched->frequency === 'quarterly')>Quarterly</option>
+                                                        <option value="biannual" @selected($sched->frequency === 'biannual')>Biannual</option>
+                                                        <option value="annual" @selected($sched->frequency === 'annual')>Annual</option>
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label class="kt-form-label text-[11px]">Interval (d) *</label>
+                                                    <input type="number" min="1" max="365" name="interval_days" value="{{ $sched->interval_days }}" class="kt-input kt-input-sm text-xs" required>
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <label class="kt-form-label text-[11px]">Description</label>
+                                                <textarea name="description" class="kt-input kt-input-sm text-xs" rows="2">{{ $sched->description }}</textarea>
+                                            </div>
+                                            <button type="submit" class="kt-btn kt-btn-xs kt-btn-primary w-full justify-center">Save Changes</button>
+                                        </form>
+                                    </div>
+                                </details>
+                                <form action="{{ route('facilities-management.schedules.destroy', $sched->uuid) }}" method="POST" onsubmit="return confirm('Delete this schedule?');" class="inline">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="kt-btn kt-btn-xs kt-btn-outline text-destructive hover:bg-destructive/10" title="Delete Schedule">&times;</button>
+                                </form>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="7" class="text-center py-6 text-sm text-muted-foreground">No maintenance schedules found matching the criteria.</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+        @if($schedules->hasPages())
+            <div class="p-4 border-t border-border">
+                {{ $schedules->links() }}
+            </div>
+        @endif
     </div>
 </div>
 @endsection

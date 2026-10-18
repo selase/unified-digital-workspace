@@ -186,7 +186,8 @@ final class EscrowSettlementService
             'settled_at' => now(),
         ]);
 
-        $locked->serviceJob()->update(['status' => ServiceJob::STATUS_COMPLETED]);
+        $serviceJob = $locked->serviceJob;
+        $serviceJob?->markCompleted();
 
         return $locked->fresh() ?? $locked;
     }
