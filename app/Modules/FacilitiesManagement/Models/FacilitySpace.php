@@ -11,6 +11,22 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property int $id
+ * @property string $uuid
+ * @property string $tenant_id
+ * @property int $facility_building_id
+ * @property string $name
+ * @property string $code
+ * @property int $floor_number
+ * @property string $space_type
+ * @property string|null $occupant_user_id
+ * @property bool $is_occupied
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read FacilityBuilding|null $building
+ * @property-read User|null $occupant
+ */
 final class FacilitySpace extends Model
 {
     use BelongsToTenant;

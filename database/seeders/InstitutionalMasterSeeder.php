@@ -92,6 +92,7 @@ final class InstitutionalMasterSeeder extends Seeder
             ProjectManagementSeeder::class,
             ForumsSeeder::class,
             CmsCoreSeeder::class,
+            \App\Modules\FacilitiesManagement\Database\Seeders\FacilitiesManagementSeeder::class,
         ]);
 
         $this->seedHierarchyAndRbac($tenant);
@@ -598,10 +599,10 @@ final class InstitutionalMasterSeeder extends Seeder
             if (Schema::connection($tenantConnection)->hasTable('facility_assets')) {
                 $asset = \App\Modules\FacilitiesManagement\Models\FacilityAsset::query()->updateOrCreate([
                     'tenant_id' => $tenant->id,
-                    'serial_number' => 'CAT-500KVA-001',
+                    'asset_tag' => 'AST-HQ-PWR-001',
                 ], [
                     'facility_building_id' => $building->id,
-                    'asset_tag' => 'AST-PWR-001',
+                    'serial_number' => 'CAT-500KVA-001',
                     'name' => 'Caterpillar 500kVA Standby Diesel Generator',
                     'category' => 'electrical',
                     'manufacturer' => 'Caterpillar Energy',

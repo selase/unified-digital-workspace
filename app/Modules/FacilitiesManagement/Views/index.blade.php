@@ -235,12 +235,20 @@
                     @forelse($assets as $asset)
                         <tr>
                             <td>
-                                <div class="font-bold text-foreground font-mono text-xs">{{ $asset->asset_tag }}</div>
-                                <div class="text-xs text-foreground font-semibold mt-0.5">{{ $asset->name }}</div>
+                                <a href="{{ route('facilities-management.assets.show', $asset->uuid) }}" class="font-bold text-primary font-mono text-xs hover:underline">{{ $asset->asset_tag }}</a>
+                                <div class="text-xs text-foreground font-semibold mt-0.5">
+                                    <a href="{{ route('facilities-management.assets.show', $asset->uuid) }}" class="hover:text-primary">{{ $asset->name }}</a>
+                                </div>
                                 <div class="text-[11px] text-muted-foreground">{{ $asset->manufacturer ?? 'Generic' }} • {{ $asset->serial_number ?? 'S/N: N/A' }}</div>
                             </td>
                             <td>
-                                <div class="text-xs font-semibold text-foreground">{{ $asset->building?->name }}</div>
+                                @if($asset->building)
+                                    <div class="text-xs font-semibold text-foreground">
+                                        <a href="{{ route('facilities-management.buildings.show', $asset->building->uuid) }}" class="text-foreground hover:text-primary hover:underline">{{ $asset->building->name }}</a>
+                                    </div>
+                                @else
+                                    <div class="text-xs text-muted-foreground italic">Unassigned</div>
+                                @endif
                                 <div class="text-[11px] text-muted-foreground">{{ $asset->space?->name ?? 'Common / Core' }}</div>
                             </td>
                             <td><span class="kt-badge kt-badge-xs kt-badge-outline">{{ $categories[$asset->category] ?? $asset->category }}</span></td>
@@ -308,7 +316,9 @@
                     @forelse($workOrders as $order)
                         <tr>
                             <td>
-                                <div class="font-mono text-xs font-bold text-foreground">{{ $order->work_order_number }}</div>
+                                <a href="{{ route('facilities-management.work-orders.show', $order->uuid) }}" class="font-mono text-xs font-bold text-primary hover:underline">
+                                    {{ $order->work_order_number }}
+                                </a>
                                 @if($order->mode === 'mode_b_occupant_marketplace')
                                     <span class="kt-badge kt-badge-xs kt-badge-primary">Mode B: Marketplace</span>
                                     @if($order->serviceJob)
@@ -319,7 +329,9 @@
                                 @endif
                             </td>
                             <td>
-                                <div class="font-semibold text-foreground text-xs">{{ $order->title }}</div>
+                                <a href="{{ route('facilities-management.work-orders.show', $order->uuid) }}" class="font-semibold text-foreground text-xs hover:text-primary">
+                                    {{ $order->title }}
+                                </a>
                                 <div class="text-xs text-muted-foreground capitalize">{{ str_replace('_', ' ', $order->category) }}</div>
                             </td>
                             <td class="text-xs">
@@ -333,7 +345,10 @@
                                 <span class="kt-badge kt-badge-xs kt-badge-primary uppercase ml-1">{{ $order->status }}</span>
                             </td>
                             <td class="text-xs text-muted-foreground">{{ $order->due_date?->format('d/m/Y') ?? 'N/A' }}</td>
-                            <td class="text-end">
+                            <td class="text-end space-x-1">
+                                <a href="{{ route('facilities-management.work-orders.show', $order->uuid) }}" class="kt-btn kt-btn-xs kt-btn-outline">
+                                    View &rarr;
+                                </a>
                                 @if($order->status !== 'completed')
                                     <details class="relative inline-block text-start">
                                         <summary class="kt-btn kt-btn-xs kt-btn-success cursor-pointer list-none">&check; Complete</summary>
@@ -347,7 +362,7 @@
                                         </div>
                                     </details>
                                 @else
-                                    <span class="text-xs text-emerald-600 font-semibold">Completed ({{ $order->completed_at?->format('d/m/Y') }})</span>
+                                    <span class="text-xs text-emerald-600 font-semibold">Done</span>
                                 @endif
                             </td>
                         </tr>
