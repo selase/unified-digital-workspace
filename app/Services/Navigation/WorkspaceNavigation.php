@@ -540,9 +540,9 @@ final class WorkspaceNavigation
                     ['label' => 'Departments', 'route' => 'hrms-core.departments.index', 'permission' => 'hrms.departments.view'],
                     ['label' => 'Leave Requests', 'route' => 'hrms-core.leave-requests.index', 'permission' => 'hrms.leave.view'],
                     ['label' => 'Recruitment', 'route' => 'hrms-core.recruitment.index', 'permission' => 'hrms.jobs.view'],
-                    ['label' => 'Employees API', 'route' => 'api.hrms-core.v1.employees.index'],
-                    ['label' => 'Leave API', 'route' => 'api.hrms-core.v1.leave-requests.index'],
-                    ['label' => 'Recruitment API', 'route' => 'api.hrms-core.v1.job-postings.index'],
+                    ['label' => 'Appraisals', 'route' => 'hrms-core.appraisals.index', 'permission' => 'hrms.appraisal.view', 'active_patterns' => ['hrms-core.appraisals.*']],
+                    ['label' => 'Salary & Allowances', 'route' => 'hrms-core.salary.index', 'permission' => 'hrms.salary.view', 'active_patterns' => ['hrms-core.salary.*']],
+                    ['label' => 'Promotions', 'route' => 'hrms-core.promotions.index', 'permission' => 'hrms.promotion.view', 'active_patterns' => ['hrms-core.promotions.*']],
                 ],
                 'top_menu' => [
                     [
@@ -558,9 +558,11 @@ final class WorkspaceNavigation
                         'label' => 'People Ops',
                         'items' => [
                             ['label' => 'Leave Requests', 'route' => 'hrms-core.leave-requests.index', 'permission' => 'hrms.leave.view'],
+                            ['label' => 'Public Holidays', 'route' => 'hrms-core.holidays.index', 'permission' => 'hrms.leave.manage_holidays'],
                             ['label' => 'Recruitment', 'route' => 'hrms-core.recruitment.index', 'permission' => 'hrms.jobs.view'],
-                            ['label' => 'Appraisals API', 'route' => 'api.hrms-core.v1.appraisals.index'],
-                            ['label' => 'Promotions API', 'route' => 'api.hrms-core.v1.promotions.index'],
+                            ['label' => 'Appraisals', 'route' => 'hrms-core.appraisals.index', 'permission' => 'hrms.appraisal.view'],
+                            ['label' => 'Salary & Allowances', 'route' => 'hrms-core.salary.index', 'permission' => 'hrms.salary.view'],
+                            ['label' => 'Promotions', 'route' => 'hrms-core.promotions.index', 'permission' => 'hrms.promotion.view'],
                         ],
                     ],
                 ],

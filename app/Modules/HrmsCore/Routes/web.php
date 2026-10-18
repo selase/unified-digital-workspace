@@ -7,7 +7,9 @@ use App\Modules\HrmsCore\Http\Controllers\Web\HrmsDepartmentDirectoryController;
 use App\Modules\HrmsCore\Http\Controllers\Web\HrmsEmployeeDirectoryController;
 use App\Modules\HrmsCore\Http\Controllers\Web\HrmsHubController;
 use App\Modules\HrmsCore\Http\Controllers\Web\HrmsLeaveRequestController;
+use App\Modules\HrmsCore\Http\Controllers\Web\HrmsPromotionWebController;
 use App\Modules\HrmsCore\Http\Controllers\Web\HrmsRecruitmentController;
+use App\Modules\HrmsCore\Http\Controllers\Web\HrmsSalaryWebController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -129,4 +131,40 @@ Route::prefix('appraisals')->name('appraisals.')->group(function (): void {
     Route::delete('/{appraisal}/comments/{comment}', [HrmsAppraisalWebController::class, 'destroyComment'])->name('comments.destroy');
 
     Route::post('/{appraisal}/recommendations', [HrmsAppraisalWebController::class, 'storeRecommendation'])->name('recommendations.store');
+});
+
+Route::prefix('salary')->name('salary.')->group(function (): void {
+    Route::get('/', [HrmsSalaryWebController::class, 'index'])->name('index');
+
+    Route::post('/levels', [HrmsSalaryWebController::class, 'storeLevel'])->name('levels.store');
+    Route::put('/levels/{level}', [HrmsSalaryWebController::class, 'updateLevel'])->name('levels.update');
+    Route::delete('/levels/{level}', [HrmsSalaryWebController::class, 'destroyLevel'])->name('levels.destroy');
+
+    Route::post('/steps', [HrmsSalaryWebController::class, 'storeStep'])->name('steps.store');
+    Route::put('/steps/{step}', [HrmsSalaryWebController::class, 'updateStep'])->name('steps.update');
+    Route::delete('/steps/{step}', [HrmsSalaryWebController::class, 'destroyStep'])->name('steps.destroy');
+
+    Route::post('/allowance-types', [HrmsSalaryWebController::class, 'storeAllowanceType'])->name('allowance-types.store');
+    Route::put('/allowance-types/{allowanceType}', [HrmsSalaryWebController::class, 'updateAllowanceType'])->name('allowance-types.update');
+    Route::delete('/allowance-types/{allowanceType}', [HrmsSalaryWebController::class, 'destroyAllowanceType'])->name('allowance-types.destroy');
+
+    Route::post('/allowances', [HrmsSalaryWebController::class, 'storeAllowance'])->name('allowances.store');
+    Route::put('/allowances/{allowance}', [HrmsSalaryWebController::class, 'updateAllowance'])->name('allowances.update');
+    Route::delete('/allowances/{allowance}', [HrmsSalaryWebController::class, 'destroyAllowance'])->name('allowances.destroy');
+
+    Route::put('/employee-compensation', [HrmsSalaryWebController::class, 'assignEmployeeCompensation'])->name('employee-compensation.update');
+
+    Route::post('/employee-allowances', [HrmsSalaryWebController::class, 'storeEmployeeAllowance'])->name('employee-allowances.store');
+    Route::put('/employee-allowances/{employeeAllowance}', [HrmsSalaryWebController::class, 'updateEmployeeAllowance'])->name('employee-allowances.update');
+    Route::delete('/employee-allowances/{employeeAllowance}', [HrmsSalaryWebController::class, 'destroyEmployeeAllowance'])->name('employee-allowances.destroy');
+});
+
+Route::prefix('promotions')->name('promotions.')->group(function (): void {
+    Route::get('/', [HrmsPromotionWebController::class, 'index'])->name('index');
+    Route::post('/', [HrmsPromotionWebController::class, 'store'])->name('store');
+    Route::get('/{promotion}', [HrmsPromotionWebController::class, 'show'])->name('show');
+    Route::post('/{promotion}/submit', [HrmsPromotionWebController::class, 'submitForReview'])->name('submit');
+    Route::post('/{promotion}/supervisor-review', [HrmsPromotionWebController::class, 'reviewBySupervisor'])->name('supervisor-review');
+    Route::post('/{promotion}/hr-review', [HrmsPromotionWebController::class, 'reviewByHr'])->name('hr-review');
+    Route::delete('/{promotion}', [HrmsPromotionWebController::class, 'destroy'])->name('destroy');
 });

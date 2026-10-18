@@ -20,13 +20,15 @@ final class AppraisalScoreResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $canSeeSupervisor = AppraisalResource::viewerCanSeeSupervisorEvaluation($request, $this->appraisal);
+
         return [
             'id' => $this->id,
             'uuid' => $this->uuid,
             'section' => $this->whenLoaded('section', fn () => new AppraisalSectionResource($this->section)),
             'self_score' => $this->self_score,
-            'supervisor_score' => $this->supervisor_score,
-            'final_score' => $this->final_score,
+            'supervisor_score' => $canSeeSupervisor ? $this->supervisor_score : null,
+            'final_score' => $canSeeSupervisor ? $this->final_score : null,
             'created_at' => $this->created_at?->toIso8601String(),
             'updated_at' => $this->updated_at?->toIso8601String(),
         ];

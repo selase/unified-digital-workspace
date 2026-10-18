@@ -1058,15 +1058,18 @@ final class HrmsAppraisalWebController extends Controller
             $base = 'appraisal-period';
         }
 
-        $candidate = $base;
-        $counter = 2;
-
-        while (AppraisalPeriod::withoutGlobalScopes()->where('slug', $candidate)->exists()) {
-            $candidate = "{$base}-{$counter}";
-            $counter++;
+        if (! AppraisalPeriod::withoutGlobalScopes()->where('slug', $base)->exists()) {
+            return $base;
         }
 
-        return $candidate;
+        for ($counter = 2; $counter <= 50; $counter++) {
+            $candidate = "{$base}-{$counter}";
+            if (! AppraisalPeriod::withoutGlobalScopes()->where('slug', $candidate)->exists()) {
+                return $candidate;
+            }
+        }
+
+        return $base.'-'.Str::lower(Str::random(8));
     }
 
     private function uniqueTemplateSlug(string $name): string
@@ -1076,15 +1079,18 @@ final class HrmsAppraisalWebController extends Controller
             $base = 'appraisal-template';
         }
 
-        $candidate = $base;
-        $counter = 2;
-
-        while (AppraisalTemplate::withoutGlobalScopes()->where('slug', $candidate)->exists()) {
-            $candidate = "{$base}-{$counter}";
-            $counter++;
+        if (! AppraisalTemplate::withoutGlobalScopes()->where('slug', $base)->exists()) {
+            return $base;
         }
 
-        return $candidate;
+        for ($counter = 2; $counter <= 50; $counter++) {
+            $candidate = "{$base}-{$counter}";
+            if (! AppraisalTemplate::withoutGlobalScopes()->where('slug', $candidate)->exists()) {
+                return $candidate;
+            }
+        }
+
+        return $base.'-'.Str::lower(Str::random(8));
     }
 
     private function findActorEmployee(Request $request, string $tenantId): ?Employee

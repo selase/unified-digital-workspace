@@ -227,7 +227,7 @@
 
             {{-- 2. BANKING DETAILS TAB --}}
             <div x-show="activeTab === 'banking'" class="flex flex-col gap-6" style="display: none;">
-                <x-metronic.card title="Bank & Salary Disbursement Details" subtitle="Primary account records for payroll processing">
+                <x-metronic.card title="Bank & Salary Disbursement Details" subtitle="Primary bank account records on file for salary and allowance reference">
                     <form action="{{ route('hrms-core.employees.dossier.bank-details.update', $employee) }}" method="POST" class="space-y-4">
                         @csrf
                         @method('PUT')

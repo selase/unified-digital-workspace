@@ -233,9 +233,10 @@ describe('HRMS Core Web Workflows', function (): void {
         $createResponse->assertOk();
         $createResponse->assertSee('Submit Leave Application');
 
-        // Store leave request
-        $startDate = Carbon::now()->addDays(2)->toDateString();
-        $endDate = Carbon::now()->addDays(6)->toDateString();
+        // Store leave request (Monday through Friday = 5 working days)
+        $nextMonday = Carbon::now()->next(Carbon::MONDAY);
+        $startDate = $nextMonday->toDateString();
+        $endDate = $nextMonday->copy()->addDays(4)->toDateString();
 
         $storeResponse = $this->actingAs($user)->post(route('hrms-core.leave-requests.store'), [
             'employee_id' => $employee->id,
@@ -251,7 +252,7 @@ describe('HRMS Core Web Workflows', function (): void {
         $leaveRequest = LeaveRequest::where('employee_id', $employee->id)->first();
         expect($leaveRequest)->not->toBeNull();
         expect($leaveRequest->status)->toBe(LeaveStatus::Pending);
-        expect($leaveRequest->no_requested_days)->toBe(5);
+        expect((float) $leaveRequest->no_requested_days)->toBe(5.0);
 
         // Index page
         $indexResponse = $this->actingAs($user)->get(route('hrms-core.leave-requests.index'));

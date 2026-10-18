@@ -20,6 +20,8 @@ final class AppraisalGoalResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
+        $canSeeSupervisor = AppraisalResource::viewerCanSeeSupervisorEvaluation($request, $this->appraisal);
+
         return [
             'id' => $this->id,
             'uuid' => $this->uuid,
@@ -31,9 +33,9 @@ final class AppraisalGoalResource extends JsonResource
             'status' => $this->status->value,
             'weight' => $this->weight,
             'self_rating' => $this->self_rating,
-            'supervisor_rating' => $this->supervisor_rating,
+            'supervisor_rating' => $canSeeSupervisor ? $this->supervisor_rating : null,
             'employee_comments' => $this->employee_comments,
-            'supervisor_comments' => $this->supervisor_comments,
+            'supervisor_comments' => $canSeeSupervisor ? $this->supervisor_comments : null,
             'due_date' => $this->due_date?->format('Y-m-d'),
             'sort_order' => $this->sort_order,
             'created_at' => $this->created_at?->toIso8601String(),
