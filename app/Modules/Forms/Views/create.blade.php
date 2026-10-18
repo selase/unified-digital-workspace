@@ -202,7 +202,8 @@
 
             <div class="mt-8 flex justify-end gap-3 pt-4 border-t border-border">
                 <a href="{{ route('forms.index') }}" class="kt-btn kt-btn-outline">Cancel</a>
-                <button type="submit" class="kt-btn kt-btn-primary">Publish Form</button>
+                <button type="submit" name="status" value="draft" class="kt-btn kt-btn-outline">Save as Draft</button>
+                <button type="submit" name="status" value="published" class="kt-btn kt-btn-primary">Publish Form</button>
             </div>
         </div>
     </form>

@@ -23,6 +23,7 @@ parameters:
         - app/Modules/CmsCore/Database/Migrations
         - app/Modules/DocumentManagement/Database/Migrations
         - app/Modules/Forums/Database/Migrations
+        - app/Modules/Forms/Database/Migrations
         - app/Modules/HrmsCore/Database/Migrations
         - app/Modules/IncidentManagement/Database/Migrations
         - app/Modules/Memos/Database/Migrations

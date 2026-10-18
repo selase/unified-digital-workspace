@@ -9,11 +9,32 @@
         description="Type: {{ ucfirst(str_replace('_', ' ', $form->type)) }} | Audience: {{ ucfirst($form->target_audience) }} | Status: {{ ucfirst($form->status) }}"
     >
         <x-slot:actions>
-            <div class="flex items-center gap-2">
-                <a href="{{ route('forms.public.show', $form->slug) }}" target="_blank" class="kt-btn kt-btn-outline">
-                    View Live Form ↗
+            <div class="flex flex-wrap items-center gap-2">
+                <a href="{{ route('forms.results', $form) }}" class="kt-btn kt-btn-primary">
+                    Results & Analytics
                 </a>
-                @if($form->status === 'published')
+                <a href="{{ route('forms.export-csv', $form) }}" class="kt-btn kt-btn-outline">
+                    Export CSV
+                </a>
+                @if($form->status === 'draft')
+                    <a href="{{ route('forms.edit', $form) }}" class="kt-btn kt-btn-outline">
+                        Edit Draft
+                    </a>
+                    <form action="{{ route('forms.destroy', $form) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this draft form?');">
+                        @csrf
+                        @method('DELETE')
+                        <button type="submit" class="kt-btn kt-btn-outline text-destructive">
+                            Delete Draft
+                        </button>
+                    </form>
+                    <form action="{{ route('forms.publish', $form) }}" method="POST">
+                        @csrf
+                        <button type="submit" class="kt-btn kt-btn-success">Publish Form</button>
+                    </form>
+                @elseif($form->status === 'published')
+                    <a href="{{ route('forms.public.show', $form->slug) }}" target="_blank" class="kt-btn kt-btn-outline">
+                        View Live Form ↗
+                    </a>
                     <form action="{{ route('forms.close', $form) }}" method="POST">
                         @csrf
                         <button type="submit" class="kt-btn kt-btn-outline text-destructive">Close Submissions</button>
@@ -118,20 +139,25 @@
                                     {{ $sub->created_at?->format('d/m/Y H:i') }}
                                 </td>
                                 <td class="py-3 px-4 text-right">
-                                    <form action="{{ route('forms.submissions.review', [$form, $sub]) }}" method="POST" class="inline-flex items-center gap-1 justify-end">
-                                        @csrf
-                                        <input type="hidden" name="status" value="approved">
-                                        <button type="submit" class="kt-btn kt-btn-xs kt-btn-outline text-success" title="Approve Request">
-                                            ✓ Approve
-                                        </button>
-                                    </form>
-                                    <form action="{{ route('forms.submissions.review', [$form, $sub]) }}" method="POST" class="inline-flex items-center gap-1 justify-end ml-1">
-                                        @csrf
-                                        <input type="hidden" name="status" value="rejected">
-                                        <button type="submit" class="kt-btn kt-btn-xs kt-btn-outline text-destructive" title="Reject Request">
-                                            ✕ Reject
-                                        </button>
-                                    </form>
+                                    <div class="inline-flex items-center gap-1.5 justify-end">
+                                        <a href="{{ route('forms.submissions.show', [$form, $sub]) }}" class="kt-btn kt-btn-xs kt-btn-outline" title="View Full Submission">
+                                            Details
+                                        </a>
+                                        <form action="{{ route('forms.submissions.review', [$form, $sub]) }}" method="POST" class="inline">
+                                            @csrf
+                                            <input type="hidden" name="status" value="approved">
+                                            <button type="submit" class="kt-btn kt-btn-xs kt-btn-outline text-success" title="Approve Request">
+                                                ✓
+                                            </button>
+                                        </form>
+                                        <form action="{{ route('forms.submissions.review', [$form, $sub]) }}" method="POST" class="inline">
+                                            @csrf
+                                            <input type="hidden" name="status" value="rejected">
+                                            <button type="submit" class="kt-btn kt-btn-xs kt-btn-outline text-destructive" title="Reject Request">
+                                                ✕
+                                            </button>
+                                        </form>
+                                    </div>
                                 </td>
                             </tr>
                         @empty

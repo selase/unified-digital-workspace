@@ -39,16 +39,31 @@
     <div class="kt-card p-6">
         <div class="flex flex-wrap items-center justify-between gap-4 mb-6">
             <div class="flex flex-wrap items-center gap-2">
-                <a href="{{ route('forms.index') }}" class="kt-btn kt-btn-xs {{ empty($currentType) ? 'kt-btn-primary' : 'kt-btn-outline' }}">All Forms</a>
-                <a href="{{ route('forms.index', ['type' => 'general']) }}" class="kt-btn kt-btn-xs {{ $currentType === 'general' ? 'kt-btn-primary' : 'kt-btn-outline' }}">General</a>
-                <a href="{{ route('forms.index', ['type' => 'hr_request']) }}" class="kt-btn kt-btn-xs {{ $currentType === 'hr_request' ? 'kt-btn-primary' : 'kt-btn-outline' }}">HR Requisitions</a>
-                <a href="{{ route('forms.index', ['type' => 'survey']) }}" class="kt-btn kt-btn-xs {{ $currentType === 'survey' ? 'kt-btn-primary' : 'kt-btn-outline' }}">Surveys</a>
-                <a href="{{ route('forms.index', ['type' => 'live_poll']) }}" class="kt-btn kt-btn-xs {{ $currentType === 'live_poll' ? 'kt-btn-primary' : 'kt-btn-outline' }}">Live Polls</a>
+                <a href="{{ route('forms.index', array_filter(['status' => $currentStatus, 'audience' => $currentAudience, 'search' => $search])) }}" class="kt-btn kt-btn-xs {{ empty($currentType) ? 'kt-btn-primary' : 'kt-btn-outline' }}">All Types</a>
+                <a href="{{ route('forms.index', array_filter(['type' => 'general', 'status' => $currentStatus, 'audience' => $currentAudience, 'search' => $search])) }}" class="kt-btn kt-btn-xs {{ $currentType === 'general' ? 'kt-btn-primary' : 'kt-btn-outline' }}">General</a>
+                <a href="{{ route('forms.index', array_filter(['type' => 'hr_request', 'status' => $currentStatus, 'audience' => $currentAudience, 'search' => $search])) }}" class="kt-btn kt-btn-xs {{ $currentType === 'hr_request' ? 'kt-btn-primary' : 'kt-btn-outline' }}">HR Requisitions</a>
+                <a href="{{ route('forms.index', array_filter(['type' => 'survey', 'status' => $currentStatus, 'audience' => $currentAudience, 'search' => $search])) }}" class="kt-btn kt-btn-xs {{ $currentType === 'survey' ? 'kt-btn-primary' : 'kt-btn-outline' }}">Surveys</a>
+                <a href="{{ route('forms.index', array_filter(['type' => 'live_poll', 'status' => $currentStatus, 'audience' => $currentAudience, 'search' => $search])) }}" class="kt-btn kt-btn-xs {{ $currentType === 'live_poll' ? 'kt-btn-primary' : 'kt-btn-outline' }}">Live Polls</a>
             </div>
 
-            <form method="GET" action="{{ route('forms.index') }}" class="flex items-center gap-2">
+            <form method="GET" action="{{ route('forms.index') }}" class="flex flex-wrap items-center gap-2">
                 @if($currentType) <input type="hidden" name="type" value="{{ $currentType }}"> @endif
-                <input class="kt-input text-xs w-48" type="text" name="search" placeholder="Search forms..." value="{{ $search }}">
+                
+                <select name="status" class="kt-select text-xs py-1 px-2 w-32" onchange="this.form.submit()">
+                    <option value="">All Statuses</option>
+                    <option value="published" {{ $currentStatus === 'published' ? 'selected' : '' }}>Published</option>
+                    <option value="draft" {{ $currentStatus === 'draft' ? 'selected' : '' }}>Draft</option>
+                    <option value="closed" {{ $currentStatus === 'closed' ? 'selected' : '' }}>Closed</option>
+                </select>
+
+                <select name="audience" class="kt-select text-xs py-1 px-2 w-32" onchange="this.form.submit()">
+                    <option value="">All Audiences</option>
+                    <option value="public" {{ ($currentAudience ?? '') === 'public' ? 'selected' : '' }}>Public</option>
+                    <option value="internal_only" {{ ($currentAudience ?? '') === 'internal_only' ? 'selected' : '' }}>Internal Only</option>
+                    <option value="departmental" {{ ($currentAudience ?? '') === 'departmental' ? 'selected' : '' }}>Departmental</option>
+                </select>
+
+                <input class="kt-input text-xs w-40" type="text" name="search" placeholder="Search forms..." value="{{ $search }}">
                 <button type="submit" class="kt-btn kt-btn-xs kt-btn-outline">Filter</button>
             </form>
         </div>
@@ -66,7 +81,7 @@
                         <th class="py-3 px-4 text-right">Actions</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-border/40">
+                <tbody class="divide-y border-border/40">
                     @forelse($forms as $form)
                         <tr class="hover:bg-muted/30 transition">
                             <td class="py-3 px-4">
@@ -97,9 +112,25 @@
                                 {{ $form->created_at?->format('d/m/Y') }}
                             </td>
                             <td class="py-3 px-4 text-right">
-                                <div class="flex items-center justify-end gap-2">
-                                    <a href="{{ route('forms.public.show', $form->slug) }}" target="_blank" class="kt-btn kt-btn-xs kt-btn-outline" title="Open Public View">
-                                        Open Form
+                                <div class="flex items-center justify-end gap-1.5">
+                                    @if($form->status === 'draft')
+                                        <a href="{{ route('forms.edit', $form) }}" class="kt-btn kt-btn-xs kt-btn-outline" title="Edit Draft">
+                                            Edit
+                                        </a>
+                                        <form action="{{ route('forms.destroy', $form) }}" method="POST" class="inline" onsubmit="return confirm('Delete this draft form?');">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="kt-btn kt-btn-xs kt-btn-outline text-destructive">
+                                                Delete
+                                            </button>
+                                        </form>
+                                    @else
+                                        <a href="{{ route('forms.public.show', $form->slug) }}" target="_blank" class="kt-btn kt-btn-xs kt-btn-outline" title="Open Public View">
+                                            Open
+                                        </a>
+                                    @endif
+                                    <a href="{{ route('forms.results', $form) }}" class="kt-btn kt-btn-xs kt-btn-outline" title="Results & Aggregates">
+                                        Results
                                     </a>
                                     <a href="{{ route('forms.show', $form) }}" class="kt-btn kt-btn-xs kt-btn-primary">
                                         Manage

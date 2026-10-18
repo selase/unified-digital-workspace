@@ -12,6 +12,24 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property int $id
+ * @property string $uuid
+ * @property string $tenant_id
+ * @property string $title
+ * @property string $slug
+ * @property string|null $description
+ * @property string $type
+ * @property string $target_audience
+ * @property int|null $target_department_id
+ * @property string $status
+ * @property bool $allow_anonymous
+ * @property bool $single_response_per_user
+ * @property \Illuminate\Support\Carbon|null $expires_at
+ * @property string $created_by
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ */
 final class FormDefinition extends Model
 {
     use BelongsToTenant;
@@ -102,7 +120,9 @@ final class FormDefinition extends Model
 
         // Prepopulate with declared options from first field if available
         $optionsField = $this->fields()->whereIn('field_type', ['radio', 'select'])->first();
-        $availableOptions = $optionsField?->options_json ?? [];
+        $availableOptions = ($optionsField instanceof FormField && is_array($optionsField->options_json))
+            ? $optionsField->options_json
+            : [];
 
         foreach ($availableOptions as $opt) {
             $tally[$opt] = ['count' => 0, 'percentage' => 0.0];
