@@ -7,8 +7,12 @@ use App\Models\User;
 use App\Modules\CmsCore\Models\Media;
 use App\Modules\CmsCore\Models\Post;
 use App\Modules\CmsCore\Models\PostType;
+use App\Modules\HrmsCore\Models\Employees\Employee;
+use App\Modules\HrmsCore\Models\Organization\Department;
+use App\Modules\Intranet\Database\Seeders\IntranetSeeder;
 use App\Modules\Intranet\Models\IntranetBoardPost;
 use App\Modules\Intranet\Models\IntranetEvent;
+use App\Modules\Intranet\Models\IntranetEventRsvp;
 use App\Modules\Intranet\Models\IntranetMessageBoard;
 use App\Services\ModuleManager;
 use App\Services\Tenancy\TenantContext;
@@ -39,6 +43,8 @@ function createIntranetTestContext(): array
         'intranet.view',
         'intranet.manage',
         'intranet.events.manage',
+        'intranet.events.rsvp',
+        'intranet.boards.manage',
         'intranet.boards.post',
         'cms.posts.view',
     ];
@@ -58,6 +64,14 @@ function createIntranetTestContext(): array
     app(TenantDatabaseManager::class)->configure($tenant);
     app(ModuleManager::class)->enableForTenant('intranet', $tenant);
     app(ModuleManager::class)->enableForTenant('cms-core', $tenant);
+    app(ModuleManager::class)->enableForTenant('hrms-core', $tenant);
+
+    Artisan::call('migrate', [
+        '--database' => 'tenant',
+        '--path' => app_path('Modules/HrmsCore/Database/Migrations'),
+        '--realpath' => true,
+        '--force' => true,
+    ]);
 
     Artisan::call('migrate', [
         '--database' => 'tenant',
@@ -168,84 +182,400 @@ describe('Phase 22: Institutional Intranet Portal & Internal-Only CMS Content Sc
             ->toContain('no-store');
     });
 
-    test('manages upcoming institutional events and interactive message board posts', function (): void {
-        [$user, $tenant] = createIntranetTestContext();
+    test('boards CRUD with audience scoping and strict protection against users whose department is null', function (): void {
+        [$adminUser, $tenant] = createIntranetTestContext();
 
-        // 1. Schedule Event
-        $this->actingAs($user)
-            ->withSession(['active_tenant_id' => $tenant->id])
-            ->post(route('intranet.events.store'), [
-                'title' => 'Annual General Staff Assembly & Town Hall',
-                'event_date' => now()->addDays(5)->toDateString(),
-                'start_time' => '10:00',
-                'end_time' => '12:30',
-                'location' => 'Main Executive Auditorium',
-                'category' => 'all_hands',
-                'description' => 'Review of Q3 institutional milestones and strategic roadmap.',
-            ])
-            ->assertRedirect(route('intranet.index'));
-
-        $event = IntranetEvent::query()->where('title', 'Annual General Staff Assembly & Town Hall')->firstOrFail();
-        expect($event->category)->toBe('all_hands');
-
-        // 2. Post to Message Board
-        $board = IntranetMessageBoard::create([
-            'title' => 'General Staff Community Noticeboard',
-            'slug' => 'general-staff-community-noticeboard',
-            'description' => 'Open announcements and staff collaboration items.',
-            'is_pinned' => true,
+        // 1. Create a Department for testing
+        $clinicalDept = Department::create([
+            'name' => 'Clinical Services',
+            'slug' => 'clinical-services-test',
+            'is_active' => true,
         ]);
 
-        $this->actingAs($user)
+        // 2. Admin creates boards across audiences
+        $this->actingAs($adminUser)
             ->withSession(['active_tenant_id' => $tenant->id])
-            ->post(route('intranet.boards.posts.store', $board), [
-                'title' => 'Voluntary Blood Donation Drive This Friday',
-                'content' => 'Join the clinical team in the medical quadrangle between 9am and 2pm.',
-                'is_announcement' => 1,
+            ->post(route('intranet.boards.store'), [
+                'title' => 'General Staff Noticeboard',
+                'description' => 'General notices for all personnel',
+                'audience' => IntranetMessageBoard::AUDIENCE_INTERNAL,
+                'is_pinned' => 1,
             ])
-            ->assertRedirect(route('intranet.index'));
+            ->assertRedirect();
 
-        $boardPost = IntranetBoardPost::query()->where('intranet_message_board_id', $board->id)->firstOrFail();
-        expect($boardPost->is_announcement)->toBeTrue()
-            ->and($boardPost->author_id)->toBe((string) $user->uuid);
+        $this->actingAs($adminUser)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->post(route('intranet.boards.store'), [
+                'title' => 'Clinical Team Confidential Board',
+                'description' => 'Restricted to clinical department',
+                'audience' => IntranetMessageBoard::AUDIENCE_DEPARTMENTAL,
+                'department_id' => $clinicalDept->id,
+            ])
+            ->assertRedirect();
 
-        // 3. Verify Intranet Hub renders the event and message
-        $hubResponse = $this->actingAs($user)
+        $internalBoard = IntranetMessageBoard::query()->where('title', 'General Staff Noticeboard')->firstOrFail();
+        $deptBoard = IntranetMessageBoard::query()->where('title', 'Clinical Team Confidential Board')->firstOrFail();
+
+        expect($internalBoard->audience)->toBe('internal')
+            ->and($deptBoard->audience)->toBe('departmental')
+            ->and($deptBoard->department_id)->toBe($clinicalDept->id);
+
+        // 3. User with matching department can view the departmental board
+        $doctorUser = User::factory()->create(['first_name' => 'Dr.', 'last_name' => 'Mensa']);
+        $tenant->users()->attach($doctorUser->id);
+        setPermissionsTeamId($tenant->id);
+        $doctorUser->givePermissionTo(['intranet.view', 'intranet.boards.post']);
+
+        $doctorEmployee = Employee::create([
+            'user_id' => $doctorUser->id,
+            'first_name' => 'Dr.',
+            'last_name' => 'Mensa',
+            'email' => $doctorUser->email,
+            'mobile' => '+233201112233',
+            'employee_staff_id' => 'EMP-DOC-001',
+            'is_active' => true,
+        ]);
+        $doctorEmployee->departments()->attach($clinicalDept->id);
+
+        $docShowResponse = $this->actingAs($doctorUser)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->get(route('intranet.boards.show', $deptBoard));
+
+        $docShowResponse->assertOk()
+            ->assertSee('Clinical Team Confidential Board');
+
+        // 4. Adversarial Test: User whose department is NULL is strictly denied (403) and filtered out from list
+        $nullDeptUser = User::factory()->create(['first_name' => 'Guest', 'last_name' => 'Staff']);
+        $tenant->users()->attach($nullDeptUser->id);
+        setPermissionsTeamId($tenant->id);
+        $nullDeptUser->givePermissionTo(['intranet.view', 'intranet.boards.post']);
+
+        // Assert query scoping hides departmental board from null-department user's index list
+        $indexResponse = $this->actingAs($nullDeptUser)
             ->withSession(['active_tenant_id' => $tenant->id])
             ->get(route('intranet.index'));
 
-        $hubResponse->assertOk()
-            ->assertSee('Annual General Staff Assembly &amp; Town Hall', false)
-            ->assertSee('Voluntary Blood Donation Drive This Friday');
+        $indexResponse->assertOk()
+            ->assertSee('General Staff Noticeboard')
+            ->assertDontSee('Clinical Team Confidential Board');
+
+        // Direct show request returns 403
+        $this->actingAs($nullDeptUser)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->get(route('intranet.boards.show', $deptBoard))
+            ->assertForbidden();
+
+        // Direct post request returns 403
+        $this->actingAs($nullDeptUser)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->post(route('intranet.boards.posts.store', $deptBoard), [
+                'title' => 'Intruder message',
+                'content' => 'Should be rejected',
+            ])
+            ->assertForbidden();
+
+        // 5. Board Edit & Delete by Admin
+        $this->actingAs($adminUser)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->put(route('intranet.boards.update', $internalBoard), [
+                'title' => 'Updated Staff Noticeboard',
+                'description' => 'Updated description',
+                'audience' => IntranetMessageBoard::AUDIENCE_INTERNAL,
+                'is_pinned' => 0,
+            ])
+            ->assertRedirect(route('intranet.boards.show', $internalBoard));
+
+        $internalBoard->refresh();
+        expect($internalBoard->title)->toBe('Updated Staff Noticeboard')
+            ->and($internalBoard->is_pinned)->toBeFalse();
+
+        // Delete board
+        $this->actingAs($adminUser)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->delete(route('intranet.boards.destroy', $internalBoard))
+            ->assertRedirect(route('intranet.index'));
+
+        expect(IntranetMessageBoard::query()->where('id', $internalBoard->id)->exists())->toBeFalse();
     });
 
-    test('adversarial negative tests enforce RBAC and cross-tenant isolation on intranet boards', function (): void {
-        [$userA, $tenantA] = createIntranetTestContext();
+    test('manages board posts with edit, delete, pin and nested replies', function (): void {
+        [$adminUser, $tenant] = createIntranetTestContext();
 
-        $otherTenant = Tenant::factory()->create(['isolation_mode' => 'shared']);
-        $foreignBoard = IntranetMessageBoard::withoutGlobalScopes()->create([
-            'uuid' => (string) Str::uuid(),
-            'tenant_id' => $otherTenant->id,
-            'title' => 'Foreign Tenant Noticeboard',
-            'slug' => 'foreign-tenant-noticeboard',
+        $board = IntranetMessageBoard::create([
+            'title' => 'Engineering & Facilities Board',
+            'slug' => 'engineering-facilities-board',
+            'audience' => IntranetMessageBoard::AUDIENCE_INTERNAL,
+            'is_pinned' => false,
         ]);
 
-        // Attempting to post to a foreign tenant board returns 404
-        $this->actingAs($userA)
-            ->withSession(['active_tenant_id' => $tenantA->id])
-            ->post(route('intranet.boards.posts.store', ['board' => $foreignBoard->slug]), [
-                'title' => 'Attempted Cross-Tenant Message',
-                'content' => 'Cross-tenant payload should be rejected.',
+        $regularUser = User::factory()->create(['first_name' => 'Kojo', 'last_name' => 'Engineer']);
+        $tenant->users()->attach($regularUser->id);
+        setPermissionsTeamId($tenant->id);
+        $regularUser->givePermissionTo(['intranet.view', 'intranet.boards.post']);
+
+        // 1. Regular user creates a post
+        $this->actingAs($regularUser)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->post(route('intranet.boards.posts.store', $board), [
+                'title' => 'Scheduled Generator Servicing This Weekend',
+                'content' => 'Standby generator set A will undergo routine filter replacement on Saturday.',
+                'is_announcement' => 1,
             ])
-            ->assertNotFound();
+            ->assertRedirect();
 
-        // Unpermitted user receives 403
-        $unpermitted = User::factory()->create(['tenant_id' => $tenantA->id]);
-        $unpermitted->tenants()->syncWithoutDetaching([$tenantA->id]);
+        $post = IntranetBoardPost::query()->where('title', 'Scheduled Generator Servicing This Weekend')->firstOrFail();
+        expect($post->author_id)->toBe((string) $regularUser->uuid)
+            ->and($post->is_pinned)->toBeFalse();
 
-        $this->actingAs($unpermitted)
-            ->withSession(['active_tenant_id' => $tenantA->id])
-            ->get(route('intranet.index'))
+        // 2. Admin pins the post
+        $this->actingAs($adminUser)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->post(route('intranet.posts.pin', $post))
+            ->assertRedirect();
+
+        $post->refresh();
+        expect($post->is_pinned)->toBeTrue();
+
+        // 3. Rival user cannot edit or delete the author's post (403)
+        $rivalUser = User::factory()->create(['first_name' => 'Kwame', 'last_name' => 'Rival']);
+        $tenant->users()->attach($rivalUser->id);
+        setPermissionsTeamId($tenant->id);
+        $rivalUser->givePermissionTo(['intranet.view', 'intranet.boards.post']);
+
+        $this->actingAs($rivalUser)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->put(route('intranet.posts.update', $post), [
+                'title' => 'Malicious edit',
+                'content' => 'Defacing post',
+            ])
             ->assertForbidden();
+
+        $this->actingAs($rivalUser)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->delete(route('intranet.posts.destroy', $post))
+            ->assertForbidden();
+
+        // 4. Author can edit their own post
+        $this->actingAs($regularUser)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->put(route('intranet.posts.update', $post), [
+                'title' => 'Scheduled Generator Servicing This Sunday',
+                'content' => 'Rescheduled to Sunday 8am.',
+                'is_announcement' => 1,
+            ])
+            ->assertRedirect();
+
+        $post->refresh();
+        expect($post->title)->toBe('Scheduled Generator Servicing This Sunday');
+
+        // 5. Other user posts a reply
+        $this->actingAs($rivalUser)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->post(route('intranet.posts.replies.store', $post), [
+                'content' => 'Noted. Will ensure laboratory cold chain backups are checked.',
+            ])
+            ->assertRedirect();
+
+        $reply = IntranetBoardPost::query()->where('parent_id', $post->id)->firstOrFail();
+        expect($reply->content)->toBe('Noted. Will ensure laboratory cold chain backups are checked.')
+            ->and($reply->parent_id)->toBe($post->id)
+            ->and($reply->author_id)->toBe((string) $rivalUser->uuid);
+
+        // 6. Board detail view shows the post and reply
+        $boardShow = $this->actingAs($regularUser)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->get(route('intranet.boards.show', $board));
+
+        $boardShow->assertOk()
+            ->assertSee('Scheduled Generator Servicing This Sunday')
+            ->assertSee('Noted. Will ensure laboratory cold chain backups are checked.');
+
+        // 7. Author deletes the reply
+        $this->actingAs($rivalUser)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->delete(route('intranet.posts.destroy', $reply))
+            ->assertRedirect();
+
+        expect(IntranetBoardPost::query()->where('id', $reply->id)->exists())->toBeFalse();
+    });
+
+    test('manages events CRUD and employee RSVP lifecycle', function (): void {
+        [$adminUser, $tenant] = createIntranetTestContext();
+
+        // 1. Create Event
+        $this->actingAs($adminUser)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->post(route('intranet.events.store'), [
+                'title' => 'Q4 Leadership Strategy Retreat',
+                'event_date' => now()->addDays(10)->toDateString(),
+                'start_time' => '09:00',
+                'end_time' => '17:00',
+                'location' => 'Executive Conference Centre',
+                'category' => IntranetEvent::CATEGORY_BOARD_MEETING,
+                'description' => 'Annual strategic planning and performance scorecard review.',
+            ])
+            ->assertRedirect(route('intranet.index'));
+
+        $event = IntranetEvent::query()->where('title', 'Q4 Leadership Strategy Retreat')->firstOrFail();
+        expect($event->category)->toBe(IntranetEvent::CATEGORY_BOARD_MEETING);
+
+        // 2. Edit Event
+        $this->actingAs($adminUser)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->put(route('intranet.events.update', $event), [
+                'title' => 'Q4 Leadership Strategy & Budget Retreat',
+                'event_date' => now()->addDays(12)->toDateString(),
+                'start_time' => '08:30',
+                'end_time' => '16:30',
+                'location' => 'Executive Conference Room A',
+                'category' => IntranetEvent::CATEGORY_BOARD_MEETING,
+                'description' => 'Updated strategy retreat with budget discussions.',
+            ])
+            ->assertRedirect(route('intranet.index'));
+
+        $event->refresh();
+        expect($event->title)->toBe('Q4 Leadership Strategy & Budget Retreat')
+            ->and($event->location)->toBe('Executive Conference Room A');
+
+        // 3. Employee RSVP: Attending -> Declined -> Tentative
+        $employeeUser = User::factory()->create(['first_name' => 'Akosua', 'last_name' => 'Nurse']);
+        $tenant->users()->attach($employeeUser->id);
+        setPermissionsTeamId($tenant->id);
+        $employeeUser->givePermissionTo('intranet.view');
+
+        // RSVP: Attending
+        $this->actingAs($employeeUser)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->post(route('intranet.events.rsvp', $event), [
+                'status' => IntranetEventRsvp::STATUS_ATTENDING,
+                'notes' => 'Will attend the morning session.',
+            ])
+            ->assertRedirect();
+
+        $rsvp = IntranetEventRsvp::query()
+            ->where('intranet_event_id', $event->id)
+            ->where('user_id', (string) $employeeUser->uuid)
+            ->firstOrFail();
+
+        expect($rsvp->status)->toBe(IntranetEventRsvp::STATUS_ATTENDING)
+            ->and($rsvp->notes)->toBe('Will attend the morning session.');
+
+        // Update RSVP: Declined
+        $this->actingAs($employeeUser)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->post(route('intranet.events.rsvp', $event), [
+                'status' => IntranetEventRsvp::STATUS_DECLINED,
+                'notes' => 'Emergency clinical shift scheduled.',
+            ])
+            ->assertRedirect();
+
+        $rsvp->refresh();
+        expect($rsvp->status)->toBe(IntranetEventRsvp::STATUS_DECLINED);
+
+        // 4. Non-manager receives 403 attempting to delete or edit event
+        $this->actingAs($employeeUser)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->delete(route('intranet.events.destroy', $event))
+            ->assertForbidden();
+
+        // 5. Admin deletes the event
+        $this->actingAs($adminUser)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->delete(route('intranet.events.destroy', $event))
+            ->assertRedirect(route('intranet.index'));
+
+        expect(IntranetEvent::query()->where('id', $event->id)->exists())->toBeFalse()
+            ->and(IntranetEventRsvp::query()->where('intranet_event_id', $event->id)->exists())->toBeFalse();
+    });
+
+    test('announcements feed and multi-entity search, filters and pagination', function (): void {
+        [$adminUser, $tenant] = createIntranetTestContext();
+
+        $board = IntranetMessageBoard::create([
+            'title' => 'Policy & Governance Board',
+            'slug' => 'policy-governance-board',
+            'audience' => IntranetMessageBoard::AUDIENCE_INTERNAL,
+            'is_pinned' => true,
+        ]);
+
+        IntranetBoardPost::create([
+            'intranet_message_board_id' => $board->id,
+            'author_id' => (string) $adminUser->uuid,
+            'title' => 'Urgent Fire Drill Simulation Announced',
+            'content' => 'Mandatory simulation across all blocks at 14:00.',
+            'is_announcement' => true,
+            'is_pinned' => true,
+        ]);
+
+        // 1. Announcements Feed View
+        $announcementsResponse = $this->actingAs($adminUser)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->get(route('intranet.announcements', ['search' => 'Simulation']));
+
+        $announcementsResponse->assertOk()
+            ->assertSee('Urgent Fire Drill Simulation Announced');
+
+        // 2. Hub index search & filters
+        $hubFiltered = $this->actingAs($adminUser)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->get(route('intranet.index', [
+                'board_search' => 'Policy',
+                'board_audience' => 'internal',
+                'event_timeframe' => 'all',
+            ]));
+
+        $hubFiltered->assertOk()
+            ->assertSee('Policy &amp; Governance Board', false);
+    });
+
+    test('unauthenticated users cannot access intranet routes or leak internal content', function (): void {
+        [$user, $tenant] = createIntranetTestContext();
+
+        $board = IntranetMessageBoard::create([
+            'title' => 'Confidential Board',
+            'slug' => 'confidential-board',
+            'audience' => IntranetMessageBoard::AUDIENCE_INTERNAL,
+        ]);
+
+        $event = IntranetEvent::create([
+            'title' => 'Confidential Event',
+            'event_date' => now()->addDay()->toDateString(),
+            'location' => 'Board Room',
+            'category' => IntranetEvent::CATEGORY_BOARD_MEETING,
+        ]);
+
+        // Guest to /intranet -> 302 redirect to login
+        $this->withSession(['active_tenant_id' => $tenant->id])
+            ->get(route('intranet.index'))
+            ->assertRedirect(route('login'));
+
+        // Guest to /intranet/announcements -> 302 redirect to login
+        $this->withSession(['active_tenant_id' => $tenant->id])
+            ->get(route('intranet.announcements'))
+            ->assertRedirect(route('login'));
+
+        // Guest to /intranet/boards/{board} -> 302 redirect to login
+        $this->withSession(['active_tenant_id' => $tenant->id])
+            ->get(route('intranet.boards.show', $board))
+            ->assertRedirect(route('login'));
+
+        // Guest to /intranet/events -> 302 redirect to login
+        $this->withSession(['active_tenant_id' => $tenant->id])
+            ->post(route('intranet.events.store'), [
+                'title' => 'Hack Attempt',
+            ])
+            ->assertRedirect(route('login'));
+    });
+
+    test('IntranetSeeder seeds initial message boards, posts, events, and RSVPs cleanly', function (): void {
+        [$user, $tenant] = createIntranetTestContext();
+
+        $seeder = new IntranetSeeder();
+        $seeder->run();
+
+        expect(IntranetMessageBoard::query()->where('slug', 'institutional-executive-noticeboard')->exists())->toBeTrue()
+            ->and(IntranetMessageBoard::query()->where('slug', 'staff-welfare-social-hub')->exists())->toBeTrue()
+            ->and(IntranetEvent::query()->where('slug', 'all-hands-institutional-town-hall')->exists())->toBeTrue()
+            ->and(IntranetEventRsvp::query()->exists())->toBeTrue();
     });
 });

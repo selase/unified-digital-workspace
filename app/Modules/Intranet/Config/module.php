@@ -12,6 +12,8 @@ return [
         'intranet.view',
         'intranet.manage',
         'intranet.events.manage',
+        'intranet.events.rsvp',
+        'intranet.boards.manage',
         'intranet.boards.post',
     ],
 ];
