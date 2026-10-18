@@ -8,12 +8,18 @@ use App\Modules\HrmsCore\Enums\AppraisalCycle;
 use App\Modules\HrmsCore\Models\Appraisal\Appraisal;
 use App\Modules\HrmsCore\Models\Appraisal\AppraisalPeriod;
 use App\Modules\HrmsCore\Models\Appraisal\AppraisalTemplate;
+use App\Modules\HrmsCore\Models\Employees\BankDetails;
 use App\Modules\HrmsCore\Models\Employees\Employee;
+use App\Modules\HrmsCore\Models\Leave\LeaveBalance;
 use App\Modules\HrmsCore\Models\Leave\LeaveCategory;
 use App\Modules\HrmsCore\Models\Leave\LeaveRequest;
 use App\Modules\HrmsCore\Models\Recruitment\Candidate;
+use App\Modules\HrmsCore\Models\Recruitment\CandidateApplication;
+use App\Modules\HrmsCore\Models\Recruitment\CandidateDocument;
+use App\Modules\HrmsCore\Models\Recruitment\JobOffer;
 use App\Modules\HrmsCore\Models\Recruitment\JobPosting;
 use App\Modules\HrmsCore\Models\Recruitment\JobRequisition;
+use App\Modules\HrmsCore\Models\Recruitment\OfferNegotiation;
 use App\Services\ModuleManager;
 use Illuminate\Support\Str;
 
@@ -56,7 +62,10 @@ it('returns paginated employees', function () {
 it('returns leave requests with related data', function () {
     [$user, $tenant] = createHrmsApiContext();
 
-    $employee = Employee::factory()->forTenant($tenant->id)->create();
+    $employee = Employee::factory()->forTenant($tenant->id)->create([
+        'user_id' => $user->id,
+        'email' => $user->email,
+    ]);
     $category = LeaveCategory::factory()->forTenant($tenant->id)->create();
 
     $request = LeaveRequest::factory()
@@ -73,10 +82,32 @@ it('returns leave requests with related data', function () {
             'id' => $request->id,
             'uuid' => $request->uuid,
         ]);
+
+    actingAs($user, 'sanctum')
+        ->getJson("/api/hrms-core/v1/leave-requests/{$request->id}")
+        ->assertSuccessful()
+        ->assertJsonFragment([
+            'id' => $request->id,
+            'uuid' => $request->uuid,
+        ]);
 });
 
 it('returns job postings with requisitions', function () {
     [$user, $tenant] = createHrmsApiContext();
+
+    App\Models\Permission::firstOrCreate(
+        ['name' => 'hrms.jobs.view', 'guard_name' => 'web'],
+        ['category' => 'hrms-core']
+    );
+    app(Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+
+    $jobsRole = App\Models\Role::firstOrCreate([
+        'name' => 'Jobs Viewer API Role',
+        'guard_name' => 'web',
+        'tenant_id' => $tenant->id,
+    ]);
+    $jobsRole->syncPermissions(['hrms.jobs.view']);
+    $user->assignRole($jobsRole);
 
     $requisition = JobRequisition::create([
         'tenant_id' => $tenant->id,
@@ -105,6 +136,20 @@ it('returns job postings with requisitions', function () {
 
 it('returns candidates', function () {
     [$user, $tenant] = createHrmsApiContext();
+
+    App\Models\Permission::firstOrCreate(
+        ['name' => 'hrms.applications.view', 'guard_name' => 'web'],
+        ['category' => 'hrms-core']
+    );
+    app(Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+
+    $candidatesRole = App\Models\Role::firstOrCreate([
+        'name' => 'Candidates Viewer API Role',
+        'guard_name' => 'web',
+        'tenant_id' => $tenant->id,
+    ]);
+    $candidatesRole->syncPermissions(['hrms.applications.view']);
+    $user->assignRole($candidatesRole);
 
     $candidate = Candidate::create([
         'tenant_id' => $tenant->id,
@@ -382,4 +427,342 @@ it('protects salary levels and salary steps API endpoints with salary permission
             'id' => $step->id,
             'name' => 'API Test Step',
         ]);
+});
+
+it('enforces confidentiality on recruitment resources for unauthorized users', function () {
+    [$unauthorizedUser, $tenant] = createHrmsApiContext();
+
+    $requisition = JobRequisition::create([
+        'tenant_id' => $tenant->id,
+        'title' => 'Senior Backend Engineer',
+        'employment_type' => 'full_time',
+        'vacancies' => 1,
+        'status' => 'open',
+    ]);
+
+    $posting = JobPosting::create([
+        'tenant_id' => $tenant->id,
+        'requisition_id' => $requisition->id,
+        'title' => 'Senior Backend Engineer',
+    ]);
+
+    $candidate = Candidate::create([
+        'tenant_id' => $tenant->id,
+        'first_name' => 'Alan',
+        'last_name' => 'Turing',
+        'email' => 'alan@example.com',
+    ]);
+
+    $application = CandidateApplication::create([
+        'tenant_id' => $tenant->id,
+        'candidate_id' => $candidate->id,
+        'posting_id' => $posting->id,
+        'stage' => 'applied',
+    ]);
+
+    $document = CandidateDocument::create([
+        'tenant_id' => $tenant->id,
+        'candidate_id' => $candidate->id,
+        'type' => CandidateDocument::TYPE_RESUME,
+        'name' => 'Resume.pdf',
+        'file_path' => 'resumes/resume.pdf',
+    ]);
+
+    $offer = JobOffer::create([
+        'tenant_id' => $tenant->id,
+        'application_id' => $application->id,
+        'position_title' => 'Senior Backend Engineer',
+        'employment_type' => 'full_time',
+        'offered_salary' => '120000.00',
+    ]);
+
+    $negotiation = OfferNegotiation::create([
+        'tenant_id' => $tenant->id,
+        'offer_id' => $offer->id,
+        'round' => 1,
+        'initiated_by' => 'candidate',
+        'requested_salary' => '130000.00',
+        'status' => 'pending',
+    ]);
+
+    // 1. Unauthorized user gets empty list on index
+    actingAs($unauthorizedUser, 'sanctum')
+        ->getJson('/api/hrms-core/v1/job-requisitions')
+        ->assertSuccessful()
+        ->assertJsonCount(0, 'data');
+
+    actingAs($unauthorizedUser, 'sanctum')
+        ->getJson('/api/hrms-core/v1/job-postings')
+        ->assertSuccessful()
+        ->assertJsonCount(0, 'data');
+
+    actingAs($unauthorizedUser, 'sanctum')
+        ->getJson('/api/hrms-core/v1/candidates')
+        ->assertSuccessful()
+        ->assertJsonCount(0, 'data');
+
+    actingAs($unauthorizedUser, 'sanctum')
+        ->getJson('/api/hrms-core/v1/candidate-applications')
+        ->assertSuccessful()
+        ->assertJsonCount(0, 'data');
+
+    actingAs($unauthorizedUser, 'sanctum')
+        ->getJson('/api/hrms-core/v1/candidate-documents')
+        ->assertSuccessful()
+        ->assertJsonCount(0, 'data');
+
+    actingAs($unauthorizedUser, 'sanctum')
+        ->getJson('/api/hrms-core/v1/job-offers')
+        ->assertSuccessful()
+        ->assertJsonCount(0, 'data');
+
+    actingAs($unauthorizedUser, 'sanctum')
+        ->getJson('/api/hrms-core/v1/offer-negotiations')
+        ->assertSuccessful()
+        ->assertJsonCount(0, 'data');
+
+    // 2. Unauthorized user gets 403 Forbidden on show
+    actingAs($unauthorizedUser, 'sanctum')
+        ->getJson("/api/hrms-core/v1/job-requisitions/{$requisition->id}")
+        ->assertForbidden();
+
+    actingAs($unauthorizedUser, 'sanctum')
+        ->getJson("/api/hrms-core/v1/job-postings/{$posting->id}")
+        ->assertForbidden();
+
+    actingAs($unauthorizedUser, 'sanctum')
+        ->getJson("/api/hrms-core/v1/candidates/{$candidate->id}")
+        ->assertForbidden();
+
+    actingAs($unauthorizedUser, 'sanctum')
+        ->getJson("/api/hrms-core/v1/candidate-applications/{$application->id}")
+        ->assertForbidden();
+
+    actingAs($unauthorizedUser, 'sanctum')
+        ->getJson("/api/hrms-core/v1/candidate-documents/{$document->id}")
+        ->assertForbidden();
+
+    actingAs($unauthorizedUser, 'sanctum')
+        ->getJson("/api/hrms-core/v1/job-offers/{$offer->id}")
+        ->assertForbidden();
+
+    actingAs($unauthorizedUser, 'sanctum')
+        ->getJson("/api/hrms-core/v1/offer-negotiations/{$negotiation->id}")
+        ->assertForbidden();
+
+    // 3. User with hrms.jobs.view can access requisition, posting, offers, negotiations
+    $authorizedUser = User::factory()->create();
+    $tenant->users()->attach($authorizedUser->id);
+
+    App\Models\Permission::firstOrCreate(
+        ['name' => 'hrms.jobs.view', 'guard_name' => 'web'],
+        ['category' => 'hrms-core']
+    );
+    app(Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+
+    $recruitmentRole = App\Models\Role::firstOrCreate([
+        'name' => 'Recruitment Role',
+        'guard_name' => 'web',
+        'tenant_id' => $tenant->id,
+    ]);
+    $recruitmentRole->syncPermissions(['hrms.jobs.view']);
+    $authorizedUser->assignRole($recruitmentRole);
+
+    actingAs($authorizedUser, 'sanctum')
+        ->getJson('/api/hrms-core/v1/job-requisitions')
+        ->assertSuccessful()
+        ->assertJsonCount(1, 'data');
+
+    actingAs($authorizedUser, 'sanctum')
+        ->getJson("/api/hrms-core/v1/job-requisitions/{$requisition->id}")
+        ->assertSuccessful()
+        ->assertJsonPath('data.id', $requisition->id);
+
+    actingAs($authorizedUser, 'sanctum')
+        ->getJson("/api/hrms-core/v1/job-offers/{$offer->id}")
+        ->assertSuccessful()
+        ->assertJsonPath('data.id', $offer->id);
+});
+
+it('enforces party and permission confidentiality on leave requests and balances', function () {
+    [$employeeUser, $tenant] = createHrmsApiContext();
+
+    $colleagueUser = User::factory()->create();
+    $tenant->users()->attach($colleagueUser->id);
+
+    $supervisorUser = User::factory()->create();
+    $tenant->users()->attach($supervisorUser->id);
+
+    $hrUser = User::factory()->create();
+    $tenant->users()->attach($hrUser->id);
+
+    $employee = Employee::factory()->forTenant($tenant->id)->create([
+        'user_id' => $employeeUser->id,
+        'email' => $employeeUser->email,
+    ]);
+
+    $supervisor = Employee::factory()->forTenant($tenant->id)->create([
+        'user_id' => $supervisorUser->id,
+        'email' => $supervisorUser->email,
+    ]);
+
+    $category = LeaveCategory::factory()->forTenant($tenant->id)->create();
+
+    $leaveRequest = LeaveRequest::factory()
+        ->forEmployee($employee)
+        ->forCategory($category)
+        ->forTenant($tenant->id)
+        ->create([
+            'supervisor_id' => $supervisor->id,
+        ]);
+
+    $leaveBalance = LeaveBalance::create([
+        'tenant_id' => $tenant->id,
+        'employee_id' => $employee->id,
+        'leave_category_id' => $category->id,
+        'year' => (int) now()->format('Y'),
+        'entitled_days' => 20.0,
+        'carried_forward_days' => 0.0,
+        'used_days' => 0.0,
+        'pending_days' => 0.0,
+    ]);
+
+    // 1. Colleague (non-party, no permissions) receives 0 items on index and 403 on show
+    actingAs($colleagueUser, 'sanctum')
+        ->getJson('/api/hrms-core/v1/leave-requests')
+        ->assertSuccessful()
+        ->assertJsonCount(0, 'data');
+
+    actingAs($colleagueUser, 'sanctum')
+        ->getJson("/api/hrms-core/v1/leave-requests/{$leaveRequest->id}")
+        ->assertForbidden();
+
+    actingAs($colleagueUser, 'sanctum')
+        ->getJson('/api/hrms-core/v1/leave-balances')
+        ->assertSuccessful()
+        ->assertJsonCount(0, 'data');
+
+    actingAs($colleagueUser, 'sanctum')
+        ->getJson("/api/hrms-core/v1/leave-balances/{$leaveBalance->id}")
+        ->assertForbidden();
+
+    // 2. Employee (party) can see their own request and balance
+    actingAs($employeeUser, 'sanctum')
+        ->getJson('/api/hrms-core/v1/leave-requests')
+        ->assertSuccessful()
+        ->assertJsonCount(1, 'data');
+
+    actingAs($employeeUser, 'sanctum')
+        ->getJson("/api/hrms-core/v1/leave-requests/{$leaveRequest->id}")
+        ->assertSuccessful()
+        ->assertJsonPath('data.id', $leaveRequest->id);
+
+    actingAs($employeeUser, 'sanctum')
+        ->getJson('/api/hrms-core/v1/leave-balances')
+        ->assertSuccessful()
+        ->assertJsonCount(1, 'data');
+
+    actingAs($employeeUser, 'sanctum')
+        ->getJson("/api/hrms-core/v1/leave-balances/{$leaveBalance->id}")
+        ->assertSuccessful()
+        ->assertJsonPath('data.id', $leaveBalance->id);
+
+    // 3. Supervisor (party to request, not party to balance)
+    actingAs($supervisorUser, 'sanctum')
+        ->getJson('/api/hrms-core/v1/leave-requests')
+        ->assertSuccessful()
+        ->assertJsonCount(1, 'data');
+
+    actingAs($supervisorUser, 'sanctum')
+        ->getJson("/api/hrms-core/v1/leave-requests/{$leaveRequest->id}")
+        ->assertSuccessful();
+
+    actingAs($supervisorUser, 'sanctum')
+        ->getJson('/api/hrms-core/v1/leave-balances')
+        ->assertSuccessful()
+        ->assertJsonCount(0, 'data');
+
+    actingAs($supervisorUser, 'sanctum')
+        ->getJson("/api/hrms-core/v1/leave-balances/{$leaveBalance->id}")
+        ->assertForbidden();
+
+    // 4. HR User with hrms.leave.view can view both
+    App\Models\Permission::firstOrCreate(
+        ['name' => 'hrms.leave.view', 'guard_name' => 'web'],
+        ['category' => 'hrms-core']
+    );
+    app(Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+
+    $hrRole = App\Models\Role::firstOrCreate([
+        'name' => 'HR Leave Viewer Role',
+        'guard_name' => 'web',
+        'tenant_id' => $tenant->id,
+    ]);
+    $hrRole->syncPermissions(['hrms.leave.view']);
+    $hrUser->assignRole($hrRole);
+
+    actingAs($hrUser, 'sanctum')
+        ->getJson('/api/hrms-core/v1/leave-requests')
+        ->assertSuccessful()
+        ->assertJsonCount(1, 'data');
+
+    actingAs($hrUser, 'sanctum')
+        ->getJson("/api/hrms-core/v1/leave-requests/{$leaveRequest->id}")
+        ->assertSuccessful();
+
+    actingAs($hrUser, 'sanctum')
+        ->getJson('/api/hrms-core/v1/leave-balances')
+        ->assertSuccessful()
+        ->assertJsonCount(1, 'data');
+
+    actingAs($hrUser, 'sanctum')
+        ->getJson("/api/hrms-core/v1/leave-balances/{$leaveBalance->id}")
+        ->assertSuccessful();
+});
+
+it('verifies employees api resource does not leak compensation or bank account data', function () {
+    [$user, $tenant] = createHrmsApiContext();
+
+    $employee = Employee::factory()->forTenant($tenant->id)->create([
+        'first_name' => 'Grace',
+        'last_name' => 'Hopper',
+    ]);
+
+    BankDetails::create([
+        'tenant_id' => $tenant->id,
+        'employee_id' => $employee->id,
+        'bank_name' => 'Standard Chartered Bank',
+        'branch_name' => 'High Street',
+        'account_number' => '9876543210',
+        'account_type' => 'savings',
+    ]);
+
+    $indexResp = actingAs($user, 'sanctum')
+        ->getJson('/api/hrms-core/v1/employees')
+        ->assertSuccessful();
+
+    $showResp = actingAs($user, 'sanctum')
+        ->getJson("/api/hrms-core/v1/employees/{$employee->id}")
+        ->assertSuccessful();
+
+    $disallowedKeys = [
+        'salary_level_id',
+        'salary_step_id',
+        'base_salary',
+        'bank_name',
+        'branch_name',
+        'account_number',
+        'account_type',
+        'sort_code',
+        'bank_details',
+        'compensation',
+    ];
+
+    $indexData = $indexResp->json('data.0');
+    $showData = $showResp->json('data');
+
+    foreach ($disallowedKeys as $key) {
+        expect($indexData)->not->toHaveKey($key)
+            ->and($showData)->not->toHaveKey($key);
+    }
 });

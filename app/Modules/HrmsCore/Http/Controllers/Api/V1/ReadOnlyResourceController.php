@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\HrmsCore\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Models\User;
 use App\Modules\HrmsCore\Enums\AppraisalStatus;
 use App\Modules\HrmsCore\Models\Appraisal\Appraisal;
 use App\Modules\HrmsCore\Models\Appraisal\AppraisalGoal;
@@ -13,7 +14,23 @@ use App\Modules\HrmsCore\Models\Appraisal\AppraisalResponse;
 use App\Modules\HrmsCore\Models\Appraisal\AppraisalReview;
 use App\Modules\HrmsCore\Models\Appraisal\AppraisalScore;
 use App\Modules\HrmsCore\Models\Employees\Employee;
+use App\Modules\HrmsCore\Models\Leave\LeaveBalance;
+use App\Modules\HrmsCore\Models\Leave\LeaveRequest;
 use App\Modules\HrmsCore\Models\Promotion\StaffPromotion;
+use App\Modules\HrmsCore\Models\Recruitment\Candidate;
+use App\Modules\HrmsCore\Models\Recruitment\CandidateApplication;
+use App\Modules\HrmsCore\Models\Recruitment\CandidateAssessment;
+use App\Modules\HrmsCore\Models\Recruitment\CandidateDocument;
+use App\Modules\HrmsCore\Models\Recruitment\CandidateReference;
+use App\Modules\HrmsCore\Models\Recruitment\Interview;
+use App\Modules\HrmsCore\Models\Recruitment\InterviewEvaluation;
+use App\Modules\HrmsCore\Models\Recruitment\InterviewPanel;
+use App\Modules\HrmsCore\Models\Recruitment\InterviewStage;
+use App\Modules\HrmsCore\Models\Recruitment\JobOffer;
+use App\Modules\HrmsCore\Models\Recruitment\JobPosting;
+use App\Modules\HrmsCore\Models\Recruitment\JobRequisition;
+use App\Modules\HrmsCore\Models\Recruitment\OfferNegotiation;
+use App\Modules\HrmsCore\Models\Recruitment\OnboardingTask;
 use App\Modules\HrmsCore\Models\Salary\SalaryLevel;
 use App\Modules\HrmsCore\Models\Salary\SalaryStep;
 use Illuminate\Database\Eloquent\Builder;
@@ -76,10 +93,71 @@ final class ReadOnlyResourceController extends Controller
         $user = $request->user();
 
         if (in_array($modelClass, [SalaryLevel::class, SalaryStep::class], true)) {
-            $canViewSalary = ($user?->can('hrms.salary.view') ?? false)
-                || ($user?->can('hrms.salary.manage') ?? false);
+            abort_if(! $this->canViewSalary($user), 403);
 
-            abort_if(! $canViewSalary, 403);
+            return;
+        }
+
+        if (in_array($modelClass, [
+            JobRequisition::class,
+            JobPosting::class,
+            Candidate::class,
+            CandidateApplication::class,
+            CandidateDocument::class,
+            CandidateReference::class,
+            CandidateAssessment::class,
+            InterviewStage::class,
+            Interview::class,
+            InterviewPanel::class,
+            InterviewEvaluation::class,
+            JobOffer::class,
+            OfferNegotiation::class,
+            OnboardingTask::class,
+        ], true)) {
+            if (! $this->canViewRecruitment($user)) {
+                $query->whereRaw('1 = 0');
+            }
+
+            return;
+        }
+
+        if ($modelClass === LeaveRequest::class) {
+            if ($this->canManageLeave($user)) {
+                return;
+            }
+
+            $actorEmployee = $this->findActorEmployee($request);
+            if ($actorEmployee === null) {
+                $query->whereRaw('1 = 0');
+
+                return;
+            }
+
+            $actorId = $actorEmployee->id;
+            $query->where(function (Builder $sub) use ($actorId): void {
+                $sub->where('employee_id', $actorId)
+                    ->orWhere('supervisor_id', $actorId)
+                    ->orWhere('hod_id', $actorId)
+                    ->orWhere('hr_verifier_id', $actorId)
+                    ->orWhere('relieving_officer_id', $actorId);
+            });
+
+            return;
+        }
+
+        if ($modelClass === LeaveBalance::class) {
+            if ($this->canManageLeave($user)) {
+                return;
+            }
+
+            $actorEmployee = $this->findActorEmployee($request);
+            if ($actorEmployee === null) {
+                $query->whereRaw('1 = 0');
+
+                return;
+            }
+
+            $query->where('employee_id', $actorEmployee->id);
 
             return;
         }
@@ -169,6 +247,59 @@ final class ReadOnlyResourceController extends Controller
     {
         $user = $request->user();
 
+        if (
+            $record instanceof JobRequisition
+            || $record instanceof JobPosting
+            || $record instanceof Candidate
+            || $record instanceof CandidateApplication
+            || $record instanceof CandidateDocument
+            || $record instanceof CandidateReference
+            || $record instanceof CandidateAssessment
+            || $record instanceof InterviewStage
+            || $record instanceof Interview
+            || $record instanceof InterviewPanel
+            || $record instanceof InterviewEvaluation
+            || $record instanceof JobOffer
+            || $record instanceof OfferNegotiation
+            || $record instanceof OnboardingTask
+        ) {
+            abort_if(! $this->canViewRecruitment($user), 403);
+
+            return;
+        }
+
+        if ($record instanceof LeaveRequest) {
+            if ($this->canManageLeave($user)) {
+                return;
+            }
+
+            $actorEmployee = $this->findActorEmployee($request);
+            $actorId = $actorEmployee?->id;
+
+            $isParty = $actorId !== null && in_array($actorId, [
+                $record->employee_id,
+                $record->supervisor_id,
+                $record->hod_id,
+                $record->hr_verifier_id,
+                $record->relieving_officer_id,
+            ], true);
+
+            abort_if(! $isParty, 403);
+
+            return;
+        }
+
+        if ($record instanceof LeaveBalance) {
+            if ($this->canManageLeave($user)) {
+                return;
+            }
+
+            $actorEmployee = $this->findActorEmployee($request);
+            abort_if($actorEmployee === null || $record->employee_id !== $actorEmployee->id, 403);
+
+            return;
+        }
+
         if ($record instanceof Appraisal) {
             if ($user?->can('hrms.appraisal.manage') ?? false) {
                 return;
@@ -245,10 +376,7 @@ final class ReadOnlyResourceController extends Controller
         }
 
         if ($record instanceof SalaryLevel || $record instanceof SalaryStep) {
-            $canViewSalary = ($user?->can('hrms.salary.view') ?? false)
-                || ($user?->can('hrms.salary.manage') ?? false);
-
-            abort_if(! $canViewSalary, 403);
+            abort_if(! $this->canViewSalary($user), 403);
         }
     }
 
@@ -334,6 +462,36 @@ final class ReadOnlyResourceController extends Controller
         $withCount = Arr::wrap(Arr::get($defaults, 'withCount', []));
 
         return [$modelClass, $resourceClass, $with, $withCount];
+    }
+
+    private function canViewSalary(?User $user): bool
+    {
+        if ($user === null) {
+            return false;
+        }
+
+        return $user->can('hrms.salary.view') || $user->can('hrms.salary.manage');
+    }
+
+    private function canViewRecruitment(?User $user): bool
+    {
+        if ($user === null) {
+            return false;
+        }
+
+        return $user->can('hrms.jobs.view')
+            || $user->can('hrms.jobs.manage')
+            || $user->can('hrms.applications.view')
+            || $user->can('hrms.applications.manage');
+    }
+
+    private function canManageLeave(?User $user): bool
+    {
+        if ($user === null) {
+            return false;
+        }
+
+        return $user->can('hrms.leave.view') || $user->can('hrms.leave.approve');
     }
 
     private function resolvePerPage(Request $request): int
