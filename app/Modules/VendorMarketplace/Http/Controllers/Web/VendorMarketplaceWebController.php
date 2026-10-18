@@ -386,8 +386,23 @@ final class VendorMarketplaceWebController extends Controller
     public function completeJob(Request $request, ServiceJob $job): RedirectResponse
     {
         $user = $request->user();
-        abort_if(! $user?->can('vendors.manage') && ! $user?->can('vendors.portal.access'), 403);
-        abort_if($job->status === ServiceJob::STATUS_COMPLETED, 422, 'Service job is already completed.');
+        $canManage = $user?->can('vendors.manage') ?? false;
+
+        $isAwardedVendor = false;
+        if ($user?->can('vendors.portal.access') && $job->vendor_profile_id !== null) {
+            $isAwardedVendor = VendorProfile::query()
+                ->where('id', $job->vendor_profile_id)
+                ->where('user_id', (string) $user->uuid)
+                ->exists();
+        }
+
+        abort_if(! $canManage && ! $isAwardedVendor, 403, 'Unauthorized. Only staff with vendors.manage or the awarded vendor can complete this service job.');
+
+        abort_if(
+            ! in_array($job->status, [ServiceJob::STATUS_IN_ESCROW, ServiceJob::STATUS_IN_PROGRESS], true),
+            422,
+            'Service job can only be completed when funded in escrow or in progress.'
+        );
 
         $notes = $request->filled('notes') ? (string) $request->input('notes') : null;
         $job->markCompleted($notes);

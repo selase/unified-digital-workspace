@@ -10,6 +10,7 @@ use App\Modules\FacilitiesManagement\Models\FacilitySpace;
 use App\Modules\FacilitiesManagement\Models\FacilityWorkOrder;
 use App\Modules\FacilitiesManagement\Models\PreventiveMaintenanceSchedule;
 use App\Modules\VendorMarketplace\Models\ServiceJob;
+use App\Modules\VendorMarketplace\Models\VendorProfile;
 use App\Services\ModuleManager;
 use App\Services\Tenancy\TenantContext;
 use App\Services\Tenancy\TenantDatabaseManager;
@@ -41,6 +42,7 @@ function createFacilitiesTestContext(): array
         'facilities.occupant.request',
         'vendors.view',
         'vendors.manage',
+        'vendors.portal.access',
     ];
 
     foreach ($permissions as $permission) {
@@ -1216,10 +1218,46 @@ describe('Phase 21: Dual-Mode Facilities Management (Institutional Asset Lifecyc
             ->assertStatus(422);
     });
 
-    test('completing a vendor service job automatically synchronizes and completes the companion facility work order', function (): void {
+    test('completing a vendor service job enforces state rules, vendor authorization, and synchronizes companion facility work order', function (): void {
         [$user, $tenant] = createFacilitiesTestContext();
 
-        // 1. Dispatch Mode B occupant work order linked to ServiceJob
+        // 1. Create Awarded Vendor User & Profile
+        $awardedVendorUser = User::factory()->create([
+            'first_name' => 'Kofi',
+            'last_name' => 'Electrician',
+        ]);
+        $tenant->users()->attach($awardedVendorUser->id);
+        setPermissionsTeamId($tenant->id);
+        $awardedVendorUser->givePermissionTo('vendors.portal.access');
+
+        $awardedProfile = VendorProfile::create([
+            'user_id' => (string) $awardedVendorUser->uuid,
+            'business_name' => 'VoltCraft Engineering Ltd',
+            'code' => 'VND-VOLT',
+            'category' => 'electrical',
+            'status' => 'verified',
+            'rating' => 4.90,
+        ]);
+
+        // 2. Create Rival / Other Vendor User & Profile
+        $otherVendorUser = User::factory()->create([
+            'first_name' => 'Kwame',
+            'last_name' => 'Competitor',
+        ]);
+        $tenant->users()->attach($otherVendorUser->id);
+        setPermissionsTeamId($tenant->id);
+        $otherVendorUser->givePermissionTo('vendors.portal.access');
+
+        $otherProfile = VendorProfile::create([
+            'user_id' => (string) $otherVendorUser->uuid,
+            'business_name' => 'Rival Spark Services',
+            'code' => 'VND-RIVAL',
+            'category' => 'electrical',
+            'status' => 'verified',
+            'rating' => 4.20,
+        ]);
+
+        // 3. Dispatch Mode B occupant work order linked to ServiceJob
         $this->actingAs($user)
             ->withSession(['active_tenant_id' => $tenant->id])
             ->post(route('facilities-management.work-orders.occupant.store'), [
@@ -1231,15 +1269,34 @@ describe('Phase 21: Dual-Mode Facilities Management (Institutional Asset Lifecyc
             ->assertRedirect(route('facilities-management.index'));
 
         $workOrder = FacilityWorkOrder::query()->where('title', 'Distribution Board Circuit Breaker Tripping')->firstOrFail();
-        expect($workOrder->status)->toBe(FacilityWorkOrder::STATUS_OPEN)
-            ->and($workOrder->completed_at)->toBeNull();
-
         $serviceJob = $workOrder->serviceJob;
         expect($serviceJob)->not->toBeNull()
             ->and($serviceJob->status)->toBe(ServiceJob::STATUS_OPEN);
 
-        // 2. Complete job from Vendor Marketplace side via web controller action
-        $this->actingAs($user)
+        // Award job to the legitimate vendor profile
+        $serviceJob->update(['vendor_profile_id' => $awardedProfile->id]);
+
+        // 4. State Guard: Attempting to complete an OPEN job (before escrow funding) -> 422
+        $this->actingAs($awardedVendorUser)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->post(route('vendor-marketplace.jobs.complete', $serviceJob->uuid), [
+                'notes' => 'Attempting early sign-off while still open.',
+            ])
+            ->assertStatus(422);
+
+        // Advance job to funded state (e.g. in_escrow)
+        $serviceJob->update(['status' => ServiceJob::STATUS_IN_ESCROW]);
+
+        // 5. Authorization Guard: Rival vendor portal user cannot complete another vendor\'s awarded job -> 403
+        $this->actingAs($otherVendorUser)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->post(route('vendor-marketplace.jobs.complete', $serviceJob->uuid), [
+                'notes' => 'Malicious rival attempt to sign off foreign job.',
+            ])
+            ->assertStatus(403);
+
+        // 6. Success Path: Legitimate awarded vendor on funded job succeeds and companion work order completes
+        $this->actingAs($awardedVendorUser)
             ->withSession(['active_tenant_id' => $tenant->id])
             ->post(route('vendor-marketplace.jobs.complete', $serviceJob->uuid), [
                 'notes' => 'Electrician replaced faulty RCCB and tested phase balance.',
@@ -1253,6 +1310,14 @@ describe('Phase 21: Dual-Mode Facilities Management (Institutional Asset Lifecyc
             ->and($workOrder->status)->toBe(FacilityWorkOrder::STATUS_COMPLETED)
             ->and($workOrder->completed_at)->not->toBeNull()
             ->and($workOrder->completion_notes)->toContain('Electrician replaced faulty RCCB');
+
+        // 7. Re-completing already completed job -> 422
+        $this->actingAs($awardedVendorUser)
+            ->withSession(['active_tenant_id' => $tenant->id])
+            ->post(route('vendor-marketplace.jobs.complete', $serviceJob->uuid), [
+                'notes' => 'Re-completing completed job.',
+            ])
+            ->assertStatus(422);
     });
 
     test('seeds facilities management data cleanly via FacilitiesManagementSeeder', function (): void {
