@@ -48,3 +48,36 @@ test('updating tenant handles null allowed_ips gracefully', function () {
     // And array_map('trim', ['']) is ['']
     expect($tenant->allowed_ips)->toBe(['']);
 });
+
+test('isolation mode and database driver cannot be changed on an existing tenant', function () {
+    Artisan::call('db:seed', ['--class' => 'RoleSeeder']);
+    Artisan::call('db:seed', ['--class' => 'PermissionsSeeder']);
+
+    $admin = User::factory()->create();
+    $admin->assignRole('Superadmin');
+
+    $tenant = Tenant::factory()->create(['slug' => 'immutable-mode', 'isolation_mode' => 'shared']);
+
+    $payload = [
+        'name' => 'Immutable Mode',
+        'email' => 'immutable@example.com',
+        'phone_number' => '1234567890',
+        'address' => '1 Fixed St',
+        'country' => 'USA',
+        'city' => 'City',
+        'state_or_region' => 'State',
+        'zipcode' => '54321',
+        'status' => 'active',
+        'subdomain' => 'immutable-mode',
+        'isolation_mode' => 'db_per_tenant',
+        'db_driver' => 'pgsql',
+    ];
+
+    $this->actingAs($admin)
+        ->put(route('tenants.update', $tenant->uuid), $payload)
+        ->assertSessionHasErrors('isolation_mode');
+
+    $tenant->refresh();
+    expect($tenant->isolation_mode)->toBe('shared');
+    expect($tenant->meta['database'] ?? null)->toBeNull();
+});

@@ -8,12 +8,16 @@ use App\Enum\TenantStatusEnum;
 use App\Enum\UsageMetric;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Tenant\CreateTenantRequest;
+use App\Http\Requests\Tenant\DestroyTenantRequest;
 use App\Libraries\Helper;
 use App\Models\Tenant;
 use App\Models\UsageRollup;
 use App\Providers\RouteServiceProvider;
+use App\Services\Tenancy\TenantContext;
+use App\Services\Tenancy\TenantDatabaseRemover;
 use App\Services\Tenancy\TenantProvisioner;
 use Carbon\Carbon;
+use DomainException;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\JsonResponse;
@@ -25,7 +29,10 @@ use Illuminate\Support\Facades\Storage;
 
 final class TenantController extends Controller
 {
-    public function __construct(private readonly TenantProvisioner $provisioner) {}
+    public function __construct(
+        private readonly TenantProvisioner $provisioner,
+        private readonly TenantDatabaseRemover $databaseRemover,
+    ) {}
 
     /**
      * Display a listing of the resource.
@@ -389,6 +396,18 @@ final class TenantController extends Controller
             'usage_prices.*.unit_quantity' => 'nullable|numeric|min:0.0001',
         ]);
 
+        // Isolation mode and database driver are fixed when a tenant is created: changing them
+        // would re-point the tenant at a different database without moving its data.
+        $isolationChanged = (string) $request->input('isolation_mode') !== (string) $tenant->isolation_mode;
+        $driverChanged = $tenant->requiresDedicatedDb()
+            && (string) $request->input('db_driver') !== (string) $tenant->db_driver;
+
+        if ($isolationChanged || $driverChanged) {
+            return back()
+                ->withErrors(['isolation_mode' => 'Isolation mode and database driver cannot be changed after a tenant is created. Create a new tenant and migrate its data instead.'])
+                ->withInput();
+        }
+
         $tenant->name = $request->input('name');
         $tenant->email = $request->input('email');
         $tenant->phone_number = $request->input('phone_number');
@@ -442,9 +461,15 @@ final class TenantController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy($id): JsonResponse
+    public function destroy(DestroyTenantRequest $request, $id): JsonResponse
     {
         $tenant = Tenant::findByUuid($id);
+
+        try {
+            $result = $this->databaseRemover->remove($tenant, $request->shouldBackupDatabase());
+        } catch (DomainException $e) {
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 422);
+        }
 
         if ($tenant->logo) {
             config('app.env') === 'production'
@@ -456,8 +481,27 @@ final class TenantController extends Controller
 
         $tenant->delete();
 
+        $context = app(TenantContext::class);
+
+        if ($context->activeTenantId() === (string) $tenant->id) {
+            $context->clear();
+        }
+
+        activity('tenancy')
+            ->causedBy($request->user())
+            ->withProperties([
+                'tenant_id' => (string) $tenant->id,
+                'slug' => $tenant->slug,
+                'database' => $result['database'],
+                'database_dropped' => $result['dropped'],
+                'backup_file' => $result['backup'] ? basename($result['backup']) : null,
+            ])
+            ->log('tenant.deleted');
+
         return response()->json([
             'status' => __('locale.messages.deleted', ['name' => 'Tenant']),
+            'database_dropped' => $result['dropped'],
+            'database_backup' => $result['backup'] ? basename($result['backup']) : null,
         ]);
     }
 

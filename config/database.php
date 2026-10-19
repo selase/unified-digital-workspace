@@ -57,6 +57,9 @@ return [
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 Pdo\Mysql::ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],
+            'dump' => [
+                'dump_binary_path' => env('PG_DUMP_BINARY_PATH', ''),
+            ],
         ],
 
         'tenant' => [
@@ -107,6 +110,9 @@ return [
             'prefix_indexes' => true,
             'search_path' => 'public',
             'sslmode' => 'prefer',
+            'dump' => [
+                'dump_binary_path' => env('PG_DUMP_BINARY_PATH', ''),
+            ],
         ],
 
         'sqlsrv' => [

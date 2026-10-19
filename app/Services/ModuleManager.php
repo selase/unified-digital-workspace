@@ -12,11 +12,14 @@ use App\Models\Permission;
 use App\Models\Tenant;
 use App\Models\TenantFeature;
 use App\Models\TenantModule;
+use App\Services\Tenancy\TenantDatabaseManager;
+use App\Services\Tenancy\TenantMigrator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
+use RuntimeException;
 use Spatie\Permission\PermissionRegistrar;
 
 final class ModuleManager
@@ -152,6 +155,56 @@ final class ModuleManager
         $this->grantModulePermissionsToTenantAdmins($module, $tenant);
 
         return $tenantModule;
+    }
+
+    /**
+     * Enable a module for a tenant after making sure its tables exist in that tenant's
+     * database (the tenant's own database, or the shared one). If the migrations fail the
+     * module is not enabled.
+     *
+     * Use this from anywhere a person or command enables a module (web, CLI).
+     *
+     * @throws ModuleNotFoundException
+     * @throws RuntimeException When the module's migrations fail.
+     */
+    public function enableForTenantWithMigrations(string $slug, Tenant $tenant): TenantModule
+    {
+        $module = $this->assertCanEnable($slug, $tenant);
+
+        $this->migrateForTenant($module, $tenant);
+
+        return $this->enableForTenant($slug, $tenant);
+    }
+
+    /**
+     * Run a module's migrations against the database the tenant uses.
+     *
+     * @param  array<string, mixed>  $module
+     *
+     * @throws RuntimeException
+     */
+    public function migrateForTenant(array $module, Tenant $tenant): void
+    {
+        $migrationPath = $module['path'].'/Database/Migrations';
+
+        if (! is_dir($migrationPath)) {
+            return;
+        }
+
+        $dbManager = app(TenantDatabaseManager::class);
+
+        if ($tenant->requiresDedicatedDb()) {
+            $dbManager->configure($tenant);
+        } else {
+            $dbManager->configureShared();
+        }
+
+        $relativePath = str_replace(base_path().'/', '', $migrationPath);
+        $result = app(TenantMigrator::class)->migrate('tenant', $relativePath, true);
+
+        if ($result['exitCode'] !== 0) {
+            throw new RuntimeException("Module [{$module['slug']}] migration failed with exit code {$result['exitCode']}.");
+        }
     }
 
     /**

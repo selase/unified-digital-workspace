@@ -42,6 +42,7 @@ final class TenantsMigrate extends Command
 
         /** @var \Illuminate\Database\Eloquent\Collection<int, Tenant> $tenants */
         $tenants = $query->get();
+        $failedTenants = [];
 
         if ($tenants->isEmpty()) {
             $this->error($tenantId ? "Tenant '{$tenantId}' not found." : 'No active tenants found.');
@@ -100,6 +101,16 @@ final class TenantsMigrate extends Command
 
             $finish = now();
             $this->logRun((string) $tenant->id, $status, $output, $exception, $start, $finish);
+
+            if ($status === 'failed') {
+                $failedTenants[] = $tenant->name;
+            }
+        }
+
+        if ($failedTenants !== []) {
+            $this->error('Migration failed for '.count($failedTenants).' tenant(s): '.implode(', ', $failedTenants));
+
+            return Command::FAILURE;
         }
 
         return Command::SUCCESS;

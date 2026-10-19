@@ -14,6 +14,7 @@ use App\Services\Tenancy\TenantContext;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use RuntimeException;
 
 /**
  * Tenant-facing module catalog. Lists every catalog-eligible module
@@ -78,7 +79,7 @@ final class ModuleCatalogController extends Controller
         abort_if(! $tenant, 404);
 
         try {
-            $this->moduleManager->enableForTenant($slug, $tenant);
+            $this->moduleManager->enableForTenantWithMigrations($slug, $tenant);
 
             return back()->with('status', 'success')->with('message', "Module '{$slug}' enabled.");
         } catch (ModuleEntitlementException $e) {
@@ -87,6 +88,10 @@ final class ModuleCatalogController extends Controller
             return back()->with('status', 'error')->with('message', $e->getMessage());
         } catch (ModuleNotFoundException) {
             abort(404);
+        } catch (RuntimeException $e) {
+            report($e);
+
+            return back()->with('status', 'error')->with('message', "Module '{$slug}' could not be set up and was not enabled: ".$e->getMessage());
         }
     }
 

@@ -38,4 +38,13 @@ class TenantContext
     {
         return $this->activeTenantId;
     }
+
+    /**
+     * Forget the active tenant, e.g. after that tenant has been deleted.
+     */
+    public function clear(): void
+    {
+        $this->tenant = null;
+        $this->activeTenantId = null;
+    }
 }

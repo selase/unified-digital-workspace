@@ -69,7 +69,7 @@ test('it logs exception on failure', function () {
     });
 
     $this->artisan('tenants:migrate')
-        ->assertExitCode(0);
+        ->assertExitCode(1);
 
     $this->assertDatabaseHas('tenant_migration_runs', [
         'tenant_id' => $tenant->id,
@@ -146,7 +146,8 @@ test('it continues after failure', function () {
             ->andReturn(['exitCode' => 0, 'output' => 'Success']);
     });
 
-    $this->artisan('tenants:migrate')->assertExitCode(0);
+    // The command still processes every tenant, but reports the failure to the caller.
+    $this->artisan('tenants:migrate')->assertExitCode(1);
 
     $this->assertDatabaseHas('tenant_migration_runs', ['tenant_id' => $tenant1->id, 'status' => 'failed'], 'landlord');
     $this->assertDatabaseHas('tenant_migration_runs', ['tenant_id' => $tenant2->id, 'status' => 'success'], 'landlord');
