@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace App\Modules\FacilitiesManagement\Console\Commands;
 
-use App\Models\User;
+use App\Models\Tenant;
 use App\Modules\FacilitiesManagement\Models\FacilityWorkOrder;
 use App\Modules\FacilitiesManagement\Models\PreventiveMaintenanceSchedule;
+use App\Services\ModuleManager;
+use App\Services\Tenancy\TenantContext;
+use App\Services\Tenancy\TenantDatabaseManager;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Str;
@@ -17,30 +20,64 @@ final class GeneratePreventiveWorkOrdersCommand extends Command
 
     protected $description = 'Generate preventive maintenance work orders for due schedules and advance schedule dates';
 
-    public function handle(): int
+    public function handle(TenantContext $context, TenantDatabaseManager $dbManager, ModuleManager $moduleManager): int
     {
         $tenantId = $this->option('tenant');
+
+        $tenants = Tenant::query()
+            ->where('status', 'active')
+            ->when(! empty($tenantId), fn ($query) => $query->whereKey((string) $tenantId))
+            ->get();
+
+        $generatedCount = 0;
+        $skippedCount = 0;
+
+        foreach ($tenants as $tenant) {
+            $context->setTenant($tenant);
+
+            if ($tenant->requiresDedicatedDb()) {
+                $dbManager->configure($tenant);
+            } else {
+                $dbManager->configureShared();
+            }
+
+            if (! $moduleManager->isEnabledForTenant('facilities-management', $tenant)) {
+                continue;
+            }
+
+            [$generated, $skipped] = $this->generateForTenant($tenant);
+            $generatedCount += $generated;
+            $skippedCount += $skipped;
+        }
+
+        if ($generatedCount === 0 && $skippedCount === 0) {
+            $this->info('No preventive maintenance schedules due for generation.');
+
+            return self::SUCCESS;
+        }
+
+        $this->info("Preventive maintenance processing complete: {$generatedCount} work order(s) generated, {$skippedCount} skipped.");
+
+        return self::SUCCESS;
+    }
+
+    /**
+     * @return array{0: int, 1: int} Generated and skipped counts for the tenant currently configured.
+     */
+    private function generateForTenant(Tenant $tenant): array
+    {
         $force = (bool) $this->option('force');
 
         $query = PreventiveMaintenanceSchedule::query()
             ->with(['asset.building'])
+            ->where('tenant_id', (string) $tenant->id)
             ->where('is_active', true);
-
-        if (! empty($tenantId)) {
-            $query->where('tenant_id', (string) $tenantId);
-        }
 
         if (! $force) {
             $query->where('next_due_date', '<=', now()->toDateString());
         }
 
         $schedules = $query->get();
-
-        if ($schedules->isEmpty()) {
-            $this->info('No preventive maintenance schedules due for generation.');
-
-            return self::SUCCESS;
-        }
 
         $generatedCount = 0;
         $skippedCount = 0;
@@ -62,8 +99,14 @@ final class GeneratePreventiveWorkOrdersCommand extends Command
             $building = $schedule->asset ? $schedule->asset->building : null;
             $requesterId = $building ? $building->manager_id : null;
             if (! $requesterId) {
-                $requesterId = User::query()->where('tenant_id', $schedule->tenant_id)->value('uuid')
-                    ?? User::query()->value('uuid');
+                $requesterId = $tenant->users()->value('uuid');
+            }
+
+            if (! $requesterId) {
+                $this->warn("Skipped schedule {$schedule->id}: tenant {$tenant->id} has no user to act as requester.");
+                $skippedCount++;
+
+                continue;
             }
 
             $assetCategory = $schedule->asset ? $schedule->asset->category : 'general_maintenance';
@@ -115,8 +158,6 @@ final class GeneratePreventiveWorkOrdersCommand extends Command
             $generatedCount++;
         }
 
-        $this->info("Preventive maintenance processing complete: {$generatedCount} work order(s) generated, {$skippedCount} skipped.");
-
-        return self::SUCCESS;
+        return [$generatedCount, $skippedCount];
     }
 }

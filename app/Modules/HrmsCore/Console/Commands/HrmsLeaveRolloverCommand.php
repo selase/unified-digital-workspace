@@ -4,7 +4,11 @@ declare(strict_types=1);
 
 namespace App\Modules\HrmsCore\Console\Commands;
 
+use App\Models\Tenant;
 use App\Modules\HrmsCore\Services\LeaveAccrualService;
+use App\Services\ModuleManager;
+use App\Services\Tenancy\TenantContext;
+use App\Services\Tenancy\TenantDatabaseManager;
 use Illuminate\Console\Command;
 
 final class HrmsLeaveRolloverCommand extends Command
@@ -27,8 +31,12 @@ final class HrmsLeaveRolloverCommand extends Command
      */
     protected $description = 'Rollover employee leave balances to a new calendar year with carry-forward rules';
 
-    public function handle(LeaveAccrualService $service): int
-    {
+    public function handle(
+        LeaveAccrualService $service,
+        TenantContext $context,
+        TenantDatabaseManager $dbManager,
+        ModuleManager $moduleManager
+    ): int {
         $currentYear = (int) date('Y');
         $fromYear = $this->argument('fromYear') !== null
             ? (int) $this->argument('fromYear')
@@ -42,7 +50,28 @@ final class HrmsLeaveRolloverCommand extends Command
 
         $this->info("Rolling over leave balances from {$fromYear} to {$toYear} (max carry-forward: {$maxCarry} days)...");
 
-        $count = $service->rolloverYear($fromYear, $toYear, $tenantId, $maxCarry);
+        $tenants = Tenant::query()
+            ->where('status', 'active')
+            ->when($tenantId !== null, fn ($query) => $query->whereKey($tenantId))
+            ->get();
+
+        $count = 0;
+
+        foreach ($tenants as $tenant) {
+            $context->setTenant($tenant);
+
+            if ($tenant->requiresDedicatedDb()) {
+                $dbManager->configure($tenant);
+            } else {
+                $dbManager->configureShared();
+            }
+
+            if (! $moduleManager->isEnabledForTenant('hrms-core', $tenant)) {
+                continue;
+            }
+
+            $count += $service->rolloverYear($fromYear, $toYear, (string) $tenant->id, $maxCarry);
+        }
 
         $this->info("Successfully processed and updated {$count} leave balance record(s).");
 

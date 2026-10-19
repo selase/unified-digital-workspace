@@ -59,7 +59,7 @@ final class ProjectWebController extends Controller
         $data['actual_cost_amount'] = 0.00;
 
         /** @var Project $project */
-        $project = DB::transaction(function () use ($data): Project {
+        $project = DB::connection('tenant')->transaction(function () use ($data): Project {
             /** @var Project $created */
             $created = Project::create($data);
 

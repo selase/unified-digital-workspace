@@ -808,7 +808,7 @@ final class FacilitiesManagementWebController extends Controller
         }
 
         /** @var array{0: ServiceJob, 1: FacilityWorkOrder} $created */
-        $created = DB::transaction(function () use ($validated, $user, $workOrderNumber): array {
+        $created = DB::connection('tenant')->transaction(function () use ($validated, $user, $workOrderNumber): array {
             // 1. Dispatch ServiceJob in VendorMarketplace
             $job = ServiceJob::create([
                 'job_number' => 'JOB-FAC-'.mb_strtoupper(Str::random(6)),
@@ -993,7 +993,7 @@ final class FacilitiesManagementWebController extends Controller
             'due_date' => ['nullable', 'date'],
         ]);
 
-        DB::transaction(function () use ($workOrder, $validated): void {
+        DB::connection('tenant')->transaction(function () use ($workOrder, $validated): void {
             $workOrder->update([
                 'title' => $validated['title'],
                 'category' => $validated['category'],
@@ -1033,7 +1033,7 @@ final class FacilitiesManagementWebController extends Controller
             'cancellation_reason' => ['nullable', 'string', 'max:1000'],
         ]);
 
-        DB::transaction(function () use ($workOrder, $validated): void {
+        DB::connection('tenant')->transaction(function () use ($workOrder, $validated): void {
             $reason = ! empty($validated['cancellation_reason']) ? $validated['cancellation_reason'] : 'Cancelled by user';
             $workOrder->update([
                 'status' => FacilityWorkOrder::STATUS_CANCELLED,
@@ -1063,7 +1063,7 @@ final class FacilitiesManagementWebController extends Controller
             'completion_notes' => ['required', 'string', 'max:2000'],
         ]);
 
-        DB::transaction(function () use ($workOrder, $validated): void {
+        DB::connection('tenant')->transaction(function () use ($workOrder, $validated): void {
             $workOrder->update([
                 'status' => FacilityWorkOrder::STATUS_COMPLETED,
                 'completed_at' => now(),

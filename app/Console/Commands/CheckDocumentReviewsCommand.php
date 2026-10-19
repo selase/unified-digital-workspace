@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Modules\DocumentManagement\Models\Document;
 use App\Modules\DocumentManagement\Models\DocumentAudit;
 use App\Notifications\InstitutionalWorkflowAlert;
+use App\Services\ModuleManager;
 use App\Services\Tenancy\TenantContext;
 use App\Services\Tenancy\TenantDatabaseManager;
 use Illuminate\Console\Command;
@@ -30,7 +31,7 @@ final class CheckDocumentReviewsCommand extends Command
      */
     protected $description = 'Check ISO controlled document review deadlines and expiration dates, dispatching alerts and logging audit trails';
 
-    public function handle(TenantContext $tenantContext, TenantDatabaseManager $dbManager): int
+    public function handle(TenantContext $tenantContext, TenantDatabaseManager $dbManager, ModuleManager $moduleManager): int
     {
         $this->info('Starting ISO controlled document review and expiration check...');
 
@@ -48,6 +49,11 @@ final class CheckDocumentReviewsCommand extends Command
             foreach ($tenants as $tenant) {
                 $tenantContext->setTenant($tenant);
                 $dbManager->configure($tenant);
+
+                if (! $moduleManager->isEnabledForTenant('document-management', $tenant)) {
+                    continue;
+                }
+
                 $this->checkTenantDocuments($tenant);
             }
         }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\WorkflowAutomation\Models;
 
+use App\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -22,6 +23,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 final class WorkflowExecutionLog extends Model
 {
+    use BelongsToTenant;
+
     public $timestamps = false;
 
     protected $fillable = [

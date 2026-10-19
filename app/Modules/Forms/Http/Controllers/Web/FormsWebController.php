@@ -132,7 +132,7 @@ final class FormsWebController extends Controller
             }
         }
 
-        $form = DB::transaction(function () use ($validated, $slug, $user): FormDefinition {
+        $form = DB::connection('tenant')->transaction(function () use ($validated, $slug, $user): FormDefinition {
             $formDefinition = FormDefinition::create([
                 'title' => $validated['title'],
                 'slug' => $slug,
@@ -240,7 +240,7 @@ final class FormsWebController extends Controller
             'fields.*.options' => ['nullable', 'string'],
         ]);
 
-        DB::transaction(function () use ($form, $validated): void {
+        DB::connection('tenant')->transaction(function () use ($form, $validated): void {
             $form->update([
                 'title' => $validated['title'],
                 'description' => $validated['description'] ?? null,

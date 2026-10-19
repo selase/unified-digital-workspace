@@ -104,6 +104,14 @@ abstract class TestCase extends BaseTestCase
             $landlord = DB::connection('landlord');
             $event->connection->setPdo($landlord->getPdo());
             $event->connection->setReadPdo($landlord->getReadPdo());
+
+            // The shared PDO is already inside RefreshDatabase's transaction.
+            // Mirror landlord's transaction level so a transaction opened on the
+            // tenant connection becomes a savepoint instead of a second BEGIN.
+            $level = $landlord->transactionLevel();
+            (function () use ($level): void {
+                $this->transactions = $level;
+            })->call($event->connection);
         });
 
         // Force the tenant connection to (re)establish now so the listener

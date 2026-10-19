@@ -110,7 +110,7 @@ final class WorkplanController extends Controller
             'metadata',
         ]);
 
-        DB::transaction(function () use ($workplan, $versionNo, $payload, $request): void {
+        DB::connection('tenant')->transaction(function () use ($workplan, $versionNo, $payload, $request): void {
             WorkplanVersion::create([
                 'workplan_id' => $workplan->id,
                 'version_no' => $versionNo,

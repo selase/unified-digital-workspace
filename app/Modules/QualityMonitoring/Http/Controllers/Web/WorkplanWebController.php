@@ -42,7 +42,7 @@ final class WorkplanWebController extends Controller
         $payload['status'] = $payload['status'] ?? 'draft';
 
         /** @var Workplan $workplan */
-        $workplan = DB::transaction(function () use ($payload, $request): Workplan {
+        $workplan = DB::connection('tenant')->transaction(function () use ($payload, $request): Workplan {
             /** @var Workplan $created */
             $created = Workplan::create($payload);
 
@@ -100,7 +100,7 @@ final class WorkplanWebController extends Controller
 
         $nextVersion = ($workplan->versions()->max('version_no') ?? 0) + 1;
 
-        DB::transaction(function () use ($workplan, $nextVersion, $request): void {
+        DB::connection('tenant')->transaction(function () use ($workplan, $nextVersion, $request): void {
             WorkplanVersion::create([
                 'tenant_id' => $workplan->tenant_id,
                 'workplan_id' => $workplan->id,
@@ -128,7 +128,7 @@ final class WorkplanWebController extends Controller
 
         $comments = $request->string('comments', 'Approved by Quality Committee')->toString();
 
-        DB::transaction(function () use ($workplan, $comments, $request): void {
+        DB::connection('tenant')->transaction(function () use ($workplan, $comments, $request): void {
             Review::create([
                 'tenant_id' => $workplan->tenant_id,
                 'workplan_id' => $workplan->id,
@@ -156,7 +156,7 @@ final class WorkplanWebController extends Controller
 
         $comments = $request->string('comments', 'Revision required by Committee')->toString();
 
-        DB::transaction(function () use ($workplan, $comments, $request): void {
+        DB::connection('tenant')->transaction(function () use ($workplan, $comments, $request): void {
             Review::create([
                 'tenant_id' => $workplan->tenant_id,
                 'workplan_id' => $workplan->id,

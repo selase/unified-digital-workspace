@@ -19,7 +19,7 @@ final class PlatformCreditService
             ->where('is_active', true)
             ->firstOrFail();
 
-        return DB::transaction(function () use ($tenantId, $package, $paymentReference): TenantCreditWallet {
+        return DB::connection('tenant')->transaction(function () use ($tenantId, $package, $paymentReference): TenantCreditWallet {
             if ($paymentReference !== null) {
                 $existing = \App\Modules\Store\Models\PlatformCreditPurchase::where('tenant_id', $tenantId)
                     ->where('payment_reference', $paymentReference)
@@ -116,7 +116,7 @@ final class PlatformCreditService
             return true;
         }
 
-        return DB::transaction(function () use ($tenantId, $creditType, $amount): bool {
+        return DB::connection('tenant')->transaction(function () use ($tenantId, $creditType, $amount): bool {
             $wallet = TenantCreditWallet::where('tenant_id', $tenantId)
                 ->where(function ($q) use ($creditType): void {
                     $q->where('credit_type', $creditType);

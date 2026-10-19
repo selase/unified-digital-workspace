@@ -387,7 +387,7 @@ final class HrmsPromotionWebController extends Controller
         $rejectionReason = isset($validated['rejection_reason']) ? (string) $validated['rejection_reason'] : ($comments ?? 'Rejected by HR');
 
         if ($decision === 'approve') {
-            DB::transaction(function () use ($promotion, $hrApproverId, $comments): void {
+            DB::connection('tenant')->transaction(function () use ($promotion, $hrApproverId, $comments): void {
                 $promotion->approveByHr($hrApproverId, $comments);
 
                 // Synchronize the employee's grade and salary level upon final HR approval

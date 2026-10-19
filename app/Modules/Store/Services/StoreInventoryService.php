@@ -27,7 +27,7 @@ final class StoreInventoryService
             throw new DomainException('Cart cannot be empty.');
         }
 
-        return DB::transaction(function () use ($tenantId, $customerData, $cartItems, $userUuidString): StoreOrder {
+        return DB::connection('tenant')->transaction(function () use ($tenantId, $customerData, $cartItems, $userUuidString): StoreOrder {
             $totalAmountCents = 0;
             $itemsToCreate = [];
 
@@ -122,7 +122,7 @@ final class StoreInventoryService
      */
     public function confirmPayment(StoreOrder $order, string $paymentReference): StoreOrder
     {
-        return DB::transaction(function () use ($order, $paymentReference): StoreOrder {
+        return DB::connection('tenant')->transaction(function () use ($order, $paymentReference): StoreOrder {
             /** @var StoreOrder $locked */
             $locked = StoreOrder::where('id', $order->id)->lockForUpdate()->firstOrFail();
 
@@ -156,7 +156,7 @@ final class StoreInventoryService
      */
     public function cancelOrder(StoreOrder $order): StoreOrder
     {
-        return DB::transaction(function () use ($order): StoreOrder {
+        return DB::connection('tenant')->transaction(function () use ($order): StoreOrder {
             /** @var StoreOrder $locked */
             $locked = StoreOrder::where('id', $order->id)->with('items')->lockForUpdate()->firstOrFail();
 

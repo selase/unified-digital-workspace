@@ -59,6 +59,25 @@ class TenantDatabaseManager
         app('db')->purge('tenant');
     }
 
+    /**
+     * Make $tenant the active tenant for the rest of this process and point the
+     * `tenant` connection at its database (dedicated or shared).
+     *
+     * For code that runs without ResolveTenant: queue listeners, webhooks, commands.
+     */
+    public function activate(Tenant $tenant): void
+    {
+        app(TenantContext::class)->setTenant($tenant);
+
+        if ($tenant->requiresDedicatedDb()) {
+            $this->configure($tenant);
+
+            return;
+        }
+
+        $this->configureShared();
+    }
+
     public function configureShared(): void
     {
         $landlordConfig = Config::get('database.connections.landlord');

@@ -5,11 +5,14 @@ declare(strict_types=1);
 namespace App\Modules\Reports\Models;
 
 use App\Models\User;
+use App\Traits\BelongsToTenant;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 final class ReportExecutionLog extends Model
 {
+    use BelongsToTenant;
+
     public $timestamps = false;
 
     protected $fillable = [

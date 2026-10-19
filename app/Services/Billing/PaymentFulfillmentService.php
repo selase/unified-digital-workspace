@@ -19,6 +19,7 @@ use App\Modules\VendorMarketplace\Models\EscrowAccount;
 use App\Modules\VendorMarketplace\Models\ProformaInvoice;
 use App\Modules\VendorMarketplace\Services\EscrowSettlementService;
 use App\Services\Tenancy\TenantContext;
+use App\Services\Tenancy\TenantDatabaseManager;
 use DomainException;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
@@ -222,7 +223,9 @@ final class PaymentFulfillmentService
         /** @var InstallmentSchedule|null $overpaymentInstallment */
         $overpaymentInstallment = null;
 
-        $result = DB::transaction(function () use ($installmentId, $tenantId, $amountPesewas, $providerTransactionId, $provider, $currency, &$isOverpayment, &$overpaymentInstallment): ?InstallmentSchedule {
+        $this->connectTenantDatabase($tenantId);
+
+        $result = DB::connection('tenant')->transaction(function () use ($installmentId, $tenantId, $amountPesewas, $providerTransactionId, $provider, $currency, &$isOverpayment, &$overpaymentInstallment): ?InstallmentSchedule {
             /** @var InstallmentSchedule $installment */
             $installment = InstallmentSchedule::withoutGlobalScopes()
                 ->where('id', $installmentId)
@@ -362,7 +365,9 @@ final class PaymentFulfillmentService
             throw new DomainException('Invalid metadata for escrow funding.');
         }
 
-        return DB::transaction(function () use ($proformaId, $tenantId, $userUuid, $amountPesewas, $providerTransactionId, $provider, $currency): EscrowAccount {
+        $this->connectTenantDatabase($tenantId);
+
+        return DB::connection('tenant')->transaction(function () use ($proformaId, $tenantId, $userUuid, $amountPesewas, $providerTransactionId, $provider, $currency): EscrowAccount {
             /** @var ProformaInvoice $proforma */
             $proforma = ProformaInvoice::withoutGlobalScopes()
                 ->where('id', $proformaId)
@@ -443,7 +448,9 @@ final class PaymentFulfillmentService
             throw new DomainException('Invalid metadata for store order.');
         }
 
-        return DB::transaction(function () use ($orderId, $tenantId, $amountPesewas, $providerTransactionId, $provider, $currency): StoreOrder {
+        $this->connectTenantDatabase($tenantId);
+
+        return DB::connection('tenant')->transaction(function () use ($orderId, $tenantId, $amountPesewas, $providerTransactionId, $provider, $currency): StoreOrder {
             /** @var StoreOrder $order */
             $order = StoreOrder::withoutGlobalScopes()
                 ->where('id', $orderId)
@@ -525,7 +532,9 @@ final class PaymentFulfillmentService
             throw new DomainException('Invalid metadata for platform credit purchase.');
         }
 
-        return DB::transaction(function () use ($packageId, $purchaseId, $tenantId, $amountPesewas, $providerTransactionId, $provider, $currency): PlatformCreditPurchase {
+        $this->connectTenantDatabase($tenantId);
+
+        return DB::connection('tenant')->transaction(function () use ($packageId, $purchaseId, $tenantId, $amountPesewas, $providerTransactionId, $provider, $currency): PlatformCreditPurchase {
             /** @var PlatformCreditPackage $package */
             $package = PlatformCreditPackage::findOrFail($packageId);
 
@@ -637,5 +646,31 @@ final class PaymentFulfillmentService
 
             return $record;
         });
+    }
+
+    /**
+     * Point the `tenant` connection at the tenant that owns the payment.
+     *
+     * Webhooks and gateway callbacks arrive without a resolved tenant, so the
+     * tenant connection is unconfigured (or still pointing at another tenant's
+     * database). The tenant id comes from gateway-signed metadata. If a tenant is
+     * already active in this request it must be the same one.
+     */
+    private function connectTenantDatabase(string $tenantId): void
+    {
+        $context = app(TenantContext::class);
+        $activeTenantId = $context->activeTenantId();
+
+        if ($activeTenantId && (string) $activeTenantId !== $tenantId) {
+            throw new DomainException('Tenant mismatch: the active tenant does not match the tenant that owns this payment.');
+        }
+
+        $tenant = Tenant::query()->find($tenantId);
+
+        if (! $tenant instanceof Tenant) {
+            throw new DomainException("Unknown tenant {$tenantId} for payment fulfillment.");
+        }
+
+        app(TenantDatabaseManager::class)->activate($tenant);
     }
 }

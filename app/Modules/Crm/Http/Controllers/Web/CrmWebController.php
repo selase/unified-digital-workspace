@@ -395,7 +395,7 @@ final class CrmWebController extends Controller
         $firstName = $nameParts[0] !== '' ? $nameParts[0] : 'Client';
         $lastName = $nameParts[1] ?? 'Account';
 
-        [$account, $contact] = DB::transaction(function () use ($request, $lead, $tenantId, $user, $tenant, $firstName, $lastName): array {
+        [$account, $contact] = DB::connection('tenant')->transaction(function () use ($request, $lead, $tenantId, $user, $tenant, $firstName, $lastName): array {
             $portalUserUuid = null;
             if ($request->boolean('provision_portal_user') && filled($lead->email) && $tenant) {
                 $portalUser = User::query()->firstOrCreate(
@@ -530,7 +530,7 @@ final class CrmWebController extends Controller
             'contact_job_title' => ['nullable', 'string', 'max:120'],
         ]);
 
-        $account = DB::transaction(function () use ($validated, $tenantId, $user): CrmAccount {
+        $account = DB::connection('tenant')->transaction(function () use ($validated, $tenantId, $user): CrmAccount {
             $account = CrmAccount::create([
                 'tenant_id' => $tenantId,
                 'name' => $validated['name'],
@@ -665,7 +665,7 @@ final class CrmWebController extends Controller
 
         $isPrimary = (bool) ($validated['is_primary'] ?? false);
 
-        DB::transaction(function () use ($account, $validated, $tenantId, $user, $isPrimary): void {
+        DB::connection('tenant')->transaction(function () use ($account, $validated, $tenantId, $user, $isPrimary): void {
             if ($isPrimary) {
                 CrmContact::where('account_id', $account->id)->update(['is_primary' => false]);
             }
@@ -732,7 +732,7 @@ final class CrmWebController extends Controller
 
         $isPrimary = (bool) ($validated['is_primary'] ?? false);
 
-        DB::transaction(function () use ($contact, $validated, $tenantId, $user, $isPrimary): void {
+        DB::connection('tenant')->transaction(function () use ($contact, $validated, $tenantId, $user, $isPrimary): void {
             if ($isPrimary && ! $contact->is_primary && $contact->account_id) {
                 CrmContact::where('account_id', $contact->account_id)
                     ->where('id', '!=', $contact->id)

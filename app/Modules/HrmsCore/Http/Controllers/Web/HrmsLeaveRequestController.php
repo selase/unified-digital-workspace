@@ -136,7 +136,7 @@ final class HrmsLeaveRequestController extends Controller
             }
         }
 
-        $createdLeave = \Illuminate\Support\Facades\DB::transaction(function () use (
+        $createdLeave = \Illuminate\Support\Facades\DB::connection('tenant')->transaction(function () use (
             $daysByYear,
             $employee,
             $validated,
@@ -223,7 +223,7 @@ final class HrmsLeaveRequestController extends Controller
             $daysByYear = [(int) $startDate->year => (float) $leaveRequest->no_requested_days];
         }
 
-        \Illuminate\Support\Facades\DB::transaction(function () use ($leaveRequest, $comments, $daysByYear): void {
+        \Illuminate\Support\Facades\DB::connection('tenant')->transaction(function () use ($leaveRequest, $comments, $daysByYear): void {
             $leaveRequest->update([
                 'status' => LeaveStatus::Approved,
                 'approved_start_date' => $leaveRequest->proposed_start_date,
@@ -284,7 +284,7 @@ final class HrmsLeaveRequestController extends Controller
             $daysByYear = [(int) $startDate->year => (float) $leaveRequest->no_requested_days];
         }
 
-        \Illuminate\Support\Facades\DB::transaction(function () use ($leaveRequest, $comments, $daysByYear): void {
+        \Illuminate\Support\Facades\DB::connection('tenant')->transaction(function () use ($leaveRequest, $comments, $daysByYear): void {
             $leaveRequest->update([
                 'status' => LeaveStatus::Rejected,
                 'hod_comments' => $comments,

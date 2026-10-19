@@ -90,7 +90,7 @@ final class DocumentWebController extends Controller
 
         $initialStatus = $validated['status'] ?? Document::STATUS_DRAFT;
 
-        $document = DB::transaction(function () use ($validated, $tenantId, $user, $request, $initialStatus): Document {
+        $document = DB::connection('tenant')->transaction(function () use ($validated, $tenantId, $user, $request, $initialStatus): Document {
             $document = Document::create([
                 'tenant_id' => $tenantId,
                 'title' => $validated['title'],
@@ -436,7 +436,7 @@ final class DocumentWebController extends Controller
 
         $this->ensureVisible($document, (string) $user->uuid);
 
-        DB::transaction(function () use ($document, $user): void {
+        DB::connection('tenant')->transaction(function () use ($document, $user): void {
             if ($document->supersedes_id) {
                 $superseded = Document::query()->find($document->supersedes_id);
                 if ($superseded) {
@@ -671,7 +671,7 @@ final class DocumentWebController extends Controller
             'questions.*.points' => ['nullable', 'integer', 'min:1'],
         ]);
 
-        DB::transaction(function () use ($document, $validated, $user): void {
+        DB::connection('tenant')->transaction(function () use ($document, $validated, $user): void {
             $quiz = DocumentQuiz::create([
                 'tenant_id' => $document->tenant_id,
                 'document_id' => $document->id,

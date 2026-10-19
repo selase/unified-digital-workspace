@@ -238,7 +238,7 @@ final class HrmsAppraisalWebController extends Controller
         /** @var array<string, mixed> $validated */
         $validated = $request->validated();
 
-        DB::transaction(function () use ($validated, $tenantId, $request): void {
+        DB::connection('tenant')->transaction(function () use ($validated, $tenantId, $request): void {
             $name = (string) $validated['name'];
 
             $period = AppraisalPeriod::query()->create([

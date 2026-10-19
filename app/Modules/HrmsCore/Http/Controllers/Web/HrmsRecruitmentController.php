@@ -357,7 +357,7 @@ final class HrmsRecruitmentController extends Controller
 
         $validated = $request->validated();
 
-        DB::transaction(function () use ($validated, $posting, $tenantId): void {
+        DB::connection('tenant')->transaction(function () use ($validated, $posting, $tenantId): void {
             if (! empty($validated['candidate_id'])) {
                 $candidate = Candidate::query()
                     ->where('tenant_id', $tenantId)
@@ -451,7 +451,7 @@ final class HrmsRecruitmentController extends Controller
 
         $employeeId = $this->resolveCurrentEmployeeId($request, $tenantId);
 
-        DB::transaction(function () use ($application, $targetStatus, $validated, $request, $employeeId, $tenantId): void {
+        DB::connection('tenant')->transaction(function () use ($application, $targetStatus, $validated, $request, $employeeId, $tenantId): void {
             $updates = [
                 'status' => $targetStatus,
             ];
@@ -501,7 +501,7 @@ final class HrmsRecruitmentController extends Controller
 
         $posting = $application->posting;
 
-        DB::transaction(function () use ($application, $posting): void {
+        DB::connection('tenant')->transaction(function () use ($application, $posting): void {
             $application->delete();
 
             if ($posting !== null && $posting->applications_count > 0) {
@@ -526,7 +526,7 @@ final class HrmsRecruitmentController extends Controller
             ]);
         }
 
-        DB::transaction(function () use ($application, $validated, $request, $tenantId): void {
+        DB::connection('tenant')->transaction(function () use ($application, $validated, $request, $tenantId): void {
             Interview::create([
                 'tenant_id' => $tenantId,
                 'application_id' => $application->id,
@@ -627,7 +627,7 @@ final class HrmsRecruitmentController extends Controller
             ]);
         }
 
-        DB::transaction(function () use ($application, $validated, $tenantId): void {
+        DB::connection('tenant')->transaction(function () use ($application, $validated, $tenantId): void {
             $existingOffer = JobOffer::query()
                 ->where('tenant_id', $tenantId)
                 ->where('application_id', $application->id)
@@ -720,7 +720,7 @@ final class HrmsRecruitmentController extends Controller
             ]);
         }
 
-        DB::transaction(function () use ($offer, $decision, $feedback, $request, $tenantId): void {
+        DB::connection('tenant')->transaction(function () use ($offer, $decision, $feedback, $request, $tenantId): void {
             if ($decision === 'accept') {
                 $offer->accept($feedback);
 

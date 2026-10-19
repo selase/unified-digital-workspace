@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Modules\WorkflowAutomation\Services;
 
+use App\Models\Tenant;
 use App\Models\User;
 use App\Modules\WorkflowAutomation\Models\WorkflowExecutionLog;
 use App\Modules\WorkflowAutomation\Models\WorkflowRule;
 use App\Notifications\InstitutionalWorkflowAlert;
+use App\Services\Tenancy\TenantDatabaseManager;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Throwable;
@@ -24,6 +26,18 @@ final class WorkflowEngineService
      */
     public function trigger(string $tenantId, string $event, array $payload, int $depth = 1): array
     {
+        if ($depth === 1) {
+            $tenant = Tenant::query()->find($tenantId);
+
+            if (! $tenant instanceof Tenant) {
+                Log::warning("Workflow event [{$event}] ignored: unknown tenant [{$tenantId}].");
+
+                return [];
+            }
+
+            app(TenantDatabaseManager::class)->activate($tenant);
+        }
+
         // 1. Recursion Circuit Breaker
         if ($depth > self::MAX_CHAIN_DEPTH) {
             Log::warning("Workflow recursion circuit breaker tripped for tenant [{$tenantId}] on event [{$event}] at depth [{$depth}].");
