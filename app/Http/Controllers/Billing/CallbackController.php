@@ -52,9 +52,10 @@ final class CallbackController extends Controller
                 $amount = (int) data_get($result, 'amount', 0);
                 $txId = (string) (data_get($result, 'transaction_id') ?? $reference);
                 $provider = (string) config('services.payment.default', 'paystack');
+                $currency = mb_strtoupper((string) (data_get($result, 'currency') ?? data_get($metadata, 'currency') ?? 'GHS'));
 
                 if ($type === 'real_estate_installment') {
-                    $fulfillmentService->fulfillRealEstateInstallment($metadata, $amount, $txId, $provider);
+                    $fulfillmentService->fulfillRealEstateInstallment($metadata, $amount, $txId, $provider, $currency);
 
                     return redirect()->route('real-estate.portal.index')
                         ->with('status', 'success')
@@ -62,7 +63,7 @@ final class CallbackController extends Controller
                 }
 
                 if ($type === 'escrow_funding') {
-                    $fulfillmentService->fulfillEscrowFunding($metadata, $amount, $txId, $provider);
+                    $fulfillmentService->fulfillEscrowFunding($metadata, $amount, $txId, $provider, $currency);
 
                     return redirect()->route('vendor-marketplace.index')
                         ->with('status', 'success')
@@ -70,7 +71,7 @@ final class CallbackController extends Controller
                 }
 
                 if ($type === 'store_order') {
-                    $fulfillmentService->fulfillStoreOrder($metadata, $amount, $txId, $provider);
+                    $fulfillmentService->fulfillStoreOrder($metadata, $amount, $txId, $provider, $currency);
 
                     return redirect()->route('store.orders')
                         ->with('status', 'success')
@@ -78,7 +79,7 @@ final class CallbackController extends Controller
                 }
 
                 if ($type === 'platform_credit_purchase') {
-                    $fulfillmentService->fulfillPlatformCreditPurchase($metadata, $amount, $txId, $provider);
+                    $fulfillmentService->fulfillPlatformCreditPurchase($metadata, $amount, $txId, $provider, $currency);
 
                     return redirect()->route('store.platform')
                         ->with('status', 'success')

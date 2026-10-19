@@ -10,6 +10,18 @@ use App\Traits\HasUuid;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property int $id
+ * @property string $uuid
+ * @property string $tenant_id
+ * @property string $category
+ * @property string $label
+ * @property int $tenant_commission_bps
+ * @property int $platform_commission_bps
+ * @property bool $is_active
+ * @property string|null $approved_by_id
+ * @property \Illuminate\Support\Carbon|null $approved_at
+ */
 final class CommissionRateCard extends Model
 {
     use BelongsToTenant;

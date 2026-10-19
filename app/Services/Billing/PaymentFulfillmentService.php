@@ -204,7 +204,8 @@ final class PaymentFulfillmentService
         array $metadata,
         int $amountPesewas,
         string $providerTransactionId,
-        string $provider = 'paystack'
+        string $provider = 'paystack',
+        string $currency = 'GHS'
     ): InstallmentSchedule {
         $installmentId = $metadata['installment_id'] ?? null;
         $tenantId = (string) ($metadata['tenant_id'] ?? '');
@@ -213,7 +214,15 @@ final class PaymentFulfillmentService
             throw new DomainException('Invalid metadata for real estate installment payment.');
         }
 
-        return DB::transaction(function () use ($installmentId, $tenantId, $amountPesewas, $providerTransactionId): InstallmentSchedule {
+        if (mb_strtoupper($currency) !== 'GHS') {
+            throw new DomainException("Currency mismatch for installment payment: expected GHS, received {$currency}.");
+        }
+
+        $isOverpayment = false;
+        /** @var InstallmentSchedule|null $overpaymentInstallment */
+        $overpaymentInstallment = null;
+
+        $result = DB::transaction(function () use ($installmentId, $tenantId, $amountPesewas, $providerTransactionId, $provider, $currency, &$isOverpayment, &$overpaymentInstallment): ?InstallmentSchedule {
             /** @var InstallmentSchedule $installment */
             $installment = InstallmentSchedule::withoutGlobalScopes()
                 ->where('id', $installmentId)
@@ -241,6 +250,14 @@ final class PaymentFulfillmentService
             $alreadyPaid = (int) $installment->amount_paid_pesewas;
             $remainingDue = max(0, $due - $alreadyPaid);
 
+            // Rejection of second payment when nothing remains due / already paid -> record for refund
+            if ($remainingDue === 0 || $installment->status === 'paid') {
+                $isOverpayment = true;
+                $overpaymentInstallment = $installment;
+
+                return null;
+            }
+
             // Amount verification: reject underpayment
             if ($amountPesewas < $remainingDue) {
                 throw new DomainException("Underpayment detected: paid {$amountPesewas} pesewas, but {$remainingDue} pesewas was due.");
@@ -265,10 +282,64 @@ final class PaymentFulfillmentService
                 }
             }
 
+            // Create Transaction ledger row
+            Transaction::firstOrCreate(
+                [
+                    'tenant_id' => $tenantId,
+                    'provider' => $provider,
+                    'provider_transaction_id' => $providerTransactionId,
+                ],
+                [
+                    'amount' => $amountPesewas,
+                    'currency' => $currency,
+                    'status' => 'success',
+                    'type' => 'real_estate_installment',
+                    'meta' => [
+                        'installment_id' => $installment->id,
+                        'allocation_id' => $installment->client_plot_allocation_id,
+                        'installment_number' => $installment->installment_number,
+                    ],
+                ]
+            );
+
             Log::info("Fulfilled real estate installment {$installment->id} via {$providerTransactionId}.");
 
             return $installment->fresh() ?? $installment;
         });
+
+        if ($isOverpayment && $overpaymentInstallment) {
+            Transaction::firstOrCreate(
+                [
+                    'tenant_id' => $tenantId,
+                    'provider' => $provider,
+                    'provider_transaction_id' => $providerTransactionId,
+                ],
+                [
+                    'amount' => $amountPesewas,
+                    'currency' => $currency,
+                    'status' => 'refund_pending',
+                    'type' => 'real_estate_installment_refund',
+                    'meta' => [
+                        'reason' => 'Installment already fully paid - duplicate payment flagged for refund',
+                        'installment_id' => $overpaymentInstallment->id,
+                        'allocation_id' => $overpaymentInstallment->client_plot_allocation_id,
+                    ],
+                ]
+            );
+
+            activity('real_estate')
+                ->performedOn($overpaymentInstallment)
+                ->withProperties([
+                    'provider_transaction_id' => $providerTransactionId,
+                    'amount_pesewas' => $amountPesewas,
+                    'status' => 'refund_pending',
+                ])
+                ->log('installment_overpayment_rejected_for_refund');
+
+            throw new DomainException("Installment {$overpaymentInstallment->id} is already fully paid. Payment {$providerTransactionId} has been rejected and recorded for refund.");
+        }
+
+        return $result ?? InstallmentSchedule::withoutGlobalScopes()->where('id', $installmentId)->firstOrFail();
     }
 
     /**
@@ -280,7 +351,8 @@ final class PaymentFulfillmentService
         array $metadata,
         int $amountPesewas,
         string $providerTransactionId,
-        string $provider = 'paystack'
+        string $provider = 'paystack',
+        string $currency = 'GHS'
     ): EscrowAccount {
         $proformaId = $metadata['proforma_id'] ?? null;
         $tenantId = (string) ($metadata['tenant_id'] ?? '');
@@ -290,7 +362,7 @@ final class PaymentFulfillmentService
             throw new DomainException('Invalid metadata for escrow funding.');
         }
 
-        return DB::transaction(function () use ($proformaId, $tenantId, $userUuid, $amountPesewas, $providerTransactionId): EscrowAccount {
+        return DB::transaction(function () use ($proformaId, $tenantId, $userUuid, $amountPesewas, $providerTransactionId, $provider, $currency): EscrowAccount {
             /** @var ProformaInvoice $proforma */
             $proforma = ProformaInvoice::withoutGlobalScopes()
                 ->where('id', $proformaId)
@@ -307,6 +379,12 @@ final class PaymentFulfillmentService
                 throw new DomainException('Cross-tenant violation: active tenant does not match proforma tenant.');
             }
 
+            // Currency verification
+            $expectedCurrency = mb_strtoupper((string) ($proforma->currency ?: 'GHS'));
+            if (mb_strtoupper($currency) !== $expectedCurrency) {
+                throw new DomainException("Currency mismatch for escrow funding: expected {$expectedCurrency}, received {$currency}.");
+            }
+
             // Amount verification
             if ($amountPesewas < (int) $proforma->gross_amount_pesewas) {
                 throw new DomainException("Underpayment detected: paid {$amountPesewas} pesewas, but {$proforma->gross_amount_pesewas} pesewas was due.");
@@ -318,6 +396,26 @@ final class PaymentFulfillmentService
                 $proforma,
                 $userUuid ?: ($proforma->client_id ?? 'system'),
                 $idempotencyKey
+            );
+
+            // Create Transaction ledger row
+            Transaction::firstOrCreate(
+                [
+                    'tenant_id' => $tenantId,
+                    'provider' => $provider,
+                    'provider_transaction_id' => $providerTransactionId,
+                ],
+                [
+                    'amount' => $amountPesewas,
+                    'currency' => $currency,
+                    'status' => 'success',
+                    'type' => 'escrow_funding',
+                    'meta' => [
+                        'proforma_id' => $proforma->id,
+                        'invoice_number' => $proforma->invoice_number,
+                        'escrow_account_id' => $escrow->id,
+                    ],
+                ]
             );
 
             Log::info("Fulfilled escrow funding for proforma {$proforma->id} via {$providerTransactionId}.");
@@ -335,7 +433,8 @@ final class PaymentFulfillmentService
         array $metadata,
         int $amountPesewas,
         string $providerTransactionId,
-        string $provider = 'paystack'
+        string $provider = 'paystack',
+        string $currency = 'GHS'
     ): StoreOrder {
         $orderId = $metadata['order_id'] ?? null;
         $tenantId = (string) ($metadata['tenant_id'] ?? '');
@@ -344,7 +443,7 @@ final class PaymentFulfillmentService
             throw new DomainException('Invalid metadata for store order.');
         }
 
-        return DB::transaction(function () use ($orderId, $tenantId, $amountPesewas, $providerTransactionId): StoreOrder {
+        return DB::transaction(function () use ($orderId, $tenantId, $amountPesewas, $providerTransactionId, $provider, $currency): StoreOrder {
             /** @var StoreOrder $order */
             $order = StoreOrder::withoutGlobalScopes()
                 ->where('id', $orderId)
@@ -361,6 +460,12 @@ final class PaymentFulfillmentService
                 throw new DomainException('Cross-tenant violation: active tenant does not match store order tenant.');
             }
 
+            // Currency verification
+            $expectedCurrency = mb_strtoupper((string) ($order->currency ?: 'GHS'));
+            if (mb_strtoupper($currency) !== $expectedCurrency) {
+                throw new DomainException("Currency mismatch for store order: expected {$expectedCurrency}, received {$currency}.");
+            }
+
             // Idempotency check
             if ($order->status === 'paid' && $order->payment_reference === $providerTransactionId) {
                 Log::info("Store order {$order->id} already fulfilled via {$providerTransactionId} (idempotent skip).");
@@ -374,6 +479,25 @@ final class PaymentFulfillmentService
             }
 
             $fulfilledOrder = $this->storeInventoryService->confirmPayment($order, $providerTransactionId);
+
+            // Create Transaction ledger row
+            Transaction::firstOrCreate(
+                [
+                    'tenant_id' => $tenantId,
+                    'provider' => $provider,
+                    'provider_transaction_id' => $providerTransactionId,
+                ],
+                [
+                    'amount' => $amountPesewas,
+                    'currency' => $currency,
+                    'status' => 'success',
+                    'type' => 'store_order',
+                    'meta' => [
+                        'order_id' => $order->id,
+                        'order_number' => $order->order_number,
+                    ],
+                ]
+            );
 
             Log::info("Fulfilled store order {$order->id} via {$providerTransactionId}.");
 
@@ -390,7 +514,8 @@ final class PaymentFulfillmentService
         array $metadata,
         int $amountPesewas,
         string $providerTransactionId,
-        string $provider = 'paystack'
+        string $provider = 'paystack',
+        string $currency = 'GHS'
     ): PlatformCreditPurchase {
         $packageId = $metadata['package_id'] ?? null;
         $purchaseId = $metadata['purchase_id'] ?? null;
@@ -400,7 +525,7 @@ final class PaymentFulfillmentService
             throw new DomainException('Invalid metadata for platform credit purchase.');
         }
 
-        return DB::transaction(function () use ($packageId, $purchaseId, $tenantId, $amountPesewas, $providerTransactionId): PlatformCreditPurchase {
+        return DB::transaction(function () use ($packageId, $purchaseId, $tenantId, $amountPesewas, $providerTransactionId, $provider, $currency): PlatformCreditPurchase {
             /** @var PlatformCreditPackage $package */
             $package = PlatformCreditPackage::findOrFail($packageId);
 
@@ -420,6 +545,12 @@ final class PaymentFulfillmentService
             $activeTenantId = app(TenantContext::class)->activeTenantId();
             if ($activeTenantId && (string) $activeTenantId !== $tenantId) {
                 throw new DomainException('Cross-tenant violation: active tenant does not match credit purchase tenant.');
+            }
+
+            // Currency verification
+            $expectedCurrency = mb_strtoupper((string) ($package->currency ?: 'GHS'));
+            if (mb_strtoupper($currency) !== $expectedCurrency) {
+                throw new DomainException("Currency mismatch for platform credit purchase: expected {$expectedCurrency}, received {$currency}.");
             }
 
             // Idempotency check: if already fulfilled with this provider transaction id
@@ -481,6 +612,26 @@ final class PaymentFulfillmentService
                     'status' => 'succeeded',
                 ]);
             }
+
+            // Create Transaction ledger row
+            Transaction::firstOrCreate(
+                [
+                    'tenant_id' => $tenantId,
+                    'provider' => $provider,
+                    'provider_transaction_id' => $providerTransactionId,
+                ],
+                [
+                    'amount' => $amountPesewas,
+                    'currency' => $currency,
+                    'status' => 'success',
+                    'type' => 'platform_credit_purchase',
+                    'meta' => [
+                        'package_id' => $package->id,
+                        'credits_awarded' => $package->amount_credits,
+                        'credit_type' => $package->credit_type,
+                    ],
+                ]
+            );
 
             Log::info("Fulfilled platform credit purchase for tenant {$tenantId} via {$providerTransactionId}.");
 

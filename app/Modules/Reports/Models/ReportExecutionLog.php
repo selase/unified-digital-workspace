@@ -5,14 +5,11 @@ declare(strict_types=1);
 namespace App\Modules\Reports\Models;
 
 use App\Models\User;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 final class ReportExecutionLog extends Model
 {
-    use HasFactory;
-
     public $timestamps = false;
 
     protected $fillable = [
@@ -24,11 +21,17 @@ final class ReportExecutionLog extends Model
         'executed_at',
     ];
 
+    /**
+     * @return BelongsTo<ReportDefinition, $this>
+     */
     public function reportDefinition(): BelongsTo
     {
         return $this->belongsTo(ReportDefinition::class, 'report_definition_id');
     }
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id', 'uuid');

@@ -35,14 +35,6 @@ final class EventServiceProvider extends ServiceProvider
         Logout::class => [
             LogoutLogs::class,
         ],
-
-        \Illuminate\Notifications\Events\NotificationSending::class => [
-            [\App\Listeners\NotificationDeliveryCreditListener::class, 'handleSending'],
-        ],
-
-        \Illuminate\Notifications\Events\NotificationSent::class => [
-            [\App\Listeners\NotificationDeliveryCreditListener::class, 'handleSent'],
-        ],
     ];
 
     /**
@@ -60,6 +52,16 @@ final class EventServiceProvider extends ServiceProvider
     public function boot(): void
     {
         parent::boot();
+
+        \Illuminate\Support\Facades\Event::listen(
+            \Illuminate\Notifications\Events\NotificationSending::class,
+            [\App\Listeners\NotificationDeliveryCreditListener::class, 'handleSending']
+        );
+
+        \Illuminate\Support\Facades\Event::listen(
+            \Illuminate\Notifications\Events\NotificationSent::class,
+            [\App\Listeners\NotificationDeliveryCreditListener::class, 'handleSent']
+        );
     }
 
     /**

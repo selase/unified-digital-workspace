@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Modules\Reports\Models;
 
 use App\Models\User;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -26,8 +25,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 final class ReportDefinition extends Model
 {
-    use HasFactory;
-
     protected $fillable = [
         'tenant_id',
         'name',
@@ -40,11 +37,17 @@ final class ReportDefinition extends Model
         'created_by_user_id',
     ];
 
+    /**
+     * @return BelongsTo<User, $this>
+     */
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by_user_id', 'uuid');
     }
 
+    /**
+     * @return HasMany<ReportExecutionLog, $this>
+     */
     public function executionLogs(): HasMany
     {
         return $this->hasMany(ReportExecutionLog::class, 'report_definition_id');

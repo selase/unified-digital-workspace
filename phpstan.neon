@@ -21,14 +21,21 @@ parameters:
         - database/migrations/landlord
         - database/migrations/tenant
         - app/Modules/CmsCore/Database/Migrations
+        - app/Modules/Crm/Database/Migrations
         - app/Modules/DocumentManagement/Database/Migrations
+        - app/Modules/FacilitiesManagement/Database/Migrations
         - app/Modules/Forums/Database/Migrations
         - app/Modules/Forms/Database/Migrations
         - app/Modules/HrmsCore/Database/Migrations
         - app/Modules/IncidentManagement/Database/Migrations
+        - app/Modules/Intranet/Database/Migrations
         - app/Modules/Memos/Database/Migrations
         - app/Modules/ProjectManagement/Database/Migrations
         - app/Modules/QualityMonitoring/Database/Migrations
         - app/Modules/RealEstate/Database/Migrations
+        - app/Modules/Reports/Database/Migrations
+        - app/Modules/Store/Database/Migrations
+        - app/Modules/VendorMarketplace/Database/Migrations
+        - app/Modules/WorkflowAutomation/Database/Migrations
 
     tmpDir: /tmp/phpstan

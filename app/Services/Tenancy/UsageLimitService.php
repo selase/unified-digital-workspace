@@ -9,6 +9,7 @@ use App\Models\Tenant;
 use App\Models\UsageLimit;
 use App\Models\UsageRollup;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 final class UsageLimitService
 {
@@ -81,6 +82,22 @@ final class UsageLimitService
     {
         Log::warning("Usage Alert for Tenant {$tenant->name}: {$limit->metric->value} is at ".round($percent, 2).'% capacity.');
 
-        // TODO: Send Email / Slack Notification
+        try {
+            $notification = new \App\Notifications\UsageLimitAlertNotification($tenant, $limit, $percent);
+
+            // Notify administrators with billing or settings permissions, or first available users
+            $users = $tenant->users()->take(10)->get();
+            $admins = $users->filter(fn (\App\Models\User $user): bool => $user->can('core.billing.manage') || $user->can('core.settings.manage'));
+
+            if ($admins->isEmpty()) {
+                $admins = $users->take(3);
+            }
+
+            foreach ($admins as $admin) {
+                $admin->notify($notification);
+            }
+        } catch (Throwable $e) {
+            Log::warning("Could not dispatch usage limit notification for tenant {$tenant->id}: {$e->getMessage()}");
+        }
     }
 }

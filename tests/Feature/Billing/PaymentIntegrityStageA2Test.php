@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Contracts\PaymentGateway;
 use App\Models\Tenant;
 use App\Models\TenantPaymentGateway;
+use App\Models\Transaction;
 use App\Models\User;
 use App\Modules\RealEstate\Models\ClientPlotAllocation;
 use App\Modules\RealEstate\Models\InstallmentSchedule;
@@ -15,6 +16,7 @@ use App\Modules\Store\Models\PlatformCreditPurchase;
 use App\Modules\Store\Models\StoreOrder;
 use App\Modules\Store\Models\StoreProduct;
 use App\Modules\Store\Models\TenantCreditWallet;
+use App\Modules\Store\Services\StoreInventoryService;
 use App\Modules\VendorMarketplace\Models\EscrowAccount;
 use App\Modules\VendorMarketplace\Models\ProformaInvoice;
 use App\Modules\VendorMarketplace\Models\ServiceJob;
@@ -822,4 +824,334 @@ test('merchant webhook rejects cross-tenant spoofing attempts with 403', functio
     ], (string) $payload);
 
     $response->assertStatus(403);
+});
+
+test('installment rejects second payment with different transaction id when nothing remains due and records for refund', function (): void {
+    $service = app(PaymentFulfillmentService::class);
+
+    $project = RealEstateProject::create([
+        'name' => 'Concurrent Estate Project',
+        'code' => 'CONC-ESTATE',
+        'status' => 'active',
+        'location' => 'Greater Accra',
+        'tenant_id' => (string) $this->tenant->id,
+    ]);
+
+    $parcel = LandParcel::create([
+        'real_estate_project_id' => $project->id,
+        'plot_number' => 'PARCEL-CONC-01',
+        'size_dimension' => '70x100ft',
+        'acreage' => 0.16,
+        'price_pesewas' => 1500000,
+        'tenure_type' => 'PRIVATE',
+        'status' => 'available',
+        'tenant_id' => (string) $this->tenant->id,
+    ]);
+
+    $allocation = ClientPlotAllocation::create([
+        'tenant_id' => (string) $this->tenant->id,
+        'land_parcel_id' => $parcel->id,
+        'client_user_id' => (string) Str::uuid(),
+        'allocation_number' => 'ALLOC-CONC-001',
+        'total_price_pesewas' => 1500000,
+        'amount_paid_pesewas' => 0,
+        'status' => 'active',
+        'allocated_at' => now(),
+    ]);
+
+    $installment = InstallmentSchedule::create([
+        'tenant_id' => (string) $this->tenant->id,
+        'client_plot_allocation_id' => $allocation->id,
+        'installment_number' => 1,
+        'amount_due_pesewas' => 1500000,
+        'amount_paid_pesewas' => 0,
+        'due_date' => now()->addDays(30),
+        'status' => 'pending',
+    ]);
+
+    $metadata = [
+        'type' => 'real_estate_installment',
+        'installment_id' => $installment->id,
+        'allocation_id' => $allocation->id,
+        'tenant_id' => (string) $this->tenant->id,
+    ];
+
+    // 1. Payment 1 completes the installment
+    $service->fulfillRealEstateInstallment($metadata, 1500000, 'tx_conc_001', 'paystack', 'GHS');
+
+    expect($installment->fresh()->status)->toBe('paid')
+        ->and($installment->fresh()->amount_paid_pesewas)->toBe(1500000)
+        ->and($allocation->fresh()->amount_paid_pesewas)->toBe(1500000);
+
+    // 2. Concurrent Payment 2 arrives with a different transaction ID
+    expect(fn () => $service->fulfillRealEstateInstallment($metadata, 1500000, 'tx_conc_002', 'paystack', 'GHS'))
+        ->toThrow(DomainException::class, 'already fully paid');
+
+    // State invariants: NOT over-credited
+    expect($installment->fresh()->amount_paid_pesewas)->toBe(1500000)
+        ->and($allocation->fresh()->amount_paid_pesewas)->toBe(1500000);
+
+    // Transaction ledger: refund record exists for tx_conc_002
+    $refundTx = Transaction::where('provider_transaction_id', 'tx_conc_002')->first();
+    expect($refundTx)->not->toBeNull()
+        ->and($refundTx->status)->toBe('refund_pending')
+        ->and($refundTx->type)->toBe('real_estate_installment_refund');
+});
+
+test('fulfillment handlers reject payments with mismatched currencies', function (): void {
+    $service = app(PaymentFulfillmentService::class);
+
+    // 1. Real estate installment: expects GHS, given USD
+    $metadata = [
+        'type' => 'real_estate_installment',
+        'installment_id' => 9999,
+        'tenant_id' => (string) $this->tenant->id,
+    ];
+    expect(fn () => $service->fulfillRealEstateInstallment($metadata, 100000, 'tx_curr_01', 'paystack', 'USD'))
+        ->toThrow(DomainException::class, 'Currency mismatch');
+
+    // 2. Escrow funding: proforma currency GHS, given EUR
+    $vendor = VendorProfile::create([
+        'user_id' => (string) Str::uuid(),
+        'tenant_id' => (string) $this->tenant->id,
+        'business_name' => 'Currency Plumbing',
+        'code' => 'VEND-CURR-01',
+        'category' => 'plumbing',
+        'status' => 'verified',
+    ]);
+    $job = ServiceJob::create([
+        'tenant_id' => (string) $this->tenant->id,
+        'job_number' => 'JOB-CURR-01',
+        'requester_id' => (string) $this->user->uuid,
+        'source_module' => 'facilities',
+        'category' => 'plumbing',
+        'title' => 'Currency Test Job',
+        'status' => ServiceJob::STATUS_QUOTED,
+    ]);
+    $proforma = ProformaInvoice::create([
+        'tenant_id' => (string) $this->tenant->id,
+        'invoice_number' => 'PI-CURR-01',
+        'service_job_id' => $job->id,
+        'vendor_profile_id' => $vendor->id,
+        'client_id' => (string) $this->user->uuid,
+        'currency' => 'GHS',
+        'gross_amount_pesewas' => 200000,
+        'tenant_commission_bps' => 500,
+        'platform_commission_bps' => 250,
+        'tenant_commission_pesewas' => 10000,
+        'platform_commission_pesewas' => 5000,
+        'net_vendor_payout_pesewas' => 185000,
+        'status' => 'accepted',
+    ]);
+    $escrowMetadata = [
+        'type' => 'escrow_funding',
+        'proforma_id' => $proforma->id,
+        'tenant_id' => (string) $this->tenant->id,
+    ];
+    expect(fn () => $service->fulfillEscrowFunding($escrowMetadata, 200000, 'tx_curr_02', 'paystack', 'EUR'))
+        ->toThrow(DomainException::class, 'Currency mismatch');
+
+    // 3. Store order: order currency GHS, given USD
+    $product = StoreProduct::create([
+        'tenant_id' => (string) $this->tenant->id,
+        'name' => 'Currency Product',
+        'slug' => 'currency-product',
+        'sku' => 'CURR-01',
+        'price_cents' => 1500,
+        'stock_quantity' => 10,
+        'is_active' => true,
+    ]);
+    $inventoryService = app(StoreInventoryService::class);
+    $order = $inventoryService->placeOrder(
+        (string) $this->tenant->id,
+        [
+            'customer_name' => 'Currency Buyer',
+            'customer_email' => 'buyer@curr.test',
+        ],
+        [
+            ['product_id' => $product->id, 'quantity' => 1],
+        ]
+    );
+    $orderMetadata = [
+        'type' => 'store_order',
+        'order_id' => $order->id,
+        'tenant_id' => (string) $this->tenant->id,
+    ];
+    expect(fn () => $service->fulfillStoreOrder($orderMetadata, 1500, 'tx_curr_03', 'paystack', 'USD'))
+        ->toThrow(DomainException::class, 'Currency mismatch');
+
+    // 4. Platform credit purchase: package currency GHS, given USD
+    $package = PlatformCreditPackage::create([
+        'name' => 'Currency Credits',
+        'credit_type' => 'sms',
+        'amount_credits' => 100,
+        'price_cents' => 500,
+        'currency' => 'GHS',
+        'is_active' => true,
+    ]);
+    $creditMetadata = [
+        'type' => 'platform_credit_purchase',
+        'package_id' => $package->id,
+        'tenant_id' => (string) $this->tenant->id,
+    ];
+    expect(fn () => $service->fulfillPlatformCreditPurchase($creditMetadata, 500, 'tx_curr_04', 'stripe', 'USD'))
+        ->toThrow(DomainException::class, 'Currency mismatch');
+});
+
+test('fulfillment handlers create idempotent Transaction ledger rows for all four types', function (): void {
+    $service = app(PaymentFulfillmentService::class);
+
+    // 1. Real Estate Installment
+    $project = RealEstateProject::create([
+        'name' => 'Ledger Project',
+        'code' => 'LEDGER-ESTATE',
+        'status' => 'active',
+        'location' => 'Greater Accra',
+        'tenant_id' => (string) $this->tenant->id,
+    ]);
+    $parcel = LandParcel::create([
+        'real_estate_project_id' => $project->id,
+        'plot_number' => 'PARCEL-LEDGER-01',
+        'size_dimension' => '70x100ft',
+        'acreage' => 0.16,
+        'price_pesewas' => 500000,
+        'tenure_type' => 'PRIVATE',
+        'status' => 'available',
+        'tenant_id' => (string) $this->tenant->id,
+    ]);
+    $allocation = ClientPlotAllocation::create([
+        'tenant_id' => (string) $this->tenant->id,
+        'land_parcel_id' => $parcel->id,
+        'client_user_id' => (string) Str::uuid(),
+        'allocation_number' => 'ALLOC-LEDGER-001',
+        'total_price_pesewas' => 500000,
+        'amount_paid_pesewas' => 0,
+        'status' => 'active',
+        'allocated_at' => now(),
+    ]);
+    $installment = InstallmentSchedule::create([
+        'tenant_id' => (string) $this->tenant->id,
+        'client_plot_allocation_id' => $allocation->id,
+        'installment_number' => 1,
+        'amount_due_pesewas' => 500000,
+        'amount_paid_pesewas' => 0,
+        'due_date' => now()->addDays(30),
+        'status' => 'pending',
+    ]);
+    $service->fulfillRealEstateInstallment([
+        'type' => 'real_estate_installment',
+        'installment_id' => $installment->id,
+        'tenant_id' => (string) $this->tenant->id,
+    ], 500000, 'tx_ledger_estate_01', 'paystack', 'GHS');
+
+    $estateTx = Transaction::where('provider_transaction_id', 'tx_ledger_estate_01')->first();
+    expect($estateTx)->not->toBeNull()
+        ->and($estateTx->status)->toBe('success')
+        ->and($estateTx->type)->toBe('real_estate_installment')
+        ->and($estateTx->amount)->toBe(500000);
+
+    // 2. Escrow Funding
+    $vendor = VendorProfile::create([
+        'user_id' => (string) Str::uuid(),
+        'tenant_id' => (string) $this->tenant->id,
+        'business_name' => 'Ledger Vendor',
+        'code' => 'VEND-LEDGER-01',
+        'category' => 'electrical',
+        'status' => 'verified',
+    ]);
+    $job = ServiceJob::create([
+        'tenant_id' => (string) $this->tenant->id,
+        'job_number' => 'JOB-LEDGER-01',
+        'requester_id' => (string) $this->user->uuid,
+        'source_module' => 'facilities',
+        'category' => 'electrical',
+        'title' => 'Ledger Electrical Job',
+        'status' => ServiceJob::STATUS_QUOTED,
+    ]);
+    $proforma = ProformaInvoice::create([
+        'tenant_id' => (string) $this->tenant->id,
+        'invoice_number' => 'PI-LEDGER-01',
+        'service_job_id' => $job->id,
+        'vendor_profile_id' => $vendor->id,
+        'client_id' => (string) $this->user->uuid,
+        'currency' => 'GHS',
+        'gross_amount_pesewas' => 300000,
+        'tenant_commission_bps' => 500,
+        'platform_commission_bps' => 250,
+        'tenant_commission_pesewas' => 15000,
+        'platform_commission_pesewas' => 7500,
+        'net_vendor_payout_pesewas' => 277500,
+        'status' => 'accepted',
+    ]);
+    $service->fulfillEscrowFunding([
+        'type' => 'escrow_funding',
+        'proforma_id' => $proforma->id,
+        'tenant_id' => (string) $this->tenant->id,
+    ], 300000, 'tx_ledger_escrow_01', 'paystack', 'GHS');
+
+    $escrowTx = Transaction::where('provider_transaction_id', 'tx_ledger_escrow_01')->first();
+    expect($escrowTx)->not->toBeNull()
+        ->and($escrowTx->status)->toBe('success')
+        ->and($escrowTx->type)->toBe('escrow_funding');
+
+    // 3. Store Order
+    $product = StoreProduct::create([
+        'tenant_id' => (string) $this->tenant->id,
+        'name' => 'Ledger Item',
+        'slug' => 'ledger-item',
+        'sku' => 'LEDGER-01',
+        'price_cents' => 2000,
+        'stock_quantity' => 10,
+        'is_active' => true,
+    ]);
+    $inventoryService = app(StoreInventoryService::class);
+    $order = $inventoryService->placeOrder(
+        (string) $this->tenant->id,
+        [
+            'customer_name' => 'Ledger Customer',
+            'customer_email' => 'ledger@test.com',
+        ],
+        [
+            ['product_id' => $product->id, 'quantity' => 1],
+        ]
+    );
+    $service->fulfillStoreOrder([
+        'type' => 'store_order',
+        'order_id' => $order->id,
+        'tenant_id' => (string) $this->tenant->id,
+    ], 2000, 'tx_ledger_order_01', 'paystack', 'GHS');
+
+    $orderTx = Transaction::where('provider_transaction_id', 'tx_ledger_order_01')->first();
+    expect($orderTx)->not->toBeNull()
+        ->and($orderTx->status)->toBe('success')
+        ->and($orderTx->type)->toBe('store_order');
+
+    // 4. Platform Credit Purchase
+    $package = PlatformCreditPackage::create([
+        'name' => 'Ledger Credits',
+        'credit_type' => 'email',
+        'amount_credits' => 500,
+        'price_cents' => 1000,
+        'currency' => 'GHS',
+        'is_active' => true,
+    ]);
+    $service->fulfillPlatformCreditPurchase([
+        'type' => 'platform_credit_purchase',
+        'package_id' => $package->id,
+        'tenant_id' => (string) $this->tenant->id,
+    ], 1000, 'tx_ledger_credit_01', 'stripe', 'GHS');
+
+    $creditTx = Transaction::where('provider_transaction_id', 'tx_ledger_credit_01')->first();
+    expect($creditTx)->not->toBeNull()
+        ->and($creditTx->status)->toBe('success')
+        ->and($creditTx->type)->toBe('platform_credit_purchase');
+
+    // 5. Assert idempotency on replay
+    $service->fulfillPlatformCreditPurchase([
+        'type' => 'platform_credit_purchase',
+        'package_id' => $package->id,
+        'tenant_id' => (string) $this->tenant->id,
+    ], 1000, 'tx_ledger_credit_01', 'stripe', 'GHS');
+
+    expect(Transaction::where('provider_transaction_id', 'tx_ledger_credit_01')->count())->toBe(1);
 });

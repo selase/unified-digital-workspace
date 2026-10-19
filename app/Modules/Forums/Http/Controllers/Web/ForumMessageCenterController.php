@@ -20,7 +20,7 @@ final class ForumMessageCenterController extends Controller
         abort_if(! $request->user()?->can('forums.view'), 403);
 
         $search = mb_trim((string) $request->string('search'));
-        $userUuid = (string) $request->user()?->uuid;
+        $userUuid = (string) $request->user()->uuid;
 
         $messages = ForumMessage::query()
             ->with(['sender:uuid,first_name,last_name,email'])
@@ -56,7 +56,7 @@ final class ForumMessageCenterController extends Controller
     {
         abort_if(! $request->user()?->can('forums.messages.send'), 403);
 
-        $userUuid = (string) $request->user()?->uuid;
+        $userUuid = (string) $request->user()->uuid;
         $users = User::query()
             ->where('uuid', '!=', $userUuid)
             ->orderBy('first_name')

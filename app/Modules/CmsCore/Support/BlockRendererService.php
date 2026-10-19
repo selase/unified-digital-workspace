@@ -106,7 +106,6 @@ final class BlockRendererService
                     'title' => self::stripMaliciousTags((string) ($data['title'] ?? 'Available Properties')),
                     'limit' => min(20, max(1, (int) ($data['limit'] ?? 6))),
                 ],
-                default => [],
             };
 
             $sanitized[] = [

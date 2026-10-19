@@ -23,6 +23,10 @@ final class NotificationDeliveryCreditListener
      */
     public function handleSending(NotificationSending $event): bool
     {
+        if ($this->isExemptNotification($event->notification)) {
+            return true;
+        }
+
         $creditType = $this->resolveCreditTypeForChannel($event->channel);
         if ($creditType === null) {
             return true;
@@ -52,6 +56,10 @@ final class NotificationDeliveryCreditListener
      */
     public function handleSent(NotificationSent $event): void
     {
+        if ($this->isExemptNotification($event->notification)) {
+            return;
+        }
+
         $creditType = $this->resolveCreditTypeForChannel($event->channel);
         if ($creditType === null) {
             return;
@@ -70,6 +78,37 @@ final class NotificationDeliveryCreditListener
             $this->creditService->consumeCredit($tenantId, $creditType, 1);
             Log::info("Consumed 1 [{$creditType}] credit for tenant [{$tenantId}] on confirmed delivery.");
         }
+    }
+
+    /**
+     * Determine if a notification is an exempt system transactional message.
+     * System emails (password reset, email verification, invoices, invitations)
+     * are never blocked by credit limits and do not consume tenant email credits.
+     */
+    private function isExemptNotification(mixed $notification): bool
+    {
+        if (! is_object($notification)) {
+            return false;
+        }
+
+        $class = get_class($notification);
+
+        $exemptClasses = [
+            \Illuminate\Auth\Notifications\ResetPassword::class,
+            \Illuminate\Auth\Notifications\VerifyEmail::class,
+            \App\Notifications\InvoiceIssued::class,
+        ];
+
+        if (in_array($class, $exemptClasses, true)) {
+            return true;
+        }
+
+        $lower = mb_strtolower($class);
+
+        return str_contains($lower, 'password')
+            || str_contains($lower, 'verifyemail')
+            || str_contains($lower, 'invitation')
+            || str_contains($lower, 'invoice');
     }
 
     private function resolveCreditTypeForChannel(string $channel): ?string

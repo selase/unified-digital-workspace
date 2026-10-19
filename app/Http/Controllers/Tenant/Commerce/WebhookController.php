@@ -57,14 +57,16 @@ final class WebhookController extends Controller
                     return response()->json(['error' => 'Tenant mismatch'], 403);
                 }
 
+                $currency = mb_strtoupper((string) ($session->currency ?? $metadata['currency'] ?? 'USD'));
+
                 if ($type === 'real_estate_installment') {
-                    $fulfillmentService->fulfillRealEstateInstallment($metadata, $amount, $txId, 'stripe');
+                    $fulfillmentService->fulfillRealEstateInstallment($metadata, $amount, $txId, 'stripe', $currency);
                 } elseif ($type === 'escrow_funding') {
-                    $fulfillmentService->fulfillEscrowFunding($metadata, $amount, $txId, 'stripe');
+                    $fulfillmentService->fulfillEscrowFunding($metadata, $amount, $txId, 'stripe', $currency);
                 } elseif ($type === 'store_order') {
-                    $fulfillmentService->fulfillStoreOrder($metadata, $amount, $txId, 'stripe');
+                    $fulfillmentService->fulfillStoreOrder($metadata, $amount, $txId, 'stripe', $currency);
                 } elseif ($type === 'platform_credit_purchase') {
-                    $fulfillmentService->fulfillPlatformCreditPurchase($metadata, $amount, $txId, 'stripe');
+                    $fulfillmentService->fulfillPlatformCreditPurchase($metadata, $amount, $txId, 'stripe', $currency);
                 }
 
                 $fulfillmentService->recordMerchantTransaction($tenant, 'stripe', $session);
@@ -107,6 +109,7 @@ final class WebhookController extends Controller
             $type = $metadata['type'] ?? null;
             $amount = (int) ($data['amount'] ?? 0);
             $txId = (string) ($data['reference'] ?? '');
+            $currency = mb_strtoupper((string) ($data['currency'] ?? $metadata['currency'] ?? 'GHS'));
 
             if (isset($metadata['tenant_id']) && (string) $metadata['tenant_id'] !== (string) $tenant->id) {
                 Log::warning('Merchant Paystack webhook tenant mismatch', ['tenant' => $tenant->id, 'metadata' => $metadata]);
@@ -115,13 +118,13 @@ final class WebhookController extends Controller
             }
 
             if ($type === 'real_estate_installment') {
-                $fulfillmentService->fulfillRealEstateInstallment($metadata, $amount, $txId, 'paystack');
+                $fulfillmentService->fulfillRealEstateInstallment($metadata, $amount, $txId, 'paystack', $currency);
             } elseif ($type === 'escrow_funding') {
-                $fulfillmentService->fulfillEscrowFunding($metadata, $amount, $txId, 'paystack');
+                $fulfillmentService->fulfillEscrowFunding($metadata, $amount, $txId, 'paystack', $currency);
             } elseif ($type === 'store_order') {
-                $fulfillmentService->fulfillStoreOrder($metadata, $amount, $txId, 'paystack');
+                $fulfillmentService->fulfillStoreOrder($metadata, $amount, $txId, 'paystack', $currency);
             } elseif ($type === 'platform_credit_purchase') {
-                $fulfillmentService->fulfillPlatformCreditPurchase($metadata, $amount, $txId, 'paystack');
+                $fulfillmentService->fulfillPlatformCreditPurchase($metadata, $amount, $txId, 'paystack', $currency);
             }
 
             $fulfillmentService->recordMerchantTransaction($tenant, 'paystack', (array) $data);

@@ -242,7 +242,9 @@ final class Post extends Model
 
     public function hasBlocks(): bool
     {
-        return ! empty($this->blocks_json) && is_array($this->blocks_json);
+        $blocks = is_string($this->blocks_json) ? json_decode($this->blocks_json, true) : $this->blocks_json;
+
+        return is_array($blocks) && $blocks !== [];
     }
 
     /**

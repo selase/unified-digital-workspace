@@ -173,11 +173,13 @@ final class OrgPermissionResolver
                     })
                     ->get(['role_id', 'role_name']);
 
+                /** @var list<string> $rolePermissions */
                 $rolePermissions = [];
                 if ($roleAssignments->isNotEmpty()) {
                     $roleIds = $roleAssignments->pluck('role_id')->filter()->values()->all();
                     $roleNames = $roleAssignments->pluck('role_name')->filter()->values()->all();
 
+                    /** @var \Illuminate\Database\Eloquent\Collection<int, Role> $roles */
                     $roles = Role::query()
                         ->where('name', '!=', 'Superadmin')
                         ->where(function ($q) use ($tenant): void {
@@ -196,13 +198,24 @@ final class OrgPermissionResolver
                         ->get();
 
                     foreach ($roles as $role) {
+                        /** @var \Illuminate\Database\Eloquent\Model $permission */
                         foreach ($role->permissions as $permission) {
-                            $rolePermissions[] = $permission->name;
+                            $permName = (string) $permission->getAttribute('name');
+                            if ($permName !== '') {
+                                $rolePermissions[] = $permName;
+                            }
                         }
                     }
                 }
 
-                $allCandidatePermissions = array_values(array_unique(array_merge($directPermissions, $rolePermissions)));
+                /** @var list<string> $directPermStrings */
+                $directPermStrings = array_values(array_filter(
+                    $directPermissions,
+                    fn (mixed $item): bool => is_string($item) && $item !== ''
+                ));
+
+                /** @var list<string> $allCandidatePermissions */
+                $allCandidatePermissions = array_values(array_unique(array_merge($directPermStrings, $rolePermissions)));
 
                 return array_values(array_filter(
                     $allCandidatePermissions,

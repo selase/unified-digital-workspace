@@ -77,4 +77,43 @@ describe('P1-3: Platform Credit Consumption & Quota Listeners Test', function ()
         // Next pre-flight check with 0 credits -> blocked (returns false)
         expect($listener->handleSending($sendingEvent))->toBeFalse();
     });
+
+    test('system emails such as password reset and email verification are exempt from credit quotas even at zero balance', function () {
+        $tenant = Tenant::factory()->create();
+        $user = User::factory()->create(['tenant_id' => $tenant->id]);
+
+        $wallet = TenantCreditWallet::create([
+            'tenant_id' => $tenant->id,
+            'credit_type' => 'email',
+            'balance' => 0,
+            'total_purchased' => 0,
+            'total_consumed' => 0,
+        ]);
+
+        $listener = app(NotificationDeliveryCreditListener::class);
+
+        $resetPasswordNotification = new Illuminate\Auth\Notifications\ResetPassword('token-123');
+        $verifyEmailNotification = new Illuminate\Auth\Notifications\VerifyEmail();
+
+        // Password reset is allowed despite 0 balance
+        $sendingReset = new NotificationSending($user, $resetPasswordNotification, 'mail');
+        expect($listener->handleSending($sendingReset))->toBeTrue();
+
+        // Successful sent does not decrement wallet or consume credit
+        $sentReset = new NotificationSent($user, $resetPasswordNotification, 'mail', null);
+        $listener->handleSent($sentReset);
+        $wallet->refresh();
+        expect($wallet->balance)->toBe(0)
+            ->and($wallet->total_consumed)->toBe(0);
+
+        // Verification email is allowed despite 0 balance
+        $sendingVerify = new NotificationSending($user, $verifyEmailNotification, 'mail');
+        expect($listener->handleSending($sendingVerify))->toBeTrue();
+
+        $sentVerify = new NotificationSent($user, $verifyEmailNotification, 'mail', null);
+        $listener->handleSent($sentVerify);
+        $wallet->refresh();
+        expect($wallet->balance)->toBe(0)
+            ->and($wallet->total_consumed)->toBe(0);
+    });
 });

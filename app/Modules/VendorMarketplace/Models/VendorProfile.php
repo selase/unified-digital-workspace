@@ -12,6 +12,20 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
+/**
+ * @property int $id
+ * @property string $uuid
+ * @property string $tenant_id
+ * @property string $user_id
+ * @property string $business_name
+ * @property string $code
+ * @property string $category
+ * @property string|null $license_number
+ * @property string|null $phone
+ * @property string|null $email
+ * @property string $status
+ * @property float $rating
+ */
 final class VendorProfile extends Model
 {
     use BelongsToTenant;

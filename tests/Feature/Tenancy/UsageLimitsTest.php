@@ -99,3 +99,49 @@ test('it triggers alerts when threshold reached', function () {
             return str_contains($message, 'Usage Alert for Tenant') && str_contains($message, '80% capacity');
         });
 });
+
+test('it dispatches UsageLimitAlertNotification to tenant admins when alert threshold reached', function () {
+    Illuminate\Support\Facades\Notification::fake();
+
+    $user = App\Models\User::factory()->create(['tenant_id' => $this->tenant->id]);
+    $this->tenant->users()->attach($user->id);
+
+    UsageLimit::create([
+        'tenant_id' => $this->tenant->id,
+        'metric' => UsageMetric::REQUEST_COUNT,
+        'limit_value' => 1000,
+        'alert_threshold' => 75,
+    ]);
+
+    $this->service->evaluateAlerts($this->tenant);
+
+    Illuminate\Support\Facades\Notification::assertSentTo(
+        $user,
+        App\Notifications\UsageLimitAlertNotification::class,
+        function ($notification) {
+            return $notification->percent >= 80.0;
+        }
+    );
+});
+
+test('WebhookEventSubscriber dispatches SendWebhookJob on user.created event', function () {
+    Illuminate\Support\Facades\Queue::fake();
+
+    $endpoint = App\Models\WebhookEndpoint::create([
+        'tenant_id' => (string) $this->tenant->id,
+        'url' => 'https://example.com/webhook',
+        'secret' => 'whsec_test',
+        'events' => ['user.created'],
+        'is_active' => true,
+    ]);
+
+    $user = App\Models\User::factory()->create(['tenant_id' => $this->tenant->id]);
+
+    event(new Illuminate\Auth\Events\Registered($user));
+
+    Illuminate\Support\Facades\Queue::assertPushed(App\Jobs\SendWebhookJob::class, function ($job) use ($user, $endpoint) {
+        return $job->endpoint->id === $endpoint->id
+            && $job->event === 'user.created'
+            && $job->payload['email'] === $user->email;
+    });
+});

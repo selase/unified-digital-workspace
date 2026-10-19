@@ -75,6 +75,7 @@ final class WebhookController extends Controller
                 $type = $metadata['type'] ?? null;
                 $amount = (int) ($session->amount_total ?? 0);
                 $txId = (string) ($session->payment_intent ?? $session->id ?? '');
+                $currency = mb_strtoupper((string) ($session->currency ?? $metadata['currency'] ?? 'USD'));
 
                 // If it's an invoice payment
                 if (isset($metadata['invoice_id'])) {
@@ -85,13 +86,13 @@ final class WebhookController extends Controller
                         Log::info("Filled invoice {$invoice->id} via Stripe Webhook");
                     }
                 } elseif ($type === 'real_estate_installment') {
-                    $fulfillmentService->fulfillRealEstateInstallment($metadata, $amount, $txId, 'stripe');
+                    $fulfillmentService->fulfillRealEstateInstallment($metadata, $amount, $txId, 'stripe', $currency);
                 } elseif ($type === 'escrow_funding') {
-                    $fulfillmentService->fulfillEscrowFunding($metadata, $amount, $txId, 'stripe');
+                    $fulfillmentService->fulfillEscrowFunding($metadata, $amount, $txId, 'stripe', $currency);
                 } elseif ($type === 'store_order') {
-                    $fulfillmentService->fulfillStoreOrder($metadata, $amount, $txId, 'stripe');
+                    $fulfillmentService->fulfillStoreOrder($metadata, $amount, $txId, 'stripe', $currency);
                 } elseif ($type === 'platform_credit_purchase') {
-                    $fulfillmentService->fulfillPlatformCreditPurchase($metadata, $amount, $txId, 'stripe');
+                    $fulfillmentService->fulfillPlatformCreditPurchase($metadata, $amount, $txId, 'stripe', $currency);
                 }
                 break;
 

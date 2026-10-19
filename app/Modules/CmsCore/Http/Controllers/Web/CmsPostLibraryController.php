@@ -296,7 +296,9 @@ final class CmsPostLibraryController extends Controller
      *     statusOptions: array<int, string>,
      *     seoMeta: array{seo_title: string, seo_description: string, seo_canonical: string},
      *     mediaMeta: array{video_url: string, audio_url: string, poster_media_id: string},
-     *     buttonMeta: array{cta_label: string, cta_url: string, cta2_label: string, cta2_url: string}
+     *     buttonMeta: array{cta_label: string, cta_url: string, cta2_label: string, cta2_url: string},
+     *     menus: \Illuminate\Database\Eloquent\Collection<int, Menu>,
+     *     attachedMenuItem: MenuItem|null
      * }
      */
     private function formOptions(?Post $post = null): array

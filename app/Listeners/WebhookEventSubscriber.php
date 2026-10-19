@@ -35,10 +35,27 @@ final class WebhookEventSubscriber
         ]);
     }
 
-    // Example 2: User Created
-    public function handleUserCreated($event): void
+    /**
+     * Handle User Created / Registered events.
+     */
+    public function handleUserCreated(mixed $event): void
     {
-        // todo
+        $user = $event->user ?? null;
+        if (! $user) {
+            return;
+        }
+
+        $tenantId = (string) ($user->tenant_id ?? '');
+        if (! $tenantId) {
+            return;
+        }
+
+        $this->dispatchWebhooks($tenantId, 'user.created', [
+            'user_id' => (string) ($user->uuid ?? $user->id),
+            'name' => (string) $user->name,
+            'email' => (string) $user->email,
+            'created_at' => $user->created_at?->toIso8601String(),
+        ]);
     }
 
     /**
@@ -49,6 +66,11 @@ final class WebhookEventSubscriber
         $events->listen(
             \App\Events\InvoiceIssued::class,
             [self::class, 'handleInvoiceIssued']
+        );
+
+        $events->listen(
+            \Illuminate\Auth\Events\Registered::class,
+            [self::class, 'handleUserCreated']
         );
     }
 

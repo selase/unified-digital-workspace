@@ -95,7 +95,8 @@ final class VendorMarketplaceWebController extends Controller
 
         $tenantBps = (int) round(((float) $validated['tenant_commission_percent']) * 100);
         $platformBps = (int) round(((float) $validated['platform_commission_percent']) * 100);
-        $tenantId = (string) (app(TenantContext::class)->getTenant()?->id ?? '');
+        $tenant = app(TenantContext::class)->getTenant();
+        $tenantId = $tenant ? (string) $tenant->id : '';
 
         CommissionRateCard::query()->updateOrCreate([
             'tenant_id' => $tenantId,
@@ -151,7 +152,8 @@ final class VendorMarketplaceWebController extends Controller
         $user = $request->user();
         abort_if(! $user?->can('vendors.manage') && ! $user?->can('vendors.portal.access'), 403);
 
-        $tenantId = (string) (app(TenantContext::class)->getTenant()?->id ?? '');
+        $tenant = app(TenantContext::class)->getTenant();
+        $tenantId = $tenant ? (string) $tenant->id : '';
 
         $validated = $request->validate([
             'title' => ['required', 'string', 'max:255'],
@@ -189,7 +191,8 @@ final class VendorMarketplaceWebController extends Controller
         $user = $request->user();
         abort_if(! $user?->can('vendors.manage') && ! $user?->can('vendors.portal.access'), 403);
 
-        $tenantId = (string) (app(TenantContext::class)->getTenant()?->id ?? '');
+        $tenant = app(TenantContext::class)->getTenant();
+        $tenantId = $tenant ? (string) $tenant->id : '';
 
         $validated = $request->validate([
             'vendor_profile_id' => [

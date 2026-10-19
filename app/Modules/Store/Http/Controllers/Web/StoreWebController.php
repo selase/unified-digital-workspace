@@ -195,7 +195,7 @@ final class StoreWebController extends Controller
         ]);
 
         // Audience check: if any product is staff_only, verify user is an authorized staff member
-        $productIds = collect($validated['items'])->pluck('product_id')->all();
+        $productIds = array_column($validated['items'], 'product_id');
         $hasStaffOnly = StoreProduct::whereIn('id', $productIds)
             ->where('tenant_id', (string) $tenant->id)
             ->where('audience', 'staff_only')
