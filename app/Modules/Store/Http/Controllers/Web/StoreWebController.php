@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace App\Modules\Store\Http\Controllers\Web;
 
+use App\Contracts\PaymentGateway;
 use App\Http\Controllers\Controller;
 use App\Modules\Store\Models\PlatformCreditPackage;
+use App\Modules\Store\Models\PlatformCreditPurchase;
 use App\Modules\Store\Models\StoreOrder;
 use App\Modules\Store\Models\StoreProduct;
 use App\Modules\Store\Models\TenantCreditWallet;
-use App\Modules\Store\Services\PlatformCreditService;
 use App\Modules\Store\Services\StoreInventoryService;
 use App\Services\Tenancy\TenantContext;
 use DomainException;
@@ -22,7 +23,6 @@ use Illuminate\Validation\Rule;
 final class StoreWebController extends Controller
 {
     public function __construct(
-        private readonly PlatformCreditService $creditService,
         private readonly StoreInventoryService $inventoryService,
         private readonly TenantContext $tenantContext
     ) {}
@@ -65,13 +65,13 @@ final class StoreWebController extends Controller
         ]);
     }
 
-    public function purchasePlatformCredits(Request $request): RedirectResponse
+    public function purchasePlatformCredits(Request $request, PaymentGateway $gateway): RedirectResponse
     {
-        abort_if(! $request->user()?->can('store.platform.purchase'), 403);
+        $user = $request->user();
+        abort_if(! $user?->can('store.platform.purchase'), 403);
 
         $validated = $request->validate([
             'package_id' => ['required', 'integer', Rule::exists('platform_credit_packages', 'id')->where('is_active', true)],
-            'payment_reference' => ['nullable', 'string', 'max:120'],
         ]);
 
         $tenant = $this->tenantContext->getTenant();
@@ -79,13 +79,34 @@ final class StoreWebController extends Controller
             abort(403, 'No active tenant context.');
         }
 
-        $paymentRef = $validated['payment_reference'] ?? 'PAY-CREDIT-'.mb_strtoupper(Str::random(10));
+        /** @var PlatformCreditPackage $package */
+        $package = PlatformCreditPackage::findOrFail($validated['package_id']);
 
-        $wallet = $this->creditService->purchasePackage((string) $tenant->id, $validated['package_id'], $paymentRef);
+        $pendingPurchase = PlatformCreditPurchase::create([
+            'tenant_id' => (string) $tenant->id,
+            'package_id' => $package->id,
+            'payment_reference' => 'PENDING-'.(string) Str::uuid(),
+            'amount_paid_cents' => (int) $package->price_cents,
+            'credits_awarded' => (int) $package->amount_credits,
+            'status' => 'pending',
+        ]);
 
-        return back()
-            ->with('status', 'success')
-            ->with('message', "Successfully purchased credits. New {$wallet->credit_type} balance: ".number_format($wallet->balance).' units.');
+        $redirectUrl = route('billing.callback');
+        $checkoutUrl = $gateway->createOneTimeCheckoutSession(
+            (string) ($user->email ?? 'buyer@example.com'),
+            (int) $package->price_cents,
+            'GHS',
+            $redirectUrl,
+            [
+                'type' => 'platform_credit_purchase',
+                'purchase_id' => $pendingPurchase->id,
+                'package_id' => $package->id,
+                'tenant_id' => (string) $tenant->id,
+                'user_uuid' => (string) $user->uuid,
+            ]
+        );
+
+        return redirect()->away($checkoutUrl);
     }
 
     public function products(Request $request): View
@@ -155,7 +176,7 @@ final class StoreWebController extends Controller
         ]);
     }
 
-    public function checkout(Request $request): RedirectResponse
+    public function checkout(Request $request, PaymentGateway $gateway): RedirectResponse
     {
         $tenant = $this->tenantContext->getTenant();
         if (! $tenant) {
@@ -167,6 +188,7 @@ final class StoreWebController extends Controller
             'customer_email' => ['required', 'email', 'max:255'],
             'payment_method' => ['nullable', 'string'],
             'payment_reference' => ['nullable', 'string', 'max:120'],
+            'pay_online' => ['nullable', 'boolean'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'integer'],
             'items.*.quantity' => ['required', 'integer', 'min:1'],
@@ -192,11 +214,29 @@ final class StoreWebController extends Controller
                     'customer_name' => $validated['customer_name'],
                     'customer_email' => $validated['customer_email'],
                     'payment_method' => $validated['payment_method'] ?? 'portal_balance',
-                    'payment_reference' => $validated['payment_reference'] ?? null,
+                    'payment_reference' => null, // Client cannot mark paid with reference
                 ],
                 $validated['items'],
                 $request->user()?->uuid !== null ? (string) $request->user()->uuid : null
             );
+
+            if ($request->boolean('pay_online')) {
+                $redirectUrl = route('billing.callback');
+                $checkoutUrl = $gateway->createOneTimeCheckoutSession(
+                    $order->customer_email,
+                    (int) $order->total_amount_cents,
+                    $order->currency ?: 'GHS',
+                    $redirectUrl,
+                    [
+                        'type' => 'store_order',
+                        'order_id' => $order->id,
+                        'tenant_id' => (string) $tenant->id,
+                        'user_uuid' => $request->user()?->uuid !== null ? (string) $request->user()->uuid : null,
+                    ]
+                );
+
+                return redirect()->away($checkoutUrl);
+            }
 
             return back()
                 ->with('status', 'success')
@@ -208,13 +248,24 @@ final class StoreWebController extends Controller
 
     public function confirmPayment(Request $request, StoreOrder $order): RedirectResponse
     {
-        abort_if(! $request->user()?->can('store.orders.manage'), 403);
+        $user = $request->user();
+        abort_if(! $user?->can('store.orders.manage'), 403);
 
         $validated = $request->validate([
             'payment_reference' => ['required', 'string', 'max:120'],
         ]);
 
         $this->inventoryService->confirmPayment($order, $validated['payment_reference']);
+
+        activity('store')
+            ->performedOn($order)
+            ->causedBy($user)
+            ->withProperties([
+                'payment_reference' => $validated['payment_reference'],
+                'amount_cents' => $order->total_amount_cents,
+                'order_number' => $order->order_number,
+            ])
+            ->log('Offline store order payment confirmed');
 
         return back()->with('status', 'success')->with('message', "Order #{$order->order_number} marked as paid.");
     }

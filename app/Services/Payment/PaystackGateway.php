@@ -112,6 +112,7 @@ final class PaystackGateway implements PaymentGateway
 
         return [
             'status' => $data['status'], // 'success', 'failed', 'abandoned'
+            'amount' => (int) ($data['amount'] ?? 0),
             'metadata' => $data['metadata'] ?? [],
             'transaction_id' => $data['id'],
             'type' => isset($data['plan']) && $data['plan'] ? 'subscription' : 'payment',

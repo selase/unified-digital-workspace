@@ -8,6 +8,17 @@ use App\Models\Invoice;
 use App\Models\MerchantTransaction;
 use App\Models\Tenant;
 use App\Models\Transaction;
+use App\Modules\RealEstate\Models\ClientPlotAllocation;
+use App\Modules\RealEstate\Models\InstallmentSchedule;
+use App\Modules\Store\Models\PlatformCreditPackage;
+use App\Modules\Store\Models\PlatformCreditPurchase;
+use App\Modules\Store\Models\StoreOrder;
+use App\Modules\Store\Models\TenantCreditWallet;
+use App\Modules\Store\Services\StoreInventoryService;
+use App\Modules\VendorMarketplace\Models\EscrowAccount;
+use App\Modules\VendorMarketplace\Models\ProformaInvoice;
+use App\Modules\VendorMarketplace\Services\EscrowSettlementService;
+use App\Services\Tenancy\TenantContext;
 use DomainException;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
@@ -15,6 +26,11 @@ use Illuminate\Support\Facades\Log;
 
 final class PaymentFulfillmentService
 {
+    public function __construct(
+        private readonly EscrowSettlementService $escrowSettlementService,
+        private readonly StoreInventoryService $storeInventoryService
+    ) {}
+
     /**
      * Atomically fulfill an invoice payment idempotently.
      */
@@ -177,5 +193,298 @@ final class PaymentFulfillmentService
         );
 
         return $record;
+    }
+
+    /**
+     * Atomically fulfill a Real Estate installment payment idempotently.
+     *
+     * @param  array<string, mixed>  $metadata
+     */
+    public function fulfillRealEstateInstallment(
+        array $metadata,
+        int $amountPesewas,
+        string $providerTransactionId,
+        string $provider = 'paystack'
+    ): InstallmentSchedule {
+        $installmentId = $metadata['installment_id'] ?? null;
+        $tenantId = (string) ($metadata['tenant_id'] ?? '');
+
+        if (! $installmentId || ! $tenantId) {
+            throw new DomainException('Invalid metadata for real estate installment payment.');
+        }
+
+        return DB::transaction(function () use ($installmentId, $tenantId, $amountPesewas, $providerTransactionId): InstallmentSchedule {
+            /** @var InstallmentSchedule $installment */
+            $installment = InstallmentSchedule::withoutGlobalScopes()
+                ->where('id', $installmentId)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            // Cross-tenant verification
+            if ((string) $installment->tenant_id !== $tenantId) {
+                throw new DomainException('Tenant mismatch for real estate installment payment.');
+            }
+
+            $activeTenantId = app(TenantContext::class)->activeTenantId();
+            if ($activeTenantId && (string) $activeTenantId !== (string) $installment->tenant_id) {
+                throw new DomainException('Cross-tenant violation: active tenant does not match installment tenant.');
+            }
+
+            // Idempotency check: if already recorded with this provider transaction id
+            if ($installment->payment_reference === $providerTransactionId && $installment->status === 'paid') {
+                Log::info("Installment {$installment->id} already fulfilled via {$providerTransactionId} (idempotent skip).");
+
+                return $installment;
+            }
+
+            $due = (int) $installment->amount_due_pesewas;
+            $alreadyPaid = (int) $installment->amount_paid_pesewas;
+            $remainingDue = max(0, $due - $alreadyPaid);
+
+            // Amount verification: reject underpayment
+            if ($amountPesewas < $remainingDue) {
+                throw new DomainException("Underpayment detected: paid {$amountPesewas} pesewas, but {$remainingDue} pesewas was due.");
+            }
+
+            $newPaid = $alreadyPaid + $amountPesewas;
+
+            $installment->update([
+                'amount_paid_pesewas' => $newPaid,
+                'status' => 'paid',
+                'paid_at' => now(),
+                'payment_reference' => $providerTransactionId,
+            ]);
+
+            /** @var ClientPlotAllocation|null $allocation */
+            $allocation = $installment->allocation()->lockForUpdate()->first();
+            if ($allocation) {
+                $allocation->increment('amount_paid_pesewas', $amountPesewas);
+                if ($allocation->amount_paid_pesewas >= $allocation->total_price_pesewas) {
+                    $allocation->update(['status' => 'completed']);
+                    $allocation->parcel()->update(['status' => 'sold']);
+                }
+            }
+
+            Log::info("Fulfilled real estate installment {$installment->id} via {$providerTransactionId}.");
+
+            return $installment->fresh() ?? $installment;
+        });
+    }
+
+    /**
+     * Atomically fulfill escrow funding for a proforma invoice idempotently.
+     *
+     * @param  array<string, mixed>  $metadata
+     */
+    public function fulfillEscrowFunding(
+        array $metadata,
+        int $amountPesewas,
+        string $providerTransactionId,
+        string $provider = 'paystack'
+    ): EscrowAccount {
+        $proformaId = $metadata['proforma_id'] ?? null;
+        $tenantId = (string) ($metadata['tenant_id'] ?? '');
+        $userUuid = (string) ($metadata['user_uuid'] ?? '');
+
+        if (! $proformaId || ! $tenantId) {
+            throw new DomainException('Invalid metadata for escrow funding.');
+        }
+
+        return DB::transaction(function () use ($proformaId, $tenantId, $userUuid, $amountPesewas, $providerTransactionId): EscrowAccount {
+            /** @var ProformaInvoice $proforma */
+            $proforma = ProformaInvoice::withoutGlobalScopes()
+                ->where('id', $proformaId)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            // Cross-tenant verification
+            if ((string) $proforma->tenant_id !== $tenantId) {
+                throw new DomainException('Tenant mismatch for escrow funding.');
+            }
+
+            $activeTenantId = app(TenantContext::class)->activeTenantId();
+            if ($activeTenantId && (string) $activeTenantId !== (string) $proforma->tenant_id) {
+                throw new DomainException('Cross-tenant violation: active tenant does not match proforma tenant.');
+            }
+
+            // Amount verification
+            if ($amountPesewas < (int) $proforma->gross_amount_pesewas) {
+                throw new DomainException("Underpayment detected: paid {$amountPesewas} pesewas, but {$proforma->gross_amount_pesewas} pesewas was due.");
+            }
+
+            // Idempotency handled by EscrowSettlementService
+            $idempotencyKey = "gateway:{$providerTransactionId}";
+            $escrow = $this->escrowSettlementService->fundFromProforma(
+                $proforma,
+                $userUuid ?: ($proforma->client_id ?? 'system'),
+                $idempotencyKey
+            );
+
+            Log::info("Fulfilled escrow funding for proforma {$proforma->id} via {$providerTransactionId}.");
+
+            return $escrow;
+        });
+    }
+
+    /**
+     * Atomically fulfill a store order payment idempotently.
+     *
+     * @param  array<string, mixed>  $metadata
+     */
+    public function fulfillStoreOrder(
+        array $metadata,
+        int $amountPesewas,
+        string $providerTransactionId,
+        string $provider = 'paystack'
+    ): StoreOrder {
+        $orderId = $metadata['order_id'] ?? null;
+        $tenantId = (string) ($metadata['tenant_id'] ?? '');
+
+        if (! $orderId || ! $tenantId) {
+            throw new DomainException('Invalid metadata for store order.');
+        }
+
+        return DB::transaction(function () use ($orderId, $tenantId, $amountPesewas, $providerTransactionId): StoreOrder {
+            /** @var StoreOrder $order */
+            $order = StoreOrder::withoutGlobalScopes()
+                ->where('id', $orderId)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            // Cross-tenant verification
+            if ((string) $order->tenant_id !== $tenantId) {
+                throw new DomainException('Tenant mismatch for store order payment.');
+            }
+
+            $activeTenantId = app(TenantContext::class)->activeTenantId();
+            if ($activeTenantId && (string) $activeTenantId !== (string) $order->tenant_id) {
+                throw new DomainException('Cross-tenant violation: active tenant does not match store order tenant.');
+            }
+
+            // Idempotency check
+            if ($order->status === 'paid' && $order->payment_reference === $providerTransactionId) {
+                Log::info("Store order {$order->id} already fulfilled via {$providerTransactionId} (idempotent skip).");
+
+                return $order;
+            }
+
+            // Amount verification
+            if ($amountPesewas < (int) $order->total_amount_cents) {
+                throw new DomainException("Underpayment detected: paid {$amountPesewas} cents, but {$order->total_amount_cents} cents was due.");
+            }
+
+            $fulfilledOrder = $this->storeInventoryService->confirmPayment($order, $providerTransactionId);
+
+            Log::info("Fulfilled store order {$order->id} via {$providerTransactionId}.");
+
+            return $fulfilledOrder;
+        });
+    }
+
+    /**
+     * Atomically fulfill a platform credit purchase idempotently.
+     *
+     * @param  array<string, mixed>  $metadata
+     */
+    public function fulfillPlatformCreditPurchase(
+        array $metadata,
+        int $amountPesewas,
+        string $providerTransactionId,
+        string $provider = 'paystack'
+    ): PlatformCreditPurchase {
+        $packageId = $metadata['package_id'] ?? null;
+        $purchaseId = $metadata['purchase_id'] ?? null;
+        $tenantId = (string) ($metadata['tenant_id'] ?? '');
+
+        if (! $packageId || ! $tenantId) {
+            throw new DomainException('Invalid metadata for platform credit purchase.');
+        }
+
+        return DB::transaction(function () use ($packageId, $purchaseId, $tenantId, $amountPesewas, $providerTransactionId): PlatformCreditPurchase {
+            /** @var PlatformCreditPackage $package */
+            $package = PlatformCreditPackage::findOrFail($packageId);
+
+            /** @var PlatformCreditPurchase|null $purchase */
+            $purchase = null;
+            if ($purchaseId) {
+                $purchase = PlatformCreditPurchase::withoutGlobalScopes()
+                    ->where('id', $purchaseId)
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($purchase && (string) $purchase->tenant_id !== $tenantId) {
+                    throw new DomainException('Tenant mismatch for platform credit purchase.');
+                }
+            }
+
+            $activeTenantId = app(TenantContext::class)->activeTenantId();
+            if ($activeTenantId && (string) $activeTenantId !== $tenantId) {
+                throw new DomainException('Cross-tenant violation: active tenant does not match credit purchase tenant.');
+            }
+
+            // Idempotency check: if already fulfilled with this provider transaction id
+            $existing = PlatformCreditPurchase::withoutGlobalScopes()
+                ->where('tenant_id', $tenantId)
+                ->where('payment_reference', $providerTransactionId)
+                ->where('status', 'succeeded')
+                ->first();
+
+            if ($existing) {
+                Log::info("Platform credit purchase {$providerTransactionId} already fulfilled (idempotent skip).");
+
+                return $existing;
+            }
+
+            if ($purchase && $purchase->status === 'succeeded' && $purchase->payment_reference === $providerTransactionId) {
+                Log::info("Platform credit purchase {$purchase->id} already fulfilled (idempotent skip).");
+
+                return $purchase;
+            }
+
+            // Amount verification
+            if ($amountPesewas < (int) $package->price_cents) {
+                throw new DomainException("Underpayment detected: paid {$amountPesewas} cents, but {$package->price_cents} cents was due.");
+            }
+
+            // Credit the tenant wallet
+            /** @var TenantCreditWallet $wallet */
+            $wallet = TenantCreditWallet::firstOrCreate(
+                [
+                    'tenant_id' => $tenantId,
+                    'credit_type' => $package->credit_type,
+                ],
+                [
+                    'balance' => 0,
+                    'total_purchased' => 0,
+                    'total_consumed' => 0,
+                ]
+            );
+
+            $wallet->increment('balance', $package->amount_credits);
+            $wallet->increment('total_purchased', $package->amount_credits);
+
+            if ($purchase) {
+                $purchase->update([
+                    'payment_reference' => $providerTransactionId,
+                    'amount_paid_cents' => (int) $package->price_cents,
+                    'credits_awarded' => (int) $package->amount_credits,
+                    'status' => 'succeeded',
+                ]);
+                $record = $purchase->fresh() ?? $purchase;
+            } else {
+                $record = PlatformCreditPurchase::create([
+                    'tenant_id' => $tenantId,
+                    'package_id' => $package->id,
+                    'payment_reference' => $providerTransactionId,
+                    'amount_paid_cents' => (int) $package->price_cents,
+                    'credits_awarded' => (int) $package->amount_credits,
+                    'status' => 'succeeded',
+                ]);
+            }
+
+            Log::info("Fulfilled platform credit purchase for tenant {$tenantId} via {$providerTransactionId}.");
+
+            return $record;
+        });
     }
 }

@@ -71,15 +71,27 @@ final class WebhookController extends Controller
 
             case 'checkout.session.completed':
                 $session = $event->data->object;
+                $metadata = (array) ($session->metadata ?? []);
+                $type = $metadata['type'] ?? null;
+                $amount = (int) ($session->amount_total ?? 0);
+                $txId = (string) ($session->payment_intent ?? $session->id ?? '');
 
                 // If it's an invoice payment
-                if (isset($session->metadata->invoice_id)) {
-                    $invoice = Invoice::find($session->metadata->invoice_id);
+                if (isset($metadata['invoice_id'])) {
+                    $invoice = Invoice::find($metadata['invoice_id']);
                     if ($invoice) {
                         $txId = (string) ($session->payment_intent ?? $session->id ?? $invoice->number);
                         $fulfillmentService->fulfillInvoicePayment($invoice, $txId, 'stripe');
                         Log::info("Filled invoice {$invoice->id} via Stripe Webhook");
                     }
+                } elseif ($type === 'real_estate_installment') {
+                    $fulfillmentService->fulfillRealEstateInstallment($metadata, $amount, $txId, 'stripe');
+                } elseif ($type === 'escrow_funding') {
+                    $fulfillmentService->fulfillEscrowFunding($metadata, $amount, $txId, 'stripe');
+                } elseif ($type === 'store_order') {
+                    $fulfillmentService->fulfillStoreOrder($metadata, $amount, $txId, 'stripe');
+                } elseif ($type === 'platform_credit_purchase') {
+                    $fulfillmentService->fulfillPlatformCreditPurchase($metadata, $amount, $txId, 'stripe');
                 }
                 break;
 

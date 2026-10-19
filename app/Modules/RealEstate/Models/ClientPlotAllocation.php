@@ -11,6 +11,20 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
+/**
+ * @property int $id
+ * @property string $uuid
+ * @property string $tenant_id
+ * @property int $land_parcel_id
+ * @property string $client_user_id
+ * @property string $allocation_number
+ * @property int $total_price_pesewas
+ * @property int $amount_paid_pesewas
+ * @property string $status
+ * @property \Illuminate\Support\Carbon|null $allocated_at
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ */
 final class ClientPlotAllocation extends Model
 {
     use BelongsToTenant;

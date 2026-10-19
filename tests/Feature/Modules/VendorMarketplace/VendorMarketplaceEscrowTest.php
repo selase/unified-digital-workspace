@@ -146,6 +146,7 @@ describe('Phase 19: Cross-Cutting Vendor & Service Provider Marketplace, 3-Way C
         $this->actingAs($user)
             ->withSession(['active_tenant_id' => $tenant->id])
             ->post(route('vendor-marketplace.escrows.fund', $proforma), [
+                'payment_reference' => 'OFFLINE-ESCROW-002',
                 'idempotency_key' => 'fund-idemp-key-001',
             ])
             ->assertRedirect(route('vendor-marketplace.index'));
@@ -154,6 +155,7 @@ describe('Phase 19: Cross-Cutting Vendor & Service Provider Marketplace, 3-Way C
         $this->actingAs($user)
             ->withSession(['active_tenant_id' => $tenant->id])
             ->post(route('vendor-marketplace.escrows.fund', $proforma), [
+                'payment_reference' => 'OFFLINE-ESCROW-002',
                 'idempotency_key' => 'fund-idemp-key-001',
             ])
             ->assertRedirect(route('vendor-marketplace.index'));
@@ -223,7 +225,9 @@ describe('Phase 19: Cross-Cutting Vendor & Service Provider Marketplace, 3-Way C
         // Fund Escrow
         $this->actingAs($user)
             ->withSession(['active_tenant_id' => $tenant->id])
-            ->post(route('vendor-marketplace.escrows.fund', $proforma));
+            ->post(route('vendor-marketplace.escrows.fund', $proforma), [
+                'payment_reference' => 'OFFLINE-ESCROW-DISPUTE',
+            ]);
 
         $escrow = EscrowAccount::query()->where('proforma_invoice_id', $proforma->id)->firstOrFail();
 
@@ -355,6 +359,7 @@ describe('Phase 19: Cross-Cutting Vendor & Service Provider Marketplace, 3-Way C
         $this->actingAs($user)
             ->withSession(['active_tenant_id' => $tenant->id])
             ->post(route('vendor-marketplace.escrows.fund', $proforma), [
+                'payment_reference' => 'OFFLINE-ESCROW-001',
                 'idempotency_key' => 'fund-escrow-payout-test',
             ])
             ->assertRedirect(route('vendor-marketplace.index'));

@@ -48,21 +48,65 @@ final class CallbackController extends Controller
                     return $this->handleLlmTokenFulfillment($result, $tenantContext, $fulfillmentService);
                 }
 
+                $metadata = (array) data_get($result, 'metadata', []);
+                $amount = (int) data_get($result, 'amount', 0);
+                $txId = (string) (data_get($result, 'transaction_id') ?? $reference);
+                $provider = (string) config('services.payment.default', 'paystack');
+
+                if ($type === 'real_estate_installment') {
+                    $fulfillmentService->fulfillRealEstateInstallment($metadata, $amount, $txId, $provider);
+
+                    return redirect()->route('real-estate.portal.index')
+                        ->with('status', 'success')
+                        ->with('message', 'Payment verified successfully! Your installment has been credited.');
+                }
+
+                if ($type === 'escrow_funding') {
+                    $fulfillmentService->fulfillEscrowFunding($metadata, $amount, $txId, $provider);
+
+                    return redirect()->route('vendor-marketplace.index')
+                        ->with('status', 'success')
+                        ->with('message', 'Escrow funded successfully upon verified payment.');
+                }
+
+                if ($type === 'store_order') {
+                    $fulfillmentService->fulfillStoreOrder($metadata, $amount, $txId, $provider);
+
+                    return redirect()->route('store.orders')
+                        ->with('status', 'success')
+                        ->with('message', 'Store order payment verified successfully.');
+                }
+
+                if ($type === 'platform_credit_purchase') {
+                    $fulfillmentService->fulfillPlatformCreditPurchase($metadata, $amount, $txId, $provider);
+
+                    return redirect()->route('store.platform')
+                        ->with('status', 'success')
+                        ->with('message', 'Platform credits purchased and credited to your wallet.');
+                }
+
                 // Default plan fulfillment message (usually handled by webhook, but we show success)
                 $tenant = $tenantContext->getTenant();
+                $subdomain = $tenant ? $tenant->slug : 'default';
 
-                return redirect()->route('billing.index', ['subdomain' => $tenant->slug])->with('success', 'Payment successful! Your subscription is being updated.');
+                return redirect()->route('billing.index', ['subdomain' => $subdomain])->with('success', 'Payment successful! Your subscription is being updated.');
             }
 
             $tenant = $tenantContext->getTenant();
+            $subdomain = $tenant ? $tenant->slug : 'default';
 
-            return redirect()->route('billing.index', ['subdomain' => $tenant->slug])->with('info', 'Payment status: '.$result['status']);
+            return redirect()->route('billing.index', ['subdomain' => $subdomain])->with('info', 'Payment status: '.$result['status']);
 
+        } catch (DomainException $e) {
+            Log::warning('Payment fulfillment domain error: '.$e->getMessage());
+
+            return back()->with('error', $e->getMessage());
         } catch (Exception $e) {
             Log::error('Payment verification failed: '.$e->getMessage());
             $tenant = $tenantContext->getTenant();
+            $subdomain = $tenant ? $tenant->slug : 'default';
 
-            return redirect()->route('billing.index', ['subdomain' => $tenant->slug])->with('error', 'Unable to verify payment status.');
+            return redirect()->route('billing.index', ['subdomain' => $subdomain])->with('error', 'Unable to verify payment status.');
         }
     }
 

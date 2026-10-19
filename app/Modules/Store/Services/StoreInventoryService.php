@@ -74,7 +74,7 @@ final class StoreInventoryService
                 ];
             }
 
-            $status = ! empty($customerData['payment_reference']) ? 'paid' : 'pending';
+            $status = 'pending';
 
             $order = StoreOrder::create([
                 'tenant_id' => $tenantId,
@@ -86,7 +86,7 @@ final class StoreInventoryService
                 'currency' => 'GHS',
                 'status' => $status,
                 'payment_method' => $customerData['payment_method'] ?? 'portal_balance',
-                'payment_reference' => $customerData['payment_reference'] ?? null,
+                'payment_reference' => null,
             ]);
 
             foreach ($itemsToCreate as $it) {

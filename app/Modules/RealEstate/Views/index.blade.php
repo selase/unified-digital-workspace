@@ -701,6 +701,7 @@
                                     <form action="{{ route('real-estate.installments.pay', $pendingInst) }}" method="POST" class="inline-flex items-center gap-1">
                                         @csrf
                                         <input type="number" step="0.01" min="1" name="amount_ghs" value="{{ $pendingInst->amount_due_pesewas / 100 }}" class="kt-input kt-input-sm w-24 text-xs" required>
+                                        <input type="text" name="payment_reference" placeholder="Ref #" class="kt-input kt-input-sm w-24 text-xs" required>
                                         <button type="submit" class="kt-btn kt-btn-xs kt-btn-primary">Record Payment</button>
                                     </form>
                                 @else

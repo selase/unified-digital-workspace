@@ -46,6 +46,27 @@ final class WebhookController extends Controller
         switch ($event->type) {
             case 'checkout.session.completed':
                 $session = $event->data->object;
+                $metadata = (array) ($session->metadata ?? []);
+                $type = $metadata['type'] ?? null;
+                $amount = (int) ($session->amount_total ?? 0);
+                $txId = (string) ($session->payment_intent ?? $session->id ?? '');
+
+                if (isset($metadata['tenant_id']) && (string) $metadata['tenant_id'] !== (string) $tenant->id) {
+                    Log::warning('Merchant Stripe webhook tenant mismatch', ['tenant' => $tenant->id, 'metadata' => $metadata]);
+
+                    return response()->json(['error' => 'Tenant mismatch'], 403);
+                }
+
+                if ($type === 'real_estate_installment') {
+                    $fulfillmentService->fulfillRealEstateInstallment($metadata, $amount, $txId, 'stripe');
+                } elseif ($type === 'escrow_funding') {
+                    $fulfillmentService->fulfillEscrowFunding($metadata, $amount, $txId, 'stripe');
+                } elseif ($type === 'store_order') {
+                    $fulfillmentService->fulfillStoreOrder($metadata, $amount, $txId, 'stripe');
+                } elseif ($type === 'platform_credit_purchase') {
+                    $fulfillmentService->fulfillPlatformCreditPurchase($metadata, $amount, $txId, 'stripe');
+                }
+
                 $fulfillmentService->recordMerchantTransaction($tenant, 'stripe', $session);
                 break;
 
@@ -79,9 +100,30 @@ final class WebhookController extends Controller
         }
 
         $event = $request->input('event');
-        $data = $request->input('data');
+        $data = (array) $request->input('data', []);
 
         if ($event === 'charge.success') {
+            $metadata = (array) ($data['metadata'] ?? []);
+            $type = $metadata['type'] ?? null;
+            $amount = (int) ($data['amount'] ?? 0);
+            $txId = (string) ($data['reference'] ?? '');
+
+            if (isset($metadata['tenant_id']) && (string) $metadata['tenant_id'] !== (string) $tenant->id) {
+                Log::warning('Merchant Paystack webhook tenant mismatch', ['tenant' => $tenant->id, 'metadata' => $metadata]);
+
+                return response()->json(['error' => 'Tenant mismatch'], 403);
+            }
+
+            if ($type === 'real_estate_installment') {
+                $fulfillmentService->fulfillRealEstateInstallment($metadata, $amount, $txId, 'paystack');
+            } elseif ($type === 'escrow_funding') {
+                $fulfillmentService->fulfillEscrowFunding($metadata, $amount, $txId, 'paystack');
+            } elseif ($type === 'store_order') {
+                $fulfillmentService->fulfillStoreOrder($metadata, $amount, $txId, 'paystack');
+            } elseif ($type === 'platform_credit_purchase') {
+                $fulfillmentService->fulfillPlatformCreditPurchase($metadata, $amount, $txId, 'paystack');
+            }
+
             $fulfillmentService->recordMerchantTransaction($tenant, 'paystack', (array) $data);
         }
 

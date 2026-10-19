@@ -656,26 +656,26 @@ final class RealEstateWebController extends Controller
         $isClient = (bool) ($user->can('realestate.client.portal') && $allocation->client_user_id === (string) $user->uuid);
         abort_if(! $isStaff && ! $isClient, 403);
 
-        $validated = $request->validate([
-            'amount_ghs' => ['required', 'numeric', 'min:1'],
-            'payment_reference' => ['nullable', 'string', 'max:120'],
-            'pay_online' => ['nullable', 'boolean'],
-        ]);
-
-        $pesewas = (int) round(((float) $validated['amount_ghs']) * 100);
         $due = (int) $installment->amount_due_pesewas;
         $alreadyPaid = (int) $installment->amount_paid_pesewas;
         $remainingDue = max(0, $due - $alreadyPaid);
 
-        if ($pesewas > $remainingDue) {
-            return back()->withErrors([
-                'amount_ghs' => 'Payment exceeds remaining installment due balance of GHS '.number_format($remainingDue / 100, 2),
+        // If portal client, they CANNOT record payments directly or supply manual references.
+        // Client payments MUST go exclusively through the payment gateway checkout session.
+        if ($isClient && ! $isStaff) {
+            $validated = $request->validate([
+                'amount_ghs' => ['required', 'numeric', 'min:1'],
             ]);
-        }
 
-        // If online payment requested, generate checkout session
-        if (! empty($validated['pay_online']) || ($isClient && empty($validated['payment_reference']))) {
-            $redirectUrl = route('real-estate.portal.index');
+            $pesewas = (int) round(((float) $validated['amount_ghs']) * 100);
+
+            if ($pesewas > $remainingDue) {
+                return back()->withErrors([
+                    'amount_ghs' => 'Payment exceeds remaining installment due balance of GHS '.number_format($remainingDue / 100, 2),
+                ]);
+            }
+
+            $redirectUrl = route('billing.callback');
             $checkoutUrl = $gateway->createOneTimeCheckoutSession(
                 (string) ($user->email ?? 'customer@example.com'),
                 $pesewas,
@@ -685,11 +685,52 @@ final class RealEstateWebController extends Controller
                     'type' => 'real_estate_installment',
                     'installment_id' => $installment->id,
                     'allocation_id' => $allocation->id,
+                    'tenant_id' => (string) $installment->tenant_id,
                     'user_uuid' => (string) $user->uuid,
                 ]
             );
 
             return redirect()->away($checkoutUrl);
+        }
+
+        // Staff payment path (realestate.manage)
+        $validated = $request->validate([
+            'amount_ghs' => ['required', 'numeric', 'min:1'],
+            'payment_reference' => ['required_without:pay_online', 'nullable', 'string', 'max:120'],
+            'pay_online' => ['nullable', 'boolean'],
+        ]);
+
+        $pesewas = (int) round(((float) $validated['amount_ghs']) * 100);
+
+        if ($pesewas > $remainingDue) {
+            return back()->withErrors([
+                'amount_ghs' => 'Payment exceeds remaining installment due balance of GHS '.number_format($remainingDue / 100, 2),
+            ]);
+        }
+
+        if ($request->boolean('pay_online')) {
+            $redirectUrl = route('billing.callback');
+            $checkoutUrl = $gateway->createOneTimeCheckoutSession(
+                (string) ($user->email ?? 'staff@example.com'),
+                $pesewas,
+                'GHS',
+                $redirectUrl,
+                [
+                    'type' => 'real_estate_installment',
+                    'installment_id' => $installment->id,
+                    'allocation_id' => $allocation->id,
+                    'tenant_id' => (string) $installment->tenant_id,
+                    'user_uuid' => (string) $user->uuid,
+                ]
+            );
+
+            return redirect()->away($checkoutUrl);
+        }
+
+        if (empty($validated['payment_reference'])) {
+            return back()->withErrors([
+                'payment_reference' => 'Payment reference is mandatory for staff offline receipting.',
+            ]);
         }
 
         $newPaid = $alreadyPaid + $pesewas;
@@ -698,7 +739,7 @@ final class RealEstateWebController extends Controller
             'amount_paid_pesewas' => $newPaid,
             'status' => $newPaid >= $due ? 'paid' : 'partially_paid',
             'paid_at' => now(),
-            'payment_reference' => $validated['payment_reference'] ?? 'PAY-'.mb_strtoupper(Str::random(8)),
+            'payment_reference' => $validated['payment_reference'],
         ]);
 
         $allocation->increment('amount_paid_pesewas', $pesewas);
@@ -707,6 +748,17 @@ final class RealEstateWebController extends Controller
             $allocation->update(['status' => 'completed']);
             $allocation->parcel()->update(['status' => 'sold']);
         }
+
+        activity('real_estate')
+            ->performedOn($installment)
+            ->causedBy($user)
+            ->withProperties([
+                'payment_reference' => $validated['payment_reference'],
+                'amount_pesewas' => $pesewas,
+                'installment_number' => $installment->installment_number,
+                'allocation_id' => $allocation->id,
+            ])
+            ->log('Offline installment payment recorded');
 
         return back()
             ->with('status', 'success')

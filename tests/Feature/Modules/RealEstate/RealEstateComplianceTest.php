@@ -362,6 +362,7 @@ describe('Phase 20: Real Estate Management, Public Land Listings, Client Portal,
             ->withSession(['active_tenant_id' => $tenant->id])
             ->post(route('real-estate.installments.pay', $firstInstallment), [
                 'amount_ghs' => 50000.00,
+                'payment_reference' => 'OFFLINE-REC-001',
             ]);
 
         $firstInstallment->refresh();

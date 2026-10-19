@@ -2,13 +2,16 @@
 
 declare(strict_types=1);
 
+use App\Contracts\PaymentGateway;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Modules\Store\Models\PlatformCreditPackage;
+use App\Modules\Store\Models\PlatformCreditPurchase;
 use App\Modules\Store\Models\StoreOrder;
 use App\Modules\Store\Models\StoreProduct;
 use App\Modules\Store\Models\TenantCreditWallet;
 use App\Modules\Store\Services\PlatformCreditService;
+use App\Services\Billing\PaymentFulfillmentService;
 use App\Services\ModuleManager;
 use Spatie\Permission\Models\Permission;
 
@@ -62,15 +65,30 @@ describe('Phase 25: Two-Tier Store: Platform Quota Store & Per-Tenant Product St
             'is_active' => true,
         ]);
 
-        // 2. Purchase SMS Package
+        $mockGateway = Mockery::mock(PaymentGateway::class);
+        $mockGateway->shouldReceive('createOneTimeCheckoutSession')
+            ->andReturn('https://checkout.paystack.test/pay/pkg_test');
+        app()->instance(PaymentGateway::class, $mockGateway);
+
+        // 2. Purchase SMS Package -> Redirects to Gateway checkout and creates pending purchase
         $response = $this->actingAs($user)
             ->withSession(['active_tenant_id' => $tenant->id])
             ->post(route('store.platform.purchase'), [
                 'package_id' => $smsPackage->id,
             ]);
 
-        $response->assertRedirect()
-            ->assertSessionHas('status', 'success');
+        $response->assertRedirect('https://checkout.paystack.test/pay/pkg_test');
+
+        $pendingPurchase = PlatformCreditPurchase::where('tenant_id', $tenant->id)->where('package_id', $smsPackage->id)->firstOrFail();
+        expect($pendingPurchase->status)->toBe('pending');
+
+        // Confirm fulfillment
+        $fulfillmentService = app(PaymentFulfillmentService::class);
+        $fulfillmentService->fulfillPlatformCreditPurchase([
+            'package_id' => $smsPackage->id,
+            'purchase_id' => $pendingPurchase->id,
+            'tenant_id' => (string) $tenant->id,
+        ], 25000, 'tx_sms_paystack_01', 'paystack');
 
         $smsWallet = TenantCreditWallet::where('tenant_id', $tenant->id)->where('credit_type', 'sms')->firstOrFail();
         expect($smsWallet->balance)->toBe(5000)
@@ -82,7 +100,16 @@ describe('Phase 25: Two-Tier Store: Platform Quota Store & Per-Tenant Product St
             ->post(route('store.platform.purchase'), [
                 'package_id' => $aiPackage->id,
             ])
-            ->assertRedirect();
+            ->assertRedirect('https://checkout.paystack.test/pay/pkg_test');
+
+        $pendingAiPurchase = PlatformCreditPurchase::where('tenant_id', $tenant->id)->where('package_id', $aiPackage->id)->firstOrFail();
+        expect($pendingAiPurchase->status)->toBe('pending');
+
+        $fulfillmentService->fulfillPlatformCreditPurchase([
+            'package_id' => $aiPackage->id,
+            'purchase_id' => $pendingAiPurchase->id,
+            'tenant_id' => (string) $tenant->id,
+        ], 50000, 'tx_ai_paystack_01', 'paystack');
 
         $aiWallet = TenantCreditWallet::where('tenant_id', $tenant->id)->where('credit_type', 'ai_token')->firstOrFail();
         expect($aiWallet->balance)->toBe(100000);
@@ -213,12 +240,12 @@ describe('Phase 25: Two-Tier Store: Platform Quota Store & Per-Tenant Product St
         // First purchase with reference
         $wallet1 = $creditService->purchasePackage((string) $tenant->id, $pkg->id, 'PAY-SMS-IDEMP-01');
         expect($wallet1->balance)->toBe(1000)
-            ->and(App\Modules\Store\Models\PlatformCreditPurchase::where('payment_reference', 'PAY-SMS-IDEMP-01')->count())->toBe(1);
+            ->and(PlatformCreditPurchase::where('payment_reference', 'PAY-SMS-IDEMP-01')->count())->toBe(1);
 
         // Replay with identical reference
         $wallet2 = $creditService->purchasePackage((string) $tenant->id, $pkg->id, 'PAY-SMS-IDEMP-01');
         expect($wallet2->balance)->toBe(1000) // Did NOT increase to 2000!
-            ->and(App\Modules\Store\Models\PlatformCreditPurchase::where('payment_reference', 'PAY-SMS-IDEMP-01')->count())->toBe(1);
+            ->and(PlatformCreditPurchase::where('payment_reference', 'PAY-SMS-IDEMP-01')->count())->toBe(1);
     });
 
     test('checkout enforces product audience check rejecting unauthorized guests for staff_only products', function (): void {

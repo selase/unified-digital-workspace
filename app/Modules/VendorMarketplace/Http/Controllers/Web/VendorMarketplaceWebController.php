@@ -243,14 +243,16 @@ final class VendorMarketplaceWebController extends Controller
         abort_if(! $user?->can('escrow.manage'), 403);
 
         if ($request->boolean('pay_online')) {
+            $redirectUrl = route('billing.callback');
             $checkoutUrl = $gateway->createOneTimeCheckoutSession(
                 (string) ($user->email ?? 'buyer@example.com'),
                 (int) $proforma->gross_amount_pesewas,
                 (string) ($proforma->currency ?: 'GHS'),
-                route('vendor-marketplace.index'),
+                $redirectUrl,
                 [
                     'type' => 'escrow_funding',
                     'proforma_id' => $proforma->id,
+                    'tenant_id' => (string) $proforma->tenant_id,
                     'user_uuid' => (string) $user->uuid,
                 ]
             );
@@ -258,13 +260,28 @@ final class VendorMarketplaceWebController extends Controller
             return redirect()->away($checkoutUrl);
         }
 
-        $idempotencyKey = (string) ($request->input('idempotency_key') ?: "fund:{$proforma->uuid}");
+        $validated = $request->validate([
+            'payment_reference' => ['required', 'string', 'max:120'],
+            'idempotency_key' => ['nullable', 'string', 'max:120'],
+        ]);
+
+        $idempotencyKey = (string) ($validated['idempotency_key'] ?? "fund:offline:{$validated['payment_reference']}");
 
         try {
             $escrow = $settlement->fundFromProforma($proforma, (string) $user->uuid, $idempotencyKey);
         } catch (DomainException $e) {
             return back()->withErrors(['escrow' => $e->getMessage()]);
         }
+
+        activity('vendor_marketplace')
+            ->performedOn($proforma)
+            ->causedBy($user)
+            ->withProperties([
+                'payment_reference' => $validated['payment_reference'],
+                'amount_pesewas' => $proforma->gross_amount_pesewas,
+                'escrow_id' => $escrow->id,
+            ])
+            ->log('Offline escrow funding receipt recorded');
 
         return redirect()
             ->route('vendor-marketplace.index')

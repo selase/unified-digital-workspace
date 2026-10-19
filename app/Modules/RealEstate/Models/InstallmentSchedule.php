@@ -9,6 +9,21 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Str;
 
+/**
+ * @property int $id
+ * @property string $uuid
+ * @property string $tenant_id
+ * @property int $client_plot_allocation_id
+ * @property int $installment_number
+ * @property \Illuminate\Support\Carbon|string|null $due_date
+ * @property int $amount_due_pesewas
+ * @property int $amount_paid_pesewas
+ * @property string $status
+ * @property \Illuminate\Support\Carbon|null $paid_at
+ * @property string|null $payment_reference
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ */
 final class InstallmentSchedule extends Model
 {
     use BelongsToTenant;
