@@ -781,20 +781,8 @@ parameters:
 			path: app/Http/Controllers/Billing/WebhookController.php
 
 		-
-			rawMessage: Access to an undefined property Stripe\StripeObject::$payment_intent.
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/Billing/WebhookController.php
-
-		-
 			rawMessage: Access to an undefined property Stripe\StripeObject::$subscription.
 			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/Billing/WebhookController.php
-
-		-
-			rawMessage: 'Method App\Http\Controllers\Billing\WebhookController::handleStripe() has no return type specified.'
-			identifier: missingType.return
 			count: 1
 			path: app/Http/Controllers/Billing/WebhookController.php
 
@@ -833,36 +821,6 @@ parameters:
 			identifier: missingType.return
 			count: 1
 			path: app/Http/Controllers/Settings/ApiTokenController.php
-
-		-
-			rawMessage: 'Method App\Http\Controllers\Tenant\Commerce\WebhookController::handlePaystack() has no return type specified.'
-			identifier: missingType.return
-			count: 1
-			path: app/Http/Controllers/Tenant/Commerce/WebhookController.php
-
-		-
-			rawMessage: 'Method App\Http\Controllers\Tenant\Commerce\WebhookController::handleStripe() has no return type specified.'
-			identifier: missingType.return
-			count: 1
-			path: app/Http/Controllers/Tenant/Commerce/WebhookController.php
-
-		-
-			rawMessage: 'Method App\Http\Controllers\Tenant\Commerce\WebhookController::recordTransaction() has no return type specified.'
-			identifier: missingType.return
-			count: 1
-			path: app/Http/Controllers/Tenant/Commerce/WebhookController.php
-
-		-
-			rawMessage: 'Method App\Http\Controllers\Tenant\Commerce\WebhookController::recordTransaction() has parameter $data with no type specified.'
-			identifier: missingType.parameter
-			count: 1
-			path: app/Http/Controllers/Tenant/Commerce/WebhookController.php
-
-		-
-			rawMessage: Variable $paymentIntent is never read.
-			identifier: variable.unused
-			count: 1
-			path: app/Http/Controllers/Tenant/Commerce/WebhookController.php
 
 		-
 			rawMessage: 'Method App\Http\Controllers\Tenant\FinanceController::refund() has no return type specified.'
@@ -1207,12 +1165,6 @@ parameters:
 			path: app/Listeners/WebhookEventSubscriber.php
 
 		-
-			rawMessage: 'Method App\Listeners\WebhookEventSubscriber::handleUserCreated() has parameter $event with no type specified.'
-			identifier: missingType.parameter
-			count: 1
-			path: app/Listeners/WebhookEventSubscriber.php
-
-		-
 			rawMessage: 'Method App\Livewire\Admin\TenantHealthCheck::mount() has no return type specified.'
 			identifier: missingType.return
 			count: 1
@@ -1351,12 +1303,6 @@ parameters:
 			path: app/Models/Feature.php
 
 		-
-			rawMessage: 'Method App\Models\Feature::generateUuid() has no return type specified.'
-			identifier: missingType.return
-			count: 1
-			path: app/Models/Feature.php
-
-		-
 			rawMessage: 'Method App\Models\Feature::packages() has no return type specified.'
 			identifier: missingType.return
 			count: 1
@@ -1393,20 +1339,8 @@ parameters:
 			path: app/Models/LlmTokenUsage.php
 
 		-
-			rawMessage: 'Method App\Models\LlmTokenUsage::generateUuid() has no return type specified.'
-			identifier: missingType.return
-			count: 1
-			path: app/Models/LlmTokenUsage.php
-
-		-
 			rawMessage: 'Class App\Models\LlmUsageSummary uses generic trait Illuminate\Database\Eloquent\Factories\HasFactory but does not specify its types: TFactory'
 			identifier: missingType.generics
-			count: 1
-			path: app/Models/LlmUsageSummary.php
-
-		-
-			rawMessage: 'Method App\Models\LlmUsageSummary::generateUuid() has no return type specified.'
-			identifier: missingType.return
 			count: 1
 			path: app/Models/LlmUsageSummary.php
 
@@ -1447,28 +1381,10 @@ parameters:
 			path: app/Models/Package.php
 
 		-
-			rawMessage: 'Method App\Models\Package::generateUuid() has no return type specified.'
-			identifier: missingType.return
-			count: 1
-			path: app/Models/Package.php
-
-		-
 			rawMessage: 'Method App\Models\Permission::features() has no return type specified.'
 			identifier: missingType.return
 			count: 1
 			path: app/Models/Permission.php
-
-		-
-			rawMessage: 'Method App\Models\Permission::generateUuid() has no return type specified.'
-			identifier: missingType.return
-			count: 1
-			path: app/Models/Permission.php
-
-		-
-			rawMessage: 'Method App\Models\Role::generateUuid() has no return type specified.'
-			identifier: missingType.return
-			count: 1
-			path: app/Models/Role.php
 
 		-
 			rawMessage: 'Class App\Models\Subscription uses generic trait Illuminate\Database\Eloquent\Factories\HasFactory but does not specify its types: TFactory'
@@ -1537,12 +1453,6 @@ parameters:
 			path: app/Models/Tenant.php
 
 		-
-			rawMessage: 'Method App\Models\Tenant::generateUuid() has no return type specified.'
-			identifier: missingType.return
-			count: 1
-			path: app/Models/Tenant.php
-
-		-
 			rawMessage: 'Method App\Models\Tenant::gravatar() return type with generic class Illuminate\Database\Eloquent\Casts\Attribute does not specify its types: TGet, TSet'
 			identifier: missingType.generics
 			count: 1
@@ -1575,12 +1485,6 @@ parameters:
 		-
 			rawMessage: 'Class App\Models\TenantApiKey uses generic trait Illuminate\Database\Eloquent\Factories\HasFactory but does not specify its types: TFactory'
 			identifier: missingType.generics
-			count: 1
-			path: app/Models/TenantApiKey.php
-
-		-
-			rawMessage: 'Method App\Models\TenantApiKey::generateUuid() has no return type specified.'
-			identifier: missingType.return
 			count: 1
 			path: app/Models/TenantApiKey.php
 
@@ -1627,26 +1531,8 @@ parameters:
 			path: app/Models/TenantLlmConfig.php
 
 		-
-			rawMessage: 'Method App\Models\TenantLlmConfig::generateUuid() has no return type specified.'
-			identifier: missingType.return
-			count: 1
-			path: app/Models/TenantLlmConfig.php
-
-		-
-			rawMessage: 'Method App\Models\TenantModule::generateUuid() has no return type specified.'
-			identifier: missingType.return
-			count: 1
-			path: app/Models/TenantModule.php
-
-		-
 			rawMessage: 'Class App\Models\TenantPaymentGateway uses generic trait Illuminate\Database\Eloquent\Factories\HasFactory but does not specify its types: TFactory'
 			identifier: missingType.generics
-			count: 1
-			path: app/Models/TenantPaymentGateway.php
-
-		-
-			rawMessage: 'Method App\Models\TenantPaymentGateway::generateUuid() has no return type specified.'
-			identifier: missingType.return
 			count: 1
 			path: app/Models/TenantPaymentGateway.php
 
@@ -1753,12 +1639,6 @@ parameters:
 			path: app/Models/User.php
 
 		-
-			rawMessage: 'Method App\Models\User::generateUuid() has no return type specified.'
-			identifier: missingType.return
-			count: 1
-			path: app/Models/User.php
-
-		-
 			rawMessage: 'Method App\Models\User::gravatar() return type with generic class Illuminate\Database\Eloquent\Casts\Attribute does not specify its types: TGet, TSet'
 			identifier: missingType.generics
 			count: 1
@@ -1803,12 +1683,6 @@ parameters:
 		-
 			rawMessage: 'Method App\Models\UserLoginHistory::currentMonth() has parameter $query with no type specified.'
 			identifier: missingType.parameter
-			count: 1
-			path: app/Models/UserLoginHistory.php
-
-		-
-			rawMessage: 'Method App\Models\UserLoginHistory::generateUuid() has no return type specified.'
-			identifier: missingType.return
 			count: 1
 			path: app/Models/UserLoginHistory.php
 

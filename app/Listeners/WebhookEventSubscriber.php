@@ -36,41 +36,15 @@ final class WebhookEventSubscriber
     }
 
     /**
-     * Handle User Created / Registered events.
-     */
-    public function handleUserCreated(mixed $event): void
-    {
-        $user = $event->user ?? null;
-        if (! $user) {
-            return;
-        }
-
-        $tenantId = (string) ($user->tenant_id ?? '');
-        if (! $tenantId) {
-            return;
-        }
-
-        $this->dispatchWebhooks($tenantId, 'user.created', [
-            'user_id' => (string) ($user->uuid ?? $user->id),
-            'name' => (string) $user->name,
-            'email' => (string) $user->email,
-            'created_at' => $user->created_at?->toIso8601String(),
-        ]);
-    }
-
-    /**
      * Register the listeners for the subscriber.
+     * Note: User registration (user.created) webhook dispatching is intentionally not wired
+     * to protect user PII from being sent to external webhook endpoints without explicit privacy scoping.
      */
     public function subscribe(Dispatcher $events): void
     {
         $events->listen(
             \App\Events\InvoiceIssued::class,
             [self::class, 'handleInvoiceIssued']
-        );
-
-        $events->listen(
-            \Illuminate\Auth\Events\Registered::class,
-            [self::class, 'handleUserCreated']
         );
     }
 

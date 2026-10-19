@@ -123,25 +123,3 @@ test('it dispatches UsageLimitAlertNotification to tenant admins when alert thre
         }
     );
 });
-
-test('WebhookEventSubscriber dispatches SendWebhookJob on user.created event', function () {
-    Illuminate\Support\Facades\Queue::fake();
-
-    $endpoint = App\Models\WebhookEndpoint::create([
-        'tenant_id' => (string) $this->tenant->id,
-        'url' => 'https://example.com/webhook',
-        'secret' => 'whsec_test',
-        'events' => ['user.created'],
-        'is_active' => true,
-    ]);
-
-    $user = App\Models\User::factory()->create(['tenant_id' => $this->tenant->id]);
-
-    event(new Illuminate\Auth\Events\Registered($user));
-
-    Illuminate\Support\Facades\Queue::assertPushed(App\Jobs\SendWebhookJob::class, function ($job) use ($user, $endpoint) {
-        return $job->endpoint->id === $endpoint->id
-            && $job->event === 'user.created'
-            && $job->payload['email'] === $user->email;
-    });
-});
