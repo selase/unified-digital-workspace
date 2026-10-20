@@ -20,7 +20,7 @@ final class IncidentReportController extends Controller
             ->whereHas('incident', function ($query) use ($request): void {
                 $query->visibleTo($request->user());
             })
-            ->with(['incident:id,title,reference_code', 'user:id,first_name,last_name,email'])
+            ->with(['incident:id,title,reference_code', 'user:uuid,first_name,last_name,email'])
             ->latest('created_at')
             ->paginate(20);
 

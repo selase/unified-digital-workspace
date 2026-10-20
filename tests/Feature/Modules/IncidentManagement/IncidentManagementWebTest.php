@@ -301,3 +301,46 @@ it('marks incident as resolved and closes incident', function (): void {
     $incident->refresh();
     expect($incident->closed_at)->not->toBeNull();
 });
+
+test('incident progress reports and the task board load when reports and tasks have people attached', function (): void {
+    [$user, $tenant] = createIncidentWebContext();
+
+    $category = IncidentCategory::create(['tenant_id' => $tenant->id, 'name' => 'Facilities', 'slug' => 'facilities']);
+    $priority = IncidentPriority::create(['tenant_id' => $tenant->id, 'name' => 'Medium', 'slug' => 'medium', 'level' => 3]);
+    $status = IncidentStatus::create(['tenant_id' => $tenant->id, 'name' => 'Open', 'slug' => 'open', 'is_default' => true]);
+
+    $incident = Incident::create([
+        'tenant_id' => $tenant->id,
+        'title' => 'Burst pipe in ward corridor',
+        'description' => 'Water on the floor near ward 3.',
+        'category_id' => $category->id,
+        'priority_id' => $priority->id,
+        'status_id' => $status->id,
+        'reported_by_id' => (string) $user->uuid,
+        'reported_via' => 'internal',
+    ]);
+
+    App\Modules\IncidentManagement\Models\IncidentProgressReport::create([
+        'tenant_id' => $tenant->id,
+        'incident_id' => $incident->id,
+        'user_id' => (string) $user->uuid,
+        'body' => 'Plumber has isolated the supply.',
+        'is_internal' => false,
+    ]);
+
+    IncidentTask::create([
+        'tenant_id' => $tenant->id,
+        'incident_id' => $incident->id,
+        'title' => 'Replace the damaged section',
+        'assigned_to_id' => (string) $user->uuid,
+        'status' => 'open',
+    ]);
+
+    test()->actingAs($user)->get(route('incident-management.reports.index'))
+        ->assertOk()
+        ->assertSee('Plumber has isolated the supply.');
+
+    test()->actingAs($user)->get(route('incident-management.tasks.index'))
+        ->assertOk()
+        ->assertSee('Replace the damaged section');
+});

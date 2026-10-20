@@ -20,7 +20,7 @@ final class IncidentTaskBoardController extends Controller
             ->whereHas('incident', function ($query) use ($request): void {
                 $query->visibleTo($request->user());
             })
-            ->with(['incident:id,title,reference_code', 'assignedTo:id,first_name,last_name,email'])
+            ->with(['incident:id,title,reference_code', 'assignedTo:uuid,first_name,last_name,email'])
             ->latest('updated_at')
             ->paginate(25);
 
