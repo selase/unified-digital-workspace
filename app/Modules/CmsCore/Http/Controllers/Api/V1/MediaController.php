@@ -17,6 +17,10 @@ final class MediaController extends Controller
     {
         $data = $request->validated();
         $attributes = array_diff_key($data, ['post_ids' => true]);
+        $tenant = app(\App\Services\Tenancy\TenantContext::class)->getTenant();
+        if ($tenant) {
+            $attributes = app(\App\Services\Tenancy\HybridCapacityService::class)->mediaAttributes($tenant, $attributes, null);
+        }
 
         $media = Media::create($attributes);
 
@@ -33,6 +37,10 @@ final class MediaController extends Controller
     {
         $data = $request->validated();
         $attributes = array_diff_key($data, ['post_ids' => true]);
+        $tenant = app(\App\Services\Tenancy\TenantContext::class)->getTenant();
+        if ($tenant) {
+            $attributes = app(\App\Services\Tenancy\HybridCapacityService::class)->mediaAttributes($tenant, $attributes, $media);
+        }
 
         $media->fill($attributes);
         $media->save();
@@ -46,6 +54,11 @@ final class MediaController extends Controller
 
     public function destroy(Media $media): JsonResponse
     {
+        $tenant = app(\App\Services\Tenancy\TenantContext::class)->getTenant();
+        $capacity = app(\App\Services\Tenancy\HybridCapacityService::class);
+        if ($tenant && $capacity->limit($tenant, 'files') !== null) {
+            $capacity->deleteMediaFiles($tenant, $media);
+        }
         $media->delete();
 
         return response()->json([], 204);

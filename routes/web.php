@@ -92,6 +92,10 @@ Route::group(['middleware' => ['auth', '2fa_challenge', 'onboarding']], function
 
     // Tenant routes
     Route::group(['prefix' => 'tenants', 'as' => 'tenants.'], function (): void {
+        Route::get('{tenant:uuid}/billing-agreements', [App\Http\Controllers\Admin\BillingAgreementController::class, 'index'])->whereUuid('tenant')->name('billing-agreements.index');
+        Route::post('{tenant:uuid}/billing-agreements', [App\Http\Controllers\Admin\BillingAgreementController::class, 'store'])->whereUuid('tenant')->name('billing-agreements.store');
+        Route::post('{tenant:uuid}/billing-capacity/audit', [App\Http\Controllers\Admin\BillingAgreementController::class, 'audit'])->whereUuid('tenant')->name('billing-capacity.audit');
+        Route::put('{tenant:uuid}/billing-access/{user}', [App\Http\Controllers\Admin\BillingAgreementController::class, 'assign'])->whereUuid(['tenant', 'user'])->name('billing-access.update');
         Route::get('reset', [TenantController::class, 'resetTenant'])
             ->name('reset');
         Route::post('all', [TenantController::class, 'getAllTenants'])

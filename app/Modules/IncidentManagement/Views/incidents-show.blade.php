@@ -34,11 +34,11 @@
         >
             <x-slot:actions>
                 <div class="flex flex-wrap items-center gap-2">
-                    @can('incidents.update')
+                    @if(! ($billingOwnScope ?? false) && auth()->user()->can('incidents.update'))
                         <a href="{{ route('incident-management.incidents.edit', $incident) }}" class="kt-btn kt-btn-outline">
                             Edit Incident
                         </a>
-                    @endcan
+                    @endif
                     <a href="{{ route('incident-management.incidents.index') }}" class="kt-btn kt-btn-outline">
                         Back to Register
                     </a>
@@ -136,7 +136,7 @@
                                 @endphp
                                 <div class="p-3.5 rounded-xl border {{ $isDone ? 'border-border/60 bg-muted/10 opacity-75' : 'border-border bg-card' }} flex flex-wrap items-center justify-between gap-3">
                                     <div class="flex items-start gap-3 min-w-0">
-                                        @can('incidents.tasks.manage')
+                                        @if(! ($billingOwnScope ?? false) && auth()->user()->can('incidents.tasks.manage'))
                                             <form action="{{ route('incident-management.incidents.tasks.toggle', [$incident, $task]) }}" method="POST" class="mt-0.5">
                                                 @csrf
                                                 <button
@@ -151,7 +151,7 @@
                                                     @endif
                                                 </button>
                                             </form>
-                                        @endcan
+                                        @endif
                                         <div class="min-w-0">
                                             <p class="text-sm font-semibold text-foreground {{ $isDone ? 'line-through text-muted-foreground' : '' }}">
                                                 {{ $task->title }}
@@ -181,7 +181,7 @@
                         </div>
 
                         {{-- Add CAPA Task Form --}}
-                        @can('incidents.tasks.manage')
+                        @if(! ($billingOwnScope ?? false) && auth()->user()->can('incidents.tasks.manage'))
                             <div class="pt-4 border-t border-border">
                                 <h4 class="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Add CAPA Task</h4>
                                 <form action="{{ route('incident-management.incidents.tasks.store', $incident) }}" method="POST" class="space-y-3">
@@ -220,7 +220,7 @@
                                     </div>
                                 </form>
                             </div>
-                        @endcan
+                        @endif
                     </div>
                 </x-metronic.card>
 
@@ -254,7 +254,7 @@
                         </div>
 
                         {{-- Post Note Form --}}
-                        @can('incidents.comments.manage')
+                        @if(! ($billingOwnScope ?? false) && auth()->user()->can('incidents.comments.manage'))
                             <div class="pt-4 border-t border-border">
                                 <h4 class="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Post Investigation Note</h4>
                                 <form action="{{ route('incident-management.incidents.comments.store', $incident) }}" method="POST" class="space-y-3">
@@ -277,7 +277,7 @@
                                     </div>
                                 </form>
                             </div>
-                        @endcan
+                        @endif
                     </div>
                 </x-metronic.card>
             </div>
@@ -312,7 +312,7 @@
                 {{-- Triage & Workflow Actions --}}
                 <x-metronic.card title="Workflow & Remediation" subtitle="Status transitions and investigator controls">
                     <div class="space-y-4">
-                        @can('incidents.assign')
+                        @if(! ($billingOwnScope ?? false) && auth()->user()->can('incidents.assign'))
                             <div>
                                 <label class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">
                                     Reassign Investigator
@@ -334,9 +334,9 @@
                                 </form>
                             </div>
                             <hr class="border-border" />
-                        @endcan
+                        @endif
 
-                        @can('incidents.escalate')
+                        @if(! ($billingOwnScope ?? false) && auth()->user()->can('incidents.escalate'))
                             <div>
                                 <label class="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">
                                     Escalate Severity
@@ -358,9 +358,9 @@
                                 </form>
                             </div>
                             <hr class="border-border" />
-                        @endcan
+                        @endif
 
-                        @can('incidents.update')
+                        @if(! ($billingOwnScope ?? false) && auth()->user()->can('incidents.update'))
                             <div class="space-y-2.5">
                                 @if(!str_contains(mb_strtolower($incident->status?->name ?? ''), 'resolve') && !str_contains(mb_strtolower($incident->status?->name ?? ''), 'close'))
                                     <form action="{{ route('incident-management.incidents.resolve', $incident) }}" method="POST">
@@ -394,7 +394,7 @@
                                     </form>
                                 @endif
                             </div>
-                        @endcan
+                        @endif
                     </div>
                 </x-metronic.card>
 

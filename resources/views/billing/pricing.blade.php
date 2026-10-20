@@ -6,11 +6,29 @@
     <section class="grid gap-6">
         <div class="kt-card p-6 lg:p-8 text-center">
             <p class="text-xs uppercase tracking-wide text-muted-foreground">Billing</p>
-            <h1 class="mt-2 text-3xl font-semibold text-foreground">Choose Your Plan</h1>
+            <h1 class="mt-2 text-3xl font-semibold text-foreground">{{ isset($billingAgreement) ? 'Your Billing Agreement' : 'Choose Your Plan' }}</h1>
             <p class="mt-3 text-sm text-muted-foreground">
-                Direct plan changes are available before usage is recorded in the current month. After usage begins, contact an administrator to arrange a change for the next billing period. Initial plan setup is still available.
+                @if(isset($billingAgreement))
+                    Your saved agreement controls billing and access. Contact an administrator to schedule plan, module or editor-capacity changes for a future billing month.
+                @else
+                    Direct plan changes are available before usage is recorded in the current month. After usage begins, contact an administrator to arrange a change for the next billing period. Initial plan setup is still available.
+                @endif
             </p>
+            <p class="mt-3 text-sm text-muted-foreground">Website Essentials (GHS 300 / USD 25) and Managed Business (GHS 600 / USD 50) include editors and website usage allowances, with separate one-time setup fees. Operational modules are optional. Existing bundle agreements remain unchanged until an explicit transition is agreed.</p>
+            <a href="{{ route('product.template') }}#pricing" class="kt-btn kt-btn-outline mt-4">Preview hybrid pricing and estimate your costs</a>
         </div>
+
+        @if(isset($billingAgreement))
+            @php
+                $agreedPlan = $billingAgreement->snapshot['hybrid']['website_plans'][$billingAgreement->plan_slug];
+            @endphp
+            <article class="kt-card p-6">
+                <h2 class="text-xl font-semibold text-foreground">{{ $agreedPlan['name'] }}</h2>
+                <p class="mt-3 text-foreground">{{ $billingAgreement->currency }} {{ number_format($agreedPlan[$billingAgreement->currency], 2) }} per month, effective {{ $billingAgreement->effective_from->format('Y-m-d') }}.</p>
+                <p class="mt-3 text-sm text-muted-foreground">{{ $billingAgreement->editor_seats }} website editor seats; {{ $agreedPlan['files_gib'] }} GiB website files; {{ $agreedPlan['database_gib'] }} GiB logical website database; {{ $agreedPlan['bandwidth_gib'] }} GiB monthly application-delivered bandwidth. Access, purchased module subscriptions and eligible email usage are additional.</p>
+                <p class="mt-3 text-sm text-muted-foreground">Your saved agreement controls your charges. Catalogue changes do not reprice it. Ask an administrator to schedule any changes for a future billing month.</p>
+            </article>
+        @endif
 
         <div class="grid gap-6 xl:grid-cols-3">
             @foreach($packages as $package)

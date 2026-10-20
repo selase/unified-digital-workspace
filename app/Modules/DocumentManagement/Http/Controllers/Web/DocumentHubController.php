@@ -13,8 +13,12 @@ use Illuminate\Http\Request;
 
 final class DocumentHubController extends Controller
 {
-    public function index(Request $request): View
+    public function index(Request $request): View|\Illuminate\Http\RedirectResponse
     {
+        if ($request->user() && app(\App\Services\Tenancy\BillingAccessService::class)->isSelfService($request->user())) {
+            return redirect()->route('document-management.documents.index');
+        }
+
         abort_if(! $request->user()?->can('documents.view'), 403);
 
         $documents = Document::query()

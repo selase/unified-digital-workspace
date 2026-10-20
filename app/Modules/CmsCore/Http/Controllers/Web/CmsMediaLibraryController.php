@@ -242,7 +242,17 @@ final class CmsMediaLibraryController extends Controller
     {
         abort_if(! $request->user()?->can('cms.media.manage'), 403);
 
-        Storage::disk($media->disk)->delete($media->path);
+        $tenant = app(\App\Services\Tenancy\TenantContext::class)->getTenant();
+        if ($tenant) {
+            $capacity = app(\App\Services\Tenancy\HybridCapacityService::class);
+            if ($capacity->limit($tenant, 'files') !== null) {
+                $capacity->deleteMediaFiles($tenant, $media);
+            } else {
+                $capacity->deleteFile($tenant, $media->disk, $media->path);
+            }
+        } else {
+            Storage::disk($media->disk)->delete($media->path);
+        }
         $media->delete();
 
         return redirect()

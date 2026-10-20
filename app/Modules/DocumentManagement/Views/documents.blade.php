@@ -14,23 +14,25 @@
         >
             <x-slot:actions>
                 <div class="flex flex-wrap items-center gap-2">
+                    @if(! ($billingOwnScope ?? false))
                     <a href="{{ route('document-management.compliance.index') }}" class="kt-btn kt-btn-outline flex items-center gap-1.5">
                         <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                         </svg>
                         Compliance Overview
                     </a>
+                    @endif
                     <a href="{{ route('document-management.index') }}" class="kt-btn kt-btn-outline">
                         Back to Hub
                     </a>
-                    @can('documents.create')
+                    @if(! ($billingOwnScope ?? false) && auth()->user()->can('documents.create'))
                         <a href="{{ route('document-management.documents.create') }}" class="kt-btn kt-btn-primary flex items-center gap-1.5">
                             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                             </svg>
                             Register Document
                         </a>
-                    @endcan
+                    @endif
                 </div>
             </x-slot:actions>
         </x-metronic.page-header>

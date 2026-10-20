@@ -9,9 +9,11 @@
         description="Build institutional request forms, HR employee requisitions, feedback surveys, and live community polls."
     >
         <x-slot:actions>
+            @if(! ($billingOwnScope ?? false))
             <a class="kt-btn kt-btn-primary" href="{{ route('forms.create') }}">
                 + Create New Form
             </a>
+            @endif
         </x-slot:actions>
     </x-metronic.page-header>
 
@@ -129,11 +131,13 @@
                                             Open
                                         </a>
                                     @endif
+                                    @if(! ($billingOwnScope ?? false))
                                     <a href="{{ route('forms.results', $form) }}" class="kt-btn kt-btn-xs kt-btn-outline" title="Results & Aggregates">
                                         Results
                                     </a>
+                                    @endif
                                     <a href="{{ route('forms.show', $form) }}" class="kt-btn kt-btn-xs kt-btn-primary">
-                                        Manage
+                                        {{ ($billingOwnScope ?? false) ? 'Respond' : 'Manage' }}
                                     </a>
                                 </div>
                             </td>

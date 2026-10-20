@@ -100,7 +100,7 @@
                         </div>
                     @endif
 
-                    @if($document->status === 'published')
+                    @if($document->status === 'published' && ! ($billingOwnScope ?? false))
                         <a href="{{ route('document-management.documents.compliance', $document) }}" class="kt-btn kt-btn-xs kt-btn-outline flex items-center gap-1">
                             <span>Compliance: {{ $ackPercentage }}%</span>
                             <span class="text-muted-foreground font-normal">({{ $ackCount }}/{{ $tenantUsersCount }})</span>

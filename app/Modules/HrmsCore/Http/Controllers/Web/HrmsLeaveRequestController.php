@@ -9,6 +9,7 @@ use App\Modules\HrmsCore\Enums\LeaveStatus;
 use App\Modules\HrmsCore\Models\Employees\Employee;
 use App\Modules\HrmsCore\Models\Leave\LeaveCategory;
 use App\Modules\HrmsCore\Models\Leave\LeaveRequest;
+use App\Services\Tenancy\BillingAccessService;
 use Carbon\Carbon;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -23,7 +24,9 @@ final class HrmsLeaveRequestController extends Controller
         $search = mb_trim((string) $request->string('search'));
         $status = (string) $request->string('status');
 
-        $leaveRequests = LeaveRequest::query()
+        $ownScope = app(BillingAccessService::class)->isSelfService($request->user());
+        $baseQuery = LeaveRequest::query()->when($ownScope, fn ($query) => $query->whereHas('employee', fn ($employee) => $employee->where('user_id', $request->user()->id)));
+        $leaveRequests = (clone $baseQuery)
             ->with(['employee:id,first_name,last_name,employee_staff_id', 'leaveCategory:id,name'])
             ->when($search !== '', function ($query) use ($search): void {
                 $query->whereHas('employee', function ($employeeQuery) use ($search): void {
@@ -41,14 +44,14 @@ final class HrmsLeaveRequestController extends Controller
             ->withQueryString();
 
         $metrics = [
-            'total' => LeaveRequest::query()->count(),
-            'pending' => LeaveRequest::query()->where('status', LeaveStatus::Pending)->count(),
-            'approved' => LeaveRequest::query()->where('status', LeaveStatus::Approved)->count(),
-            'rejected' => LeaveRequest::query()->where('status', LeaveStatus::Rejected)->count(),
+            'total' => (clone $baseQuery)->count(),
+            'pending' => (clone $baseQuery)->where('status', LeaveStatus::Pending)->count(),
+            'approved' => (clone $baseQuery)->where('status', LeaveStatus::Approved)->count(),
+            'rejected' => (clone $baseQuery)->where('status', LeaveStatus::Rejected)->count(),
         ];
 
         return view('hrms-core::leave-requests', [
-            'leaveRequests' => $leaveRequests,
+            'leaveRequests' => $leaveRequests, 'billingOwnScope' => $ownScope,
             'search' => $search,
             'status' => $status,
             'metrics' => $metrics,
@@ -60,6 +63,7 @@ final class HrmsLeaveRequestController extends Controller
         abort_if(! $request->user()?->can('hrms.leave.request') && ! $request->user()?->can('hrms.leave.view'), 403);
 
         $employees = Employee::query()
+            ->when(app(BillingAccessService::class)->isSelfService($request->user()), fn ($query) => $query->where('user_id', $request->user()->id))
             ->where('is_active', true)
             ->orderBy('first_name')
             ->get(['id', 'first_name', 'last_name', 'employee_staff_id']);
@@ -91,6 +95,7 @@ final class HrmsLeaveRequestController extends Controller
         ]);
 
         $employee = Employee::query()->findOrFail((int) $validated['employee_id']);
+        abort_if(app(BillingAccessService::class)->isSelfService($request->user()) && (string) $employee->user_id !== (string) $request->user()->id, 403, 'You may submit leave only for yourself.');
         LeaveCategory::query()->findOrFail((int) $validated['leave_category_id']);
 
         if (! empty($validated['relieving_officer_id'])) {

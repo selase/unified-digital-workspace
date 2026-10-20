@@ -11,8 +11,12 @@ use Illuminate\Http\Request;
 
 final class IncidentHubController extends Controller
 {
-    public function index(Request $request): View
+    public function index(Request $request): View|\Illuminate\Http\RedirectResponse
     {
+        if ($request->user() && app(\App\Services\Tenancy\BillingAccessService::class)->isSelfService($request->user())) {
+            return redirect()->route('incident-management.incidents.index');
+        }
+
         $this->authorize('viewAny', Incident::class);
 
         $baseQuery = Incident::query()

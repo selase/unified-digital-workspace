@@ -16,9 +16,23 @@ final class PricingService
     /**
      * Get the effective unit price for a metric for a specific tenant.
      */
-    public function getUnitPrice(Tenant $tenant, UsageMetric $metric, ?string $currency = null): ?UsagePrice
+    public function getUnitPrice(Tenant $tenant, UsageMetric $metric, ?string $currency = null, ?CarbonInterface $at = null): ?UsagePrice
     {
-        $currency ??= $tenant->billingCurrency();
+        $agreement = app(BillingAgreementService::class)->activeFor($tenant, $at);
+        $currency ??= $agreement !== null ? $agreement->currency : $tenant->billingCurrency();
+        if ($agreement) {
+            $snapshot = $agreement->snapshot;
+            if ($currency !== $agreement->currency || ! in_array($metric, [UsageMetric::EMAIL_COUNT, UsageMetric::DB_BYTES], true)
+                || ($metric === UsageMetric::DB_BYTES && ! ($snapshot['dedicated_db'] ?? false))) {
+                return null;
+            }
+            $rate = $snapshot['meters'][$metric->value] ?? null;
+
+            return $rate && isset($rate[$currency]) ? new UsagePrice([
+                'metric' => $metric, 'currency' => $currency,
+                'unit_price' => $rate[$currency], 'unit_quantity' => $rate['unit_quantity'],
+            ]) : null;
+        }
         // 1. Check for tenant-specific override
         $price = UsagePrice::where('target_type', Tenant::class)
             ->where('target_id', $tenant->id)
@@ -59,6 +73,8 @@ final class PricingService
     public function billableQuantities(Tenant $tenant, CarbonInterface $start, CarbonInterface $end): array
     {
         $quantities = [];
+        $agreement = app(BillingAgreementService::class)->activeFor($tenant, $start);
+        $dedicated = $agreement ? (bool) ($agreement->snapshot['dedicated_db'] ?? false) : $tenant->requiresDedicatedDb();
         $rollups = UsageRollup::where('tenant_id', $tenant->id)
             ->where('period', 'day')
             ->whereBetween('period_start', [$start, $end])
@@ -67,13 +83,18 @@ final class PricingService
                 && ($rollup->dimensions['billing_mode'] ?? null) === 'prepaid');
 
         foreach ($rollups->groupBy(fn (UsageRollup $rollup): string => $rollup->metric->value) as $metric => $rows) {
-            if ($metric === UsageMetric::USER_ACTIVE_MONTHLY->value || ($metric === UsageMetric::DB_BYTES->value && ! $tenant->requiresDedicatedDb())) {
+            if ($metric === UsageMetric::USER_ACTIVE_MONTHLY->value || ($metric === UsageMetric::DB_BYTES->value && ! $dedicated)
+                || ($agreement && ! in_array($metric, [UsageMetric::EMAIL_COUNT->value, UsageMetric::DB_BYTES->value], true))) {
                 continue;
             }
             $quantities[$metric] = in_array($metric, [UsageMetric::STORAGE_BYTES->value, UsageMetric::DB_BYTES->value], true)
                 ? (float) $rows->groupBy(fn (UsageRollup $rollup): string => $rollup->period_start->toDateString())
                     ->map(fn ($daily): float => (float) $daily->sum('value'))->avg()
                 : (float) $rows->sum('value');
+        }
+
+        if ($agreement) {
+            return $quantities;
         }
 
         $quantities[UsageMetric::USER_ACTIVE_MONTHLY->value] = (float) UsageRollup::where('tenant_id', $tenant->id)
@@ -88,8 +109,12 @@ final class PricingService
     /**
      * Get the effective markup percentage for a tenant.
      */
-    public function getEffectiveMarkup(Tenant $tenant): float
+    public function getEffectiveMarkup(Tenant $tenant, ?CarbonInterface $at = null): float
     {
+        if (app(BillingAgreementService::class)->activeFor($tenant, $at)) {
+            return 0.0;
+        }
+
         // Markups are additive: Global + Package + Tenant override
         $globalMarkup = (float) config('billing.global_markup', 0);
         $packageMarkup = $tenant->package ? (float) $tenant->package->markup_percentage : 0;
@@ -101,9 +126,9 @@ final class PricingService
     /**
      * Calculate the cost for a given usage quantity.
      */
-    public function calculateCost(Tenant $tenant, UsageMetric $metric, float $quantity): float
+    public function calculateCost(Tenant $tenant, UsageMetric $metric, float $quantity, ?CarbonInterface $at = null): float
     {
-        $price = $this->getUnitPrice($tenant, $metric);
+        $price = $this->getUnitPrice($tenant, $metric, at: $at);
 
         if (! $price || $price->unit_price <= 0) {
             return 0.0;
@@ -113,7 +138,7 @@ final class PricingService
         $baseCost = ($quantity / (float) $price->unit_quantity) * (float) $price->unit_price;
 
         // Apply Markup
-        $markupPercent = $this->getEffectiveMarkup($tenant);
+        $markupPercent = $this->getEffectiveMarkup($tenant, $at);
         $totalCost = $baseCost * (1 + ($markupPercent / 100));
 
         return round($totalCost, 6);

@@ -24,6 +24,7 @@ use App\Modules\IncidentManagement\Models\IncidentPriority;
 use App\Modules\IncidentManagement\Models\IncidentStatus;
 use App\Modules\IncidentManagement\Models\IncidentTask;
 use App\Modules\IncidentManagement\Services\IncidentSlaService;
+use App\Services\Tenancy\BillingAccessService;
 use App\Services\Tenancy\TenantContext;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
@@ -45,6 +46,7 @@ final class IncidentListController extends Controller
 
         $incidents = Incident::query()
             ->visibleTo($request->user())
+            ->when(app(BillingAccessService::class)->isSelfService($request->user()), fn ($query) => $query->where('reported_by_id', $request->user()->uuid))
             ->with(['status', 'priority', 'category'])
             ->when($search !== '', function ($query) use ($search): void {
                 $query->where(function ($searchQuery) use ($search): void {
@@ -83,6 +85,9 @@ final class IncidentListController extends Controller
     public function store(IncidentStoreRequest $request): RedirectResponse
     {
         $payload = $request->validated();
+        if (app(BillingAccessService::class)->isSelfService($request->user())) {
+            $payload = \Illuminate\Support\Arr::only($payload, ['title', 'description', 'category_id', 'priority_id', 'impact']);
+        }
         $payload['reported_by_id'] = (string) $request->user()?->uuid;
         $payload['reported_via'] = 'internal';
         $payload['status_id'] = $payload['status_id'] ?? $this->defaultStatusId();
@@ -130,6 +135,8 @@ final class IncidentListController extends Controller
     public function show(Request $request, Incident $incident): View
     {
         $this->authorize('view', $incident);
+        $ownScope = app(BillingAccessService::class)->isSelfService($request->user());
+        abort_if($ownScope && (string) $incident->reported_by_id !== (string) $request->user()->uuid, 403);
 
         $incident->load([
             'category',
@@ -144,6 +151,19 @@ final class IncidentListController extends Controller
             'escalations',
             'sla',
         ]);
+
+        if ($ownScope) {
+            $incident->setRelation('comments', $incident->comments()->where('is_internal', false)->with('user:id,uuid,first_name,last_name,email')->get());
+            foreach (['tasks', 'attachments', 'escalations'] as $relation) {
+                $incident->setRelation($relation, new \Illuminate\Database\Eloquent\Collection);
+            }
+            $incident->metadata = [];
+
+            return view('incident-management::incidents-show', [
+                'incident' => $incident, 'activities' => collect(), 'billingOwnScope' => true,
+                'statuses' => collect(), 'priorities' => collect(), 'categories' => collect(), 'assignees' => collect(),
+            ]);
+        }
 
         $activities = Activity::query()
             ->where('subject_type', Incident::class)
@@ -441,11 +461,13 @@ final class IncidentListController extends Controller
     {
         $tenant = app(TenantContext::class)->getTenant();
 
+        $ownScope = auth()->user() && app(BillingAccessService::class)->isSelfService(auth()->user());
+
         return [
-            'statuses' => IncidentStatus::query()->orderBy('sort_order')->orderBy('name')->get(['id', 'name']),
+            'statuses' => $ownScope ? collect() : IncidentStatus::query()->orderBy('sort_order')->orderBy('name')->get(['id', 'name']),
             'priorities' => IncidentPriority::query()->orderBy('level')->orderBy('name')->get(['id', 'name']),
             'categories' => IncidentCategory::query()->orderBy('name')->get(['id', 'name']),
-            'assignees' => $tenant
+            'assignees' => $tenant && ! $ownScope
                 ? $tenant->users()->orderBy('users.first_name')->get(['users.uuid', 'users.first_name', 'users.last_name', 'users.email'])
                 : collect(),
         ];

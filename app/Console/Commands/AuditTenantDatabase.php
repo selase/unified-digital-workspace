@@ -17,7 +17,7 @@ final class AuditTenantDatabase extends Command
      *
      * @var string
      */
-    protected $signature = 'tenants:audit-db';
+    protected $signature = 'tenants:audit-db {--tenant= : Audit only this tenant UUID}';
 
     /**
      * The console command description.
@@ -31,14 +31,17 @@ final class AuditTenantDatabase extends Command
      */
     public function handle(DatabaseMeter $meter, UsageService $usageService): void
     {
-        $tenants = Tenant::all();
+        $tenants = Tenant::query()->when($this->option('tenant'), fn ($query, $id) => $query->whereKey($id))->get();
 
         $this->info("Starting database audit for {$tenants->count()} tenants...");
 
         foreach ($tenants as $tenant) {
             $this->comment("Auditing Tenant: {$tenant->name} ({$tenant->id})");
 
-            $bytes = $meter->calculateUsage($tenant);
+            $capacity = app(\App\Services\Tenancy\HybridCapacityService::class);
+            $bytes = $capacity->limit($tenant, 'database') !== null
+                ? $capacity->auditDatabase($tenant)
+                : $meter->calculateUsage($tenant);
 
             $usageService->recordDailyGauge(
                 $tenant,

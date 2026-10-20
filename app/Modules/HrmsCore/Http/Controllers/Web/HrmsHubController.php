@@ -15,8 +15,12 @@ use Illuminate\Http\Request;
 
 final class HrmsHubController extends Controller
 {
-    public function index(Request $request): View
+    public function index(Request $request): View|\Illuminate\Http\RedirectResponse
     {
+        if ($request->user() && app(\App\Services\Tenancy\BillingAccessService::class)->isSelfService($request->user())) {
+            return redirect()->route('hrms-core.leave-requests.index');
+        }
+
         abort_if(! $request->user()?->can('hrms.employees.view'), 403);
 
         $totalEmployees = Employee::query()->count();

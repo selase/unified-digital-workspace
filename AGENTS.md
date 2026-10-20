@@ -292,3 +292,9 @@ The alias service still bridges legacy names to the new ones at `Gate::before` t
 - IMPORTANT: Always use `search-docs` tool for version-specific Tailwind CSS documentation and updated code examples. Never rely on training data.
 - IMPORTANT: Activate `tailwindcss-development` every time you're working with a Tailwind CSS or styling-related task.
 </laravel-boost-guidelines>
+
+## Hybrid billing agreements
+
+`config/usage-pricing.php` contains the opt-in hybrid catalogue. `HybridPricingService` remains estimate-only. Actual customer rates live in immutable `TenantBillingAgreement` snapshots and are resolved by effective date through `BillingAgreementService`; no package seeder or default signup silently converts existing agreements. Adoption is landlord-only, at a billing month boundary, and requires existing recurring provider subscriptions to be reconciled. New invoices use closed months and preserve historical legacy rates/markups when adoption happened later.
+
+`BillingAccessService` manages explicit member licensing separately from RBAC, including purchased editor capacity, revocation and durable highest monthly access. Billing middleware must run after API-key authentication and tenant resolution and before capacity/metering; never bypass this order. `HybridCapacityService` counts CMS/Forms tenant-owned bytes and application-served public response bodies, not physical shared database size or external CDN traffic. Storage audits must be at or after the effective transition; the scheduled audit and landlord readiness action initialise/reconcile counters. Preserve capacity-reducing recovery, byte-based accounting, file rollback and the no-double-billing rules when extending upload or response paths. No production migration, provider action or deployment is implied by local implementation.

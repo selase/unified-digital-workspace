@@ -158,7 +158,7 @@
                             <td class="py-3 px-3 text-right">
                                 <div class="inline-flex items-center gap-1.5 justify-end">
                                     @if($leaveStatusValue === 'pending' || $leaveStatusValue === 'verified')
-                                        @can('hrms.leave.approve')
+                                        @if(! ($billingOwnScope ?? false) && auth()->user()->can('hrms.leave.approve'))
                                             <form method="POST" action="{{ route('hrms-core.leave-requests.approve', $leaveRequest) }}">
                                                 @csrf
                                                 <button type="submit" class="kt-btn kt-btn-sm kt-btn-primary py-0.5 px-2 text-xs">
@@ -173,7 +173,7 @@
                                             </form>
                                         @else
                                             <span class="text-xs text-muted-foreground italic">Awaiting Approval</span>
-                                        @endcan
+                                        @endif
                                     @else
                                         <span class="text-xs text-muted-foreground font-mono">Decision Logged</span>
                                     @endif

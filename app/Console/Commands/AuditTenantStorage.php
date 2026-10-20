@@ -17,7 +17,7 @@ final class AuditTenantStorage extends Command
      *
      * @var string
      */
-    protected $signature = 'tenants:audit-storage';
+    protected $signature = 'tenants:audit-storage {--tenant= : Audit only this tenant UUID}';
 
     /**
      * The console command description.
@@ -31,14 +31,17 @@ final class AuditTenantStorage extends Command
      */
     public function handle(StorageMeter $meter, UsageService $usageService): void
     {
-        $tenants = Tenant::all();
+        $tenants = Tenant::query()->when($this->option('tenant'), fn ($query, $id) => $query->whereKey($id))->get();
 
         $this->info("Starting storage audit for {$tenants->count()} tenants...");
 
         foreach ($tenants as $tenant) {
             $this->comment("Auditing Tenant: {$tenant->name} ({$tenant->id})");
 
-            $bytes = $meter->calculateUsage($tenant);
+            $capacity = app(\App\Services\Tenancy\HybridCapacityService::class);
+            $bytes = $capacity->limit($tenant, 'files') !== null
+                ? $capacity->auditStorage($tenant)
+                : $meter->calculateUsage($tenant);
 
             $usageService->recordDailyGauge(
                 $tenant,

@@ -6,6 +6,7 @@ namespace App\Modules\DocumentManagement\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Modules\DocumentManagement\Models\Document;
+use App\Services\Tenancy\BillingAccessService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\Request;
 
@@ -20,6 +21,7 @@ final class DocumentLibraryController extends Controller
         $category = (string) $request->string('category');
 
         $documents = Document::query()
+            ->when(app(BillingAccessService::class)->isSelfService($request->user()), fn ($query) => $query->visibleTo((string) $request->user()->uuid)->where('status', Document::STATUS_PUBLISHED))
             ->with(['currentVersion', 'owner:uuid,first_name,last_name,email', 'reviewer:uuid,first_name,last_name,email'])
             ->when($search !== '', function ($query) use ($search): void {
                 $query->where(function ($q) use ($search): void {
@@ -39,7 +41,7 @@ final class DocumentLibraryController extends Controller
             ->withQueryString();
 
         return view('document-management::documents', [
-            'documents' => $documents,
+            'documents' => $documents, 'billingOwnScope' => app(BillingAccessService::class)->isSelfService($request->user()),
             'search' => $search,
             'status' => $status,
             'category' => $category,

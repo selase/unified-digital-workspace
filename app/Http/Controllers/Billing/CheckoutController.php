@@ -62,6 +62,10 @@ final class CheckoutController extends Controller
 
     private function handlePlanCheckout(Request $request, $tenant)
     {
+        if (\App\Models\TenantBillingAgreement::query()->where('tenant_id', $tenant->id)->exists()) {
+            return back()->with('error', 'This organisation has a saved hybrid billing agreement. Ask an administrator to schedule any plan changes for a future billing month.');
+        }
+
         $validated = $request->validate([
             'plan' => 'required|string',
         ]);

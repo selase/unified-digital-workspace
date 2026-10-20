@@ -64,6 +64,7 @@ final class Kernel extends HttpKernel
             Middleware\ResolveTenant::class,
             SubstituteBindings::class,
             Middleware\RedirectAdminFromCustomDomain::class,
+            Middleware\EnforceBillingAccess::class,
             Middleware\EnforceUsageLimits::class,
             Middleware\MeterRequestUsage::class,
             Middleware\TrackActiveUser::class,
@@ -74,6 +75,7 @@ final class Kernel extends HttpKernel
             'throttle:api',
             Middleware\ResolveTenant::class,
             SubstituteBindings::class,
+            Middleware\EnforceBillingAccess::class,
             Middleware\EnforceUsageLimits::class,
             Middleware\MeterRequestUsage::class,
             Middleware\TrackActiveUser::class,
@@ -112,4 +114,16 @@ final class Kernel extends HttpKernel
         '2fa_challenge' => Middleware\TwoFactorChallenge::class,
         'cms.website' => Middleware\CmsWebsiteMode::class,
     ];
+
+    public function __construct(\Illuminate\Contracts\Foundation\Application $app, \Illuminate\Routing\Router $router)
+    {
+        parent::__construct($app, $router);
+
+        $this->addToMiddlewarePriorityBefore(SubstituteBindings::class, Middleware\ResolveTenant::class);
+        $this->addToMiddlewarePriorityAfter(Middleware\ResolveTenant::class, Middleware\AuthenticateWithApiKey::class);
+        $this->addToMiddlewarePriorityAfter(SubstituteBindings::class, Middleware\EnforceBillingAccess::class);
+        $this->addToMiddlewarePriorityAfter(Middleware\EnforceBillingAccess::class, Middleware\EnforceUsageLimits::class);
+        $this->addToMiddlewarePriorityAfter(Middleware\EnforceUsageLimits::class, Middleware\MeterRequestUsage::class);
+        $this->addToMiddlewarePriorityAfter(Middleware\MeterRequestUsage::class, Middleware\TrackActiveUser::class);
+    }
 }

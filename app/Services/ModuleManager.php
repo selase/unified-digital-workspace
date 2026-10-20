@@ -138,6 +138,19 @@ final class ModuleManager
         return true;
     }
 
+    public function isWebsiteExtensionForTenant(string $slug, Tenant $tenant): bool
+    {
+        $module = $this->find($slug);
+        $class = $module['provider'] ?? null;
+        if (! is_string($class) || ! is_subclass_of($class, \App\Modules\CmsCore\Providers\CmsSiteServiceProvider::class)) {
+            return false;
+        }
+        $provider = app()->getProvider($class) ?? new $class(app());
+
+        return $provider instanceof \App\Modules\CmsCore\Providers\CmsSiteServiceProvider
+            && $provider->getModuleSlug() === $slug && $provider->getTenantSlug() === $tenant->slug;
+    }
+
     /**
      * Enable a module for a tenant.
      *
@@ -430,6 +443,17 @@ final class ModuleManager
      */
     private function requiredFeaturesForTenant(array $module, Tenant $tenant): array
     {
+        $agreements = app(Tenancy\BillingAgreementService::class);
+        if ($agreements->activeFor($tenant) !== null) {
+            if ($this->isWebsiteExtensionForTenant($module['slug'], $tenant)) {
+                return array_values(array_unique(array_merge($module['required_features'] ?? [], ['custom-domains', 'module-cms-core'])));
+            }
+
+            return $module['slug'] === 'core' ? [] : array_values(array_unique(array_merge(
+                $module['required_features'] ?? [], ['module-'.$module['slug']],
+            )));
+        }
+
         $required = $module['required_features'] ?? [];
         $plans = config('packages.plans', []);
         $managedModules = array_unique(array_merge(...array_column($plans, 'modules')));
@@ -465,6 +489,15 @@ final class ModuleManager
      */
     private function tenantHasFeature(Tenant $tenant, string $featureSlug): bool
     {
+        $agreements = app(Tenancy\BillingAgreementService::class);
+        if (($agreement = $agreements->activeFor($tenant)) !== null) {
+            if (str_starts_with($featureSlug, 'module-')) {
+                return in_array(mb_substr($featureSlug, 7), $agreements->grantedModules($agreement), true);
+            }
+
+            return in_array($featureSlug, $agreements->grantedFeatures($agreement), true);
+        }
+
         $hasDirect = TenantFeature::query()
             ->where('tenant_id', $tenant->id)
             ->where('feature_key', $featureSlug)
@@ -495,6 +528,11 @@ final class ModuleManager
      */
     private function checkEntitlements(array $module, Tenant $tenant): void
     {
+        if (app(Tenancy\BillingAgreementService::class)->activeFor($tenant) !== null
+            && $this->isWebsiteExtensionForTenant($module['slug'], $tenant)
+            && ! $this->isEnabledForTenant('cms-core', $tenant)) {
+            throw new ModuleEntitlementException('A tenant website extension requires the CMS module to be enabled.');
+        }
         $required = $this->requiredFeaturesForTenant($module, $tenant);
 
         if ($required === []) {

@@ -74,7 +74,7 @@
                     </div>
                 @endif
 
-                @can('forms.review')
+                @if(! ($billingOwnScope ?? false) && auth()->user()->can('forms.review'))
                     <form action="{{ route('forms.submissions.review', [$form, $submission]) }}" method="POST" class="space-y-4">
                         @csrf
                         <div>
@@ -95,7 +95,7 @@
                             Save Review Decision
                         </button>
                     </form>
-                @endcan
+                @endif
             </div>
         </div>
 

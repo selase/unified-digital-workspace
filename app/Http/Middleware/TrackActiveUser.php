@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
+use App\Services\Tenancy\BillingAccessService;
+use App\Services\Tenancy\BillingAgreementService;
 use App\Services\Tenancy\TenantContext;
 use App\Services\Tenancy\UsageService;
 use Closure;
@@ -27,6 +29,20 @@ final class TrackActiveUser
     {
         $tenant = $this->context->getTenant();
         $user = $request->user();
+
+        if ($tenant && $user && app(BillingAgreementService::class)->activeFor($tenant) !== null) {
+            $admittedLevel = $request->attributes->get('hybrid_billing_access_level');
+            $admittedMonth = $request->attributes->get('hybrid_billing_month');
+            $response = $next($request);
+            if ($response->getStatusCode() < 400 && $request->attributes->get('hybrid_billing_access_allowed') === true) {
+                app(BillingAccessService::class)->recordActivity($tenant, $user,
+                    is_string($admittedLevel) ? $admittedLevel : null,
+                    is_string($admittedMonth) ? \Carbon\CarbonImmutable::parse($admittedMonth) : null,
+                );
+            }
+
+            return $response;
+        }
 
         if ($tenant && $user) {
             $cacheKey = "active_user_{$tenant->id}_{$user->id}_".now()->format('Y-m-d');

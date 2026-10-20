@@ -11,6 +11,9 @@
                     <h1 class="mt-2 text-2xl font-semibold text-foreground">Edit Tenant</h1>
                     <p class="mt-2 text-sm text-muted-foreground">Update organization settings, rates, and data isolation.</p>
                 </div>
+                @can('admin.tenants.update')
+                    <a href="{{ route('tenants.billing-agreements.index', $tenant->uuid) }}" class="kt-btn kt-btn-outline">Billing agreements &amp; access</a>
+                @endcan
                 <a href="{{ route('tenants.show', $tenant->uuid) }}" class="kt-btn kt-btn-outline">View Tenant</a>
             </div>
         </div>

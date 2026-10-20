@@ -60,7 +60,12 @@ final class MediaThumbnailService
         }
 
         $path = "cms/media/variants/{$media->id}-".self::VARIANT.'.jpg';
-        $disk->put($path, $resized['contents']);
+        $tenant = app(\App\Services\Tenancy\TenantContext::class)->getTenant();
+        if ($tenant) {
+            app(\App\Services\Tenancy\HybridCapacityService::class)->writeFile($tenant, $media->disk, $path, $resized['contents']);
+        } else {
+            $disk->put($path, $resized['contents']);
+        }
 
         MediaVariant::query()->updateOrCreate(
             ['media_id' => $media->id, 'variant' => self::VARIANT],

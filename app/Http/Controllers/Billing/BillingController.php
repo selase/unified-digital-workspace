@@ -64,6 +64,7 @@ final class BillingController extends Controller
         }
 
         $accruedMetered = $this->calculateAccruedMetered($tenant);
+        $billingAgreement = app(\App\Services\Tenancy\BillingAgreementService::class)->activeFor($tenant);
 
         return view('billing.index', [
             'tenant' => $tenant,
@@ -72,23 +73,31 @@ final class BillingController extends Controller
             'subscription' => $subscription,
             'monthlyStats' => $monthlyStats,
             'accruedMetered' => $accruedMetered,
+            'billingCurrency' => $billingAgreement !== null ? $billingAgreement->currency : $tenant->billingCurrency(),
         ]);
     }
 
     public function pricing(Request $request, \App\Services\Tenancy\TenantContext $tenantContext)
     {
         $tenant = $tenantContext->getTenant();
-        $packages = \App\Models\Package::where('is_active', true)->with('features')->get();
+        $agreement = $tenant ? app(\App\Services\Tenancy\BillingAgreementService::class)->activeFor($tenant) : null;
+        $packages = $agreement ? collect() : \App\Models\Package::where('is_active', true)->with('features')->get();
 
         return view('billing.pricing', [
             'tenant' => $tenant,
             'packages' => $packages,
             'currentPackage' => $tenant->package,
+            'billingAgreement' => $agreement,
         ]);
     }
 
     private function calculateAccruedMetered(\App\Models\Tenant $tenant): ?float
     {
+        $agreement = app(\App\Services\Tenancy\BillingAgreementService::class)->activeFor($tenant);
+        if ($agreement) {
+            return round(array_sum(array_column(app(\App\Services\Tenancy\HybridInvoiceService::class)->charges($tenant, $agreement, now()->startOfMonth(), now()), 'subtotal')), 2);
+        }
+
         $pricingService = app(\App\Services\Tenancy\PricingService::class);
         $total = 0.0;
         $start = now()->startOfMonth();

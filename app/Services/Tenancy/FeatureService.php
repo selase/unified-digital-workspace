@@ -24,6 +24,16 @@ final class FeatureService
             return false;
         }
 
+        $tenant = $this->context->getTenant() ?? \App\Models\Tenant::query()->find($tenantId);
+        $agreement = $tenant ? app(BillingAgreementService::class)->activeFor($tenant) : null;
+        if ($agreement && ($key === self::FEATURE_CUSTOM_DOMAINS || $key === 'commerce' || str_starts_with($key, 'module-'))) {
+            $agreements = app(BillingAgreementService::class);
+
+            return str_starts_with($key, 'module-')
+                ? in_array(mb_substr($key, 7), $agreements->grantedModules($agreement), true)
+                : in_array($key, $agreements->grantedFeatures($agreement), true);
+        }
+
         return (bool) Cache::remember("tenant_{$tenantId}_feature_{$key}", now()->addMinutes(10), fn () => TenantFeature::where('tenant_id', $tenantId)
             ->where('feature_key', $key)
             ->where('enabled', true)

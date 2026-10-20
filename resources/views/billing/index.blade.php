@@ -40,8 +40,8 @@
 
             <div class="kt-card p-6 xl:col-span-1">
                 <p class="text-xs uppercase tracking-wide text-muted-foreground">Projected</p>
-                <h2 class="mt-3 text-3xl font-semibold text-foreground">{{ $tenant->billingCurrency() }} {{ $accruedMetered === null ? 'Rates not configured' : number_format($accruedMetered, 2) }}</h2>
-                <p class="mt-2 text-sm text-muted-foreground">Accrued metered charges this month.</p>
+                <h2 class="mt-3 text-3xl font-semibold text-foreground">{{ $billingCurrency ?? $tenant->billingCurrency() }} {{ $accruedMetered === null ? 'Rates not configured' : number_format($accruedMetered, 2) }}</h2>
+                <p class="mt-2 text-sm text-muted-foreground">{{ app(\App\Services\Tenancy\BillingAgreementService::class)->activeFor($tenant) ? 'Estimated full-month subscription, access and usage charges before applicable taxes.' : 'Accrued metered charges this month.' }}</p>
                 <div class="mt-6">
                     <div class="h-2 rounded-full bg-accent">
                         <div class="h-2 rounded-full bg-primary" style="width: 65%"></div>

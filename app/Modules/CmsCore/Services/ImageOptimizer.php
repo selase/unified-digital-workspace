@@ -7,6 +7,7 @@ namespace App\Modules\CmsCore\Services;
 use GdImage;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
+use RuntimeException;
 
 /**
  * Prepares uploaded photos for the web before they are stored.
@@ -51,7 +52,7 @@ final class ImageOptimizer
             $dimensions = @getimagesize((string) $file->getRealPath());
 
             return [
-                'path' => (string) $file->store($directory, $disk),
+                'path' => $this->storeUpload($file, $directory, $disk),
                 'size_bytes' => (int) $file->getSize(),
                 'width' => $dimensions === false ? null : $dimensions[0],
                 'height' => $dimensions === false ? null : $dimensions[1],
@@ -61,7 +62,7 @@ final class ImageOptimizer
         }
 
         $path = mb_trim($directory, '/').'/'.$file->hashName();
-        Storage::disk($disk)->put($path, $optimized['contents']);
+        $this->storeContents($disk, $path, $optimized['contents']);
 
         return [
             'path' => $path,
@@ -141,6 +142,28 @@ final class ImageOptimizer
         }
 
         return ['contents' => $contents, 'width' => $width, 'height' => $height];
+    }
+
+    private function storeUpload(UploadedFile $file, string $directory, string $disk): string
+    {
+        $tenant = app(\App\Services\Tenancy\TenantContext::class)->getTenant();
+        if (! $tenant || app(\App\Services\Tenancy\HybridCapacityService::class)->limit($tenant, 'files') === null) {
+            return (string) $file->store($directory, $disk);
+        }
+
+        return $this->storeContents($disk, mb_trim($directory, '/').'/'.$file->hashName(), (string) file_get_contents((string) $file->getRealPath()));
+    }
+
+    private function storeContents(string $disk, string $path, string $contents): string
+    {
+        $tenant = app(\App\Services\Tenancy\TenantContext::class)->getTenant();
+        if ($tenant && app(\App\Services\Tenancy\HybridCapacityService::class)->limit($tenant, 'files') !== null) {
+            app(\App\Services\Tenancy\HybridCapacityService::class)->writeFile($tenant, $disk, $path, $contents);
+        } elseif (! Storage::disk($disk)->put($path, $contents)) {
+            throw new RuntimeException('Unable to write website file.');
+        }
+
+        return $path;
     }
 
     /**

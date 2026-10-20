@@ -2,9 +2,6 @@
 
 declare(strict_types=1);
 
-$planBundles = (require __DIR__.'/packages.php')['plans'];
-$usagePricing = require __DIR__.'/usage-pricing.php';
-
 return [
     'brand' => [
         'name' => 'StarterKit',
@@ -18,7 +15,7 @@ return [
             ['label' => 'Enterprise', 'href' => '/product-enterprise'],
         ],
         'cta_secondary' => ['label' => 'Sign in', 'href' => '/login'],
-        'cta_primary' => ['label' => 'Start for free', 'href' => '/register'],
+        'cta_primary' => ['label' => 'View pricing', 'href' => '/product-template#pricing'],
     ],
 
     'hero' => [
@@ -32,25 +29,6 @@ return [
             'alt' => 'App screenshot',
         ],
     ],
-
-    'plans' => array_map(
-        static function (string $slug, array $plan) use ($usagePricing): array {
-            return [
-                'name' => $plan['name'],
-                'description' => $plan['description'],
-                'active_user_prices' => $usagePricing['active_users'][$slug],
-                'most_popular' => $slug === 'team',
-                'features' => array_map(
-                    static fn (string $module): string => ucwords(str_replace('-', ' ', $module)),
-                    $plan['modules'],
-                ),
-                'custom_domains' => in_array('custom-domains', $plan['features'], true),
-                'cta' => ['label' => 'Contact us', 'href' => '/contact?plan='.$slug],
-            ];
-        },
-        array_keys($planBundles),
-        array_values($planBundles),
-    ),
 
     'intro' => [
         'eyebrow' => 'Onboarding',

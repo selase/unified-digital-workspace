@@ -10,6 +10,7 @@ use App\Modules\Forms\Models\FormField;
 use App\Modules\Forms\Models\FormSubmission;
 use App\Modules\Forms\Models\PollVote;
 use App\Modules\HrmsCore\Models\Organization\Department;
+use App\Services\Tenancy\BillingAccessService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -30,9 +31,17 @@ final class FormsWebController extends Controller
         $audience = $request->query('audience');
         $search = $request->query('search');
 
+        $ownScope = app(BillingAccessService::class)->isSelfService($request->user());
+        $departments = $ownScope ? $this->memberDepartmentIds($request) : [];
         $query = FormDefinition::query()
+            ->when($ownScope, fn ($query) => $query->where('status', 'published')->where(fn ($audience) => $audience
+                ->whereIn('target_audience', ['public', 'internal_only'])
+                ->orWhere(fn ($department) => $department->where('target_audience', 'departmental')->whereIn('target_department_id', $departments))))
             ->with(['creator:uuid,first_name,last_name', 'department:id,name'])
-            ->withCount(['submissions', 'pollVotes']);
+            ->withCount([
+                'submissions' => fn ($query) => $query->when($ownScope, fn ($own) => $own->where('user_id', $request->user()->uuid)),
+                'pollVotes' => fn ($query) => $query->when($ownScope, fn ($own) => $own->where('user_id', $request->user()->uuid)),
+            ]);
 
         if ($type) {
             $query->where('type', $type);
@@ -56,14 +65,14 @@ final class FormsWebController extends Controller
         $forms = $query->latest()->paginate(15)->withQueryString();
 
         $metrics = [
-            'total_forms' => FormDefinition::query()->count(),
-            'published_forms' => FormDefinition::query()->where('status', 'published')->count(),
-            'total_submissions' => FormSubmission::query()->count(),
-            'pending_reviews' => FormSubmission::query()->where('status', 'submitted')->count(),
+            'total_forms' => $ownScope ? (clone $query)->count() : FormDefinition::query()->count(),
+            'published_forms' => $ownScope ? (clone $query)->where('status', 'published')->count() : FormDefinition::query()->where('status', 'published')->count(),
+            'total_submissions' => FormSubmission::query()->when($ownScope, fn ($own) => $own->where('user_id', $request->user()->uuid))->count(),
+            'pending_reviews' => FormSubmission::query()->when($ownScope, fn ($own) => $own->where('user_id', $request->user()->uuid))->where('status', 'submitted')->count(),
         ];
 
         return view('forms::index', [
-            'forms' => $forms,
+            'forms' => $forms, 'billingOwnScope' => $ownScope,
             'metrics' => $metrics,
             'currentType' => $type,
             'currentStatus' => $status,
@@ -186,6 +195,9 @@ final class FormsWebController extends Controller
     {
         abort_if(! $request->user()?->can('forms.view'), 403);
         $this->authorizeAudience($request, $form);
+        if (app(BillingAccessService::class)->isSelfService($request->user())) {
+            return $this->publicShow($request, $form->slug);
+        }
 
         $form->load([
             'fields',
@@ -495,6 +507,10 @@ final class FormsWebController extends Controller
         abort_if((int) $submission->form_definition_id !== (int) $form->id, 404);
         $this->authorizeAudience($request, $form);
 
+        if (app(BillingAccessService::class)->isSelfService($request->user())) {
+            abort_unless((string) $submission->user_id === (string) $request->user()->uuid, 403);
+        }
+
         $submission->load([
             'user:uuid,first_name,last_name,email',
             'reviewer:uuid,first_name,last_name',
@@ -503,7 +519,7 @@ final class FormsWebController extends Controller
 
         return view('forms::submission-show', [
             'form' => $form,
-            'submission' => $submission,
+            'submission' => $submission, 'billingOwnScope' => app(BillingAccessService::class)->isSelfService($request->user()),
         ]);
     }
 
@@ -555,6 +571,7 @@ final class FormsWebController extends Controller
             ->firstOrFail();
 
         $this->authorizeAudience($request, $form);
+        abort_if($request->user() && app(BillingAccessService::class)->isSelfService($request->user()) && $form->status !== 'published', 404);
 
         $user = $request->user();
         $hasAlreadySubmitted = false;
@@ -734,6 +751,18 @@ final class FormsWebController extends Controller
         return back()->with('status', 'success')->with('message', 'Your submission has been received successfully.');
     }
 
+    /** @return list<int> */
+    private function memberDepartmentIds(Request $request): array
+    {
+        if (! \Illuminate\Support\Facades\Schema::connection('tenant')->hasTable('hrms_employees')) {
+            return [];
+        }
+
+        $employee = \App\Modules\HrmsCore\Models\Employees\Employee::query()->where('user_id', $request->user()->id)->first();
+
+        return $employee?->departments()->pluck('hrms_departments.id')->all() ?? [];
+    }
+
     private function authorizeAudience(Request $request, FormDefinition $form): void
     {
         if ($form->target_audience === 'public') {
@@ -747,7 +776,7 @@ final class FormsWebController extends Controller
         }
 
         if ($form->target_audience === 'departmental') {
-            if ($user->can('forms.manage')) {
+            if ($user->can('forms.manage') && ! app(BillingAccessService::class)->isSelfService($user)) {
                 return;
             }
 

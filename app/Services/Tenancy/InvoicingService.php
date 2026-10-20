@@ -26,6 +26,15 @@ final class InvoicingService
     {
         return DB::connection('landlord')->transaction(function () use ($tenant, $start, $end) {
             Tenant::query()->whereKey($tenant->id)->lockForUpdate()->firstOrFail();
+            $agreement = app(BillingAgreementService::class)->activeFor($tenant, $start);
+            if ($agreement) {
+                if (! $start->equalTo($start->copy()->startOfMonth()) || $end->toDateString() !== $start->copy()->endOfMonth()->toDateString() || $end->copy()->endOfDay()->isFuture()) {
+                    throw new DomainException('Hybrid invoices require a complete, finished calendar month. Use the current-month estimate for unfinished periods.');
+                }
+                $end = $end->copy()->endOfDay();
+            } elseif (app(BillingAgreementService::class)->activeFor($tenant, $end)) {
+                throw new DomainException('An invoice cannot mix legacy and hybrid billing periods.');
+            }
 
             // 1. Idempotency check: Already generated for this period?
             $existing = Invoice::where('tenant_id', $tenant->id)
@@ -46,21 +55,26 @@ final class InvoicingService
                 'period_end' => $end,
                 'due_at' => now()->addDays(14), // Default 14 days due
                 'status' => 'draft',
-                'currency' => $tenant->billingCurrency(),
+                'currency' => $agreement !== null ? $agreement->currency : $tenant->billingCurrency(),
+                'meta' => $agreement ? ['billing_agreement_id' => $agreement->id, 'billing_model' => 'hybrid'] : null,
             ]);
 
             $subtotal = 0.0;
 
             // 3. Add Base Plan Charge
-            $basePriceItem = $this->createBasePlanItem($tenant, $invoice);
+            $basePriceItem = $agreement ? null : $this->createBasePlanItem($tenant, $invoice);
             if ($basePriceItem) {
                 $subtotal += (float) $basePriceItem->subtotal;
             }
 
             // 4. Collect Metered Usage
-            $meteredItems = $this->createMeteredUsageItems($tenant, $invoice, $start, $end);
+            $meteredItems = $agreement ? [] : $this->createMeteredUsageItems($tenant, $invoice, $start, $end);
             foreach ($meteredItems as $item) {
                 $subtotal += (float) $item->subtotal;
+            }
+
+            if ($agreement) {
+                $subtotal += app(HybridInvoiceService::class)->append($tenant, $agreement, $invoice);
             }
 
             // 5. Calculate Taxes
@@ -135,12 +149,12 @@ final class InvoicingService
                 continue;
             }
 
-            $unitPriceObj = $this->pricingService->getUnitPrice($tenant, $metric);
-            if (! $unitPriceObj && $invoice->currency === 'GHS' && $this->pricingService->getUnitPrice($tenant, $metric, 'USD')) {
+            $unitPriceObj = $this->pricingService->getUnitPrice($tenant, $metric, $invoice->currency, $start);
+            if (! $unitPriceObj && $invoice->currency === 'GHS' && $this->pricingService->getUnitPrice($tenant, $metric, 'USD', $start)) {
                 throw new DomainException("No GHS rate configured for {$metric->value}; invoice generation stopped.");
             }
 
-            $cost = $this->pricingService->calculateCost($tenant, $metric, $quantity);
+            $cost = $this->pricingService->calculateCost($tenant, $metric, $quantity, $start);
 
             if ($cost <= 0 && (! $unitPriceObj || $unitPriceObj->unit_price <= 0)) {
                 continue; // Skip free/unpriced metrics
@@ -156,7 +170,7 @@ final class InvoicingService
                 'meta' => [
                     'type' => 'metered',
                     'unit_quantity' => $unitPriceObj ? $unitPriceObj->unit_quantity : 1,
-                    'markup_applied' => $this->pricingService->getEffectiveMarkup($tenant),
+                    'markup_applied' => $this->pricingService->getEffectiveMarkup($tenant, $start),
                 ],
             ]);
         }

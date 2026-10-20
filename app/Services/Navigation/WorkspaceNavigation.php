@@ -40,6 +40,11 @@ final class WorkspaceNavigation
         /** @var User|null $user */
         $user = $request->user();
         $tenant = $this->tenantContext->getTenant();
+        if ($tenant && $user && ! $user->isGlobalSuperAdmin()
+            && app(\App\Services\Tenancy\BillingAgreementService::class)->activeFor($tenant) !== null
+            && app(\App\Services\Tenancy\BillingAccessService::class)->level($tenant, $user) !== 'operational') {
+            return $this->licensedWorkspace($request, $tenant, $user);
+        }
         $tenantSlug = $tenant?->slug;
         $isTenantContext = filled($tenantSlug);
         $currentRouteName = (string) ($request->route()?->getName() ?? '');
@@ -119,6 +124,34 @@ final class WorkspaceNavigation
                 'tenant_groups' => $tenantGroups->all(),
             ],
             'topMenuGroups' => $topMenuGroups->all(),
+        ];
+    }
+
+    /**
+     * @return array{
+     *     homeUrl: string,
+     *     isTenantContext: bool,
+     *     activeModule: array<string, mixed>|null,
+     *     sidebar: array{
+     *         dashboards: array<int, array<string, mixed>>,
+     *         superadmin: array<int, array<string, mixed>>,
+     *         modules: array<int, array<string, mixed>>,
+     *         tenant_groups: array<int, array<string, mixed>>
+     *     },
+     *     topMenuGroups: array<int, array<string, mixed>>
+     * }
+     */
+    private function licensedWorkspace(Request $request, Tenant $tenant, User $user): array
+    {
+        $routeName = (string) ($request->route()?->getName() ?? '');
+        $links = collect(app(\App\Services\Tenancy\BillingAccessService::class)->workspaceLinks($tenant, $user))
+            ->map(fn (array $item): ?array => $this->resolveLink($item, $tenant->slug, $routeName, $user))->filter()->values()->all();
+        $group = ['label' => 'My workspace', 'icon' => 'ki-filled ki-home', 'is_active' => true, 'items' => $links];
+
+        return [
+            'homeUrl' => $links[0]['url'] ?? '#', 'isTenantContext' => true, 'activeModule' => null,
+            'sidebar' => ['dashboards' => [], 'superadmin' => [], 'modules' => [], 'tenant_groups' => [$group]],
+            'topMenuGroups' => [['label' => 'My workspace', 'items' => $links]],
         ];
     }
 

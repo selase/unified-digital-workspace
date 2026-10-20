@@ -91,7 +91,12 @@ final class SiteIconService
         }
 
         $variantPath = "cms/media/variants/{$source->id}-{$variantName}.png";
-        Storage::disk($source->disk)->put($variantPath, $resized);
+        $tenant = app(\App\Services\Tenancy\TenantContext::class)->getTenant();
+        if ($tenant) {
+            app(\App\Services\Tenancy\HybridCapacityService::class)->writeFile($tenant, $source->disk, $variantPath, $resized);
+        } else {
+            Storage::disk($source->disk)->put($variantPath, $resized);
+        }
 
         MediaVariant::query()->updateOrCreate(
             ['media_id' => $source->id, 'variant' => $variantName],

@@ -18,6 +18,7 @@ use App\Modules\DocumentManagement\Models\DocumentQuizAttempt;
 use App\Modules\DocumentManagement\Models\DocumentQuizQuestion;
 use App\Modules\DocumentManagement\Models\DocumentVersion;
 use App\Modules\WorkflowAutomation\Events\WorkflowDomainEvent;
+use App\Services\Tenancy\BillingAccessService;
 use App\Services\Tenancy\TenantContext;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -211,6 +212,26 @@ final class DocumentWebController extends Controller
         abort_if(! $user?->can('documents.view'), 403);
 
         $this->ensureVisible($document, (string) $user->uuid);
+
+        if (app(BillingAccessService::class)->isSelfService($user)) {
+            $document->load(['currentVersion', 'owner:uuid,first_name,last_name,email']);
+            $document->setRelation('versions', $document->currentVersion ? new \Illuminate\Database\Eloquent\Collection([$document->currentVersion]) : new \Illuminate\Database\Eloquent\Collection);
+            foreach (['audits', 'quizzes', 'acknowledgements'] as $relation) {
+                $document->setRelation($relation, new \Illuminate\Database\Eloquent\Collection);
+            }
+            foreach (['reviewer', 'approver', 'supersedes', 'supersededBy'] as $relation) {
+                $document->setRelation($relation, null);
+            }
+            $document->review_comments = null;
+
+            return view('document-management::show', [
+                'document' => $document, 'billingOwnScope' => true, 'canManageVersions' => false, 'canPublish' => false,
+                'canUpdate' => false, 'canDelete' => false, 'canReview' => false,
+                'canApprove' => false, 'canManageQuizzes' => false,
+                'isAcknowledged' => $document->isAcknowledgedBy((string) $user->uuid),
+                'ackCount' => 0, 'tenantUsersCount' => 0, 'ackPercentage' => 0, 'tenantUsers' => collect(),
+            ]);
+        }
 
         $document->load([
             'owner:uuid,first_name,last_name,email',
@@ -856,6 +877,10 @@ final class DocumentWebController extends Controller
 
         $this->ensureVisible($document, (string) $user->uuid);
 
+        if (app(BillingAccessService::class)->isSelfService($user) && $version !== null) {
+            abort_unless($document->currentVersion !== null && (int) $document->currentVersion->version_number === $version, 404);
+        }
+
         $versionModel = $version !== null
             ? $document->versions()->where('version_number', $version)->firstOrFail()
             : $document->currentVersion;
@@ -897,6 +922,9 @@ final class DocumentWebController extends Controller
     private function ensureVisible(Document $document, string $userId): void
     {
         $this->authorizeTenant($document);
+        if (auth()->user() && app(BillingAccessService::class)->isSelfService(auth()->user())) {
+            abort_unless($document->status === Document::STATUS_PUBLISHED, 403);
+        }
 
         $visible = Document::query()
             ->visibleTo($userId)

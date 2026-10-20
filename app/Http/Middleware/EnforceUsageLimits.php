@@ -25,6 +25,10 @@ final class EnforceUsageLimits
     {
         $tenant = $this->context->getTenant();
 
+        if ($tenant && app(\App\Services\Tenancy\HybridCapacityService::class)->limit($tenant, 'files') !== null) {
+            return app(EnforceHybridCapacity::class)->handle($request, $next);
+        }
+
         if ($tenant) {
             if (! $this->limitService->isWithinLimits($tenant, UsageMetric::REQUEST_COUNT)) {
                 return response()->json([
