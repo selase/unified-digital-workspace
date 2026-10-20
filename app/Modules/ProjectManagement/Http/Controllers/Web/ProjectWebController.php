@@ -58,8 +58,9 @@ final class ProjectWebController extends Controller
         $data['currency'] = $data['currency'] ?? 'USD';
         $data['actual_cost_amount'] = 0.00;
 
-        /** @var Project $project */
-        $project = DB::connection('tenant')->transaction(function () use ($data): Project {
+        $tenant = app(\App\Services\Tenancy\TenantContext::class)->getTenant();
+        abort_if($tenant === null, 404);
+        $project = app(\App\Services\Tenancy\ResourceLimitService::class)->create($tenant, 'projects-limit', fn (): Project => DB::connection('tenant')->transaction(function () use ($data): Project {
             /** @var Project $created */
             $created = Project::create($data);
 
@@ -74,7 +75,7 @@ final class ProjectWebController extends Controller
             }
 
             return $created;
-        });
+        }));
 
         return redirect()
             ->route('project-management.projects.show', $project->uuid)

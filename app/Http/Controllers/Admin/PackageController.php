@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\SavePackageRequest;
 use Illuminate\Http\Request;
 
 final class PackageController extends Controller
@@ -68,7 +69,7 @@ final class PackageController extends Controller
                     : '<span class="badge badge-light-danger">Inactive</span>';
 
                 $nestedData['name'] = $package->name;
-                $nestedData['price'] = number_format((float) $package->price, 2);
+                $nestedData['price'] = 'USD '.number_format((float) $package->price, 2).' / GHS '.($package->price_ghs === null ? 'Not configured' : number_format((float) $package->price_ghs, 2));
                 $nestedData['interval'] = ucfirst($package->interval);
                 $nestedData['is_active'] = $statusBadge;
                 $nestedData['created_at'] = $package->created_at->format('Y-m-d H:i:s');
@@ -102,33 +103,19 @@ final class PackageController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(SavePackageRequest $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'slug' => 'required|string|max:255|unique:packages,slug',
-            'price' => 'required|numeric|min:0',
-            'interval' => 'required|in:month,year',
-            'billing_model' => 'required|in:flat_rate,per_seat',
-            'description' => 'nullable|string',
-            'is_active' => 'boolean',
-            'markup_percentage' => 'nullable|numeric|min:0',
-            'features' => 'nullable|array',
-            'features.*.enabled' => 'nullable|string', // Checkbox 'on'
-            'features.*.value' => 'nullable|string',
-            'usage_prices' => 'nullable|array',
-            'usage_prices.*.unit_price' => 'nullable|numeric|min:0',
-            'usage_prices.*.unit_quantity' => 'nullable|numeric|min:0.0001',
-        ]);
+        $validated = $request->validated();
 
         $package = \App\Models\Package::create([
             'name' => $validated['name'],
             'slug' => $validated['slug'],
             'price' => $validated['price'],
+            ...array_intersect_key($validated, ['price_ghs' => true]),
             'interval' => $validated['interval'],
             'billing_model' => $validated['billing_model'],
             'description' => $validated['description'] ?? null,
-            'is_active' => $request->has('is_active'),
+            'is_active' => $request->boolean('is_active'),
             'markup_percentage' => $validated['markup_percentage'] ?? 0,
         ]);
 
@@ -144,7 +131,7 @@ final class PackageController extends Controller
         }
 
         // Sync Usage Prices
-        $this->syncUsagePrices($package, $request->input('usage_prices', []));
+        $this->syncUsagePrices($package, $validated['usage_prices'] ?? [], $validated['usage_currency'] ?? 'USD');
 
         return redirect()->route('packages.index')->with('success', 'Package created successfully');
     }
@@ -158,41 +145,30 @@ final class PackageController extends Controller
         $features = \App\Models\Feature::all();
         $metrics = \App\Enum\UsageMetric::cases();
 
-        return view('admin.packages.edit', compact('package', 'features', 'metrics'));
+        $usageCurrency = request()->query('currency', 'USD');
+        abort_unless(in_array($usageCurrency, ['USD', 'GHS'], true), 422, 'Choose USD or GHS.');
+
+        return view('admin.packages.edit', compact('package', 'features', 'metrics', 'usageCurrency'));
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(SavePackageRequest $request, string $id)
     {
         $package = \App\Models\Package::findOrFail($id);
 
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'slug' => 'required|string|max:255|unique:packages,slug,'.$package->id,
-            'price' => 'required|numeric|min:0',
-            'interval' => 'required|in:month,year',
-            'billing_model' => 'required|in:flat_rate,per_seat',
-            'description' => 'nullable|string',
-            'is_active' => 'boolean',
-            'markup_percentage' => 'nullable|numeric|min:0',
-            'features' => 'nullable|array',
-            'features.*.enabled' => 'nullable|string',
-            'features.*.value' => 'nullable|string',
-            'usage_prices' => 'nullable|array',
-            'usage_prices.*.unit_price' => 'nullable|numeric|min:0',
-            'usage_prices.*.unit_quantity' => 'nullable|numeric|min:0.0001',
-        ]);
+        $validated = $request->validated();
 
         $package->update([
             'name' => $validated['name'],
             'slug' => $validated['slug'],
             'price' => $validated['price'],
+            ...array_intersect_key($validated, ['price_ghs' => true]),
             'interval' => $validated['interval'],
             'billing_model' => $validated['billing_model'],
             'description' => $validated['description'] ?? null,
-            'is_active' => $request->has('is_active'),
+            'is_active' => $request->boolean('is_active'),
             'markup_percentage' => $validated['markup_percentage'] ?? 0,
         ]);
 
@@ -208,7 +184,7 @@ final class PackageController extends Controller
         $package->features()->sync($syncData);
 
         // Sync Usage Prices
-        $this->syncUsagePrices($package, $request->input('usage_prices', []));
+        $this->syncUsagePrices($package, $validated['usage_prices'] ?? [], $validated['usage_currency'] ?? 'USD');
 
         return redirect()->route('packages.index')->with('success', 'Package updated successfully');
     }
@@ -225,21 +201,21 @@ final class PackageController extends Controller
         return response()->json(['message' => 'Package deleted successfully']);
     }
 
-    private function syncUsagePrices($target, array $prices): void
+    private function syncUsagePrices(\App\Models\Package $target, array $prices, string $currency): void
     {
         foreach ($prices as $metricValue => $data) {
-            if (empty($data['unit_price']) && empty($data['unit_quantity'])) {
-                $target->usagePrices()->where('metric', $metricValue)->delete();
+            if (($data['unit_price'] ?? null) === null || $data['unit_price'] === '') {
+                $target->usagePrices()->where('metric', $metricValue)->where('currency', $currency)->delete();
 
                 continue;
             }
 
             $target->usagePrices()->updateOrCreate(
-                ['metric' => $metricValue],
+                ['metric' => $metricValue, 'currency' => $currency],
                 [
                     'unit_price' => $data['unit_price'] ?? 0,
                     'unit_quantity' => $data['unit_quantity'] ?? 1,
-                    'currency' => 'USD',
+                    'currency' => $currency,
                 ]
             );
         }

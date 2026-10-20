@@ -15,7 +15,6 @@ use App\Services\Tenancy\TenantContext;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 final class UserController extends Controller
 {
@@ -34,6 +33,7 @@ final class UserController extends Controller
             $q->whereNull('tenant_id')
                 ->orWhere('tenant_id', $tenant->id);
         })->get();
+        $roles = $this->preferTenantRoles($roles, $tenant);
 
         $isSuperAdmin = \Illuminate\Support\Facades\Gate::allows('access-superadmin-dashboard');
 
@@ -153,7 +153,7 @@ final class UserController extends Controller
 
         $roles = $this->assignableRoles($validated['roles'], $tenant);
 
-        return DB::transaction(function () use ($validated, $tenant, $roles) {
+        return app(\App\Services\Tenancy\ResourceLimitService::class)->create($tenant, 'users-limit', function () use ($validated, $tenant, $roles) {
             $password = Helper::generateRandomPassword();
             $user = User::create([
                 'first_name' => $validated['first_name'],
@@ -192,7 +192,10 @@ final class UserController extends Controller
 
         return response()->json([
             'data' => $user,
-            'roles' => $user->roles->pluck('id'),
+            'roles' => $this->preferTenantRoles(
+                Role::query()->whereIn('id', $user->roles()->pluck('roles.id'))->get(),
+                $tenant
+            )->pluck('id'),
         ]);
     }
 
@@ -238,7 +241,7 @@ final class UserController extends Controller
 
     /**
      * Resolve the submitted role ids to roles this tenant may hand out:
-     * its own roles or global ones, never Superadmin.
+     * its own roles or global ones, preferring tenant shadows, never Superadmin.
      *
      * @param  array<int, int|string>  $roleIds
      * @return Collection<int, Role>
@@ -261,6 +264,31 @@ final class UserController extends Controller
             abort(403, 'Cannot assign Superadmin role.');
         }
 
-        return $roles;
+        return $this->preferTenantRoles($roles, $tenant);
+    }
+
+    /**
+     * Resolve global selections to tenant-owned roles with the same name and guard.
+     *
+     * @param  Collection<int, Role>  $roles
+     * @return Collection<int, Role>
+     */
+    private function preferTenantRoles(Collection $roles, Tenant $tenant): Collection
+    {
+        $tenantRoles = Role::query()
+            ->where('tenant_id', $tenant->id)
+            ->whereIn('name', $roles->pluck('name'))
+            ->get();
+
+        return $roles->map(function (Role $role) use ($tenantRoles): Role {
+            if ($role->tenant_id !== null || $role->name === 'Superadmin') {
+                return $role;
+            }
+
+            return $tenantRoles->first(
+                fn (Role $tenantRole): bool => $tenantRole->name === $role->name
+                    && $tenantRole->guard_name === $role->guard_name
+            ) ?? $role;
+        })->unique('id')->values();
     }
 }

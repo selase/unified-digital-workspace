@@ -8,12 +8,16 @@
             <p class="text-xs uppercase tracking-wide text-muted-foreground">Billing</p>
             <h1 class="mt-2 text-3xl font-semibold text-foreground">Choose Your Plan</h1>
             <p class="mt-3 text-sm text-muted-foreground">
-                Whether you're just starting out or scaling globally, we have the right plan for you.
+                Direct plan changes are available before usage is recorded in the current month. After usage begins, contact an administrator to arrange a change for the next billing period. Initial plan setup is still available.
             </p>
         </div>
 
         <div class="grid gap-6 xl:grid-cols-3">
             @foreach($packages as $package)
+                @php
+                    $currency = $tenant->billingCurrency();
+                    $configuredPrice = $currency === 'GHS' ? $package->price_ghs : $package->price;
+                @endphp
                 <article class="rounded-xl border {{ $currentPackage?->id === $package->id ? 'border-primary' : 'border-border' }} bg-background p-6">
                     <div class="flex items-start justify-between gap-3">
                         <h2 class="text-xl font-semibold text-foreground">{{ $package->name }}</h2>
@@ -25,8 +29,8 @@
                     <p class="mt-3 min-h-10 text-sm text-muted-foreground">{{ $package->description }}</p>
 
                     <div class="mt-6 flex items-end gap-2">
-                        <span class="text-lg text-muted-foreground">$</span>
-                        <span class="text-4xl font-semibold text-foreground">{{ number_format($package->price, 0) }}</span>
+                        <span class="text-lg text-muted-foreground">{{ $currency }}</span>
+                        <span class="text-4xl font-semibold text-foreground">{{ $configuredPrice === null ? 'Not configured' : number_format($configuredPrice, 2) }}</span>
                         <span class="pb-1 text-sm text-muted-foreground">/ {{ $package->interval }}</span>
                     </div>
 
@@ -46,7 +50,7 @@
                             <form action="{{ route('tenant.billing.checkout') }}" method="POST">
                                 @csrf
                                 <input type="hidden" name="plan" value="{{ $package->slug }}">
-                                <button type="submit" class="kt-btn kt-btn-primary w-full">Upgrade to {{ $package->name }}</button>
+                                <button type="submit" class="kt-btn kt-btn-primary w-full" @disabled($configuredPrice === null)>Upgrade to {{ $package->name }}</button>
                             </form>
                         @endif
                     </div>

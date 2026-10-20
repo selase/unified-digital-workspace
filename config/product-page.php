@@ -2,6 +2,9 @@
 
 declare(strict_types=1);
 
+$planBundles = (require __DIR__.'/packages.php')['plans'];
+$usagePricing = require __DIR__.'/usage-pricing.php';
+
 return [
     'brand' => [
         'name' => 'StarterKit',
@@ -30,61 +33,24 @@ return [
         ],
     ],
 
-    'plans' => [
-        [
-            'name' => 'Starter',
-            'description' => 'Perfect for side projects and small teams.',
-            'monthly_price' => 10,
-            'yearly_price' => 100,
-            'most_popular' => false,
-            'features' => [
-                'Up to 3 projects',
-                'Basic analytics',
-                '24-hour retention',
-                'Community support',
-            ],
-            'cta' => [
-                'label' => 'Start for free',
-                'href' => '/register?plan=starter',
-            ],
-        ],
-        [
-            'name' => 'Pro',
-            'description' => 'Best for growing startups and active products.',
-            'monthly_price' => 29,
-            'yearly_price' => 290,
-            'most_popular' => true,
-            'features' => [
-                'Unlimited projects',
-                'Advanced performance metrics',
-                '30-day retention',
-                'Priority email support',
-                'Custom alerts',
-            ],
-            'cta' => [
-                'label' => 'Start 14-day trial',
-                'href' => '/register?plan=pro',
-            ],
-        ],
-        [
-            'name' => 'Enterprise',
-            'description' => 'Scale without limits. High-availability and security.',
-            'monthly_price' => 99,
-            'yearly_price' => 990,
-            'most_popular' => false,
-            'features' => [
-                'Everything in Pro',
-                'Unlimited retention',
-                'SLA & dedicated support',
-                'SSO & SAML integration',
-                'Custom data residency',
-            ],
-            'cta' => [
-                'label' => 'Contact Sales',
-                'href' => '/contact',
-            ],
-        ],
-    ],
+    'plans' => array_map(
+        static function (string $slug, array $plan) use ($usagePricing): array {
+            return [
+                'name' => $plan['name'],
+                'description' => $plan['description'],
+                'active_user_prices' => $usagePricing['active_users'][$slug],
+                'most_popular' => $slug === 'team',
+                'features' => array_map(
+                    static fn (string $module): string => ucwords(str_replace('-', ' ', $module)),
+                    $plan['modules'],
+                ),
+                'custom_domains' => in_array('custom-domains', $plan['features'], true),
+                'cta' => ['label' => 'Contact us', 'href' => '/contact?plan='.$slug],
+            ];
+        },
+        array_keys($planBundles),
+        array_values($planBundles),
+    ),
 
     'intro' => [
         'eyebrow' => 'Onboarding',

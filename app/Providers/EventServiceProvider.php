@@ -53,6 +53,26 @@ final class EventServiceProvider extends ServiceProvider
     {
         parent::boot();
 
+        $this->app->singleton(\App\Listeners\Tenancy\MeterTenantMail::class);
+        $mailUsage = $this->app->make(\App\Listeners\Tenancy\MeterTenantMail::class);
+        \Illuminate\Support\Facades\Event::listen(\Illuminate\Mail\Events\MessageSent::class, [$mailUsage, 'handleMessageSent']);
+        \Illuminate\Support\Facades\Event::listen(\Illuminate\Queue\Events\JobProcessing::class, [$mailUsage, 'handleJobProcessing']);
+        foreach ([
+            \Illuminate\Queue\Events\JobProcessed::class,
+            \Illuminate\Queue\Events\JobFailed::class,
+            \Illuminate\Queue\Events\JobExceptionOccurred::class,
+        ] as $event) {
+            \Illuminate\Support\Facades\Event::listen($event, [$mailUsage, 'handleJobFinished']);
+        }
+        \Illuminate\Support\Facades\Event::listen(\Illuminate\Notifications\Events\NotificationSending::class, [$mailUsage, 'handleNotificationSending']);
+        foreach ([
+            \Illuminate\Notifications\Events\NotificationSent::class,
+            \Illuminate\Notifications\Events\NotificationFailed::class,
+            \Illuminate\Notifications\Events\NotificationSkipped::class,
+        ] as $event) {
+            \Illuminate\Support\Facades\Event::listen($event, [$mailUsage, 'handleNotificationFinished']);
+        }
+
         \Illuminate\Support\Facades\Event::listen(
             \Illuminate\Notifications\Events\NotificationSending::class,
             [\App\Listeners\NotificationDeliveryCreditListener::class, 'handleSending']

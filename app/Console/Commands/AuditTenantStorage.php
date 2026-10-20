@@ -40,10 +40,8 @@ final class AuditTenantStorage extends Command
 
             $bytes = $meter->calculateUsage($tenant);
 
-            $usageService->updateRollup(
+            $usageService->recordDailyGauge(
                 $tenant,
-                'day',
-                now(),
                 UsageMetric::STORAGE_BYTES,
                 $bytes
             );

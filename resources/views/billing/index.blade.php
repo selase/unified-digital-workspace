@@ -21,7 +21,7 @@
         <div class="grid gap-6 xl:grid-cols-4">
             <div class="kt-card p-6 xl:col-span-1">
                 <p class="text-xs uppercase tracking-wide text-muted-foreground">Current Plan</p>
-                <h2 class="mt-3 text-3xl font-semibold text-foreground">${{ number_format((float) ($tenant->package?->price ?? 0), 2) }}</h2>
+                <h2 class="mt-3 text-3xl font-semibold text-foreground">{{ $tenant->billingCurrency() }} {{ ($tenant->billingCurrency() === 'GHS' && $tenant->package?->price_ghs === null) ? 'Not configured' : number_format((float) ($tenant->billingCurrency() === 'GHS' ? $tenant->package?->price_ghs : $tenant->package?->price), 2) }}</h2>
                 <div class="mt-2 flex items-center gap-2">
                     <span class="kt-badge kt-badge-primary">{{ ucfirst($tenant->package?->interval ?? 'free') }}</span>
                     <span class="text-sm text-muted-foreground">{{ $tenant->package?->name ?? 'No package selected' }}</span>
@@ -40,7 +40,7 @@
 
             <div class="kt-card p-6 xl:col-span-1">
                 <p class="text-xs uppercase tracking-wide text-muted-foreground">Projected</p>
-                <h2 class="mt-3 text-3xl font-semibold text-foreground">${{ number_format((float) ($accruedMetered ?? 0), 2) }}</h2>
+                <h2 class="mt-3 text-3xl font-semibold text-foreground">{{ $tenant->billingCurrency() }} {{ $accruedMetered === null ? 'Rates not configured' : number_format($accruedMetered, 2) }}</h2>
                 <p class="mt-2 text-sm text-muted-foreground">Accrued metered charges this month.</p>
                 <div class="mt-6">
                     <div class="h-2 rounded-full bg-accent">
@@ -66,6 +66,7 @@
                 <div class="mb-4">
                     <h2 class="text-lg font-semibold text-foreground">Invoice History</h2>
                     <p class="text-xs text-muted-foreground">All officially issued invoices.</p>
+                    <a href="{{ route('billing.invoices.index') }}" class="kt-btn kt-btn-sm kt-btn-outline">View all invoices</a>
                 </div>
 
                 <div class="overflow-x-auto">
@@ -84,7 +85,7 @@
                                 <tr>
                                     <td class="font-medium">{{ $invoice->number }}</td>
                                     <td>{{ $invoice->period_start->format('M Y') }}</td>
-                                    <td>${{ number_format((float) $invoice->total, 2) }}</td>
+                                    <td>{{ $invoice->currency }} {{ number_format((float) $invoice->total, 2) }}</td>
                                     <td>
                                         <span class="kt-badge {{ $invoice->status === 'paid' ? 'kt-badge-success' : 'kt-badge-warning' }}">
                                             {{ strtoupper($invoice->status) }}
@@ -118,7 +119,7 @@
                                     <p class="text-xs text-muted-foreground">{{ $transaction->created_at->format('d/m/Y') }}</p>
                                 </div>
                                 <div class="text-end">
-                                    <p class="font-semibold text-foreground">${{ number_format($transaction->amount / 100, 2) }}</p>
+                                    <p class="font-semibold text-foreground">{{ $transaction->currency }} {{ number_format($transaction->amount / 100, 2) }}</p>
                                     <span class="kt-badge {{ in_array($transaction->status, ['success', 'succeeded'], true) ? 'kt-badge-success' : 'kt-badge-warning' }}">
                                         {{ strtoupper($transaction->status) }}
                                     </span>
@@ -188,7 +189,7 @@
                 yaxis: {
                     labels: {
                         formatter: function (value) {
-                            return '$' + value.toFixed(0);
+                            return @json($tenant->billingCurrency().' ') + value.toFixed(0);
                         },
                     },
                 },

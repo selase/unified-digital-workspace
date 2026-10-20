@@ -23,6 +23,8 @@ final class PlatformCreditPackage extends Model
 {
     use HasUuid;
 
+    protected $connection = 'landlord';
+
     protected $table = 'platform_credit_packages';
 
     protected $fillable = [

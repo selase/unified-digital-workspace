@@ -21,28 +21,28 @@ final class PackageSeeder extends Seeder
         $features = [
             'projects-limit' => ['name' => 'Projects Limit', 'type' => 'limit', 'description' => 'Maximum number of projects'],
             'users-limit' => ['name' => 'Users Limit', 'type' => 'limit', 'description' => 'Maximum number of team members'],
-            'file-retention' => ['name' => 'File Retention (Days)', 'type' => 'limit', 'description' => 'Days to keep files'],
             'analytics' => ['name' => 'Analytics', 'type' => 'boolean', 'description' => 'Access to analytics dashboard'],
-            'priority-support' => ['name' => 'Priority Support', 'type' => 'boolean', 'description' => 'Priority email support'],
-            'custom-alerts' => ['name' => 'Custom Alerts', 'type' => 'boolean', 'description' => 'Custom notification alerts'],
-            'sso' => ['name' => 'SSO Integration', 'type' => 'boolean', 'description' => 'Single Sign-On Support'],
+            'priority-support' => ['name' => 'Priority Support', 'type' => 'boolean', 'description' => 'Manual priority email support service; arranged by the support team'],
             // custom-domains is handled by its own seeder or logic, but we make sure it exists here too if needed recursively
             'custom-domains' => ['name' => 'Custom Domains', 'type' => 'boolean', 'description' => 'Use your own domain'],
             'commerce' => ['name' => 'Commerce / Finance', 'type' => 'boolean', 'description' => 'Collect payments from your own customers'],
         ];
 
         foreach ($features as $slug => $data) {
-            Feature::firstOrCreate(['slug' => $slug], $data);
+            Feature::updateOrCreate(['slug' => $slug], $data);
         }
 
-        // 2. Sync Plans from Config to Database
-        // We look at config('product-page.plans') which drives the landing page
-        $plans = config('product-page.plans');
+        // Preserve legacy plan pricing while maintaining their existing grants.
+        $plans = [
+            ['name' => 'Starter', 'description' => 'Legacy Starter plan.', 'monthly_price' => 10],
+            ['name' => 'Pro', 'description' => 'Legacy Pro plan.', 'monthly_price' => 29],
+            ['name' => 'Enterprise', 'description' => 'Legacy Enterprise plan.', 'monthly_price' => 99],
+        ];
 
         foreach ($plans as $planData) {
             $slug = Str::slug($planData['name']);
 
-            $package = Package::updateOrCreate(
+            $package = Package::firstOrCreate(
                 ['slug' => $slug],
                 [
                     'name' => $planData['name'],
@@ -54,32 +54,22 @@ final class PackageSeeder extends Seeder
                 ]
             );
 
-            // 3. Assign Features based on plan level
-            // This is a rough mapping based on the plan names "Starter", "Pro", "Enterprise"
-            // In a real app, you might want this mapping explicit in the config, but we infer it here for seeding.
-
             $packageFeatures = [];
 
             if ($slug === 'starter') {
                 $packageFeatures['projects-limit'] = ['value' => 3];
                 $packageFeatures['users-limit'] = ['value' => 5]; // Implicit limit
-                $packageFeatures['file-retention'] = ['value' => 1]; // 24 hours
                 $packageFeatures['analytics'] = ['value' => true]; // Basic
             } elseif ($slug === 'pro') {
                 $packageFeatures['projects-limit'] = ['value' => -1]; // Unlimited
                 $packageFeatures['users-limit'] = ['value' => 20];
-                $packageFeatures['file-retention'] = ['value' => 30]; // 30 days
                 $packageFeatures['analytics'] = ['value' => true];
                 $packageFeatures['priority-support'] = ['value' => true];
-                $packageFeatures['custom-alerts'] = ['value' => true];
             } elseif ($slug === 'enterprise') {
                 $packageFeatures['projects-limit'] = ['value' => -1];
                 $packageFeatures['users-limit'] = ['value' => -1];
-                $packageFeatures['file-retention'] = ['value' => -1]; // Unlimited
                 $packageFeatures['analytics'] = ['value' => true];
                 $packageFeatures['priority-support'] = ['value' => true];
-                $packageFeatures['custom-alerts'] = ['value' => true];
-                $packageFeatures['sso'] = ['value' => true];
                 $packageFeatures['custom-domains'] = ['value' => true];
                 $packageFeatures['commerce'] = ['value' => true];
             }
@@ -100,6 +90,44 @@ final class PackageSeeder extends Seeder
             }
 
             $this->command->info("Seeded Plan: {$planData['name']}");
+        }
+
+        $retiredIds = Feature::query()->whereIn('slug', config('packages.retired_features'))->pluck('id');
+        foreach (Package::query()->whereIn('slug', array_keys(config('packages.legacy_aliases')))->get() as $legacyPackage) {
+            $legacyPackage->features()->detach($retiredIds);
+        }
+
+        foreach (config('packages.plans') as $slug => $plan) {
+            $package = Package::query()->firstOrCreate(['slug' => $slug], [
+                'name' => $plan['name'],
+                'description' => $plan['description'],
+                'price' => 0,
+                'price_ghs' => 0,
+                'interval' => 'month',
+                'billing_model' => Package::BILLING_MODEL_FLAT_RATE,
+                'is_active' => true,
+            ]);
+
+            $grants = [];
+            foreach ($plan['modules'] as $module) {
+                $feature = Feature::query()->firstOrCreate(['slug' => 'module-'.$module], [
+                    'name' => ucwords(str_replace('-', ' ', $module)).' Module',
+                    'type' => 'boolean',
+                    'description' => 'Allows enabling the '.$module.' module; dependencies still apply.',
+                ]);
+                $grants[$feature->id] = ['value' => '1'];
+            }
+            foreach ($plan['features'] as $featureSlug) {
+                $feature = Feature::query()->where('slug', $featureSlug)->firstOrFail();
+                $grants[$feature->id] = ['value' => '1'];
+            }
+
+            $managedIds = Feature::query()->where('slug', 'like', 'module-%')
+                ->orWhereIn('slug', ['custom-domains', 'commerce', ...config('packages.retired_features')])
+                ->pluck('id');
+            $package->features()->detach($managedIds->diff(array_keys($grants)));
+            $package->features()->syncWithoutDetaching($grants);
+            $this->command->info("Seeded module bundle: {$plan['name']}");
         }
     }
 }

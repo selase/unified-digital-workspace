@@ -455,6 +455,7 @@ test('fulfillStoreOrder is strictly idempotent and rejects underpayment and cros
 });
 
 test('store purchasePlatformCredits creates pending purchase, redirects to gateway, and credits wallet only on fulfillment', function (): void {
+    $this->tenant->update(['country' => 'Ghana', 'billing_currency' => null]);
     $package = PlatformCreditPackage::create([
         'name' => 'SMS 10,000 Quota',
         'credit_type' => 'sms',

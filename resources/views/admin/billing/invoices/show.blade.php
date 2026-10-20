@@ -94,7 +94,7 @@
                 </div>
                 <div class="lg:text-right">
                     <p class="text-xs uppercase text-muted-foreground">Amount Due</p>
-                    <div class="mt-2 text-2xl font-semibold text-foreground">${{ number_format((float)$invoice->total, 2) }}</div>
+                    <div class="mt-2 text-2xl font-semibold text-foreground">{{ $invoice->currency }} {{ number_format((float)$invoice->total, 2) }}</div>
                     <div class="text-xs text-muted-foreground">Due by {{ $invoice->due_at->format('d/m/Y') }}</div>
                 </div>
             </div>
@@ -130,8 +130,8 @@
                                     </div>
                                 </td>
                                 <td class="text-center">{{ number_format((float)$item->quantity, 2) }}</td>
-                                <td class="text-center">${{ number_format((float)$item->unit_price, 4) }}</td>
-                                <td class="text-right font-semibold">${{ number_format((float)$item->subtotal, 2) }}</td>
+                                <td class="text-center">{{ $invoice->currency }} {{ number_format((float)$item->unit_price, 4) }}</td>
+                                <td class="text-right font-semibold">{{ $invoice->currency }} {{ number_format((float)$item->subtotal, 2) }}</td>
                             </tr>
                         @endforeach
 
@@ -149,19 +149,19 @@
                     <tfoot class="text-sm">
                         <tr>
                             <td colspan="3" class="text-right font-semibold text-muted-foreground">Subtotal</td>
-                            <td class="text-right font-semibold">${{ number_format((float)$invoice->subtotal, 2) }}</td>
+                            <td class="text-right font-semibold">{{ $invoice->currency }} {{ number_format((float)$invoice->subtotal, 2) }}</td>
                         </tr>
                         @if($invoice->tax_details)
                             @foreach($invoice->tax_details as $tax)
                                 <tr>
                                     <td colspan="3" class="text-right text-xs text-muted-foreground">{{ $tax['name'] }} ({{ $tax['rate'] }}%)</td>
-                                    <td class="text-right text-xs text-muted-foreground">${{ number_format((float)$tax['amount'], 2) }}</td>
+                                    <td class="text-right text-xs text-muted-foreground">{{ $invoice->currency }} {{ number_format((float)$tax['amount'], 2) }}</td>
                                 </tr>
                             @endforeach
                         @endif
                         <tr class="border-t border-border">
                             <td colspan="3" class="text-right text-base font-semibold">Total</td>
-                            <td class="text-right text-base font-semibold">${{ number_format((float)$invoice->total, 2) }}</td>
+                            <td class="text-right text-base font-semibold">{{ $invoice->currency }} {{ number_format((float)$invoice->total, 2) }}</td>
                         </tr>
                     </tfoot>
                 </table>

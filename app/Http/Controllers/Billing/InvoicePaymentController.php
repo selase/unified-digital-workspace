@@ -24,7 +24,8 @@ final class InvoicePaymentController extends Controller
             ->where('status', Invoice::STATUS_ISSUED) // Only issued invoices can be paid
             ->findOrFail($invoiceId);
 
-        $driver = config('services.payment.default', 'stripe');
+        $driver = $invoice->currency === 'GHS' ? 'paystack' : 'stripe';
+        $gateway = app($driver === 'paystack' ? \App\Services\Payment\PaystackGateway::class : \App\Services\Payment\StripeGateway::class);
         $metaKey = "{$driver}_id";
         $customerId = $tenant->meta[$metaKey] ?? null;
 

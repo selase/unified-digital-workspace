@@ -6,23 +6,29 @@ namespace App\Http\Controllers\Admin;
 
 use App\Enum\UsageMetric;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\SaveTaxRequest;
+use App\Http\Requests\Admin\SaveUsagePricesRequest;
 use App\Models\Tax;
 use App\Models\UsagePrice;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 final class RateCardController extends Controller
 {
-    public function index(): View
+    public function index(Request $request): View
     {
         $this->authorize('access-superadmin-dashboard');
 
-        $globalPrices = UsagePrice::whereNull('target_type')->get();
+        $currency = $request->query('currency', 'USD');
+        abort_unless(in_array($currency, ['USD', 'GHS'], true), 422, 'Choose USD or GHS.');
+        $globalPrices = UsagePrice::whereNull('target_type')->where('currency', $currency)->get();
         $metrics = UsageMetric::cases();
         $taxes = Tax::orderBy('priority')->get();
 
         return view('admin.billing.rate_cards.index', [
             'globalPrices' => $globalPrices,
+            'currency' => $currency,
             'metrics' => $metrics,
             'taxes' => $taxes,
             'breadcrumbs' => [
@@ -32,29 +38,26 @@ final class RateCardController extends Controller
         ]);
     }
 
-    public function updatePrices(Request $request)
+    public function updatePrices(SaveUsagePricesRequest $request)
     {
         $this->authorize('access-superadmin-dashboard');
 
-        $validated = $request->validate([
-            'usage_prices' => 'nullable|array',
-            'usage_prices.*.unit_price' => 'nullable|numeric|min:0',
-            'usage_prices.*.unit_quantity' => 'nullable|numeric|min:0.0001',
-        ]);
+        $validated = $request->validated();
+        $currency = $validated['usage_currency'] ?? 'USD';
 
-        foreach ($request->input('usage_prices', []) as $metricValue => $data) {
-            if (empty($data['unit_price']) && empty($data['unit_quantity'])) {
-                UsagePrice::whereNull('target_type')->where('metric', $metricValue)->delete();
+        foreach ($validated['usage_prices'] ?? [] as $metricValue => $data) {
+            if (($data['unit_price'] ?? null) === null || $data['unit_price'] === '') {
+                UsagePrice::whereNull('target_type')->where('metric', $metricValue)->where('currency', $currency)->delete();
 
                 continue;
             }
 
             UsagePrice::updateOrCreate(
-                ['target_type' => null, 'target_id' => null, 'metric' => $metricValue],
+                ['target_type' => null, 'target_id' => null, 'metric' => $metricValue, 'currency' => $currency],
                 [
                     'unit_price' => $data['unit_price'] ?? 0,
                     'unit_quantity' => $data['unit_quantity'] ?? 1,
-                    'currency' => 'USD',
+                    'currency' => $currency,
                 ]
             );
         }
@@ -62,46 +65,37 @@ final class RateCardController extends Controller
         return back()->with('success', 'Global unit prices updated successfully');
     }
 
-    public function storeTax(Request $request)
+    public function storeTax(SaveTaxRequest $request): RedirectResponse
     {
         $this->authorize('access-superadmin-dashboard');
 
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'rate' => 'required|numeric|min:0',
-            'priority' => 'required|integer|min:1',
-            'is_compound' => 'boolean',
-        ]);
+        $validated = $request->validated();
 
         Tax::create([
             'name' => $validated['name'],
             'rate' => $validated['rate'],
             'priority' => $validated['priority'],
-            'is_compound' => $request->has('is_compound'),
-            'is_active' => true,
+            'is_compound' => $request->boolean('is_compound'),
+            'country_code' => $validated['country_code'] ?? null,
+            'is_active' => $request->boolean('is_active', ($validated['country_code'] ?? null) === null),
         ]);
 
         return back()->with('success', 'Tax rule created successfully');
     }
 
-    public function updateTax(Request $request, Tax $tax)
+    public function updateTax(SaveTaxRequest $request, Tax $tax): RedirectResponse
     {
         $this->authorize('access-superadmin-dashboard');
 
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'rate' => 'required|numeric|min:0',
-            'priority' => 'required|integer|min:1',
-            'is_compound' => 'boolean',
-            'is_active' => 'boolean',
-        ]);
+        $validated = $request->validated();
 
         $tax->update([
             'name' => $validated['name'],
             'rate' => $validated['rate'],
             'priority' => $validated['priority'],
-            'is_compound' => $request->has('is_compound'),
-            'is_active' => $request->has('is_active'),
+            'is_compound' => $request->boolean('is_compound'),
+            'country_code' => array_key_exists('country_code', $validated) ? $validated['country_code'] : $tax->country_code,
+            'is_active' => $request->boolean('is_active'),
         ]);
 
         return back()->with('success', 'Tax rule updated successfully');

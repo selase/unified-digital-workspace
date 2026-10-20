@@ -20,7 +20,7 @@ function createStoreTestContext(): array
     $user = User::factory()->create([
         'email' => 'store-admin-'.uniqid().'@example.com',
     ]);
-    $tenant = setActiveTenantForTest($user);
+    $tenant = setActiveTenantForTest($user, ['country' => 'Ghana']);
 
     foreach (['store.view', 'store.manage', 'store.platform.purchase', 'store.orders.manage'] as $name) {
         Permission::firstOrCreate(['name' => $name, 'guard_name' => 'web'], ['uuid' => (string) Illuminate\Support\Str::uuid(), 'category' => 'store']);

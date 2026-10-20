@@ -337,12 +337,6 @@ parameters:
 			path: app/Http/Controllers/Admin/PackageController.php
 
 		-
-			rawMessage: 'Method App\Http\Controllers\Admin\PackageController::syncUsagePrices() has parameter $target with no type specified.'
-			identifier: missingType.parameter
-			count: 1
-			path: app/Http/Controllers/Admin/PackageController.php
-
-		-
 			rawMessage: 'Method App\Http\Controllers\Admin\PackageController::update() has no return type specified.'
 			identifier: missingType.return
 			count: 1
@@ -361,26 +355,8 @@ parameters:
 			path: app/Http/Controllers/Admin/RateCardController.php
 
 		-
-			rawMessage: 'Method App\Http\Controllers\Admin\RateCardController::storeTax() has no return type specified.'
-			identifier: missingType.return
-			count: 1
-			path: app/Http/Controllers/Admin/RateCardController.php
-
-		-
 			rawMessage: 'Method App\Http\Controllers\Admin\RateCardController::updatePrices() has no return type specified.'
 			identifier: missingType.return
-			count: 1
-			path: app/Http/Controllers/Admin/RateCardController.php
-
-		-
-			rawMessage: 'Method App\Http\Controllers\Admin\RateCardController::updateTax() has no return type specified.'
-			identifier: missingType.return
-			count: 1
-			path: app/Http/Controllers/Admin/RateCardController.php
-
-		-
-			rawMessage: Variable $validated is never read.
-			identifier: variable.unused
 			count: 1
 			path: app/Http/Controllers/Admin/RateCardController.php
 
@@ -1249,48 +1225,6 @@ parameters:
 			path: app/Livewire/Admin/UserProfileSecurity.php
 
 		-
-			rawMessage: 'Method App\Livewire\PricingTable::mount() has no return type specified.'
-			identifier: missingType.return
-			count: 1
-			path: app/Livewire/PricingTable.php
-
-		-
-			rawMessage: 'Method App\Livewire\PricingTable::mount() has parameter $plans with no type specified.'
-			identifier: missingType.parameter
-			count: 1
-			path: app/Livewire/PricingTable.php
-
-		-
-			rawMessage: 'Method App\Livewire\PricingTable::render() has no return type specified.'
-			identifier: missingType.return
-			count: 1
-			path: app/Livewire/PricingTable.php
-
-		-
-			rawMessage: 'Method App\Livewire\PricingTable::setBillingCycle() has no return type specified.'
-			identifier: missingType.return
-			count: 1
-			path: app/Livewire/PricingTable.php
-
-		-
-			rawMessage: 'Method App\Livewire\PricingTable::setBillingCycle() has parameter $cycle with no type specified.'
-			identifier: missingType.parameter
-			count: 1
-			path: app/Livewire/PricingTable.php
-
-		-
-			rawMessage: Property App\Livewire\PricingTable::$billingCycle has no type specified.
-			identifier: missingType.property
-			count: 1
-			path: app/Livewire/PricingTable.php
-
-		-
-			rawMessage: Property App\Livewire\PricingTable::$plans has no type specified.
-			identifier: missingType.property
-			count: 1
-			path: app/Livewire/PricingTable.php
-
-		-
 			rawMessage: 'Method App\Mail\Users\ResendAccountPassword::__construct() has parameter $data with no value type specified in iterable type array.'
 			identifier: missingType.iterableValue
 			count: 1
@@ -1413,24 +1347,6 @@ parameters:
 		-
 			rawMessage: 'Class App\Models\Tax uses generic trait Illuminate\Database\Eloquent\Factories\HasFactory but does not specify its types: TFactory'
 			identifier: missingType.generics
-			count: 1
-			path: app/Models/Tax.php
-
-		-
-			rawMessage: 'Method App\Models\Tax::calculateFor() return type has no value type specified in iterable type array.'
-			identifier: missingType.iterableValue
-			count: 1
-			path: app/Models/Tax.php
-
-		-
-			rawMessage: 'Method App\Models\Tax::scopeActive() has no return type specified.'
-			identifier: missingType.return
-			count: 1
-			path: app/Models/Tax.php
-
-		-
-			rawMessage: 'Method App\Models\Tax::scopeActive() has parameter $query with no type specified.'
-			identifier: missingType.parameter
 			count: 1
 			path: app/Models/Tax.php
 
@@ -2437,11 +2353,6 @@ parameters:
 			count: 1
 			path: app/Services/Llm/LlmUsageService.php
 
-		-
-			rawMessage: 'Method App\Services\Navigation\WorkspaceNavigation::resolveTenantGroups() should return Illuminate\Support\Collection<int, array{label: string, icon: string, is_active: bool, items: array<int, array<string, mixed>>}> but returns Illuminate\Support\Collection<int, array{label: ''Developer''|''Finance''|''Organization'', icon: ''ki-filled ki-code''|''ki-filled ki…''|''ki-filled ki-wallet'', is_active: bool, items: array<int, non-empty-array<string, mixed>>}>.'
-			identifier: return.type
-			count: 1
-			path: app/Services/Navigation/WorkspaceNavigation.php
 
 		-
 			rawMessage: 'Method App\Services\Navigation\WorkspaceNavigation::resolveTopMenuGroups() should return Illuminate\Support\Collection<int, array<string, mixed>> but returns Illuminate\Support\Collection<int, array{label: ''Administration''|''Modules''|''Tenant''|''Workspace'', items: non-empty-array<int, array<string, mixed>>}>.'
@@ -2619,12 +2530,6 @@ parameters:
 
 		-
 			rawMessage: Access to an undefined property App\Models\Tenant::$package.
-			identifier: property.notFound
-			count: 1
-			path: app/Services/Tenancy/InvoicingService.php
-
-		-
-			rawMessage: Access to an undefined property App\Models\UsageRollup::$total_value.
 			identifier: property.notFound
 			count: 1
 			path: app/Services/Tenancy/InvoicingService.php

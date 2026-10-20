@@ -44,6 +44,23 @@
             <form action="{{ route('tenant.settings.billing.update') }}" method="POST" class="mt-6 grid gap-6">
                 @csrf
                 <div class="kt-form-item">
+                    @can('access-superadmin-dashboard')
+                    <label class="kt-form-label" for="billing_currency">Billing Currency</label>
+                    <select id="billing_currency" name="billing_currency" class="kt-select">
+                        <option value="">Automatic (Ghana: GHS; other countries: USD)</option>
+                        @foreach(['GHS', 'USD'] as $currency)
+                            <option value="{{ $currency }}" @selected(old('billing_currency', $tenant->billing_currency) === $currency)>{{ $currency }}</option>
+                        @endforeach
+                    </select>
+                    @else
+                        <p class="kt-form-label">Billing Currency</p>
+                        <p>{{ $tenant->billingCurrency() }}</p>
+                        <p class="kt-form-description">Ghana is billed in GHS; other countries are billed in USD. Only a supplier administrator can override this currency.</p>
+                    @endcan
+                    <p class="kt-form-description">Current currency: {{ $tenant->billingCurrency() }}. Applies to new invoices only; prices must be configured separately.</p>
+                    @error('billing_currency')<p class="text-destructive">{{ $message }}</p>@enderror
+                </div>
+                <div class="kt-form-item">
                     <label class="kt-form-label">Billing Email</label>
                     <div class="kt-form-control">
                         <input type="email" name="billing_email" class="kt-input {{ isset($errors) && $errors->has('billing_email') ? '!border-destructive' : '' }}" placeholder="billing@company.com" value="{{ old('billing_email', $billingEmail) }}" />

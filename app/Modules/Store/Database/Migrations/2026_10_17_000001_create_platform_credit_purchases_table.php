@@ -15,7 +15,11 @@ return new class extends Migration
                 $table->id();
                 $table->uuid('uuid')->unique();
                 $table->uuid('tenant_id')->index();
-                $table->foreignId('package_id')->constrained('platform_credit_packages')->cascadeOnDelete();
+                if (Schema::hasTable('users') && Schema::hasTable('platform_credit_packages')) {
+                    $table->foreignId('package_id')->constrained('platform_credit_packages')->cascadeOnDelete();
+                } else {
+                    $table->unsignedBigInteger('package_id')->index();
+                }
                 $table->string('payment_reference')->index();
                 $table->unsignedInteger('amount_paid_cents');
                 $table->unsignedBigInteger('credits_awarded');

@@ -65,6 +65,25 @@ final class UsageService
 
         // Update Daily Rollup
         $this->updateRollup($tenant, 'day', $now, UsageMetric::USER_ACTIVE_DAILY, 1);
+
+        UsageRollup::query()->updateOrCreate([
+            'tenant_id' => $tenant->id,
+            'period' => 'month',
+            'period_start' => $now->copy()->startOfMonth(),
+            'metric' => UsageMetric::USER_ACTIVE_MONTHLY,
+            'dimensions_hash' => UsageRollup::hashDimensions(['user_id' => $userId]),
+        ], ['dimensions' => ['user_id' => $userId], 'value' => 1]);
+    }
+
+    public function recordDailyGauge(Tenant $tenant, UsageMetric $metric, int $value): void
+    {
+        UsageRollup::query()->updateOrCreate([
+            'tenant_id' => $tenant->id,
+            'period' => 'day',
+            'period_start' => now()->startOfDay(),
+            'metric' => $metric,
+            'dimensions_hash' => UsageRollup::hashDimensions(null),
+        ], ['dimensions' => [], 'value' => $value]);
     }
 
     /**

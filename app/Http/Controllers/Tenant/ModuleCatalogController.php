@@ -18,7 +18,7 @@ use RuntimeException;
 
 /**
  * Tenant-facing module catalog. Lists every catalog-eligible module
- * (`tier != 'custom'` and `tier != 'free'`) and classifies each as
+ * (excluding core and bespoke modules) and classifies each as
  * enabled / available / locked from the active tenant's perspective.
  *
  * Tenant admins can toggle Available modules on/off; Locked modules
@@ -39,7 +39,7 @@ final class ModuleCatalogController extends Controller
         abort_if(! $tenant, 404);
 
         $modules = $this->moduleManager->discoverModules()
-            ->reject(fn (array $module): bool => in_array(($module['tier'] ?? null), ['custom', 'free'], true))
+            ->reject(fn (array $module): bool => $module['slug'] === 'core' || ($module['tier'] ?? null) === 'custom')
             ->map(function (array $module) use ($tenant): array {
                 $enabled = $this->moduleManager->isEnabledForTenant($module['slug'], $tenant);
                 $canEnable = $this->moduleManager->canEnableForTenant($module, $tenant);
@@ -60,6 +60,7 @@ final class ModuleCatalogController extends Controller
                     'status' => $status,
                     'missing_features' => $missing,
                     'depends_on' => $module['depends_on'] ?? [],
+                    'missing_dependencies' => array_values(array_filter($module['depends_on'] ?? [], fn (string $dependency): bool => ! $this->moduleManager->isEnabledForTenant($dependency, $tenant))),
                 ];
             })
             ->sortBy('name')

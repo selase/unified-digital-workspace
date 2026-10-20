@@ -70,7 +70,7 @@
                                             <span class="text-xs text-muted-foreground">{{ $invoice->tenant->email }}</span>
                                         </div>
                                     </td>
-                                    <td>${{ number_format((float)$invoice->total, 2) }}</td>
+                                    <td>{{ $invoice->currency }} {{ number_format((float)$invoice->total, 2) }}</td>
                                     <td>
                                         <span class="kt-badge {{ $invoice->status === 'paid' ? 'kt-badge-success' : ($invoice->status === 'draft' ? 'kt-badge-warning' : 'kt-badge-primary') }}">
                                             {{ strtoupper($invoice->status) }}

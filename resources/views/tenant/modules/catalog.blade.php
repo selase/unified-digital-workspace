@@ -9,7 +9,7 @@
                 <div>
                     <p class="text-xs uppercase tracking-wide text-muted-foreground">Capabilities</p>
                     <h1 class="mt-2 text-2xl font-semibold text-foreground">Modules</h1>
-                    <p class="mt-2 text-sm text-muted-foreground">Enable optional modules to extend your workspace. Locked modules require an upgrade to your plan.</p>
+                    <p class="mt-2 text-sm text-muted-foreground">Enable optional modules to extend your workspace. Locked modules require a plan entitlement, an enabled dependency, or resolution of a module conflict.</p>
                 </div>
             </div>
         </div>
@@ -45,6 +45,12 @@
                             <strong class="text-foreground">Requires:</strong> {{ implode(', ', $module['missing_features']) }}
                             <br><span class="text-muted-foreground">Upgrade your plan to unlock.</span>
                         </div>
+                    @endif
+
+                    @if($module['status'] === 'locked' && !empty($module['missing_dependencies']))
+                        <p class="text-xs text-muted-foreground">Enable dependencies first: {{ implode(', ', $module['missing_dependencies']) }}</p>
+                    @elseif($module['status'] === 'locked' && empty($module['missing_features']))
+                        <p class="text-xs text-muted-foreground">Resolve conflicting enabled modules before enabling this module.</p>
                     @endif
 
                     @if(!empty($module['depends_on']))

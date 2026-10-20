@@ -29,9 +29,14 @@ final class GenerateMonthlyInvoices extends Command
     /**
      * Execute the console command.
      */
-    public function handle(InvoicingService $invoicingService): void
+    public function handle(InvoicingService $invoicingService): int
     {
         $monthStr = $this->option('month') ?: now()->subMonth()->format('Y-m');
+        if (! preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $monthStr)) {
+            $this->error('Provide a valid billing month in YYYY-MM format.');
+
+            return self::FAILURE;
+        }
         $start = Carbon::parse($monthStr)->startOfMonth();
         $end = Carbon::parse($monthStr)->endOfMonth();
 
@@ -39,6 +44,7 @@ final class GenerateMonthlyInvoices extends Command
 
         $tenants = Tenant::where('status', 'active')->get();
         $count = 0;
+        $failed = 0;
 
         foreach ($tenants as $tenant) {
             try {
@@ -46,10 +52,13 @@ final class GenerateMonthlyInvoices extends Command
                 $this->line(" - Generated Invoice {$invoice->number} for {$tenant->name} (Total: {$invoice->total})");
                 $count++;
             } catch (Exception $e) {
+                $failed++;
                 $this->error("Failed to generate invoice for {$tenant->name}: {$e->getMessage()}");
             }
         }
 
         $this->info("Invoicing completed. {$count} invoices processed.");
+
+        return $failed > 0 ? self::FAILURE : self::SUCCESS;
     }
 }

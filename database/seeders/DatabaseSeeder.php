@@ -25,6 +25,8 @@ final class DatabaseSeeder extends Seeder
             PermissionsSeeder::class,
             CustomDomainFeatureSeeder::class,
             PackageSeeder::class,
+            RecommendedUsagePriceSeeder::class,
+            RecommendedPlatformCreditPackageSeeder::class,
             TenantSeeder::class,
             UserSeeder::class,
             InstitutionalMasterSeeder::class,

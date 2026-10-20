@@ -63,8 +63,8 @@
                                     @endif
                                 </td>
                                 <td class="text-end">{{ number_format((float) $item->quantity, 2) }}</td>
-                                <td class="text-end">${{ number_format((float) $item->unit_price, 4) }}</td>
-                                <td class="text-end font-semibold">${{ number_format((float) $item->subtotal, 2) }}</td>
+                                <td class="text-end">{{ $invoice->currency }} {{ number_format((float) $item->unit_price, 4) }}</td>
+                                <td class="text-end font-semibold">{{ $invoice->currency }} {{ number_format((float) $item->subtotal, 2) }}</td>
                             </tr>
                         @endforeach
                     </tbody>
@@ -75,21 +75,21 @@
                 <div class="w-full max-w-sm space-y-3 rounded-xl border border-border p-4">
                     <div class="flex items-center justify-between text-sm">
                         <span class="text-muted-foreground">Subtotal</span>
-                        <span class="font-medium text-foreground">${{ number_format((float) $invoice->subtotal, 2) }}</span>
+                        <span class="font-medium text-foreground">{{ $invoice->currency }} {{ number_format((float) $invoice->subtotal, 2) }}</span>
                     </div>
 
                     @if($invoice->tax_details)
                         @foreach($invoice->tax_details as $tax)
                             <div class="flex items-center justify-between text-sm">
                                 <span class="text-muted-foreground">{{ $tax['name'] }} ({{ $tax['rate'] }}%)</span>
-                                <span class="font-medium text-foreground">${{ number_format((float) $tax['amount'], 2) }}</span>
+                                <span class="font-medium text-foreground">{{ $invoice->currency }} {{ number_format((float) $tax['amount'], 2) }}</span>
                             </div>
                         @endforeach
                     @endif
 
                     <div class="border-t border-border pt-3 flex items-center justify-between">
                         <span class="text-base font-semibold text-foreground">Total</span>
-                        <span class="text-xl font-semibold text-foreground">${{ number_format((float) $invoice->total, 2) }}</span>
+                        <span class="text-xl font-semibold text-foreground">{{ $invoice->currency }} {{ number_format((float) $invoice->total, 2) }}</span>
                     </div>
                 </div>
             </div>

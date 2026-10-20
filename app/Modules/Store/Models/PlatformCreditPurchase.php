@@ -44,7 +44,7 @@ final class PlatformCreditPurchase extends Model
      */
     public function package(): BelongsTo
     {
-        return $this->belongsTo(PlatformCreditPackage::class, 'package_id');
+        return $this->belongsTo(PlatformCreditPackage::class, 'package_id', 'id');
     }
 
     /**

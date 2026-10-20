@@ -67,7 +67,12 @@ describe('P1-3: Platform Credit Consumption & Quota Listeners Test', function ()
         expect($listener->handleSending($sendingEvent))->toBeTrue();
 
         // Successful delivery -> bills 1 credit
-        $sentEvent = new NotificationSent($user, $notification, 'mail', null);
+        $email = (new Symfony\Component\Mime\Email)
+            ->from('sender@example.com')->to($user->email)->subject('Delivered')->text('Delivered');
+        $response = new Illuminate\Mail\SentMessage(new Symfony\Component\Mailer\SentMessage(
+            $email, Symfony\Component\Mailer\Envelope::create($email)
+        ));
+        $sentEvent = new NotificationSent($user, $notification, 'mail', $response);
         $listener->handleSent($sentEvent);
 
         $wallet->refresh();

@@ -19,7 +19,26 @@
             <form id="createPackageForm" class="kt-form" action="{{ route('packages.store') }}" method="POST">
                 @csrf
 
+                @if($errors->any())
+                    <div role="alert" class="text-destructive">{{ $errors->first() }}</div>
+                @endif
                 <div class="grid gap-6 lg:grid-cols-2">
+                    <div class="kt-form-item">
+                        <label class="kt-form-label" for="slug">Slug</label>
+                        <input id="slug" name="slug" class="kt-input" value="{{ old('slug') }}" required>
+                    </div>
+                    <div class="kt-form-item">
+                        <label class="kt-form-label" for="billing_model">Billing Model</label>
+                        <select id="billing_model" name="billing_model" class="kt-select">
+                            <option value="flat_rate" @selected(old('billing_model') === 'flat_rate')>Flat Rate</option>
+                            <option value="per_seat" @selected(old('billing_model') === 'per_seat')>Per Seat</option>
+                        </select>
+                    </div>
+                    <div class="kt-form-item">
+                        <label class="kt-form-label" for="price_ghs">GHS Price</label>
+                        <input id="price_ghs" type="number" min="0" step="0.01" name="price_ghs" class="kt-input" value="{{ old('price_ghs') }}">
+                        <p class="kt-form-description">Blank means not configured; zero explicitly means free. No USD conversion is applied.</p>
+                    </div>
                     <div class="kt-form-item">
                         <label class="kt-form-label">Package Name <span class="text-destructive">*</span></label>
                         <div class="kt-form-control">
@@ -29,7 +48,7 @@
                     </div>
 
                     <div class="kt-form-item">
-                        <label class="kt-form-label">Price <span class="text-destructive">*</span></label>
+                        <label class="kt-form-label">USD Price <span class="text-destructive">*</span></label>
                         <div class="kt-form-control">
                             <input type="number" step="0.01" name="price" class="kt-input" placeholder="e.g. 499"
                                 value="{{ old('price') }}" required />
@@ -40,8 +59,8 @@
                         <label class="kt-form-label">Interval <span class="text-destructive">*</span></label>
                         <div class="kt-form-control">
                             <select name="interval" class="kt-select" required>
-                                <option value="monthly" {{ old('interval') === 'monthly' ? 'selected' : '' }}>Monthly</option>
-                                <option value="yearly" {{ old('interval') === 'yearly' ? 'selected' : '' }}>Yearly</option>
+                                <option value="month" {{ old('interval') === 'month' ? 'selected' : '' }}>Monthly</option>
+                                <option value="year" {{ old('interval') === 'year' ? 'selected' : '' }}>Yearly</option>
                             </select>
                         </div>
                     </div>

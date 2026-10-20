@@ -39,6 +39,7 @@ final class BillingController extends Controller
         // Analytics: Last 6 months revenue
         $sixMonthsAgo = now()->subMonths(5)->startOfMonth();
         $monthlyData = Transaction::where('tenant_id', $tenant->id)
+            ->where('currency', $tenant->billingCurrency())
             ->whereIn('status', ['success', 'succeeded'])
             ->where('created_at', '>=', $sixMonthsAgo)
             ->get()
@@ -86,21 +87,20 @@ final class BillingController extends Controller
         ]);
     }
 
-    private function calculateAccruedMetered(\App\Models\Tenant $tenant): float
+    private function calculateAccruedMetered(\App\Models\Tenant $tenant): ?float
     {
         $pricingService = app(\App\Services\Tenancy\PricingService::class);
         $total = 0.0;
         $start = now()->startOfMonth();
 
-        foreach (\App\Enum\UsageMetric::cases() as $metric) {
-            $usageValue = \App\Models\UsageRollup::where('tenant_id', $tenant->id)
-                ->where('period', 'day')
-                ->where('period_start', '>=', $start)
-                ->where('metric', $metric)
-                ->sum('value');
-
+        foreach ($pricingService->billableQuantities($tenant, $start, now()) as $metricValue => $usageValue) {
+            $metric = \App\Enum\UsageMetric::from($metricValue);
             if ($usageValue <= 0) {
                 continue;
+            }
+
+            if ($tenant->billingCurrency() === 'GHS' && ! $pricingService->getUnitPrice($tenant, $metric) && $pricingService->getUnitPrice($tenant, $metric, 'USD')) {
+                return null;
             }
 
             $total += $pricingService->calculateCost($tenant, $metric, (float) $usageValue);

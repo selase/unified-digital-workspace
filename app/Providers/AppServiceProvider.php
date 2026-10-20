@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use DomainException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
@@ -63,6 +64,23 @@ final class AppServiceProvider extends ServiceProvider
             }
 
             $driver = config('services.payment.default', 'paystack');
+            if ($context === 'platform' && $request->routeIs('billing.checkout', 'tenant.billing.checkout', 'billing.callback', 'billing.invoices.checkout', 'store.platform.purchase')) {
+                if ($request->routeIs('billing.callback')) {
+                    $driver = $request->query('session_id') ? 'stripe' : 'paystack';
+                } elseif ($tenant = $tenantContext->getTenant()) {
+                    $currency = $tenant->billingCurrency();
+                    if ($request->filled('invoice_id')) {
+                        $currency = \App\Models\Invoice::where('tenant_id', $tenant->id)
+                            ->findOrFail($request->input('invoice_id'))->currency;
+                    }
+                    $driver = match ($currency) {
+                        'GHS' => 'paystack',
+                        'USD' => 'stripe',
+                        default => throw new DomainException("Unsupported billing currency: {$currency}."),
+                    };
+                }
+                $request->attributes->set('platform_billing_driver', $driver);
+            }
 
             return match ($driver) {
                 'paystack' => $app->make(\App\Services\Payment\PaystackGateway::class),

@@ -8,43 +8,81 @@ use App\Enum\UsageMetric;
 use App\Models\Package;
 use App\Models\Tenant;
 use App\Models\UsagePrice;
-use Illuminate\Support\Facades\Cache;
+use App\Models\UsageRollup;
+use Carbon\CarbonInterface;
 
 final class PricingService
 {
     /**
      * Get the effective unit price for a metric for a specific tenant.
      */
-    public function getUnitPrice(Tenant $tenant, UsageMetric $metric): ?UsagePrice
+    public function getUnitPrice(Tenant $tenant, UsageMetric $metric, ?string $currency = null): ?UsagePrice
     {
-        return Cache::remember("unit_price_{$tenant->id}_{$metric->value}", 3600, function () use ($tenant, $metric) {
-            // 1. Check for tenant-specific override
-            $price = UsagePrice::where('target_type', Tenant::class)
-                ->where('target_id', $tenant->id)
+        $currency ??= $tenant->billingCurrency();
+        // 1. Check for tenant-specific override
+        $price = UsagePrice::where('target_type', Tenant::class)
+            ->where('target_id', $tenant->id)
+            ->where('currency', $currency)
+            ->where('metric', $metric)
+            ->first();
+
+        if ($price) {
+            return $price;
+        }
+
+        // 2. Check for package-level pricing
+        if ($tenant->package_id) {
+            $price = UsagePrice::where('target_type', Package::class)
+                ->where('target_id', $tenant->package_id)
+                ->where('currency', $currency)
                 ->where('metric', $metric)
                 ->first();
 
             if ($price) {
                 return $price;
             }
+        }
 
-            // 2. Check for package-level pricing
-            if ($tenant->package_id) {
-                $price = UsagePrice::where('target_type', Package::class)
-                    ->where('target_id', $tenant->package_id)
-                    ->where('metric', $metric)
-                    ->first();
+        // 3. Fallback to Global standard pricing (target_type is null)
+        return UsagePrice::whereNull('target_type')
+            ->where('currency', $currency)
+            ->where('metric', $metric)
+            ->first();
+    }
 
-                if ($price) {
-                    return $price;
-                }
+    /**
+     * Gauge quantities average observed daily totals; counters sum over the period.
+     * Monthly active users use durable per-user monthly rollups, never daily counts.
+     *
+     * @return array<string, float>
+     */
+    public function billableQuantities(Tenant $tenant, CarbonInterface $start, CarbonInterface $end): array
+    {
+        $quantities = [];
+        $rollups = UsageRollup::where('tenant_id', $tenant->id)
+            ->where('period', 'day')
+            ->whereBetween('period_start', [$start, $end])
+            ->get()
+            ->reject(fn (UsageRollup $rollup): bool => $rollup->metric === UsageMetric::EMAIL_COUNT
+                && ($rollup->dimensions['billing_mode'] ?? null) === 'prepaid');
+
+        foreach ($rollups->groupBy(fn (UsageRollup $rollup): string => $rollup->metric->value) as $metric => $rows) {
+            if ($metric === UsageMetric::USER_ACTIVE_MONTHLY->value || ($metric === UsageMetric::DB_BYTES->value && ! $tenant->requiresDedicatedDb())) {
+                continue;
             }
+            $quantities[$metric] = in_array($metric, [UsageMetric::STORAGE_BYTES->value, UsageMetric::DB_BYTES->value], true)
+                ? (float) $rows->groupBy(fn (UsageRollup $rollup): string => $rollup->period_start->toDateString())
+                    ->map(fn ($daily): float => (float) $daily->sum('value'))->avg()
+                : (float) $rows->sum('value');
+        }
 
-            // 3. Fallback to Global standard pricing (target_type is null)
-            return UsagePrice::whereNull('target_type')
-                ->where('metric', $metric)
-                ->first();
-        });
+        $quantities[UsageMetric::USER_ACTIVE_MONTHLY->value] = (float) UsageRollup::where('tenant_id', $tenant->id)
+            ->where('metric', UsageMetric::USER_ACTIVE_MONTHLY)
+            ->where('period', 'month')
+            ->whereBetween('period_start', [$start, $end])
+            ->sum('value');
+
+        return $quantities;
     }
 
     /**

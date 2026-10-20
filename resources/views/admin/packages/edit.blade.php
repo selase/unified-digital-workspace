@@ -20,7 +20,15 @@
                 @csrf
                 @method('PUT')
 
+                @if($errors->any())
+                    <div role="alert" class="text-destructive">{{ $errors->first() }}</div>
+                @endif
                 <div class="grid gap-6 lg:grid-cols-2">
+                    <div class="kt-form-item">
+                        <label class="kt-form-label" for="price_ghs">GHS Price</label>
+                        <input id="price_ghs" type="number" min="0" step="0.01" name="price_ghs" class="kt-input" value="{{ old('price_ghs', $package->price_ghs) }}">
+                        <p class="kt-form-description">Blank means not configured; zero explicitly means free. No USD conversion is applied.</p>
+                    </div>
                     <div class="kt-form-item">
                         <label class="kt-form-label">Plan Name <span class="text-destructive">*</span></label>
                         <div class="kt-form-control">
@@ -34,7 +42,7 @@
                         </div>
                     </div>
                     <div class="kt-form-item">
-                        <label class="kt-form-label">Price <span class="text-destructive">*</span></label>
+                        <label class="kt-form-label">USD Price <span class="text-destructive">*</span></label>
                         <div class="kt-form-control">
                             <input type="number" step="0.01" name="price" class="kt-input" value="{{ old('price', $package->price) }}" required />
                         </div>
@@ -86,20 +94,24 @@
 
                 <div class="border-t border-border pt-6 mt-6">
                     <h3 class="text-sm font-semibold uppercase text-foreground">Metered Pricing (Rate Card)</h3>
-                    <p class="text-xs text-muted-foreground mt-2">Define unit prices for metered metrics. If left blank, global defaults or free tier apply.</p>
+                    @foreach(['USD', 'GHS'] as $currency)
+                        <a class="kt-btn kt-btn-outline" href="{{ route('packages.edit', [$package->id, 'currency' => $currency]) }}">{{ $currency }} rates</a>
+                    @endforeach
+                    <input type="hidden" name="usage_currency" value="{{ $usageCurrency }}">
+                    <p class="text-xs text-muted-foreground mt-2">Define unit prices for metered metrics. Blank uses the global rate in the selected currency. Unpriced GHS usage blocks invoicing; zero explicitly means free.</p>
                     <div class="kt-table-wrapper mt-4">
                         <table class="kt-table table-auto kt-table-border">
                             <thead>
                                 <tr class="text-xs uppercase text-muted-foreground">
                                     <th>Metric</th>
-                                    <th>Unit Price ($)</th>
+                                    <th>Unit Price ({{ $usageCurrency }})</th>
                                     <th>Per X Units</th>
                                 </tr>
                             </thead>
                             <tbody class="text-sm text-muted-foreground">
                                 @foreach($metrics as $metric)
                                     @php
-                                        $price = $package->usagePrices->where('metric', $metric)->first();
+                                        $price = $package->usagePrices->where('currency', $usageCurrency)->where('metric', $metric)->first();
                                     @endphp
                                     <tr>
                                         <td>

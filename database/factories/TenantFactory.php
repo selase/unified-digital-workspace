@@ -30,7 +30,7 @@ final class TenantFactory extends Factory
             'status' => TenantStatusEnum::ACTIVE,
             'isolation_mode' => 'shared',
             'db_driver' => 'pgsql',
-            'country' => fake()->country(),
+            'country' => 'United States',
             'city' => fake()->city(),
             'state' => fake()->state(),
         ];

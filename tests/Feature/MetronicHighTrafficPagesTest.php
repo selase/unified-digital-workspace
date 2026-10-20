@@ -910,7 +910,10 @@ it('renders the tenant billing settings view with the metronic layout', function
 
     URL::defaults(['subdomain' => $tenant->slug]);
 
+    app('view')->share('errors', new ViewErrorBag());
+
     $html = view('tenant.settings.billing', [
+        'tenant' => $tenant,
         'billingEmail' => 'billing@example.com',
         'taxId' => 'GB123456789',
         'billingAddress' => '123 Main Street, Accra',

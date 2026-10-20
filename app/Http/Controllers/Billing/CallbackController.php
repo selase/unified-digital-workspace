@@ -51,7 +51,7 @@ final class CallbackController extends Controller
                 $metadata = (array) data_get($result, 'metadata', []);
                 $amount = (int) data_get($result, 'amount', 0);
                 $txId = (string) (data_get($result, 'transaction_id') ?? $reference);
-                $provider = (string) config('services.payment.default', 'paystack');
+                $provider = (string) request()->attributes->get('platform_billing_driver', config('services.payment.default', 'paystack'));
                 $currency = mb_strtoupper((string) (data_get($result, 'currency') ?? data_get($metadata, 'currency') ?? 'GHS'));
 
                 if ($type === 'real_estate_installment') {
@@ -115,7 +115,7 @@ final class CallbackController extends Controller
     {
         $tenant = $tenantContext->getTenant();
         $invoice = Invoice::where('tenant_id', $tenant->id)->findOrFail($invoiceId);
-        $provider = (string) config('services.payment.default', 'paystack');
+        $provider = (string) request()->attributes->get('platform_billing_driver', config('services.payment.default', 'paystack'));
         $providerTransactionId = (string) ($result['transaction_id'] ?? $invoice->number);
 
         $fulfillmentService->fulfillInvoicePayment($invoice, $providerTransactionId, $provider);

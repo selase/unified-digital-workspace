@@ -6,6 +6,7 @@ namespace App\Modules\Store\Http\Controllers\Web;
 
 use App\Contracts\PaymentGateway;
 use App\Http\Controllers\Controller;
+use App\Modules\Store\Http\Requests\PlatformCreditPurchaseRequest;
 use App\Modules\Store\Models\PlatformCreditPackage;
 use App\Modules\Store\Models\PlatformCreditPurchase;
 use App\Modules\Store\Models\StoreOrder;
@@ -54,10 +55,12 @@ final class StoreWebController extends Controller
     {
         abort_if(! $request->user()?->can('store.platform.purchase'), 403);
 
-        $packages = PlatformCreditPackage::where('is_active', true)->orderBy('price_cents')->get();
-
         $tenant = $this->tenantContext->getTenant();
-        $wallets = $tenant ? TenantCreditWallet::where('tenant_id', $tenant->id)->get()->keyBy('credit_type') : collect();
+        abort_if($tenant === null, 403, 'No active tenant context.');
+        $packages = PlatformCreditPackage::where('is_active', true)
+            ->where('currency', $tenant->billingCurrency())
+            ->orderBy('price_cents')->get();
+        $wallets = TenantCreditWallet::where('tenant_id', $tenant->id)->get()->keyBy('credit_type');
 
         return view('store::platform-store', [
             'packages' => $packages,
@@ -65,14 +68,12 @@ final class StoreWebController extends Controller
         ]);
     }
 
-    public function purchasePlatformCredits(Request $request, PaymentGateway $gateway): RedirectResponse
+    public function purchasePlatformCredits(PlatformCreditPurchaseRequest $request, PaymentGateway $gateway): RedirectResponse
     {
         $user = $request->user();
         abort_if(! $user?->can('store.platform.purchase'), 403);
 
-        $validated = $request->validate([
-            'package_id' => ['required', 'integer', Rule::exists('platform_credit_packages', 'id')->where('is_active', true)],
-        ]);
+        $validated = $request->validated();
 
         $tenant = $this->tenantContext->getTenant();
         if (! $tenant) {
@@ -95,7 +96,7 @@ final class StoreWebController extends Controller
         $checkoutUrl = $gateway->createOneTimeCheckoutSession(
             (string) ($user->email ?? 'buyer@example.com'),
             (int) $package->price_cents,
-            'GHS',
+            $package->currency,
             $redirectUrl,
             [
                 'type' => 'platform_credit_purchase',

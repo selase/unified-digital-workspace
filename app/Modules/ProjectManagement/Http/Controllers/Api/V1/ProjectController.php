@@ -73,7 +73,9 @@ final class ProjectController extends Controller
             $data['slug'] = Str::slug($data['name']);
         }
 
-        $project = Project::create($data);
+        $tenant = app(\App\Services\Tenancy\TenantContext::class)->getTenant();
+        abort_if($tenant === null, 404);
+        $project = app(\App\Services\Tenancy\ResourceLimitService::class)->create($tenant, 'projects-limit', fn (): Project => Project::create($data));
 
         return (new ProjectResource($project))->response()->setStatusCode(201);
     }

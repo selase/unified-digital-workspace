@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Traits\HasUuid;
 use App\Traits\SpatieActivityLogs;
+use DomainException;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -24,6 +25,7 @@ final class Package extends Model
         'name',
         'slug',
         'price',
+        'price_ghs',
         'interval',
         'billing_model',
         'description',
@@ -35,9 +37,25 @@ final class Package extends Model
 
     protected $casts = [
         'price' => 'decimal:2',
+        'price_ghs' => 'decimal:2',
         'is_active' => 'boolean',
         'markup_percentage' => 'decimal:2',
     ];
+
+    public function priceForCurrency(string $currency): float
+    {
+        $price = match ($currency) {
+            'USD' => $this->price,
+            'GHS' => $this->getAttribute('price_ghs'),
+            default => throw new DomainException("Unsupported billing currency: {$currency}."),
+        };
+
+        if ($price === null) {
+            throw new DomainException("Package {$this->name} has no {$currency} price configured.");
+        }
+
+        return (float) $price;
+    }
 
     public function features()
     {

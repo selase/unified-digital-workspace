@@ -47,12 +47,15 @@ final class StripeGateway implements PaymentGateway
 
     public function createOneTimeCheckoutSession(string $customerId, int $amount, string $currency, string $redirectUrl, array $metadata = []): string
     {
+        $customerField = filter_var($customerId, FILTER_VALIDATE_EMAIL) !== false ? 'customer_email' : 'customer';
+        $querySeparator = str_contains($redirectUrl, '?') ? '&' : '?';
+
         $session = $this->stripe->checkout->sessions->create([
-            'customer' => $customerId,
+            $customerField => $customerId,
             'line_items' => [
                 [
                     'price_data' => [
-                        'currency' => $currency,
+                        'currency' => mb_strtolower($currency),
                         'product_data' => [
                             'name' => $metadata['description'] ?? 'Payment',
                         ],
@@ -63,7 +66,7 @@ final class StripeGateway implements PaymentGateway
             ],
             'mode' => 'payment',
             'metadata' => $metadata,
-            'success_url' => $redirectUrl.'&session_id={CHECKOUT_SESSION_ID}',
+            'success_url' => $redirectUrl.$querySeparator.'session_id={CHECKOUT_SESSION_ID}',
             'cancel_url' => $redirectUrl,
         ]);
 

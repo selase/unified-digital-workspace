@@ -9,6 +9,7 @@ use App\Exceptions\ModuleDependencyException;
 use App\Exceptions\ModuleEntitlementException;
 use App\Exceptions\ModuleNotFoundException;
 use App\Models\Permission;
+use App\Models\Role;
 use App\Models\Tenant;
 use App\Models\TenantFeature;
 use App\Models\TenantModule;
@@ -114,7 +115,7 @@ final class ModuleManager
             return true;
         }
 
-        return Cache::remember(
+        $enabled = Cache::remember(
             "tenant.{$tenant->id}.module.{$slug}",
             now()->addMinutes(10),
             fn () => TenantModule::where('tenant_id', $tenant->id)
@@ -122,6 +123,19 @@ final class ModuleManager
                 ->where('is_enabled', true)
                 ->exists()
         );
+
+        $module = $this->find($slug);
+        if (! $enabled || $module === null) {
+            return false;
+        }
+
+        try {
+            $this->checkEntitlements($module, $tenant);
+        } catch (ModuleEntitlementException) {
+            return false;
+        }
+
+        return true;
     }
 
     /**
@@ -268,7 +282,7 @@ final class ModuleManager
                     fn ($module) => $enabledSlugs->contains($module['slug'])
                 );
             }
-        );
+        )->filter(fn (array $module): bool => $this->isEnabledForTenant($module['slug'], $tenant));
     }
 
     /**
@@ -379,19 +393,18 @@ final class ModuleManager
             return false;
         }
 
-        foreach (($module['required_features'] ?? []) as $feature) {
-            if (! $this->tenantHasFeature($tenant, $feature)) {
-                return false;
-            }
+        try {
+            $this->checkDependencies($module, $tenant);
+            $this->checkConflicts($module, $tenant);
+            $this->checkEntitlements($module, $tenant);
+        } catch (ModuleDependencyException|ModuleConflictException|ModuleEntitlementException) {
+            return false;
         }
 
         return true;
     }
 
     /**
-     * Features missing from the tenant that would block enabling the module.
-     * Empty array means the tenant is fully entitled.
-     *
      * @return array<int, string>
      */
     public function missingFeaturesForTenant(string $slug, Tenant $tenant): array
@@ -402,15 +415,43 @@ final class ModuleManager
             return [];
         }
 
-        $missing = [];
+        return array_values(array_filter(
+            $this->requiredFeaturesForTenant($module, $tenant),
+            fn (string $feature): bool => ! $this->tenantHasFeature($tenant, $feature),
+        ));
+    }
 
-        foreach (($module['required_features'] ?? []) as $feature) {
-            if (! $this->tenantHasFeature($tenant, $feature)) {
-                $missing[] = $feature;
-            }
+    /**
+     * Legacy packages retain their policy until explicitly given module grants.
+     * Bespoke modules continue to use their own required_features.
+     *
+     * @param  array<string, mixed>  $module
+     * @return array<int, string>
+     */
+    private function requiredFeaturesForTenant(array $module, Tenant $tenant): array
+    {
+        $required = $module['required_features'] ?? [];
+        $plans = config('packages.plans', []);
+        $managedModules = array_unique(array_merge(...array_column($plans, 'modules')));
+
+        if ($module['slug'] === 'core' || ! in_array($module['slug'], $managedModules, true)) {
+            return $required;
         }
 
-        return $missing;
+        $package = $tenant->package_id !== null
+            ? \App\Models\Package::query()->find($tenant->package_id)
+            : null;
+        $explicitPackage = $package !== null && $package->features()->where('features.slug', 'like', 'module-%')->exists();
+        $explicitTenant = TenantFeature::query()->where('tenant_id', $tenant->id)
+            ->where('feature_key', 'like', 'module-%')
+            ->where(fn ($query) => $query->whereNull('meta->source')->orWhere('meta->source', '!=', 'package'))
+            ->exists();
+
+        if (isset($plans[$package?->slug]) || $explicitPackage || $explicitTenant) {
+            $required[] = 'module-'.$module['slug'];
+        }
+
+        return array_values(array_unique($required));
     }
 
     /**
@@ -419,15 +460,15 @@ final class ModuleManager
      * module-added flags), then falling back to the tenant's package
      * entitlements via the package_features pivot.
      *
-     * Lazy resolution — we deliberately don't sync package → tenant_features
-     * because that creates drift on plan downgrades. Each lookup gives the
-     * current, correct answer from both sources.
+     * Package-sourced copies in tenant_features are ignored so stale copies
+     * cannot preserve access after a downgrade. The current package is authoritative.
      */
     private function tenantHasFeature(Tenant $tenant, string $featureSlug): bool
     {
         $hasDirect = TenantFeature::query()
             ->where('tenant_id', $tenant->id)
             ->where('feature_key', $featureSlug)
+            ->where(fn ($query) => $query->whereNull('meta->source')->orWhere('meta->source', '!=', 'package'))
             ->where('enabled', true)
             ->exists();
 
@@ -443,6 +484,7 @@ final class ModuleManager
             ->join('features', 'features.id', '=', 'package_features.feature_id')
             ->where('package_features.package_id', $tenant->package_id)
             ->where('features.slug', $featureSlug)
+            ->when(str_starts_with($featureSlug, 'module-'), fn ($query) => $query->whereIn('package_features.value', ['1', 'true']))
             ->exists();
     }
 
@@ -453,7 +495,7 @@ final class ModuleManager
      */
     private function checkEntitlements(array $module, Tenant $tenant): void
     {
-        $required = $module['required_features'] ?? [];
+        $required = $this->requiredFeaturesForTenant($module, $tenant);
 
         if ($required === []) {
             return;
@@ -584,11 +626,12 @@ final class ModuleManager
 
     /**
      * Grant the module's permissions to the tenant's Org Superadmin / Org Admin
-     * users so they can immediately use the feature after enable.
+     * roles so future administrators inherit access, and preserve direct user grants.
      *
-     * Spatie permissions with teams scope direct user permissions by team_id,
-     * so we set the active team to the tenant before assigning. Role-level
-     * permissions would leak across tenants, hence the per-user approach.
+     * Role permission pivots are not team-scoped: only tenant-owned roles may
+     * receive these grants. Tenant copies inherit global baseline permissions
+     * additively; global roles remain unchanged. Direct user grants
+     * are scoped to the active tenant by Spatie teams.
      *
      * @param  array<string, mixed>  $module
      */
@@ -609,6 +652,31 @@ final class ModuleManager
         setPermissionsTeamId($tenant->id);
 
         try {
+            $globalRoles = Role::query()
+                ->whereNull('tenant_id')
+                ->where('guard_name', 'web')
+                ->whereIn('name', ['Org Superadmin', 'Org Admin'])
+                ->with('permissions')
+                ->get()
+                ->keyBy('name');
+
+            foreach (['Org Superadmin', 'Org Admin'] as $roleName) {
+                $globalRole = $globalRoles->get($roleName);
+                $role = Role::query()->firstOrCreate([
+                    'tenant_id' => $tenant->id,
+                    'guard_name' => 'web',
+                    'name' => $roleName,
+                ], [
+                    'slug' => $globalRole?->getAttribute('slug') ?? Str::slug($roleName, '_'),
+                ]);
+
+                if ($globalRole !== null) {
+                    $role->givePermissionTo($globalRole->permissions);
+                }
+
+                $role->givePermissionTo($permissionNames);
+            }
+
             $tenant->users()
                 ->get()
                 ->each(function ($user) use ($permissionNames): void {

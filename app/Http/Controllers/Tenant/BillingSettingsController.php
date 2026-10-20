@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Tenant;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Tenant\UpdateBillingSettingsRequest;
 use App\Services\Tenancy\TenantContext;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 final class BillingSettingsController extends Controller
@@ -28,22 +28,21 @@ final class BillingSettingsController extends Controller
         ]);
     }
 
-    public function update(Request $request, TenantContext $tenantContext): RedirectResponse
+    public function update(UpdateBillingSettingsRequest $request, TenantContext $tenantContext): RedirectResponse
     {
         $tenant = $tenantContext->getTenant();
 
-        $validated = $request->validate([
-            'billing_email' => ['required', 'email'],
-            'tax_id' => ['nullable', 'string', 'max:50'],
-            'billing_address' => ['nullable', 'string', 'max:255'],
-        ]);
+        $validated = $request->validated();
 
         $meta = $tenant->meta ?? [];
         $meta['billing_email'] = $validated['billing_email'];
-        $meta['tax_id'] = $validated['tax_id'];
-        $meta['billing_address'] = $validated['billing_address'];
+        foreach (['tax_id', 'billing_address'] as $field) {
+            if (array_key_exists($field, $validated)) {
+                $meta[$field] = $validated[$field];
+            }
+        }
 
-        $tenant->update(['meta' => $meta]);
+        $tenant->update(['meta' => $meta, ...array_intersect_key($validated, ['billing_currency' => true])]);
 
         return back()->with('success', 'Billing settings updated successfully.');
     }

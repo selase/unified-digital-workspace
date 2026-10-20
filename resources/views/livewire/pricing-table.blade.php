@@ -6,32 +6,14 @@
                 Simple, transparent pricing
             </h2>
             <p class="mx-auto mt-4 max-w-2xl text-[18px] leading-[28px] font-light text-white/70">
-                Choose the plan that's right for your business. All plans include a 14-day free trial.
+                Usage-based plans with no monthly base charge. Active users are billed monthly. GHS applies in Ghana; USD applies elsewhere.
             </p>
-
-            {{-- Toggle --}}
-            <div class="mt-10 flex items-center justify-center gap-4">
-                <span class="text-sm {{ $billingCycle === 'monthly' ? 'text-white' : 'text-white/40' }}">Monthly</span>
-                <button wire:click="setBillingCycle('{{ $billingCycle === 'monthly' ? 'yearly' : 'monthly' }}')"
-                    class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none bg-white/10">
-                    <span aria-hidden="true"
-                        class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-blue-600 shadow ring-0 transition duration-200 ease-in-out {{ $billingCycle === 'yearly' ? 'translate-x-5' : 'translate-x-0' }}"></span>
-                </button>
-                <div class="flex items-center gap-2">
-                    <span
-                        class="text-sm {{ $billingCycle === 'yearly' ? 'text-white' : 'text-white/40' }}">Yearly</span>
-                    <span
-                        class="inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-0.5 text-xs font-medium text-emerald-400 border border-emerald-500/20">
-                        2 months free
-                    </span>
-                </div>
-            </div>
         </div>
 
         <div class="mt-16 grid gap-8 lg:grid-cols-3">
             @foreach ($plans as $plan)
                 <div data-most-popular="{{ $plan['most_popular'] ? 'true' : 'false' }}"
-                    class="relative flex flex-col rounded-3xl border {{ $plan['most_popular'] ? 'border-blue-500/50 bg-blue-500/5 shadow-2xl shadow-blue-500/10' : 'border-white/10 bg-white/[0.03]' }} p-8 transition-all hover:bg-white/[0.05]">
+                    class="relative flex flex-col rounded-3xl {{ $plan['most_popular'] ? 'bg-blue-500/5 shadow-2xl shadow-blue-500/10' : 'bg-white/[0.03]' }} p-8 transition-all hover:bg-white/[0.05]">
                     @if ($plan['most_popular'])
                         <div class="absolute -top-4 left-1/2 -translate-x-1/2">
                             <span
@@ -45,13 +27,14 @@
                         <h3 class="text-2xl font-medium text-white/95">{{ $plan['name'] }}</h3>
                         <p class="mt-4 text-sm font-light text-white/55">{{ $plan['description'] }}</p>
 
-                        <div class="mt-8 flex items-baseline gap-1">
-                            <span class="text-4xl font-semibold text-white tracking-tight">
-                                ${{ $billingCycle === 'monthly' ? $plan['monthly_price'] : $plan['yearly_price'] }}
-                            </span>
-                            <span
-                                class="text-sm font-light text-white/40">/{{ $billingCycle === 'monthly' ? 'mo' : 'yr' }}</span>
+                        <div class="mt-8 text-white">
+                            <p class="text-2xl font-semibold">GHS {{ number_format($plan['active_user_prices']['GHS'], 2) }}</p>
+                            <p class="mt-1 text-xl">USD {{ number_format($plan['active_user_prices']['USD'], 2) }}</p>
+                            <p class="mt-2 text-sm text-white/70">per active user / month</p>
                         </div>
+                        @if($plan['custom_domains'] ?? false)
+                            <p class="mt-4 text-sm text-white/70">Custom domains included.</p>
+                        @endif
 
                         <ul class="mt-8 space-y-4">
                             @foreach ($plan['features'] as $feature)
@@ -74,5 +57,11 @@
                 </div>
             @endforeach
         </div>
+        <p class="mt-8 text-sm text-white/70">
+            Storage: GHS {{ number_format(config('usage-pricing.meters')['storage.bytes']['GHS'], 2) }} / USD {{ number_format(config('usage-pricing.meters')['storage.bytes']['USD'], 2) }} per GiB-month.
+            Database: GHS {{ number_format(config('usage-pricing.meters')['db.bytes']['GHS'], 2) }} / USD {{ number_format(config('usage-pricing.meters')['db.bytes']['USD'], 2) }} per GiB-month.
+            Email: GHS {{ number_format(config('usage-pricing.meters')['emails.count']['GHS'], 2) }} / USD {{ number_format(config('usage-pricing.meters')['emails.count']['USD'], 2) }} per 1,000 recipients accepted by the mail transport; excludes prepaid and system mail.
+            Recommended retail rates; currencies are priced independently. No default request or background-job charges.
+        </p>
     </div>
 </div>

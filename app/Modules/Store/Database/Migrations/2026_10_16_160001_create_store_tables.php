@@ -10,20 +10,6 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (! Schema::hasTable('platform_credit_packages')) {
-            Schema::create('platform_credit_packages', function (Blueprint $table): void {
-                $table->id();
-                $table->uuid('uuid')->unique();
-                $table->string('name');
-                $table->string('credit_type')->index(); // sms, email, ai_token
-                $table->unsignedInteger('amount_credits');
-                $table->unsignedInteger('price_cents');
-                $table->string('currency', 3)->default('GHS');
-                $table->boolean('is_active')->default(true);
-                $table->timestamps();
-            });
-        }
-
         if (! Schema::hasTable('tenant_credit_wallets')) {
             Schema::create('tenant_credit_wallets', function (Blueprint $table): void {
                 $table->id();
@@ -99,6 +85,5 @@ return new class extends Migration
         Schema::dropIfExists('store_orders');
         Schema::dropIfExists('store_products');
         Schema::dropIfExists('tenant_credit_wallets');
-        Schema::dropIfExists('platform_credit_packages');
     }
 };

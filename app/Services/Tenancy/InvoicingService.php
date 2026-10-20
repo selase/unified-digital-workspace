@@ -9,7 +9,7 @@ use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Tax;
 use App\Models\Tenant;
-use App\Models\UsageRollup;
+use DomainException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
@@ -25,6 +25,8 @@ final class InvoicingService
     public function generate(Tenant $tenant, \Carbon\CarbonInterface $start, \Carbon\CarbonInterface $end): Invoice
     {
         return DB::connection('landlord')->transaction(function () use ($tenant, $start, $end) {
+            Tenant::query()->whereKey($tenant->id)->lockForUpdate()->firstOrFail();
+
             // 1. Idempotency check: Already generated for this period?
             $existing = Invoice::where('tenant_id', $tenant->id)
                 ->where('period_start', $start)
@@ -44,7 +46,7 @@ final class InvoicingService
                 'period_end' => $end,
                 'due_at' => now()->addDays(14), // Default 14 days due
                 'status' => 'draft',
-                'currency' => 'USD', // Default
+                'currency' => $tenant->billingCurrency(),
             ]);
 
             $subtotal = 0.0;
@@ -62,7 +64,7 @@ final class InvoicingService
             }
 
             // 5. Calculate Taxes
-            $taxCalc = Tax::calculateFor($subtotal);
+            $taxCalc = Tax::calculateForTenant($subtotal, $tenant);
 
             // 6. Update Invoice Totals
             $invoice->update([
@@ -99,7 +101,7 @@ final class InvoicingService
         $package = $tenant->package;
         $description = "{$package->name} - Base Plan (".ucfirst($package->interval).')';
         $quantity = 1.0;
-        $unitPrice = (float) $package->price;
+        $unitPrice = $package->priceForCurrency($invoice->currency);
 
         // If per-seat billing, quantity is user count
         if ($package->billing_model === \App\Models\Package::BILLING_MODEL_PER_SEAT) {
@@ -126,24 +128,18 @@ final class InvoicingService
     {
         $items = [];
 
-        // Sum up all Daily rollups for this tenant in the period
-        $rollups = UsageRollup::where('tenant_id', $tenant->id)
-            ->where('period', 'day')
-            ->whereBetween('period_start', [$start, $end])
-            ->select('metric', DB::raw('SUM(value) as total_value'))
-            ->groupBy('metric')
-            ->get();
-
-        foreach ($rollups as $rollup) {
-            /** @var UsageMetric $metric */
-            $metric = $rollup->metric;
-            $quantity = (float) $rollup->total_value;
+        foreach ($this->pricingService->billableQuantities($tenant, $start, $end) as $metricValue => $quantity) {
+            $metric = UsageMetric::from($metricValue);
 
             if ($quantity <= 0) {
                 continue;
             }
 
             $unitPriceObj = $this->pricingService->getUnitPrice($tenant, $metric);
+            if (! $unitPriceObj && $invoice->currency === 'GHS' && $this->pricingService->getUnitPrice($tenant, $metric, 'USD')) {
+                throw new DomainException("No GHS rate configured for {$metric->value}; invoice generation stopped.");
+            }
+
             $cost = $this->pricingService->calculateCost($tenant, $metric, $quantity);
 
             if ($cost <= 0 && (! $unitPriceObj || $unitPriceObj->unit_price <= 0)) {
@@ -175,7 +171,8 @@ final class InvoicingService
             UsageMetric::JOB_COUNT => 'Background Jobs',
             UsageMetric::STORAGE_BYTES => 'Cloud Storage (Average Bytes)',
             UsageMetric::DB_BYTES => 'Database Footprint (Average Bytes)',
-            UsageMetric::USER_ACTIVE_DAILY => 'Active Users (Total Activity)',
+            UsageMetric::USER_ACTIVE_DAILY => 'Daily Active User Activity',
+            UsageMetric::USER_ACTIVE_MONTHLY => 'Monthly Active Users (Distinct)',
             default => $metric->value,
         };
     }

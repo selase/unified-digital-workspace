@@ -8,6 +8,7 @@ use App\Enum\TenantStatusEnum;
 use App\Libraries\Helper;
 use App\Traits\HasUuid;
 use App\Traits\SpatieActivityLogs;
+use DomainException;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -39,6 +40,7 @@ final class Tenant extends Model
         'phone_number',
         'address',
         'country',
+        'billing_currency',
         'city',
         'state',
         'zipcode',
@@ -77,6 +79,20 @@ final class Tenant extends Model
         'markup_percentage' => 'decimal:2',
         'llm_topup_balance' => 'integer',
     ];
+
+    public function billingCurrency(): string
+    {
+        $override = $this->getAttribute('billing_currency');
+        if ($override !== null && $override !== '') {
+            if (! in_array($override, ['GHS', 'USD'], true)) {
+                throw new DomainException("Unsupported billing currency: {$override}.");
+            }
+
+            return $override;
+        }
+
+        return in_array(mb_strtoupper(mb_trim((string) $this->country)), ['GH', 'GHA', 'GHANA'], true) ? 'GHS' : 'USD';
+    }
 
     public function requiresDedicatedDb(): bool
     {

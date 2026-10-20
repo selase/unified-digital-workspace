@@ -60,6 +60,10 @@ final class NotificationDeliveryCreditListener
             return;
         }
 
+        if ($event->channel === 'mail' && ! $event->response instanceof \Illuminate\Mail\SentMessage) {
+            return;
+        }
+
         $creditType = $this->resolveCreditTypeForChannel($event->channel);
         if ($creditType === null) {
             return;
@@ -74,10 +78,15 @@ final class NotificationDeliveryCreditListener
             ->where('credit_type', $creditType)
             ->exists();
 
+        $prepaid = false;
         if ($walletExists) {
-            $this->creditService->consumeCredit($tenantId, $creditType, 1);
-            Log::info("Consumed 1 [{$creditType}] credit for tenant [{$tenantId}] on confirmed delivery.");
+            $prepaid = $this->creditService->consumeCredit($tenantId, $creditType, 1);
+            if ($prepaid) {
+                Log::info("Consumed 1 [{$creditType}] credit for tenant [{$tenantId}] on confirmed delivery.");
+            }
         }
+
+        app(Tenancy\MeterTenantMail::class)->recordNotificationDelivery($event, $tenantId, $prepaid);
     }
 
     /**
