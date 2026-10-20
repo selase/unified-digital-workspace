@@ -94,6 +94,17 @@ final class Memo extends Model
     }
 
     /**
+     * Load the recipients and, for each, the user or org node it points at.
+     */
+    public function loadRecipientTargets(): static
+    {
+        $this->loadMissing('recipients');
+        MemoRecipient::hydrateTargets($this->recipients);
+
+        return $this;
+    }
+
+    /**
      * Return only recipients visible to $viewer (stripping BCC rows unless $viewer is the sender
      * or that specific BCC recipient).
      *

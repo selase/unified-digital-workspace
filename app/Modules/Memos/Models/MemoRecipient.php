@@ -14,6 +14,9 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 
 /**
  * @property int $id
@@ -67,6 +70,72 @@ final class MemoRecipient extends Model
         'shared_by_id',
         'shared_at',
     ];
+
+    /**
+     * Load the user / unit / department / directorate each recipient points at.
+     *
+     * `recipient_id` is a text column that holds a user's uuid, a user's numeric id (the compose
+     * form) or the numeric id of an org node. Eager-loading the belongsTo relations compares every
+     * recipient_id against one key column, which PostgreSQL rejects for the other formats, so each
+     * target is resolved with ids of its own type only.
+     *
+     * @param  Collection<int, MemoRecipient>  $recipients
+     */
+    public static function hydrateTargets(Collection $recipients): void
+    {
+        $refs = fn (string $type): Collection => $recipients
+            ->where('recipient_type', $type)
+            ->pluck('recipient_id')
+            ->filter(fn ($value): bool => $value !== null && $value !== '')
+            ->map(fn ($value): string => (string) $value)
+            ->unique()
+            ->values();
+
+        $userRefs = $refs(self::TYPE_USER);
+        $uuids = $userRefs->filter(fn (string $value): bool => Str::isUuid($value))->values()->all();
+        $ids = $userRefs->filter(fn (string $value): bool => ctype_digit($value))->values()->all();
+
+        $users = $uuids === [] && $ids === []
+            ? collect()
+            : User::query()
+                ->select(['id', 'uuid', 'first_name', 'last_name', 'email'])
+                ->where(function ($query) use ($uuids, $ids): void {
+                    $query->whereIn('uuid', $uuids)->orWhereIn('id', $ids);
+                })
+                ->get();
+
+        $orgNodes = [
+            self::TYPE_UNIT => ['relation' => 'unit', 'model' => Unit::class],
+            self::TYPE_DEPARTMENT => ['relation' => 'department', 'model' => Department::class],
+            self::TYPE_DIRECTORATE => ['relation' => 'directorate', 'model' => Directorate::class],
+        ];
+
+        $nodes = [];
+        foreach ($orgNodes as $type => $config) {
+            $numericIds = $refs($type)->filter(fn (string $value): bool => ctype_digit($value))->values()->all();
+            $model = new $config['model'];
+
+            // The HR tables only exist for tenants that have the HRMS module set up.
+            $nodes[$type] = $numericIds === [] || ! Schema::connection($model->getConnectionName())->hasTable($model->getTable())
+                ? collect()
+                : $config['model']::query()->select(['id', 'name'])->whereIn('id', $numericIds)->get()->keyBy('id');
+        }
+
+        foreach ($recipients as $recipient) {
+            $ref = (string) $recipient->recipient_id;
+
+            $recipient->setRelation('user', $recipient->recipient_type === self::TYPE_USER
+                ? $users->first(fn (User $user): bool => (string) $user->uuid === $ref || (string) $user->id === $ref)
+                : null);
+
+            foreach ($orgNodes as $type => $config) {
+                $recipient->setRelation(
+                    $config['relation'],
+                    $recipient->recipient_type === $type ? ($nodes[$type]->get((int) $ref)) : null
+                );
+            }
+        }
+    }
 
     /**
      * @return BelongsTo<Memo, $this>

@@ -46,10 +46,10 @@ final class MemoController extends Controller
 
         $query->where(function ($memoQuery) use ($senderUuid, $polymorphicId, $scope): void {
             $memoQuery->where('sender_id', $senderUuid)
-                ->orWhereHas('recipients', function ($recipientQuery) use ($polymorphicId, $scope): void {
-                    $recipientQuery->where(function ($recipientSubQuery) use ($polymorphicId): void {
+                ->orWhereHas('recipients', function ($recipientQuery) use ($polymorphicId, $senderUuid, $scope): void {
+                    $recipientQuery->where(function ($recipientSubQuery) use ($polymorphicId, $senderUuid): void {
                         $recipientSubQuery->where('recipient_type', 'user')
-                            ->where('recipient_id', $polymorphicId);
+                            ->whereIn('recipient_id', [$polymorphicId, $senderUuid]);
                     })
                         ->orWhere(function ($recipientSubQuery) use ($scope): void {
                             if (! empty($scope['units'])) {
@@ -80,6 +80,7 @@ final class MemoController extends Controller
         }
 
         $memos = $query->latest()->paginate($request->integer('per_page', 15));
+        MemoRecipient::hydrateTargets($memos->getCollection()->pluck('recipients')->flatten());
 
         return MemoResource::collection($memos)->response();
     }
@@ -97,7 +98,7 @@ final class MemoController extends Controller
 
         $this->syncRecipients($memo, $data['recipients']);
 
-        return (new MemoResource($memo->load($this->memoRelations())))
+        return (new MemoResource($this->withRecipientTargets($memo)))
             ->response()
             ->setStatusCode(201);
     }
@@ -107,7 +108,7 @@ final class MemoController extends Controller
         abort_if(! $request->user()?->can('memos.view'), 403);
         $this->ensureVisible($memo, (string) $request->user()?->uuid, (string) $request->user()?->id);
 
-        return new MemoResource($memo->load($this->memoRelations()));
+        return new MemoResource($this->withRecipientTargets($memo));
     }
 
     public function update(MemoUpdateRequest $request, Memo $memo): MemoResource
@@ -118,7 +119,7 @@ final class MemoController extends Controller
         $memo->fill($request->validated());
         $memo->save();
 
-        return new MemoResource($memo->load($this->memoRelations()));
+        return new MemoResource($this->withRecipientTargets($memo));
     }
 
     public function destroy(Request $request, Memo $memo): JsonResponse
@@ -162,7 +163,7 @@ final class MemoController extends Controller
 
         $memo->save();
 
-        return new MemoResource($memo->load($this->memoRelations()));
+        return new MemoResource($this->withRecipientTargets($memo));
     }
 
     public function sendVerificationCode(MemoSendCodeRequest $request, Memo $memo, SmsManager $smsManager): JsonResponse
@@ -215,7 +216,7 @@ final class MemoController extends Controller
         $this->ensureSender($memo, (string) $request->user()?->uuid);
 
         if ($memo->status !== Memo::STATUS_PENDING) {
-            return new MemoResource($memo->load($this->memoRelations()));
+            return new MemoResource($this->withRecipientTargets($memo));
         }
 
         if (! $memo->verification_code_hash || ! $memo->verification_expires_at) {
@@ -257,7 +258,7 @@ final class MemoController extends Controller
             ]
         );
 
-        return new MemoResource($memo->load($this->memoRelations()));
+        return new MemoResource($this->withRecipientTargets($memo));
     }
 
     public function acknowledge(MemoAcknowledgeRequest $request, Memo $memo): JsonResponse|MemoResource
@@ -268,7 +269,7 @@ final class MemoController extends Controller
 
         $recipient = $memo->recipients()
             ->where('recipient_type', 'user')
-            ->where('recipient_id', $polymorphicId)
+            ->whereIn('recipient_id', [$polymorphicId, $senderUuid])
             ->first();
 
         if (! $recipient || ! $recipient->requires_ack) {
@@ -287,7 +288,7 @@ final class MemoController extends Controller
             $memo->save();
         }
 
-        return new MemoResource($memo->load($this->memoRelations()));
+        return new MemoResource($this->withRecipientTargets($memo));
     }
 
     public function storeMinute(MemoMinuteStoreRequest $request, Memo $memo): JsonResponse
@@ -316,7 +317,7 @@ final class MemoController extends Controller
 
         $this->syncRecipients($memo, $request->validated()['recipients'], $senderUuid);
 
-        return new MemoResource($memo->load($this->memoRelations()));
+        return new MemoResource($this->withRecipientTargets($memo));
     }
 
     public function storeAction(MemoActionStoreRequest $request, Memo $memo): JsonResponse
@@ -399,10 +400,10 @@ final class MemoController extends Controller
         $scope = $this->resolveOrgScope($polymorphicId);
 
         $isRecipient = $memo->recipients()
-            ->where(function ($recipientQuery) use ($polymorphicId, $scope): void {
-                $recipientQuery->where(function ($recipientSubQuery) use ($polymorphicId): void {
+            ->where(function ($recipientQuery) use ($polymorphicId, $senderUuid, $scope): void {
+                $recipientQuery->where(function ($recipientSubQuery) use ($polymorphicId, $senderUuid): void {
                     $recipientSubQuery->where('recipient_type', 'user')
-                        ->where('recipient_id', $polymorphicId);
+                        ->whereIn('recipient_id', [$polymorphicId, $senderUuid]);
                 })
                     ->orWhere(function ($recipientSubQuery) use ($scope): void {
                         if (! empty($scope['units'])) {
@@ -485,31 +486,18 @@ final class MemoController extends Controller
         ];
     }
 
+    private function withRecipientTargets(Memo $memo): Memo
+    {
+        $memo->load($this->memoRelations());
+
+        return $memo->loadRecipientTargets();
+    }
+
     /**
      * @return array<int, string>
      */
     private function memoRelations(): array
     {
-        $relations = [
-            'recipients.user',
-            'minutes',
-            'actions',
-        ];
-
-        $tenantConnection = config('database.default_tenant_connection', 'tenant');
-
-        if (Schema::connection($tenantConnection)->hasTable('hrms_units')) {
-            $relations[] = 'recipients.unit';
-        }
-
-        if (Schema::connection($tenantConnection)->hasTable('hrms_departments')) {
-            $relations[] = 'recipients.department';
-        }
-
-        if (Schema::connection($tenantConnection)->hasTable('hrms_directorates')) {
-            $relations[] = 'recipients.directorate';
-        }
-
-        return $relations;
+        return ['recipients', 'minutes', 'actions'];
     }
 }

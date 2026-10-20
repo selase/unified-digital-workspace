@@ -270,3 +270,45 @@ it('returns recipient summaries for hrms recipients when tables exist', function
             ],
         ]);
 });
+
+it('lists and shows a memo addressed to a person by uuid or by numeric id, with names resolved', function (): void {
+    [$sender, $tenant] = createMemoApiContext();
+
+    $byUuid = User::factory()->create(['first_name' => 'Efua', 'last_name' => 'Owusu']);
+    $byId = User::factory()->create(['first_name' => 'Yaw', 'last_name' => 'Darko']);
+
+    foreach ([$byUuid, $byId] as $person) {
+        $tenant->users()->attach($person->id);
+        $person->givePermissionTo(['memos.view']);
+    }
+
+    $memo = Memo::create([
+        'subject' => 'Ward Round Schedule',
+        'body' => 'Rounds start at 08:00.',
+        'sender_id' => (string) $sender->uuid,
+        'status' => Memo::STATUS_SENT,
+        'sent_at' => now(),
+        'signed_at' => now(),
+    ]);
+
+    foreach ([[(string) $byUuid->uuid, 'to'], [(string) $byId->id, 'cc']] as [$recipientId, $role]) {
+        MemoRecipient::create([
+            'memo_id' => $memo->id,
+            'tenant_id' => $tenant->id,
+            'recipient_type' => 'user',
+            'recipient_id' => $recipientId,
+            'role' => $role,
+            'requires_ack' => false,
+        ]);
+    }
+
+    foreach ([$byUuid, $byId] as $person) {
+        actingAs($person, 'sanctum')->getJson('/api/memos/v1/memos')
+            ->assertSuccessful()
+            ->assertJsonFragment(['subject' => 'Ward Round Schedule']);
+
+        actingAs($person, 'sanctum')->getJson('/api/memos/v1/memos/'.$memo->uuid)
+            ->assertSuccessful()
+            ->assertJsonFragment(['subject' => 'Ward Round Schedule']);
+    }
+});

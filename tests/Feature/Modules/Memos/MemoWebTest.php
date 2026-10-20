@@ -221,3 +221,40 @@ it('denies unauthorized access without memos permissions', function (): void {
         'recipients' => [],
     ])->assertForbidden();
 });
+
+it('shows a memo whose recipients are stored as uuids, numeric ids and org units without crashing', function (): void {
+    [$user, $tenant] = createMemoWebTestContext();
+
+    $uuidRecipient = User::factory()->create(['first_name' => 'Abena', 'last_name' => 'Mensah']);
+    $idRecipient = User::factory()->create(['first_name' => 'Kofi', 'last_name' => 'Boateng']);
+
+    $memo = Memo::create([
+        'subject' => 'QUARTERLY REVIEW MEETING',
+        'body' => 'The quarterly review will hold on Friday.',
+        'sender_id' => $user->uuid,
+        'status' => Memo::STATUS_SENT,
+        'sent_at' => now(),
+        'signed_at' => now(),
+    ]);
+
+    foreach ([
+        ['user', (string) $uuidRecipient->uuid, 'to'],
+        ['user', (string) $idRecipient->id, 'cc'],
+        ['unit', '9999', 'to'],
+    ] as [$type, $recipientId, $role]) {
+        MemoRecipient::create([
+            'memo_id' => $memo->id,
+            'tenant_id' => $tenant->id,
+            'recipient_type' => $type,
+            'recipient_id' => $recipientId,
+            'role' => $role,
+            'requires_ack' => false,
+        ]);
+    }
+
+    actingAs($user)->get(route('memos.show', $memo))
+        ->assertOk()
+        ->assertSee('QUARTERLY REVIEW MEETING')
+        ->assertSee('Abena')
+        ->assertSee('Kofi');
+});

@@ -168,13 +168,11 @@ final class MemoWebController extends Controller
 
         $memo->load([
             'sender:uuid,first_name,last_name,email',
-            'recipients.user:id,uuid,first_name,last_name,email',
-            'recipients.unit:id,name',
-            'recipients.department:id,name',
-            'recipients.directorate:id,name',
+            'recipients',
             'minutes.author:uuid,first_name,last_name,email',
             'actions.assignedTo:uuid,first_name,last_name,email',
         ]);
+        $memo->loadRecipientTargets();
 
         $isSender = $memo->sender_id === (string) $user->uuid;
         $userRecipient = $memo->recipients
@@ -309,7 +307,8 @@ final class MemoWebController extends Controller
     private function dispatchNotificationsForMemo(Memo $memo, User $sender): void
     {
         $senderName = $sender->displayName() ?: (string) $sender->email;
-        $recipients = $memo->recipients()->with('user')->get();
+        $recipients = $memo->recipients()->get();
+        MemoRecipient::hydrateTargets($recipients);
         $notifiedUserIds = [$sender->id => true];
 
         foreach ($recipients as $recipient) {
