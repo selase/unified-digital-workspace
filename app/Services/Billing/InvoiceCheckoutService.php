@@ -39,6 +39,7 @@ final class InvoiceCheckoutService
         }
         $provider = $currency === 'GHS' ? 'paystack' : 'stripe';
         $metadata = [
+            'application' => 'udworkspace',
             'invoice_id' => (string) $invoice->id,
             'tenant_id' => (string) $invoice->tenant_id,
             'type' => 'invoice_payment',

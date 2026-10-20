@@ -139,6 +139,7 @@ it('initializes exact GHS hosted checkout for the billing contact with a verifyi
         && $request['email'] === 'accounts@example.test'
         && $request['metadata']['tenant_id'] === $this->billingTenant->id
         && $request['metadata']['invoice_id'] === $this->invoice->id
+        && $request['metadata']['application'] === 'udworkspace'
         && str_contains($request['callback_url'], '/billing/payment-return/paystack'));
     expect($this->billingTenant->fresh()->meta)->toBe($tenantMeta);
 });
@@ -168,7 +169,10 @@ it('rejects unsigned platform webhooks before contacting Paystack', function ():
     Http::assertNothingSent();
 });
 
-it('verifies a platform webhook server side and handles replay', function (): void {
+it('verifies a platform webhook server side and handles replay', function (bool $tagged): void {
+    if ($tagged) {
+        $this->verifiedPayment['metadata']['application'] = 'udworkspace';
+    }
     Http::fake(['api.paystack.co/transaction/verify/webhook-ref' => Http::response(['data' => $this->verifiedPayment])]);
     $payload = json_encode(['event' => 'charge.success', 'data' => ['reference' => 'webhook-ref', 'amount' => 1]]);
     $headers = ['CONTENT_TYPE' => 'application/json', 'HTTP_X_PAYSTACK_SIGNATURE' => hash_hmac('sha512', $payload, 'invoice-test-secret')];
@@ -176,7 +180,28 @@ it('verifies a platform webhook server side and handles replay', function (): vo
     $this->call('POST', route('webhooks.paystack'), [], [], [], $headers, $payload)->assertOk();
     expect($this->invoice->fresh()->status)->toBe(Invoice::STATUS_PAID)
         ->and(Transaction::query()->where('provider_transaction_id', '7654321')->count())->toBe(1);
-});
+})->with(['legacy checkout' => false, 'tagged checkout' => true]);
+
+it('acknowledges unrelated shared-account invoice payments without settling anything', function (string $kind): void {
+    $data = $this->verifiedPayment;
+    if ($kind === 'foreign application') {
+        $data['metadata']['application'] = 'another-application';
+    } else {
+        $data['metadata']['invoice_id'] = match ($kind) {
+            'numeric invoice' => 123,
+            'malformed invoice' => ['unexpected'],
+            default => (string) Illuminate\Support\Str::uuid(),
+        };
+    }
+    Http::fake(['api.paystack.co/transaction/verify/shared-ref' => Http::response(['data' => $data])]);
+    $payload = json_encode(['event' => 'charge.success', 'data' => ['reference' => 'shared-ref']]);
+    $this->call('POST', route('webhooks.paystack'), [], [], [], [
+        'CONTENT_TYPE' => 'application/json', 'HTTP_X_PAYSTACK_SIGNATURE' => hash_hmac('sha512', $payload, 'invoice-test-secret'),
+    ], $payload)->assertOk()->assertJson(['status' => 'ignored']);
+    expect($this->invoice->fresh()->status)->toBe(Invoice::STATUS_ISSUED)
+        ->and(Transaction::query()->where('provider_transaction_id', '7654321')->exists())->toBeFalse();
+    Event::assertNotDispatched(InvoicePaymentReceived::class);
+})->with(['foreign application', 'numeric invoice', 'malformed invoice', 'unknown invoice']);
 
 it('rejects webhook tenant mismatches despite a valid webhook signature', function (): void {
     $data = $this->verifiedPayment;

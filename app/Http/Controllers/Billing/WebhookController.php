@@ -14,6 +14,7 @@ use DomainException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use UnexpectedValueException;
 
 final class WebhookController extends Controller
@@ -132,10 +133,14 @@ final class WebhookController extends Controller
             return response()->json(['error' => 'Payment not confirmed'], 422);
         }
         $invoiceId = data_get($result, 'metadata.invoice_id');
-        if (! $invoiceId) {
+        $application = data_get($result, 'metadata.application');
+        if (($application !== null && $application !== 'udworkspace') || ! is_string($invoiceId) || ! Str::isUuid($invoiceId)) {
             return response()->json(['status' => 'ignored']);
         }
-        $invoice = Invoice::query()->findOrFail($invoiceId);
+        $invoice = Invoice::query()->find($invoiceId);
+        if (! $invoice) {
+            return response()->json(['status' => 'ignored']);
+        }
         try {
             $fulfillment->fulfillInvoicePayment($invoice, (string) ($result['transaction_id'] ?? ''), 'paystack',
                 (int) ($result['amount'] ?? 0), (string) ($result['currency'] ?? ''), (array) ($result['metadata'] ?? []));
