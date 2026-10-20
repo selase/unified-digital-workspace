@@ -44,6 +44,12 @@
 
     {{-- Page body --}}
     <section class="mx-auto max-w-7xl px-4 pb-16 sm:px-6 lg:px-8">
+        @if($page->hasBlocks())
+            <div class="mb-8">
+                {!! $page->renderBlocks() !!}
+            </div>
+        @endif
+
         <div class="prose max-w-none">
             {!! $page->body !!}
         </div>

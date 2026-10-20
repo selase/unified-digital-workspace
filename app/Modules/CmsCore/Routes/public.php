@@ -34,10 +34,18 @@ Route::post('/enquiries', [CmsEnquiryController::class, 'store'])->middleware('t
 // 404, matching the original behaviour of the /{slug} pattern.
 Route::fallback(function (Illuminate\Http\Request $request) {
     $segments = $request->segments();
-    if (count($segments) !== 1) {
+    $slug = null;
+
+    if (count($segments) === 1) {
+        $slug = $segments[0];
+    } elseif (count($segments) === 2 && $segments[0] === 'site') {
+        $slug = $segments[1];
+    }
+
+    if (! $slug) {
         abort(404);
     }
 
     return app(App\Modules\CmsCore\Http\Controllers\Web\CmsPublicPageController::class)
-        ->show($segments[0]);
+        ->show($slug);
 })->name('pages.show');
