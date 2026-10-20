@@ -324,3 +324,46 @@ test('a module whose migrations fail is not enabled', function (): void {
     expect(TenantModule::query()
         ->where('tenant_id', $tenant->id)->where('module_slug', 'forms')->exists())->toBeFalse();
 });
+
+test('a controlled document opens on a dedicated-database tenant', function (): void {
+    Artisan::call('db:seed', ['--class' => 'RoleSeeder']);
+    Artisan::call('db:seed', ['--class' => 'PermissionsSeeder']);
+
+    $tenant = makeDedicatedTenant('doc-open');
+    $this->dbsToDrop = [$tenant->meta['database']];
+
+    enableModuleRow($tenant, 'document-management');
+    Artisan::call('module:migrate', ['slug' => 'document-management', '--tenant' => (string) $tenant->id]);
+
+    $user = App\Models\User::factory()->create();
+    $tenant->users()->attach($user->id);
+    setPermissionsTeamId($tenant->id);
+    Spatie\Permission\Models\Permission::firstOrCreate(
+        ['name' => 'documents.view', 'guard_name' => 'web'],
+        ['category' => 'documents', 'uuid' => (string) Illuminate\Support\Str::uuid()]
+    );
+    $user->givePermissionTo(['documents.view']);
+
+    switchToTenant($tenant);
+    $document = App\Modules\DocumentManagement\Database\Factories\DocumentFactory::new()
+        ->forTenant((string) $tenant->id)
+        ->create(['title' => 'Infection Control Policy', 'status' => 'published', 'owner_id' => (string) $user->uuid]);
+
+    $host = $tenant->slug.'.'.mb_ltrim((string) config('session.domain'), '.');
+
+    // A real HTTP request starts without an already activated tenant connection.
+    app(TenantContext::class)->clear();
+    app(TenantDatabaseManager::class)->configureShared();
+
+    $this->actingAs($user)
+        ->get("http://{$host}/document-management/documents/{$document->id}", ['HTTP_HOST' => $host])
+        ->assertOk()
+        ->assertSee('Infection Control Policy');
+
+    $this->get("http://{$host}/document-management/documents", ['HTTP_HOST' => $host])
+        ->assertOk()
+        ->assertSee("http://{$host}/document-management/documents/{$document->id}", false);
+
+    $this->get("http://{$host}/document-management/documents/999999999", ['HTTP_HOST' => $host])
+        ->assertNotFound();
+});
