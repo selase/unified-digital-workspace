@@ -106,6 +106,7 @@ final class IntranetWebController extends Controller
         $controlledPolicies = collect();
         if ($tenant && $moduleManager->isEnabledForTenant('document-management', $tenant)) {
             $controlledPolicies = Document::query()
+                ->with('currentVersion:id,version_number')
                 ->where('status', 'published')
                 ->latest()
                 ->limit(6)

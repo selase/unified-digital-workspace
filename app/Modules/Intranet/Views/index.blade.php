@@ -426,10 +426,10 @@
                 </div>
                 <div class="kt-card-body p-5 space-y-2">
                     @forelse($controlledPolicies as $policy)
-                        <div class="p-2.5 rounded border border-border bg-card text-xs flex items-center justify-between">
+                        <div class="p-2.5 rounded-lg bg-muted/30 text-xs flex items-center justify-between">
                             <div>
                                 <span class="font-semibold text-foreground">{{ $policy->title }}</span>
-                                <div class="text-[10px] text-muted-foreground">{{ $policy->document_number }} &bull; Rev {{ $policy->revision_number }}</div>
+                                <div class="text-[10px] text-muted-foreground">{{ $policy->category ?: 'Policy' }}@if($policy->currentVersion) &bull; Version {{ $policy->currentVersion->version_number }}@endif</div>
                             </div>
                             <a href="{{ route('document-management.documents.show', $policy) }}" class="kt-btn kt-btn-xs kt-btn-outline">
                                 View

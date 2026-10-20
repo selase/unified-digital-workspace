@@ -579,3 +579,24 @@ describe('Phase 22: Institutional Intranet Portal & Internal-Only CMS Content Sc
             ->and(IntranetEventRsvp::query()->exists())->toBeTrue();
     });
 });
+
+test('the intranet hub lists published controlled policies from Document Management', function (): void {
+    [$user, $tenant] = createIntranetTestContext();
+
+    app(ModuleManager::class)->enableForTenant('document-management', $tenant);
+
+    $policy = App\Modules\DocumentManagement\Database\Factories\DocumentFactory::new()
+        ->forTenant((string) $tenant->id)
+        ->create([
+            'title' => 'Staff Code of Conduct',
+            'status' => 'published',
+            'owner_id' => (string) $user->uuid,
+        ]);
+
+    $this->actingAs($user)
+        ->get(route('intranet.index'))
+        ->assertOk()
+        ->assertSee('Staff Code of Conduct');
+
+    expect($policy->status)->toBe('published');
+});
