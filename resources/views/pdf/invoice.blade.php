@@ -276,6 +276,11 @@
     </table>
 
     <div class="footer">
+        @if(in_array($invoice->status, ['issued', 'overdue'], true))
+            Payment instructions: review the private payment link in your invoice email.
+            {{ $invoice->currency === 'GHS' ? 'GHS invoices use Paystack hosted checkout.' : 'Use the secure checkout provided for this invoice currency.' }}
+            Never email card details. A receipt is provided after verified payment.<br>
+        @endif
         Thank you for your business! If you have any questions about this invoice, please reach out to our support team.
     </div>
 </body>

@@ -135,3 +135,44 @@ The no-base-charge policy applies to the new five-plan catalogue. Existing legac
 - **Operational verification:** no production configuration, live invoice, supplier credential, external payment or backup was accessed for this document. Customer billing release remains pending operator acceptance of the installed configuration, payment processing and invoice reconciliation.
 
 _Maintainer evidence: `database/seeders/{PackageSeeder,RecommendedUsagePriceSeeder,RecommendedPlatformCreditPackageSeeder,GhanaTaxSeeder}.php`; `app/Services/Tenancy/{UsageService,PricingService,InvoicingService,StorageMeter}.php`; `app/Http/Middleware/TrackActiveUser.php`; `app/Listeners/{NotificationDeliveryCreditListener,Tenancy/MeterTenantMail}.php`; `app/Models/Tax.php`; `app/Http/Controllers/Admin/InvoiceController.php`; `config/{billing,llm,services}.php`._
+
+## Billing correspondence, payment and receipts
+
+Cycle notices are scheduled daily at 08:00, seven days and one day before the next billing month. They state the saved fixed subscriptions and purchased editor capacity, with one-time setup shown separately when applicable. They are estimates, not payable renewal invoices: active access, eligible usage and tax are finalised after month-end. Existing monthly generation continues to create drafts; a supplier administrator reviews and explicitly issues them.
+
+Issued invoices email the configured `meta.billing_email`, falling back to the organisation email, with the invoice PDF and a private 30-day payment link. Customer billing managers can use Billing Settings and view billing records even with website-only or unassigned commercial access; ordinary role permissions still apply. Invoice reminders run seven, three and zero days before due, then seven and fourteen days overdue, stopping after payment or cancellation. Stale queued contact/state messages are suppressed; resumed backlogs coalesce to the latest unpaid notice. Billing mail is exempt from prepaid/postpaid customer email usage. Persistent delivery records distinguish pending, blocked, processing, sent, failed and cancelled; sent means mail-transport acceptance, not inbox placement. An SMTP acknowledgement followed by a process/database failure may require operator reconciliation before resending; exactly-once inbox delivery is not promised.
+
+The signed payment page permits the billing contact to pay without a workspace account. It exposes only that invoice, its PDF and any verified receipt. GHS uses Paystack hosted checkout; optional USD checkout remains on Stripe. Provider callbacks and webhooks verify exact invoice amount, currency and tenant, and global provider/reference uniqueness prevents applying one payment twice. Successful settlement saves an immutable receipt snapshot and durable receipt-email outbox entry in the invoice transaction, then queues delivery after commit. Distinct extra payments against an already paid invoice are retained as `reconciliation_required` transactions, preserving the original receipt; billing support must reconcile them, with no automatic refund. Supplier refund actions are landlord-authorised and select the original payment provider.
+
+Production requires `PAYSTACK_SECRET_KEY` from the supplier Paystack account, configured through Forge; `PAYSTACK_PUBLIC_KEY` is optional for hosted checkout. Set the Live Webhook URL to `https://udworkspace.com/webhooks/paystack`. No secret belongs in this document or chat. If provider setup is missing, the page explains that checkout is unavailable and payment-request emails remain blocked without consuming delivery attempts; they resume after configuration is refreshed. Customer agreements, tax activation and billing cadence are unchanged by this feature.
+
+Self-review touchpoints: scheduler and command, landlord outbox migration/model, transactional issuance and payment fulfillment, PDF invoice/receipt, guest signed routes, billing access recovery, contact settings/navigation, customer/admin delivery records, provider settings documentation, system-mail exemptions and focused security/regression tests. No dependencies or new role permissions were introduced. The platform homepage is domain-bound to avoid the CMS-root collision, has real navigation and pricing links, labels its illustrative workbench, and respects registration availability. Desktop browser review completed; mobile layout uses responsive CSS but a device-size browser review remains outstanding. Production payment activation requires supplier key setup and a separately authorised real settlement test; automated tests use simulated provider responses and create no live charges.
+
+## Self-Review Report
+
+### Touchpoints updated
+
+- [x] AGENTS.md records outbox, signed billing routes, settlement and homepage-routing invariants.
+- [ ] Memory files: not needed; repository and operational handover remain the sources of truth.
+- [ ] Seeders: not applicable. Financial messages/transactions are generated from real billing events, never seeded. Existing permissions are reused.
+- [x] Navigation exposes billing and settings to eligible website-only managers; existing invoice pages expose payment/receipt actions and email history.
+- [x] Permission gates preserve tenant settings permissions, signed bearer access and supplier-only refunds.
+- [x] `.env.example` lists Paystack and optional Stripe configuration without secrets.
+- [x] Configuration contains the documented reminder milestones; scheduler uses overlap protection.
+- [x] Tests: final full run **1,656 passed / 7,704 assertions** (851.62 seconds), including contact/state suppression, payment replay/mismatch, receipts, billing recovery, root/custom-domain separation and system-mail exclusions. Whole-project PHPStan clean; PHP8.4 syntax checks pass for42 changed PHP files; Pint and build pass.
+
+### UI Gap Analysis
+
+Discoverability, empty states and permission gating are present on billing/settings/invoice pages and the signed payment portal. Errors and missing-provider states are explicit; checkout uses a normal hosted redirect. Homepage includes keyboard focus and skip navigation; payment controls use semantic form/table elements. Responsive CSS is present; desktop browser rendering was checked, while device-size browser review remains outstanding. Static homepage needs no loading state. The portal shows recorded additional payments awaiting reconciliation and preserves the first receipt.
+
+### Solved (auto-fixed)
+
+CMS global-root collision, currency-incorrect invoice email, broad member mailing, website-admin billing lockout, payment-provider selection, verified amount/currency/tenant checks, provider-reference replay races, second-payment loss, stale overdue writes, reminder-backlog bursts, missing-provider payment requests, durable receipt outbox, retail email charging for billing mail, and customer-initiated supplier refund access.
+
+### Recommended for user decision
+
+The owner will configure the supplier's Paystack keys directly in Forge and set its Live Webhook URL. A real settlement/receipt delivery test requires a separately authorised payment; no live charge or customer test email was performed. Device-size visual QA remains a follow-up; no dependency or financial-policy decision is outstanding.
+
+### Not gaps
+
+Invoices remain reviewed drafts until explicitly issued, current agreements and taxes are preserved, billing runs monthly in arrears, no automatic card debit/refund/suspension is introduced, and CDN/server bandwidth enforcement remains deferred at the owner's request.

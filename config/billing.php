@@ -3,6 +3,11 @@
 declare(strict_types=1);
 
 return [
+    'communications' => [
+        'cycle_days' => [7, 1],
+        'due_days' => [7, 3, 0],
+        'overdue_days' => [7, 14],
+    ],
     /*
     |--------------------------------------------------------------------------
     | Global Markup Percentage

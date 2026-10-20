@@ -91,6 +91,10 @@ final class BillingAccessService
         if ($level === 'self_service') {
             $links[] = ['label' => 'My notifications', 'route' => 'notifications.index', 'module' => 'core'];
         }
+        if ($user->can('core.settings.manage')) {
+            $links[] = ['label' => 'Billing', 'route' => 'billing.index', 'module' => 'core'];
+            $links[] = ['label' => 'Billing settings', 'route' => 'tenant.settings.billing', 'module' => 'core'];
+        }
         $links[] = ['label' => 'My profile', 'route' => 'profile.index', 'module' => 'core', 'params' => ['user' => (string) $user->uuid]];
 
         return $links;

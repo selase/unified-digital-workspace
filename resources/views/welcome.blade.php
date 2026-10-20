@@ -1,132 +1,215 @@
-<!DOCTYPE html>
+@php
+    $pricingUrl = route('product.template').'#pricing';
+    $hasRegistration = \Illuminate\Support\Facades\Route::has('register') && config('app.system_setting.allow_registration', false);
+    $hasEnquiry = \Illuminate\Support\Facades\Route::has('product.enterprise');
+    $hasLogin = \Illuminate\Support\Facades\Route::has('login');
+    $websitePlans = config('usage-pricing.hybrid.website_plans', []);
+@endphp
+<!doctype html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-
-        <title>Laravel</title>
-
-        <!-- Fonts -->
-        <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
-
-        <!-- Styles -->
-        <style>
-            /*! normalize.css v8.0.1 | MIT License | github.com/necolas/normalize.css */html{line-height:1.15;-webkit-text-size-adjust:100%}body{margin:0}a{background-color:transparent}[hidden]{display:none}html{font-family:system-ui,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica Neue,Arial,Noto Sans,sans-serif,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji;line-height:1.5}*,:after,:before{box-sizing:border-box;border:0 solid #e2e8f0}a{color:inherit;text-decoration:inherit}svg,video{display:block;vertical-align:middle}video{max-width:100%;height:auto}.bg-white{--bg-opacity:1;background-color:#fff;background-color:rgba(255,255,255,var(--bg-opacity))}.bg-gray-100{--bg-opacity:1;background-color:#f7fafc;background-color:rgba(247,250,252,var(--bg-opacity))}.border-gray-200{--border-opacity:1;border-color:#edf2f7;border-color:rgba(237,242,247,var(--border-opacity))}.border-t{border-top-width:1px}.flex{display:flex}.grid{display:grid}.hidden{display:none}.items-center{align-items:center}.justify-center{justify-content:center}.font-semibold{font-weight:600}.h-5{height:1.25rem}.h-8{height:2rem}.h-16{height:4rem}.text-sm{font-size:.875rem}.text-lg{font-size:1.125rem}.leading-7{line-height:1.75rem}.mx-auto{margin-left:auto;margin-right:auto}.ml-1{margin-left:.25rem}.mt-2{margin-top:.5rem}.mr-2{margin-right:.5rem}.ml-2{margin-left:.5rem}.mt-4{margin-top:1rem}.ml-4{margin-left:1rem}.mt-8{margin-top:2rem}.ml-12{margin-left:3rem}.-mt-px{margin-top:-1px}.max-w-6xl{max-width:72rem}.min-h-screen{min-height:100vh}.overflow-hidden{overflow:hidden}.p-6{padding:1.5rem}.py-4{padding-top:1rem;padding-bottom:1rem}.px-6{padding-left:1.5rem;padding-right:1.5rem}.pt-8{padding-top:2rem}.fixed{position:fixed}.relative{position:relative}.top-0{top:0}.right-0{right:0}.shadow{box-shadow:0 1px 3px 0 rgba(0,0,0,.1),0 1px 2px 0 rgba(0,0,0,.06)}.text-center{text-align:center}.text-gray-200{--text-opacity:1;color:#edf2f7;color:rgba(237,242,247,var(--text-opacity))}.text-gray-300{--text-opacity:1;color:#e2e8f0;color:rgba(226,232,240,var(--text-opacity))}.text-gray-400{--text-opacity:1;color:#cbd5e0;color:rgba(203,213,224,var(--text-opacity))}.text-gray-500{--text-opacity:1;color:#a0aec0;color:rgba(160,174,192,var(--text-opacity))}.text-gray-600{--text-opacity:1;color:#718096;color:rgba(113,128,150,var(--text-opacity))}.text-gray-700{--text-opacity:1;color:#4a5568;color:rgba(74,85,104,var(--text-opacity))}.text-gray-900{--text-opacity:1;color:#1a202c;color:rgba(26,32,44,var(--text-opacity))}.underline{text-decoration:underline}.antialiased{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}.w-5{width:1.25rem}.w-8{width:2rem}.w-auto{width:auto}.grid-cols-1{grid-template-columns:repeat(1,minmax(0,1fr))}@media (min-width:640px){.sm\:rounded-lg{border-radius:.5rem}.sm\:block{display:block}.sm\:items-center{align-items:center}.sm\:justify-start{justify-content:flex-start}.sm\:justify-between{justify-content:space-between}.sm\:h-20{height:5rem}.sm\:ml-0{margin-left:0}.sm\:px-6{padding-left:1.5rem;padding-right:1.5rem}.sm\:pt-0{padding-top:0}.sm\:text-left{text-align:left}.sm\:text-right{text-align:right}}@media (min-width:768px){.md\:border-t-0{border-top-width:0}.md\:border-l{border-left-width:1px}.md\:grid-cols-2{grid-template-columns:repeat(2,minmax(0,1fr))}}@media (min-width:1024px){.lg\:px-8{padding-left:2rem;padding-right:2rem}}@media (prefers-color-scheme:dark){.dark\:bg-gray-800{--bg-opacity:1;background-color:#2d3748;background-color:rgba(45,55,72,var(--bg-opacity))}.dark\:bg-gray-900{--bg-opacity:1;background-color:#1a202c;background-color:rgba(26,32,44,var(--bg-opacity))}.dark\:border-gray-700{--border-opacity:1;border-color:#4a5568;border-color:rgba(74,85,104,var(--border-opacity))}.dark\:text-white{--text-opacity:1;color:#fff;color:rgba(255,255,255,var(--text-opacity))}.dark\:text-gray-400{--text-opacity:1;color:#cbd5e0;color:rgba(203,213,224,var(--text-opacity))}.dark\:text-gray-500{--tw-text-opacity:1;color:#6b7280;color:rgba(107,114,128,var(--tw-text-opacity))}}
-        </style>
-
-        <style>
-            body {
-                font-family: 'Nunito', sans-serif;
-            }
-        </style>
-    </head>
-    <body class="antialiased">
-        <div class="relative flex items-top justify-center min-h-screen bg-gray-100 dark:bg-gray-900 sm:items-center py-4 sm:pt-0">
-            @if (Route::has('login'))
-                <div class="hidden fixed top-0 right-0 px-6 py-4 sm:block">
-                    @auth
-                        <a href="{{ url('/dashboard') }}" class="text-sm text-gray-700 dark:text-gray-500 underline">Dashboard</a>
-                    @else
-                        <a href="{{ route('login') }}" class="text-sm text-gray-700 dark:text-gray-500 underline">Log in</a>
-
-                        @if (Route::has('register'))
-                            <a href="{{ route('register') }}" class="ml-4 text-sm text-gray-700 dark:text-gray-500 underline">Register</a>
-                        @endif
-                    @endauth
-                </div>
-            @endif
-
-            <div class="max-w-6xl mx-auto sm:px-6 lg:px-8">
-                <div class="flex justify-center pt-8 sm:justify-start sm:pt-0">
-                    <svg viewBox="0 0 651 192" fill="none" xmlns="http://www.w3.org/2000/svg" class="h-16 w-auto text-gray-700 sm:h-20">
-                        <g clip-path="url(#clip0)" fill="#EF3B2D">
-                            <path d="M248.032 44.676h-16.466v100.23h47.394v-14.748h-30.928V44.676zM337.091 87.202c-2.101-3.341-5.083-5.965-8.949-7.875-3.865-1.909-7.756-2.864-11.669-2.864-5.062 0-9.69.931-13.89 2.792-4.201 1.861-7.804 4.417-10.811 7.661-3.007 3.246-5.347 6.993-7.016 11.239-1.672 4.249-2.506 8.713-2.506 13.389 0 4.774.834 9.26 2.506 13.459 1.669 4.202 4.009 7.925 7.016 11.169 3.007 3.246 6.609 5.799 10.811 7.66 4.199 1.861 8.828 2.792 13.89 2.792 3.913 0 7.804-.955 11.669-2.863 3.866-1.908 6.849-4.533 8.949-7.875v9.021h15.607V78.182h-15.607v9.02zm-1.431 32.503c-.955 2.578-2.291 4.821-4.009 6.73-1.719 1.91-3.795 3.437-6.229 4.582-2.435 1.146-5.133 1.718-8.091 1.718-2.96 0-5.633-.572-8.019-1.718-2.387-1.146-4.438-2.672-6.156-4.582-1.719-1.909-3.032-4.152-3.938-6.73-.909-2.577-1.36-5.298-1.36-8.161 0-2.864.451-5.585 1.36-8.162.905-2.577 2.219-4.819 3.938-6.729 1.718-1.908 3.77-3.437 6.156-4.582 2.386-1.146 5.059-1.718 8.019-1.718 2.958 0 5.656.572 8.091 1.718 2.434 1.146 4.51 2.674 6.229 4.582 1.718 1.91 3.054 4.152 4.009 6.729.953 2.577 1.432 5.298 1.432 8.162-.001 2.863-.479 5.584-1.432 8.161zM463.954 87.202c-2.101-3.341-5.083-5.965-8.949-7.875-3.865-1.909-7.756-2.864-11.669-2.864-5.062 0-9.69.931-13.89 2.792-4.201 1.861-7.804 4.417-10.811 7.661-3.007 3.246-5.347 6.993-7.016 11.239-1.672 4.249-2.506 8.713-2.506 13.389 0 4.774.834 9.26 2.506 13.459 1.669 4.202 4.009 7.925 7.016 11.169 3.007 3.246 6.609 5.799 10.811 7.66 4.199 1.861 8.828 2.792 13.89 2.792 3.913 0 7.804-.955 11.669-2.863 3.866-1.908 6.849-4.533 8.949-7.875v9.021h15.607V78.182h-15.607v9.02zm-1.432 32.503c-.955 2.578-2.291 4.821-4.009 6.73-1.719 1.91-3.795 3.437-6.229 4.582-2.435 1.146-5.133 1.718-8.091 1.718-2.96 0-5.633-.572-8.019-1.718-2.387-1.146-4.438-2.672-6.156-4.582-1.719-1.909-3.032-4.152-3.938-6.73-.909-2.577-1.36-5.298-1.36-8.161 0-2.864.451-5.585 1.36-8.162.905-2.577 2.219-4.819 3.938-6.729 1.718-1.908 3.77-3.437 6.156-4.582 2.386-1.146 5.059-1.718 8.019-1.718 2.958 0 5.656.572 8.091 1.718 2.434 1.146 4.51 2.674 6.229 4.582 1.718 1.91 3.054 4.152 4.009 6.729.953 2.577 1.432 5.298 1.432 8.162 0 2.863-.479 5.584-1.432 8.161zM650.772 44.676h-15.606v100.23h15.606V44.676zM365.013 144.906h15.607V93.538h26.776V78.182h-42.383v66.724zM542.133 78.182l-19.616 51.096-19.616-51.096h-15.808l25.617 66.724h19.614l25.617-66.724h-15.808zM591.98 76.466c-19.112 0-34.239 15.706-34.239 35.079 0 21.416 14.641 35.079 36.239 35.079 12.088 0 19.806-4.622 29.234-14.688l-10.544-8.158c-.006.008-7.958 10.449-19.832 10.449-13.802 0-19.612-11.127-19.612-16.884h51.777c2.72-22.043-11.772-40.877-33.023-40.877zm-18.713 29.28c.12-1.284 1.917-16.884 18.589-16.884 16.671 0 18.697 15.598 18.813 16.884h-37.402zM184.068 43.892c-.024-.088-.073-.165-.104-.25-.058-.157-.108-.316-.191-.46-.056-.097-.137-.176-.203-.265-.087-.117-.161-.242-.265-.345-.085-.086-.194-.148-.29-.223-.109-.085-.206-.182-.327-.252l-.002-.001-.002-.002-35.648-20.524a2.971 2.971 0 00-2.964 0l-35.647 20.522-.002.002-.002.001c-.121.07-.219.167-.327.252-.096.075-.205.138-.29.223-.103.103-.178.228-.265.345-.066.089-.147.169-.203.265-.083.144-.133.304-.191.46-.031.085-.08.162-.104.25-.067.249-.103.51-.103.776v38.979l-29.706 17.103V24.493a3 3 0 00-.103-.776c-.024-.088-.073-.165-.104-.25-.058-.157-.108-.316-.191-.46-.056-.097-.137-.176-.203-.265-.087-.117-.161-.242-.265-.345-.085-.086-.194-.148-.29-.223-.109-.085-.206-.182-.327-.252l-.002-.001-.002-.002L40.098 1.396a2.971 2.971 0 00-2.964 0L1.487 21.919l-.002.002-.002.001c-.121.07-.219.167-.327.252-.096.075-.205.138-.29.223-.103.103-.178.228-.265.345-.066.089-.147.169-.203.265-.083.144-.133.304-.191.46-.031.085-.08.162-.104.25-.067.249-.103.51-.103.776v122.09c0 1.063.568 2.044 1.489 2.575l71.293 41.045c.156.089.324.143.49.202.078.028.15.074.23.095a2.98 2.98 0 001.524 0c.069-.018.132-.059.2-.083.176-.061.354-.119.519-.214l71.293-41.045a2.971 2.971 0 001.489-2.575v-38.979l34.158-19.666a2.971 2.971 0 001.489-2.575V44.666a3.075 3.075 0 00-.106-.774zM74.255 143.167l-29.648-16.779 31.136-17.926.001-.001 34.164-19.669 29.674 17.084-21.772 12.428-43.555 24.863zm68.329-76.259v33.841l-12.475-7.182-17.231-9.92V49.806l12.475 7.182 17.231 9.92zm2.97-39.335l29.693 17.095-29.693 17.095-29.693-17.095 29.693-17.095zM54.06 114.089l-12.475 7.182V46.733l17.231-9.92 12.475-7.182v74.537l-17.231 9.921zM38.614 7.398l29.693 17.095-29.693 17.095L8.921 24.493 38.614 7.398zM5.938 29.632l12.475 7.182 17.231 9.92v79.676l.001.005-.001.006c0 .114.032.221.045.333.017.146.021.294.059.434l.002.007c.032.117.094.222.14.334.051.124.088.255.156.371a.036.036 0 00.004.009c.061.105.149.191.222.288.081.105.149.22.244.314l.008.01c.084.083.19.142.284.215.106.083.202.178.32.247l.013.005.011.008 34.139 19.321v34.175L5.939 144.867V29.632h-.001zm136.646 115.235l-65.352 37.625V148.31l48.399-27.628 16.953-9.677v33.862zm35.646-61.22l-29.706 17.102V66.908l17.231-9.92 12.475-7.182v33.841z"/>
-                        </g>
-                    </svg>
-                </div>
-
-                <div class="mt-8 bg-white dark:bg-gray-800 overflow-hidden shadow sm:rounded-lg">
-                    <div class="grid grid-cols-1 md:grid-cols-2">
-                        <div class="p-6">
-                            <div class="flex items-center">
-                                <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" class="w-8 h-8 text-gray-500"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>
-                                <div class="ml-4 text-lg leading-7 font-semibold"><a href="https://laravel.com/docs" class="underline text-gray-900 dark:text-white">Documentation</a></div>
-                            </div>
-
-                            <div class="ml-12">
-                                <div class="mt-2 text-gray-600 dark:text-gray-400 text-sm">
-                                    Laravel has wonderful, thorough documentation covering every aspect of the framework. Whether you are new to the framework or have previous experience with Laravel, we recommend reading all of the documentation from beginning to end.
-                                </div>
-                            </div>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Bring projects, documents, people and public websites into one Unified Digital Workspace. Explore the tools for your team's everyday work.">
+    <meta name="theme-color" content="#173a75">
+    <title>Unified Digital Workspace — A place for your work</title>
+    <style>
+        /* Homepage styles are self-contained; tenant sites and shared layouts are unaffected. */
+        :root { color-scheme: light; --ink: #172a46; --muted: #52627b; --blue: #2455b5; --navy: #173a75; --paper: #f2f6fc; --line: #d7e0ed; --green: #20634d; }
+        * { box-sizing: border-box; }
+        body { margin: 0; background: #fff; color: var(--ink); font: 16px/1.6 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; -webkit-font-smoothing: antialiased; }
+        a { color: inherit; text-decoration: none; }
+        a:hover { text-decoration: underline; text-underline-offset: .25em; }
+        a:focus-visible { outline: 3px solid #bc4c19; outline-offset: 5px; border-radius: 3px; }
+        h1, h2, h3, p, figure { margin: 0; }
+        h1, h2 { text-wrap: balance; }
+        p { text-wrap: pretty; }
+        .wrap { width: min(1240px, calc(100% - 80px)); margin-inline: auto; }
+        .skip { position: absolute; z-index: 10; left: 16px; top: -100px; padding: 12px 20px; background: white; }
+        .skip:focus { top: 12px; }
+        .header { display: flex; justify-content: space-between; align-items: center; gap: 24px; padding-block: 26px; border-bottom: 1px solid var(--line); }
+        .brand { display: inline-flex; align-items: center; gap: 12px; font-size: 14px; font-weight: 750; line-height: 1.25; }
+        .brand-mark { display: grid; grid-template-columns: repeat(2, 10px); gap: 3px; padding: 10px; background: var(--navy); border-radius: 10px 10px 3px 10px; }
+        .brand-mark i { width: 10px; height: 10px; background: #fff; border-radius: 2px; }
+        .brand-mark i:last-child { background: #a8c5ff; }
+        .nav, .account, .actions { display: flex; align-items: center; gap: 24px; }
+        .nav, .account { font-size: 14px; font-weight: 600; }
+        .button { display: inline-flex; align-items: center; justify-content: center; padding: 13px 21px; border: 1px solid var(--blue); background: var(--blue); color: white; font-size: 14px; font-weight: 650; border-radius: 6px; line-height: 1.4; }
+        .button:hover { background: #1c4390; text-decoration: none; }
+        .button.secondary { background: white; color: var(--ink); border-color: var(--line); }
+        .button.secondary:hover { background: var(--paper); }
+        .hero { display: grid; grid-template-columns: .9fr 1.1fr; gap: 56px; align-items: center; padding-block: 80px 70px; }
+        .intro-note { display: flex; gap: 9px; align-items: center; color: var(--navy); font-size: 13px; font-weight: 650; margin-bottom: 24px; }
+        .intro-note::before { content: ''; width: 7px; height: 7px; background: var(--blue); border-radius: 50%; }
+        h1 { font-family: Georgia, "Times New Roman", serif; font-weight: 400; font-size: clamp(48px, 5.1vw, 72px); line-height: 1.04; letter-spacing: -.045em; max-width: 560px; }
+        .hero-copy > p { max-width: 460px; margin-top: 26px; color: var(--muted); font-size: 18px; line-height: 1.75; }
+        .actions { gap: 12px; flex-wrap: wrap; margin-top: 30px; }
+        .hero-copy .availability { font-size: 12px; margin-top: 15px; }
+        .workbench { min-width: 0; position: relative; padding: 22px 0 0 22px; }
+        .workbench::before { content: ''; position: absolute; inset: 0 20px 24px 0; z-index: -1; background: #e7effc; border-radius: 18px; }
+        .window { background: white; border: 1px solid #bfcde1; border-radius: 10px; overflow: hidden; box-shadow: 0 16px 44px #173a7512; }
+        .window-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 18px; border-bottom: 1px solid var(--line); font-size: 11px; color: var(--muted); }
+        .window-dots { display: flex; gap: 4px; }
+        .window-dots i { width: 6px; height: 6px; border-radius: 50%; background: #b2bed1; }
+        .window-body { display: grid; grid-template-columns: 112px minmax(0, 1fr); min-height: 360px; }
+        .preview-sidebar { padding: 23px 12px; background: var(--paper); font-size: 11px; }
+        .preview-sidebar strong { display: block; padding-inline: 8px; margin-bottom: 22px; color: var(--navy); }
+        .preview-sidebar ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+        .preview-sidebar li { padding: 7px 8px; border-radius: 4px; }
+        .preview-sidebar .selected { background: #dfe9fc; color: #21458e; font-weight: 650; }
+        .preview-content { padding: 24px 20px; min-width: 0; }
+        .preview-content h2 { font-size: 21px; letter-spacing: -.04em; }
+        .preview-subtitle { color: var(--muted); font-size: 11px; margin-top: 3px; }
+        .queue-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 25px; padding-bottom: 9px; border-bottom: 1px solid var(--line); font-size: 11px; }
+        .queue-heading span { color: var(--muted); font-size: 10px; }
+        .queue { list-style: none; padding: 0; margin: 0; }
+        .queue li { padding-block: 13px; border-bottom: 1px solid #e9eef6; display: grid; grid-template-columns: 21px 1fr auto; align-items: center; gap: 7px; font-size: 11px; }
+        .queue-icon { display: grid; place-items: center; width: 20px; height: 23px; border-radius: 3px; background: #ebeffa; color: var(--blue); font-size: 12px; }
+        .queue small { display: block; color: var(--muted); font-size: 10px; }
+        .status { font-size: 9px; padding: 3px 6px; color: #775016; background: #fff3d7; border-radius: 3px; white-space: nowrap; }
+        .status.ready { color: var(--green); background: #e5f2eb; }
+        .preview-bottom { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 20px; }
+        .preview-tile { border: 1px solid var(--line); border-radius: 5px; padding: 12px; font-size: 10px; }
+        .preview-tile strong { display: block; font-size: 11px; margin-bottom: 5px; }
+        .preview-tile p { color: var(--muted); }
+        figcaption { text-align: right; color: var(--muted); font-size: 11px; margin-top: 12px; }
+        .tool-strip { padding-block: 22px; border-block: 1px solid var(--line); display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px 24px; font-size: 13px; }
+        .tool-strip > span { color: var(--muted); }
+        .tool-strip ul { display: flex; flex-wrap: wrap; gap: 14px 28px; list-style: none; padding: 0; margin: 0; font-weight: 600; }
+        .capabilities { padding-block: 84px; }
+        .section-intro { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: end; margin-bottom: 42px; }
+        h2 { font-size: clamp(29px, 3vw, 40px); font-weight: 550; line-height: 1.2; letter-spacing: -.04em; }
+        .section-intro p { max-width: 490px; color: var(--muted); font-size: 16px; }
+        .capability-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 30px; }
+        .capability { border-top: 3px solid var(--line); padding-top: 24px; }
+        .capability:first-child { border-color: var(--blue); }
+        .capability h3 { font-size: 18px; font-weight: 650; margin-bottom: 13px; letter-spacing: -.025em; }
+        .capability p { font-size: 14px; color: var(--muted); line-height: 1.8; }
+        .capability .tools { font-size: 11px; color: var(--navy); margin-top: 21px; font-weight: 600; }
+        .pricing { background: var(--navy); color: white; border-radius: 12px; padding: 48px; display: grid; grid-template-columns: 1.1fr 1fr; gap: 50px; align-items: center; }
+        .pricing h2 { max-width: 390px; }
+        .pricing p { color: #d3e0f7; font-size: 14px; margin-top: 18px; max-width: 460px; }
+        .pricing .button { background: white; border-color: white; color: var(--navy); margin-top: 25px; }
+        .pricing .button:hover { background: #e5edfb; }
+        .plan { display: flex; justify-content: space-between; gap: 20px; align-items: baseline; border-bottom: 1px solid #ffffff38; padding-block: 18px; font-size: 14px; }
+        .plan:first-child { padding-top: 0; }
+        .plan strong { font-size: 24px; font-weight: 550; white-space: nowrap; letter-spacing: -.04em; }
+        .plan small { font-size: 11px; font-weight: 400; letter-spacing: normal; color: #d3e0f7; }
+        .pricing .price-note { font-size: 11px; line-height: 1.8; }
+        .closing { padding-block: 80px; display: flex; justify-content: space-between; gap: 30px; align-items: center; }
+        .closing h2 { font-family: Georgia, "Times New Roman", serif; font-weight: 400; }
+        .closing p { color: var(--muted); margin-top: 12px; font-size: 15px; }
+        .closing .actions { margin-top: 0; flex-shrink: 0; }
+        footer { border-top: 1px solid var(--line); padding-block: 25px; color: var(--muted); font-size: 12px; display: flex; justify-content: space-between; gap: 20px; }
+        footer nav { display: flex; gap: 24px; }
+        @media (min-width: 800px) and (prefers-reduced-motion: no-preference) { .window { animation: arrive .5s ease-out both; } @keyframes arrive { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } } }
+        @media (max-width: 1080px) { .hero { gap: 30px; } .nav { gap: 18px; } .account { gap: 14px; } .preview-sidebar { display: none; } .window-body { grid-template-columns: minmax(0, 1fr); } .capability-grid { gap: 22px; } }
+        @media (max-width: 800px) { .wrap { width: calc(100% - 40px); } .header { flex-wrap: wrap; gap: 20px; padding-block: 20px; } .nav { order: 3; width: 100%; justify-content: space-between; } .account { margin-left: auto; } .hero { grid-template-columns: 1fr; padding-block: 48px; gap: 38px; } h1 { max-width: 600px; font-size: clamp(48px, 9vw, 70px); } .hero-copy > p { max-width: 600px; } .workbench { max-width: 630px; width: 100%; } .preview-sidebar { display: block; } .window-body { grid-template-columns: 112px minmax(0, 1fr); } .section-intro, .pricing { grid-template-columns: 1fr; gap: 26px; } .capabilities { padding-block: 56px; } .capability-grid { grid-template-columns: 1fr 1fr; gap: 32px; } .pricing { padding: 32px; } .closing { padding-block: 56px; align-items: flex-start; flex-direction: column; } }
+        @media (max-width: 440px) { .wrap { width: calc(100% - 32px); } .brand { font-size: 11px; gap: 8px; } .brand-mark { padding: 8px; } .account { font-size: 12px; gap: 12px; } .account .button { padding: 10px 12px; font-size: 12px; } .hero-copy > p { font-size: 16px; } .workbench { padding-left: 10px; padding-top: 12px; } .preview-sidebar { display: none; } .window-body { grid-template-columns: minmax(0, 1fr); } .preview-content { padding: 20px 14px; } .capability-grid { grid-template-columns: 1fr; gap: 28px; } .pricing { padding: 25px; } .plan { flex-direction: column; gap: 3px; } footer { flex-direction: column; } }
+    </style>
+</head>
+<body>
+<a class="skip" href="#main-content">Skip to content</a>
+<header class="header wrap">
+    <a class="brand" href="{{ url('/') }}" aria-label="Unified Digital Workspace home">
+        <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+        <span>Unified Digital<br>Workspace</span>
+    </a>
+    <nav class="nav" aria-label="Main navigation">
+        <a href="#workspace">The workspace</a>
+        <a href="#capabilities">What you can do</a>
+        <a href="{{ $pricingUrl }}">Pricing</a>
+    </nav>
+    <div class="account">
+        @if ($hasLogin)<a href="{{ route('login') }}">Log in</a>@endif
+        @if ($hasRegistration)<a class="button" href="{{ route('register') }}">Create account</a>@elseif($hasEnquiry)<a class="button" href="{{ route('product.enterprise') }}">Plan your workspace</a>@endif
+    </div>
+</header>
+<main id="main-content" tabindex="-1">
+    <section class="hero wrap" id="workspace" aria-labelledby="hero-title">
+        <div class="hero-copy">
+            <div class="intro-note">A place for your everyday work</div>
+            <h1 id="hero-title">Make room for the work that matters.</h1>
+            <p>Projects to move forward. Documents to get right. People to support. Bring your organisation’s daily work into one shared workspace.</p>
+            <div class="actions">
+                @if ($hasRegistration)
+                    <a class="button" href="{{ route('register') }}">Create your account</a>
+                @elseif ($hasEnquiry)
+                    <a class="button" href="{{ route('product.enterprise') }}">Plan your workspace</a>
+                @elseif ($hasLogin)
+                    <a class="button" href="{{ route('login') }}">Log in to your workspace</a>
+                @endif
+                <a class="button secondary" href="#capabilities">Explore the workspace</a>
+            </div>
+            <p class="availability">Choose the modules and access that fit your organisation.</p>
+        </div>
+        <figure class="workbench" aria-labelledby="preview-caption">
+            <div class="window">
+                <div class="window-bar"><span class="window-dots" aria-hidden="true"><i></i><i></i><i></i></span><span>Example organisation / Workspace</span></div>
+                <div class="window-body">
+                    <aside class="preview-sidebar" aria-label="Illustrative workspace areas">
+                        <strong>Your workspace</strong>
+                        <ul><li class="selected">Overview</li><li>Projects</li><li>Documents</li><li>People</li><li>Forms</li><li>Sites</li></ul>
+                    </aside>
+                    <div class="preview-content">
+                        <h2>A clearer working day.</h2>
+                        <p class="preview-subtitle">The next step, with the context beside it.</p>
+                        <div class="queue-heading"><strong>Work in focus</strong><span>Sample queue</span></div>
+                        <ul class="queue">
+                            <li><span class="queue-icon" aria-hidden="true">✓</span><span>Prepare the launch plan<small>Projects / Website launch</small></span><span class="status">In progress</span></li>
+                            <li><span class="queue-icon" aria-hidden="true">≡</span><span>Review the staff handbook<small>Documents / People &amp; culture</small></span><span class="status">For review</span></li>
+                            <li><span class="queue-icon" aria-hidden="true">↗</span><span>Publish the team update<small>Sites / Newsroom</small></span><span class="status ready">Ready</span></li>
+                        </ul>
+                        <div class="preview-bottom">
+                            <div class="preview-tile"><strong>Documents</strong><p>Staff handbook<br>Version 2 · Shared with team</p></div>
+                            <div class="preview-tile"><strong>People</strong><p>Leave request<br>Awaiting approval</p></div>
                         </div>
-
-                        <div class="p-6 border-t border-gray-200 dark:border-gray-700 md:border-t-0 md:border-l">
-                            <div class="flex items-center">
-                                <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" class="w-8 h-8 text-gray-500"><path d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path><path d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                                <div class="ml-4 text-lg leading-7 font-semibold"><a href="https://laracasts.com" class="underline text-gray-900 dark:text-white">Laracasts</a></div>
-                            </div>
-
-                            <div class="ml-12">
-                                <div class="mt-2 text-gray-600 dark:text-gray-400 text-sm">
-                                    Laracasts offers thousands of video tutorials on Laravel, PHP, and JavaScript development. Check them out, see for yourself, and massively level up your development skills in the process.
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="p-6 border-t border-gray-200 dark:border-gray-700">
-                            <div class="flex items-center">
-                                <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" class="w-8 h-8 text-gray-500"><path d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"></path></svg>
-                                <div class="ml-4 text-lg leading-7 font-semibold"><a href="https://laravel-news.com/" class="underline text-gray-900 dark:text-white">Laravel News</a></div>
-                            </div>
-
-                            <div class="ml-12">
-                                <div class="mt-2 text-gray-600 dark:text-gray-400 text-sm">
-                                    Laravel News is a community driven portal and newsletter aggregating all of the latest and most important news in the Laravel ecosystem, including new package releases and tutorials.
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="p-6 border-t border-gray-200 dark:border-gray-700 md:border-l">
-                            <div class="flex items-center">
-                                <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" class="w-8 h-8 text-gray-500"><path d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-                                <div class="ml-4 text-lg leading-7 font-semibold text-gray-900 dark:text-white">Vibrant Ecosystem</div>
-                            </div>
-
-                            <div class="ml-12">
-                                <div class="mt-2 text-gray-600 dark:text-gray-400 text-sm">
-                                    Laravel's robust library of first-party tools and libraries, such as <a href="https://forge.laravel.com" class="underline">Forge</a>, <a href="https://vapor.laravel.com" class="underline">Vapor</a>, <a href="https://nova.laravel.com" class="underline">Nova</a>, and <a href="https://envoyer.io" class="underline">Envoyer</a> help you take your projects to the next level. Pair them with powerful open source libraries like <a href="https://laravel.com/docs/billing" class="underline">Cashier</a>, <a href="https://laravel.com/docs/dusk" class="underline">Dusk</a>, <a href="https://laravel.com/docs/broadcasting" class="underline">Echo</a>, <a href="https://laravel.com/docs/horizon" class="underline">Horizon</a>, <a href="https://laravel.com/docs/sanctum" class="underline">Sanctum</a>, <a href="https://laravel.com/docs/telescope" class="underline">Telescope</a>, and more.
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="flex justify-center mt-4 sm:items-center sm:justify-between">
-                    <div class="text-center text-sm text-gray-500 sm:text-left">
-                        <div class="flex items-center">
-                            <svg fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" stroke="currentColor" class="-mt-px w-5 h-5 text-gray-400">
-                                <path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                            </svg>
-
-                            <a href="https://laravel.bigcartel.com" class="ml-1 underline">
-                                Shop
-                            </a>
-
-                            <svg fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" class="ml-4 -mt-px w-5 h-5 text-gray-400">
-                                <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
-                            </svg>
-
-                            <a href="https://github.com/sponsors/taylorotwell" class="ml-1 underline">
-                                Sponsor
-                            </a>
-                        </div>
-                    </div>
-
-                    <div class="ml-4 text-center text-sm text-gray-500 sm:text-right sm:ml-0">
-                        Laravel v{{ Illuminate\Foundation\Application::VERSION }} (PHP v{{ PHP_VERSION }})
                     </div>
                 </div>
             </div>
+            <figcaption id="preview-caption">Illustrative workspace · Sample content, not a live account</figcaption>
+        </figure>
+    </section>
+    <div class="tool-strip wrap">
+        <span>Different kinds of work. One workspace.</span>
+        <ul aria-label="Workspace tools"><li>Projects</li><li>Documents</li><li>People</li><li>Forms</li><li>Sites</li></ul>
+    </div>
+    <section class="capabilities wrap" id="capabilities" aria-labelledby="capabilities-title">
+        <div class="section-intro">
+            <h2 id="capabilities-title">From the first request<br>to the finished work.</h2>
+            <p>Give your team a place to organise the work, keep its context and share the result. Add the modules your organisation needs.</p>
         </div>
-    </body>
+        <div class="capability-grid">
+            <article class="capability"><h3>Move work forward.</h3><p>Organise projects and tasks, track milestones and time, and collect requests through forms and surveys.</p><p class="tools">Projects &amp; tasks / Forms &amp; surveys</p></article>
+            <article class="capability"><h3>Keep the knowledge.</h3><p>Manage document versions, share files with the right people, and give internal updates a home on your intranet.</p><p class="tools">Documents / Intranet</p></article>
+            <article class="capability"><h3>Support your people.</h3><p>Maintain employee records, organise departments, and manage leave requests and approvals.</p><p class="tools">Employee records / Leave management</p></article>
+            <article class="capability"><h3>Put your work out there.</h3><p>Create and manage a public website with posts, media and forms, alongside your organisation’s internal tools.</p><p class="tools">Sites &amp; publishing / Media library</p></article>
+        </div>
+    </section>
+    <section class="pricing wrap" aria-labelledby="pricing-title">
+        <div>
+            <h2 id="pricing-title">A website today.<br>A wider workspace when you need it.</h2>
+            <p>Explore website plans, then see how member access, business modules and usage shape your workspace estimate.</p>
+            <a class="button" href="{{ $pricingUrl }}">See plans &amp; estimate costs</a>
+        </div>
+        <div>
+            @foreach ($websitePlans as $plan)
+                <div class="plan"><span>{{ $plan['name'] }}</span><strong>GHS {{ number_format($plan['GHS'], 0) }} <small>/ month</small></strong></div>
+            @endforeach
+            <p class="price-note">Opt-in website plans. Setup, additional access and usage charges may apply. Business modules are priced separately. Existing agreements keep their agreed rates.</p>
+        </div>
+    </section>
+    <section class="closing wrap" aria-labelledby="closing-title">
+        <div><h2 id="closing-title">Give good work a place to happen.</h2><p>Start with the tools your team needs. Keep the work connected.</p></div>
+        <div class="actions">
+            @if ($hasRegistration)<a class="button" href="{{ route('register') }}">Create your account</a>@endif
+            @if ($hasLogin)<a class="button secondary" href="{{ route('login') }}">Log in</a>@endif
+        </div>
+    </section>
+</main>
+<footer class="wrap">
+    <span>© {{ date('Y') }} Unified Digital Workspace</span>
+    <nav aria-label="Footer navigation"><a href="#capabilities">Workspace tools</a><a href="{{ $pricingUrl }}">Plans &amp; pricing</a></nav>
+</footer>
+</body>
 </html>

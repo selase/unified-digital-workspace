@@ -36,7 +36,9 @@ Route::get('/apple-touch-icon-precomposed.png', [App\Http\Controllers\SiteIconCo
 Route::get('/site-icon/{size}.png', [App\Http\Controllers\SiteIconController::class, 'serve'])->whereNumber('size')->name('site-icon.serve');
 Route::get('/site.webmanifest', [App\Http\Controllers\SiteIconController::class, 'manifest'])->name('site-icon.manifest');
 
-Route::get('/', fn (): Factory|View => view('welcome'));
+Route::domain(parse_url((string) config('app.url'), PHP_URL_HOST))
+    ->get('/', fn (): Factory|View => view('welcome'))->name('home');
+require __DIR__.'/billing-payments.php';
 Route::get('/sample-product', fn (): Factory|View => view('sample-product-page'));
 Route::get('/product-template', fn (): Factory|View => view('product.landing'))->name('product.template');
 Route::get('/product-enterprise', fn (): Factory|View => view('product.enterprise'))->name('product.enterprise');

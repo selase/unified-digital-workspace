@@ -107,8 +107,11 @@ test('callback then webhook replay fulfills invoice without duplicate transactio
         ->andReturn([
             'status' => 'succeeded',
             'transaction_id' => 'tx_cb_then_wh_111',
+            'amount' => 5000,
+            'currency' => 'USD',
             'metadata' => [
                 'invoice_id' => $invoice->id,
+                'tenant_id' => $this->tenant->id,
             ],
         ]);
     app()->instance(PaymentGateway::class, $mockGateway);
@@ -116,7 +119,7 @@ test('callback then webhook replay fulfills invoice without duplicate transactio
     // Act as user and hit callback
     $this->actingAs($this->user)
         ->get(route('billing.callback', ['session_id' => 'session_test_cb']))
-        ->assertRedirect(route('billing.invoices.show', $invoice->id));
+        ->assertRedirect(app(App\Services\Billing\InvoicePaymentLinkService::class)->url($invoice));
 
     $invoice->refresh();
     expect($invoice->status)->toBe(Invoice::STATUS_PAID)

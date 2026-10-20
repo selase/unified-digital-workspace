@@ -8,10 +8,9 @@ use App\Http\Controllers\Controller;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\Tax;
-use App\Notifications\InvoiceIssued;
+use App\Services\Billing\BillingCommunicationService;
 use App\Services\Tenancy\PdfInvoiceService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Notification;
 use Illuminate\View\View;
 
 final class InvoiceController extends Controller
@@ -49,7 +48,7 @@ final class InvoiceController extends Controller
     {
         $this->authorize('access-superadmin-dashboard');
 
-        $invoice = Invoice::with(['tenant', 'items'])->findOrFail($id);
+        $invoice = Invoice::with(['tenant', 'items', 'billingMessages'])->findOrFail($id);
 
         return view('admin.billing.invoices.show', [
             'invoice' => $invoice,
@@ -76,12 +75,9 @@ final class InvoiceController extends Controller
             return back()->with('error', 'Only draft invoices can be issued.');
         }
 
-        $invoice->update(['status' => Invoice::STATUS_ISSUED]);
+        app(BillingCommunicationService::class)->issue($invoice);
 
-        \App\Events\InvoiceIssued::dispatch($invoice);
-        $this->notifyTenant($invoice);
-
-        return back()->with('success', "Invoice {$invoice->number} has been issued and notified.");
+        return back()->with('success', "Invoice {$invoice->number} has been issued. Its billing email has been queued when a valid billing contact is configured.");
     }
 
     public function bulkIssue(Request $request)
@@ -95,23 +91,21 @@ final class InvoiceController extends Controller
             ->get();
 
         foreach ($invoices as $invoice) {
-            $invoice->update(['status' => Invoice::STATUS_ISSUED]);
-            \App\Events\InvoiceIssued::dispatch($invoice);
-            $this->notifyTenant($invoice);
+            app(BillingCommunicationService::class)->issue($invoice);
         }
 
-        return back()->with('success', $invoices->count().' invoices have been issued and notified.');
+        return back()->with('success', $invoices->count().' invoices have been issued; billing emails are queued for configured billing contacts.');
     }
 
     public function resend(Invoice $invoice)
     {
         $this->authorize('access-superadmin-dashboard');
 
-        if ($invoice->status === Invoice::STATUS_DRAFT) {
-            return back()->with('error', 'Draft invoices cannot be resent. Please issue them first.');
+        if (! in_array($invoice->status, [Invoice::STATUS_ISSUED, Invoice::STATUS_OVERDUE, Invoice::STATUS_PAID], true)) {
+            return back()->with('error', 'Only issued invoices or verified payment receipts can be resent.');
         }
-
-        $this->notifyTenant($invoice);
+        $communications = app(BillingCommunicationService::class);
+        $invoice->status === Invoice::STATUS_PAID ? $communications->receipt($invoice, true) : $communications->issued($invoice, true);
 
         return back()->with('success', "Invoice {$invoice->number} notification has been resent.");
     }
@@ -208,17 +202,6 @@ final class InvoiceController extends Controller
 
         return redirect()->route('admin.billing.invoices.show', $invoice)
             ->with('success', 'Draft invoice created. Please add line items.');
-    }
-
-    private function notifyTenant(Invoice $invoice): void
-    {
-        // Find users in this tenant to notify.
-        // We look for users with 'admin' role or just all users if it's a small tenant.
-        $users = $invoice->tenant->users()->get();
-
-        if ($users->isNotEmpty()) {
-            Notification::send($users, new InvoiceIssued($invoice));
-        }
     }
 
     private function recalculateTotals(Invoice $invoice): void

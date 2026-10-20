@@ -13,11 +13,9 @@ use Log;
 
 final class RefundController extends Controller
 {
-    public function store(Request $request, Transaction $transaction, PaymentGateway $gateway)
+    public function store(Request $request, Transaction $transaction)
     {
-        // 1. Authorization: Ensure user can initiate refund (e.g., is admin/owner)
-        // For now, assuming middleware handles general authentication, but we should add a policy check ideally.
-        // if ($request->user()->cannot('refund', $transaction)) { abort(403); }
+        $this->authorize('admin.tenants.update');
 
         if ($transaction->status !== 'success' && $transaction->status !== 'succeeded') { // Handle both terminologies if mixed
             abort(403, 'Transaction is not eligible for refund.');
@@ -25,6 +23,7 @@ final class RefundController extends Controller
 
         // 2. Process Refund via Gateway
         try {
+            $gateway = app(PaymentGateway::class);
             $refundResult = $gateway->refund($transaction->provider_transaction_id);
 
             // 3. Update Transaction Status

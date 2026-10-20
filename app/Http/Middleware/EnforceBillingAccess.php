@@ -38,6 +38,9 @@ final class EnforceBillingAccess
 
     public function handle(Request $request, Closure $next): Response
     {
+        if ($this->publicBillingRoute($request)) {
+            return $next($request);
+        }
         $tenant = $this->context->getTenant();
         $user = $request->user();
         if ($tenant === null || $this->agreements->activeFor($tenant) === null) {
@@ -206,6 +209,22 @@ final class EnforceBillingAccess
 
     private function safeAccountRoute(Request $request): bool
     {
+        $billingActions = [
+            \App\Http\Controllers\Billing\BillingController::class.'@index' => ['GET', 'HEAD'],
+            \App\Http\Controllers\Billing\BillingController::class.'@pricing' => ['GET', 'HEAD'],
+            \App\Http\Controllers\Billing\InvoiceController::class.'@index' => ['GET', 'HEAD'],
+            \App\Http\Controllers\Billing\InvoiceController::class.'@show' => ['GET', 'HEAD'],
+            \App\Http\Controllers\Billing\InvoiceController::class.'@download' => ['GET', 'HEAD'],
+            \App\Http\Controllers\Tenant\BillingSettingsController::class.'@index' => ['GET', 'HEAD'],
+            \App\Http\Controllers\Tenant\BillingSettingsController::class.'@update' => ['POST', 'PUT', 'PATCH'],
+            \App\Http\Controllers\Billing\CheckoutController::class.'@store' => ['POST'],
+            \App\Http\Controllers\Billing\InvoicePaymentController::class.'@checkout' => ['POST'],
+        ];
+        if ($request->user()?->can('core.settings.manage')
+            && $request->routeIs('billing.*', 'tenant.billing.*', 'tenant.pricing', 'tenant.settings.billing.*')
+            && in_array($request->method(), $billingActions[$request->route()?->getActionName() ?? ''] ?? [], true)) {
+            return true;
+        }
         $routes = [
             'logout' => [\App\Http\Controllers\Auth\AuthenticatedSessionController::class, 'destroy', 'POST'],
             'password.confirm' => [\App\Http\Controllers\Auth\ConfirmablePasswordController::class, 'show', 'GET'],
@@ -228,6 +247,18 @@ final class EnforceBillingAccess
 
         return $this->matches($request, 'profile.index', ProfileController::class, 'index', 'GET')
             && $profile instanceof User && $profile->is($request->user());
+    }
+
+    private function publicBillingRoute(Request $request): bool
+    {
+        $controller = \App\Http\Controllers\Billing\InvoicePaymentPortalController::class;
+        foreach (['show' => 'GET', 'pay' => 'POST', 'invoice' => 'GET', 'receipt' => 'GET', 'callback' => 'GET'] as $action => $method) {
+            if ($this->matches($request, 'billing.payment.'.$action, $controller, $action, $method)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private function safeSelfServiceRoute(Request $request): bool

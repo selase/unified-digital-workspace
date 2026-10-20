@@ -183,3 +183,12 @@ test('only the confirmed wallet debit is prepaid on a multiple recipient notific
     expect((float) $usage->filter(fn (UsageEvent $event): bool => $event->meta['billing_mode'] === 'prepaid')->sum('quantity'))->toBe(1.0);
     expect((float) $usage->filter(fn (UsageEvent $event): bool => $event->meta['billing_mode'] === 'metered')->sum('quantity'))->toBe(2.0);
 });
+
+test('billing correspondence never consumes customer email credits or postpaid email usage', function (): void {
+    Mail::mailer('array')->raw('Invoice reminder', function (Message $message): void {
+        $message->from('billing@example.com')->to('finance@example.com')->subject('Invoice');
+        $message->getSymfonyMessage()->getHeaders()->addTextHeader(MeterTenantMail::TENANT_HEADER, $this->tenant->id);
+        $message->getSymfonyMessage()->getHeaders()->addTextHeader('X-UDW-System-Transactional', 'billing');
+    });
+    expect(UsageEvent::query()->where('type', UsageMetric::EMAIL_COUNT)->count())->toBe(0);
+});

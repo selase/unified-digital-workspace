@@ -34,47 +34,99 @@ final class PaymentFulfillmentService
 
     /**
      * Atomically fulfill an invoice payment idempotently.
+     *
+     * @param  array<string, mixed>|null  $verifiedMetadata
      */
-    public function fulfillInvoicePayment(Invoice $invoice, string $providerTransactionId, string $provider = 'stripe'): Invoice
-    {
-        return DB::connection('landlord')->transaction(function () use ($invoice, $providerTransactionId, $provider): Invoice {
-            /** @var Invoice $lockedInvoice */
-            $lockedInvoice = Invoice::where('id', $invoice->id)->lockForUpdate()->firstOrFail();
+    public function fulfillInvoicePayment(
+        Invoice $invoice,
+        string $providerTransactionId,
+        string $provider = 'stripe',
+        ?int $verifiedAmount = null,
+        ?string $verifiedCurrency = null,
+        ?array $verifiedMetadata = null
+    ): Invoice {
+        return DB::connection('landlord')->transaction(function () use ($invoice, $providerTransactionId, $provider, $verifiedAmount, $verifiedCurrency, $verifiedMetadata): Invoice {
+            $lockedInvoice = Invoice::query()->whereKey($invoice->id)->lockForUpdate()->firstOrFail();
+            $amount = (int) round((float) $lockedInvoice->total * 100);
+
+            if ($providerTransactionId === '' || ! in_array($provider, ['stripe', 'paystack'], true)) {
+                throw new DomainException('Invalid invoice payment reference or provider.');
+            }
+
+            if (($verifiedCurrency !== null && (($provider === 'paystack' && mb_strtoupper($verifiedCurrency) !== 'GHS')
+                    || ($provider === 'stripe' && mb_strtoupper($verifiedCurrency) !== 'USD')))
+                || ($verifiedAmount !== null && $verifiedAmount !== $amount)
+                || ($verifiedCurrency !== null && mb_strtoupper($verifiedCurrency) !== mb_strtoupper($lockedInvoice->currency))
+                || ($verifiedMetadata !== null && ((string) ($verifiedMetadata['invoice_id'] ?? '') !== (string) $lockedInvoice->id
+                    || (string) ($verifiedMetadata['tenant_id'] ?? '') !== (string) $lockedInvoice->tenant_id))) {
+                throw new DomainException('Verified invoice payment does not match the invoice amount, currency or tenant.');
+            }
+
+            $existing = Transaction::query()->where('provider', $provider)
+                ->where('provider_transaction_id', $providerTransactionId)->lockForUpdate()->first();
+
+            if ($existing && ((string) data_get($existing->meta, 'invoice_id') !== (string) $lockedInvoice->id
+                || (string) $existing->tenant_id !== (string) $lockedInvoice->tenant_id)) {
+                throw new DomainException('Payment reference has already been used.');
+            }
 
             if ($lockedInvoice->status === Invoice::STATUS_PAID) {
-                Log::info("Invoice {$lockedInvoice->id} already fulfilled (idempotent skip).");
+                if (! $existing) {
+                    if ($verifiedAmount === null || $verifiedCurrency === null || $verifiedMetadata === null) {
+                        throw new DomainException('A distinct additional payment requires provider verification.');
+                    }
+                    Transaction::query()->create([
+                        'tenant_id' => $lockedInvoice->tenant_id, 'provider' => $provider,
+                        'provider_transaction_id' => $providerTransactionId, 'amount' => $verifiedAmount,
+                        'currency' => $lockedInvoice->currency, 'status' => 'reconciliation_required',
+                        'type' => 'duplicate_invoice_payment',
+                        'meta' => ['invoice_id' => $lockedInvoice->id, 'invoice_number' => $lockedInvoice->number,
+                            'reason' => 'Distinct verified payment received after this invoice was already settled.',
+                            'received_at' => now()->toIso8601String()],
+                    ]);
+                }
 
                 return $lockedInvoice;
             }
 
-            $meta = (array) ($lockedInvoice->meta ?? []);
-            $meta['paid_at'] = now()->toIso8601String();
+            if (! in_array($lockedInvoice->status, [Invoice::STATUS_ISSUED, Invoice::STATUS_OVERDUE], true) || $amount <= 0) {
+                throw new DomainException('This invoice cannot be paid.');
+            }
 
-            $lockedInvoice->update([
-                'status' => Invoice::STATUS_PAID,
-                'meta' => $meta,
+            if ($existing) {
+                throw new DomainException('Payment reference has already been recorded.');
+            }
+
+            $receipt = [
+                'number' => 'RCT-'.$lockedInvoice->id,
+                'paid_at' => now()->toIso8601String(),
+                'provider' => $provider,
+                'reference' => $providerTransactionId,
+                'amount' => $amount,
+                'currency' => mb_strtoupper($lockedInvoice->currency),
+                'invoice_number' => $lockedInvoice->number,
+                'tenant_name' => $lockedInvoice->tenant?->name,
+            ];
+            Transaction::query()->create([
+                'tenant_id' => $lockedInvoice->tenant_id,
+                'provider' => $provider,
+                'provider_transaction_id' => $providerTransactionId,
+                'amount' => $amount,
+                'currency' => $receipt['currency'],
+                'status' => 'success',
+                'type' => 'charge',
+                'meta' => ['invoice_id' => $lockedInvoice->id, 'invoice_number' => $lockedInvoice->number, 'receipt' => $receipt],
             ]);
+            $meta = (array) ($lockedInvoice->meta ?? []);
+            $meta['paid_at'] = $receipt['paid_at'];
+            $meta['provider'] = $provider;
+            $meta['receipt_number'] = $receipt['number'];
+            $meta['payment_reference'] = $providerTransactionId;
+            $meta['receipt'] = $receipt;
+            $lockedInvoice->update(['status' => Invoice::STATUS_PAID, 'meta' => $meta]);
 
-            // Ensure Transaction record is idempotently created
-            Transaction::firstOrCreate(
-                [
-                    'tenant_id' => $lockedInvoice->tenant_id,
-                    'provider' => $provider,
-                    'provider_transaction_id' => $providerTransactionId,
-                ],
-                [
-                    'amount' => (int) round((float) $lockedInvoice->total * 100),
-                    'currency' => $lockedInvoice->currency,
-                    'status' => 'success',
-                    'type' => 'charge',
-                    'meta' => [
-                        'invoice_id' => $lockedInvoice->id,
-                        'invoice_number' => $lockedInvoice->number,
-                    ],
-                ]
-            );
-
-            Log::info("Fulfilled invoice {$lockedInvoice->id} via {$provider} transaction {$providerTransactionId}.");
+            app(BillingCommunicationService::class)->receipt($lockedInvoice);
+            DB::connection('landlord')->afterCommit(fn () => event(new \App\Events\InvoicePaymentReceived($lockedInvoice)));
 
             return $lockedInvoice;
         });

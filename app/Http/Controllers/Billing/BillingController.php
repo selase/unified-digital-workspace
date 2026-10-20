@@ -73,6 +73,8 @@ final class BillingController extends Controller
             'subscription' => $subscription,
             'monthlyStats' => $monthlyStats,
             'accruedMetered' => $accruedMetered,
+            'billingMessages' => \App\Models\BillingMessage::query()->where('tenant_id', $tenant->id)->latest()->limit(8)->get(),
+            'displayAgreement' => $billingAgreement ?? \App\Models\TenantBillingAgreement::query()->where('tenant_id', $tenant->id)->where('effective_from', '>', today())->oldest('effective_from')->first(),
             'billingCurrency' => $billingAgreement !== null ? $billingAgreement->currency : $tenant->billingCurrency(),
         ]);
     }

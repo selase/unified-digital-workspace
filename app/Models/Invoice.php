@@ -68,4 +68,10 @@ final class Invoice extends Model
     {
         return $this->hasMany(InvoiceItem::class);
     }
+
+    /** @return HasMany<BillingMessage, $this> */
+    public function billingMessages(): HasMany
+    {
+        return $this->hasMany(BillingMessage::class);
+    }
 }

@@ -685,18 +685,6 @@ parameters:
 			path: app/Http/Controllers/Billing/CheckoutController.php
 
 		-
-			rawMessage: 'Method App\Http\Controllers\Billing\CheckoutController::handleInvoiceCheckout() has no return type specified.'
-			identifier: missingType.return
-			count: 1
-			path: app/Http/Controllers/Billing/CheckoutController.php
-
-		-
-			rawMessage: 'Method App\Http\Controllers\Billing\CheckoutController::handleInvoiceCheckout() has parameter $tenant with no type specified.'
-			identifier: missingType.parameter
-			count: 1
-			path: app/Http/Controllers/Billing/CheckoutController.php
-
-		-
 			rawMessage: 'Method App\Http\Controllers\Billing\CheckoutController::handlePlanCheckout() has no return type specified.'
 			identifier: missingType.return
 			count: 1

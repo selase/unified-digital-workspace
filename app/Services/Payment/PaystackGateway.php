@@ -62,6 +62,20 @@ final class PaystackGateway implements PaymentGateway
         return $response->json('data.authorization_url');
     }
 
+    /** @param array<string, mixed> $metadata */
+    public function createInvoiceCheckout(string $email, int $amount, string $callbackUrl, array $metadata): string
+    {
+        $response = Http::withToken($this->secret)->post("{$this->baseUrl}/transaction/initialize", [
+            'email' => $email,
+            'amount' => $amount,
+            'currency' => 'GHS',
+            'callback_url' => $callbackUrl,
+            'metadata' => $metadata,
+        ])->throw();
+
+        return (string) $response->json('data.authorization_url');
+    }
+
     public function charge(string $customerId, int $amount, string $currency, array $options = []): string
     {
         // Requires authorization_code for recurring/charge_authorization
@@ -113,7 +127,7 @@ final class PaystackGateway implements PaymentGateway
         return [
             'status' => $data['status'], // 'success', 'failed', 'abandoned'
             'amount' => (int) ($data['amount'] ?? 0),
-            'currency' => (string) ($data['currency'] ?? 'GHS'),
+            'currency' => (string) ($data['currency'] ?? ''),
             'metadata' => $data['metadata'] ?? [],
             'transaction_id' => $data['id'],
             'type' => isset($data['plan']) && $data['plan'] ? 'subscription' : 'payment',

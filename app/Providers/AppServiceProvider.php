@@ -64,8 +64,14 @@ final class AppServiceProvider extends ServiceProvider
             }
 
             $driver = config('services.payment.default', 'paystack');
-            if ($context === 'platform' && $request->routeIs('billing.checkout', 'tenant.billing.checkout', 'billing.callback', 'billing.invoices.checkout', 'store.platform.purchase')) {
-                if ($request->routeIs('billing.callback')) {
+            if ($context === 'platform' && $request->routeIs('billing.checkout', 'tenant.billing.checkout', 'billing.callback', 'billing.invoices.checkout', 'store.platform.purchase', 'billing.refund')) {
+                if ($request->routeIs('billing.refund')) {
+                    $transaction = $request->route('transaction');
+                    $driver = $transaction instanceof \App\Models\Transaction ? $transaction->provider : '';
+                    if (! in_array($driver, ['paystack', 'stripe'], true)) {
+                        throw new DomainException('Unsupported transaction payment provider.');
+                    }
+                } elseif ($request->routeIs('billing.callback')) {
                     $driver = $request->query('session_id') ? 'stripe' : 'paystack';
                 } elseif ($tenant = $tenantContext->getTenant()) {
                     $currency = $tenant->billingCurrency();

@@ -10,6 +10,7 @@ use App\Models\Tenant;
 use App\Services\Billing\PaymentFulfillmentService;
 use App\Services\Billing\SubscriptionProvisioningService;
 use Carbon\Carbon;
+use DomainException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -70,8 +71,9 @@ final class WebhookController extends Controller
                 break;
 
             case 'checkout.session.completed':
+                /** @var \Stripe\Checkout\Session $session */
                 $session = $event->data->object;
-                $metadata = (array) ($session->metadata ?? []);
+                $metadata = $session->metadata?->toArray() ?? [];
                 $type = $metadata['type'] ?? null;
                 $amount = (int) ($session->amount_total ?? 0);
                 $txId = (string) ($session->payment_intent ?? $session->id ?? '');
@@ -80,9 +82,13 @@ final class WebhookController extends Controller
                 // If it's an invoice payment
                 if (isset($metadata['invoice_id'])) {
                     $invoice = Invoice::find($metadata['invoice_id']);
-                    if ($invoice) {
-                        $txId = (string) ($session->payment_intent ?? $session->id ?? $invoice->number);
-                        $fulfillmentService->fulfillInvoicePayment($invoice, $txId, 'stripe');
+                    if ($invoice && $session->payment_status === 'paid') {
+                        $txId = (string) ($session->payment_intent ?? $session->id ?? '');
+                        try {
+                            $fulfillmentService->fulfillInvoicePayment($invoice, $txId, 'stripe', $amount, (string) ($session->currency ?? ''), $metadata);
+                        } catch (DomainException $exception) {
+                            return response()->json(['error' => 'Invoice payment mismatch'], 422);
+                        }
                         Log::info("Filled invoice {$invoice->id} via Stripe Webhook");
                     }
                 } elseif ($type === 'real_estate_installment') {
@@ -102,6 +108,39 @@ final class WebhookController extends Controller
 
             default:
                 Log::info('Received unknown Stripe event type '.$event->type);
+        }
+
+        return response()->json(['status' => 'success']);
+    }
+
+    public function handlePaystack(Request $request, PaymentFulfillmentService $fulfillment): JsonResponse
+    {
+        $secret = (string) config('services.paystack.secret_key');
+        $signature = $request->header('x-paystack-signature');
+        if ($secret === '' || ! is_string($signature) || ! hash_equals(hash_hmac('sha512', $request->getContent(), $secret), $signature)) {
+            return response()->json(['error' => 'Invalid signature'], 400);
+        }
+        if ($request->input('event') !== 'charge.success') {
+            return response()->json(['status' => 'ignored']);
+        }
+        $reference = $request->input('data.reference');
+        if (! is_string($reference) || ! preg_match('/^[A-Za-z0-9_.=-]{1,200}$/D', $reference)) {
+            return response()->json(['error' => 'Invalid reference'], 400);
+        }
+        $result = app(\App\Services\Payment\PaystackGateway::class)->verifyTransaction($reference);
+        if (($result['status'] ?? '') !== 'success') {
+            return response()->json(['error' => 'Payment not confirmed'], 422);
+        }
+        $invoiceId = data_get($result, 'metadata.invoice_id');
+        if (! $invoiceId) {
+            return response()->json(['status' => 'ignored']);
+        }
+        $invoice = Invoice::query()->findOrFail($invoiceId);
+        try {
+            $fulfillment->fulfillInvoicePayment($invoice, (string) ($result['transaction_id'] ?? ''), 'paystack',
+                (int) ($result['amount'] ?? 0), (string) ($result['currency'] ?? ''), (array) ($result['metadata'] ?? []));
+        } catch (DomainException $exception) {
+            return response()->json(['error' => 'Invoice payment mismatch'], 422);
         }
 
         return response()->json(['status' => 'success']);

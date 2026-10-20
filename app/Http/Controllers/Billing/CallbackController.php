@@ -113,14 +113,16 @@ final class CallbackController extends Controller
 
     private function handleInvoiceFulfillment(string $invoiceId, array $result, TenantContext $tenantContext, PaymentFulfillmentService $fulfillmentService)
     {
+        $invoice = Invoice::query()->findOrFail($invoiceId);
         $tenant = $tenantContext->getTenant();
-        $invoice = Invoice::where('tenant_id', $tenant->id)->findOrFail($invoiceId);
-        $provider = (string) request()->attributes->get('platform_billing_driver', config('services.payment.default', 'paystack'));
-        $providerTransactionId = (string) ($result['transaction_id'] ?? $invoice->number);
+        if ($tenant && (string) $tenant->id !== (string) $invoice->tenant_id) {
+            abort(403);
+        }
+        $provider = (string) request()->attributes->get('platform_billing_driver', request()->query('session_id') ? 'stripe' : 'paystack');
+        $fulfillmentService->fulfillInvoicePayment($invoice, (string) ($result['transaction_id'] ?? ''), $provider,
+            (int) ($result['amount'] ?? 0), (string) ($result['currency'] ?? ''), (array) ($result['metadata'] ?? []));
 
-        $fulfillmentService->fulfillInvoicePayment($invoice, $providerTransactionId, $provider);
-
-        return redirect()->route('billing.invoices.show', $invoice->id)
+        return redirect(app(\App\Services\Billing\InvoicePaymentLinkService::class)->url($invoice))
             ->with('success', 'Invoice paid successfully! Thank you for your payment.');
     }
 

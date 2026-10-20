@@ -45,8 +45,8 @@ final class InvoiceIssued extends Notification implements ShouldQueue
             ->subject("Your Invoice #{$this->invoice->number} from ".config('app.name'))
             ->greeting("Hello, {$notifiable->name}!")
             ->line("An invoice for the period {$this->invoice->period_start->format('M d')} - {$this->invoice->period_end->format('M d, Y')} has been issued for your organization.")
-            ->line('Total Due: **$'.number_format((float) $this->invoice->total, 2).'**')
-            ->action('View Invoice', route('billing.invoices.show', $this->invoice->id))
+            ->line('Total Due: **'.$this->invoice->currency.' '.number_format((float) $this->invoice->total, 2).'**')
+            ->action('Review invoice and pay', app(\App\Services\Billing\InvoicePaymentLinkService::class)->url($this->invoice))
             ->line('You can find the invoice attached as a PDF to this email.')
             ->attachData($pdfContent, $filename, [
                 'mime' => 'application/pdf',

@@ -14,12 +14,10 @@
                 <div class="flex flex-wrap items-center gap-2">
                     <button type="button" class="kt-btn kt-btn-outline" onclick="window.print()">Print Invoice</button>
                     <a href="{{ route('billing.invoices.download', $invoice->id) }}" class="kt-btn kt-btn-outline">Download PDF</a>
-                    @if($invoice->status !== 'paid')
-                        <form action="{{ route('tenant.billing.checkout') }}" method="POST">
-                            @csrf
-                            <input type="hidden" name="invoice_id" value="{{ $invoice->id }}">
-                            <button type="submit" class="kt-btn kt-btn-primary">Pay Invoice Now</button>
-                        </form>
+                    @if(in_array($invoice->status, ['issued', 'overdue'], true))
+                        <a href="{{ app(\App\Services\Billing\InvoicePaymentLinkService::class)->url($invoice) }}" class="kt-btn kt-btn-primary">{{ $invoice->currency === 'GHS' ? 'Pay with Paystack' : 'Pay invoice' }}</a>
+                    @elseif($invoice->status === 'paid' && data_get($invoice->meta, 'receipt.number'))
+                        <a href="{{ app(\App\Services\Billing\InvoicePaymentLinkService::class)->signedUrl($invoice, 'billing.payment.receipt') }}" class="kt-btn kt-btn-primary">Download receipt</a>
                     @endif
                 </div>
             </div>
@@ -31,14 +29,13 @@
                     <p class="text-xs uppercase tracking-wide text-muted-foreground">Bill To</p>
                     <h2 class="mt-2 text-xl font-semibold text-foreground">{{ $invoice->tenant->name }}</h2>
                     <p class="mt-2 text-sm text-muted-foreground">{{ $invoice->tenant->email }}</p>
-                    <p class="text-sm text-muted-foreground">Ghana</p>
+                    <p class="text-sm text-muted-foreground">{{ $invoice->tenant->meta['billing_address'] ?? $invoice->tenant->address }}</p>
                 </div>
                 <div class="md:text-end">
                     <x-application-logo class="h-9 md:ms-auto" />
                     <p class="mt-3 text-sm text-muted-foreground">
-                        {{ config('app.name') }} HQ<br>
-                        123 Main Street<br>
-                        Accra, Ghana
+                        {{ config('app.name') }}<br>
+                        Workspace subscription and usage billing
                     </p>
                 </div>
             </div>

@@ -31,6 +31,7 @@
                             <option value="">All Statuses</option>
                             <option value="success" {{ request('status') === 'success' ? 'selected' : '' }}>Success</option>
                             <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>Pending</option>
+                            <option value="reconciliation_required" {{ request('status') === 'reconciliation_required' ? 'selected' : '' }}>Needs reconciliation</option>
                             <option value="failed" {{ request('status') === 'failed' ? 'selected' : '' }}>Failed</option>
                         </select>
                     </div>

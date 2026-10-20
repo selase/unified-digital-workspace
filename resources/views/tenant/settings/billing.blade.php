@@ -14,7 +14,7 @@
             <div>
                 <p class="text-xs uppercase tracking-wide text-muted-foreground">Settings</p>
                 <h1 class="mt-2 text-2xl font-semibold text-foreground">Billing Settings</h1>
-                <p class="mt-2 text-sm text-muted-foreground">Configure invoice and billing contact details.</p>
+                <p class="mt-2 text-sm text-muted-foreground">This billing contact receives cycle notices, invoice payment links, due-date reminders and verified payment receipts. Keep it current.</p>
             </div>
 
             <div class="mt-5 grid gap-3 md:grid-cols-3">

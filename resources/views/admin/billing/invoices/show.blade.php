@@ -167,6 +167,22 @@
                 </table>
             </div>
         </div>
+        <div class="kt-card p-6">
+            <h2 class="text-lg font-semibold text-foreground">Billing delivery record</h2>
+            @if(! app(\App\Services\Billing\BillingCommunicationService::class)->contact($invoice->tenant))
+                <p class="mt-3 text-sm text-destructive">No valid billing contact is configured. Set the organisation billing email before issuing or resending.</p>
+            @endif
+            <p class="mt-2 text-sm text-muted-foreground">Sent means the mail transport accepted the message; it does not confirm inbox placement. Resending records a separate attempt. Paid invoices resend a receipt.</p>
+            @forelse($invoice->billingMessages->sortByDesc('created_at') as $billingMessage)
+                <div class="mt-4 border-t border-border pt-3 text-sm text-foreground">
+                    <strong>{{ ucfirst(str_replace('_', ' ', $billingMessage->kind)) }}</strong> · {{ $billingMessage->status }} · {{ $billingMessage->attempts }} attempts
+                    <span class="block text-muted-foreground">{{ $billingMessage->recipient }} · {{ $billingMessage->created_at->format('j M Y H:i') }}</span>
+                    @if($billingMessage->last_error)<p class="text-muted-foreground">{{ $billingMessage->last_error }}</p>@endif
+                </div>
+            @empty
+                <p class="mt-4 text-sm text-muted-foreground">No billing emails recorded. Drafts remain private until issued.</p>
+            @endforelse
+        </div>
     </section>
 @endsection
 

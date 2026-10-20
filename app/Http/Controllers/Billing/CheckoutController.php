@@ -27,37 +27,20 @@ final class CheckoutController extends Controller
 
         // Handle Invoice Payment
         if ($request->has('invoice_id')) {
-            return $this->handleInvoiceCheckout($request, app(PaymentGateway::class), $tenant);
+            return $this->handleInvoiceCheckout($request, $tenant);
         }
 
         // Handle Plan Subscription
         return $this->handlePlanCheckout($request, $tenant);
     }
 
-    private function handleInvoiceCheckout(Request $request, PaymentGateway $gateway, $tenant)
+    private function handleInvoiceCheckout(Request $request, Tenant $tenant): \Illuminate\Http\RedirectResponse
     {
-        $invoice = Invoice::where('tenant_id', $tenant->id)
-            ->where('status', Invoice::STATUS_ISSUED)
+        $invoice = Invoice::query()->where('tenant_id', $tenant->id)
+            ->whereIn('status', [Invoice::STATUS_ISSUED, Invoice::STATUS_OVERDUE])
             ->findOrFail($request->input('invoice_id'));
 
-        $request->attributes->set('platform_billing_driver', $invoice->currency === 'GHS' ? 'paystack' : 'stripe');
-        $customerId = $this->getOrCreateCustomerId($request, $gateway, $tenant);
-        $amount = (int) round((float) $invoice->total * 100);
-        $redirectUrl = route('billing.invoices.show', $invoice->id);
-
-        $checkoutUrl = $gateway->createOneTimeCheckoutSession(
-            $customerId,
-            $amount,
-            $invoice->currency ?: 'USD',
-            $redirectUrl,
-            [
-                'invoice_id' => $invoice->id,
-                'type' => 'invoice_payment',
-                'description' => "Invoice #{$invoice->number}",
-            ]
-        );
-
-        return redirect($checkoutUrl);
+        return redirect()->away(app(\App\Services\Billing\InvoiceCheckoutService::class)->checkout($invoice));
     }
 
     private function handlePlanCheckout(Request $request, $tenant)

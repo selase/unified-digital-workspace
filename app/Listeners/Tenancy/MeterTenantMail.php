@@ -77,6 +77,9 @@ final class MeterTenantMail
         if (! $message instanceof Email) {
             return;
         }
+        if ($message->getHeaders()->get('X-UDW-System-Transactional')?->getBodyAsString() === 'billing') {
+            return;
+        }
 
         $headers = iterator_to_array($message->getHeaders()->all(self::TENANT_HEADER), false);
         $tenantId = count($headers) === 1 ? $this->validTenantId($headers[0]->getBodyAsString()) : null;

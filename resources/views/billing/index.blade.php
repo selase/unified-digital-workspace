@@ -3,6 +3,9 @@
 @section('title', 'Billing & Subscription')
 
 @section('content')
+    @php
+        $savedPlan = isset($displayAgreement) ? $displayAgreement->snapshot['hybrid']['website_plans'][$displayAgreement->plan_slug] : null;
+    @endphp
     <section class="grid gap-6">
         <div class="kt-card p-6 lg:p-8">
             <div class="flex flex-wrap items-start justify-between gap-4">
@@ -20,16 +23,19 @@
 
         <div class="grid gap-6 xl:grid-cols-4">
             <div class="kt-card p-6 xl:col-span-1">
-                <p class="text-xs uppercase tracking-wide text-muted-foreground">Current Plan</p>
-                <h2 class="mt-3 text-3xl font-semibold text-foreground">{{ $tenant->billingCurrency() }} {{ ($tenant->billingCurrency() === 'GHS' && $tenant->package?->price_ghs === null) ? 'Not configured' : number_format((float) ($tenant->billingCurrency() === 'GHS' ? $tenant->package?->price_ghs : $tenant->package?->price), 2) }}</h2>
-                <div class="mt-2 flex items-center gap-2">
-                    <span class="kt-badge kt-badge-primary">{{ ucfirst($tenant->package?->interval ?? 'free') }}</span>
-                    <span class="text-sm text-muted-foreground">{{ $tenant->package?->name ?? 'No package selected' }}</span>
-                </div>
+                <p class="text-xs uppercase tracking-wide text-muted-foreground">{{ isset($displayAgreement) && $displayAgreement->effective_from->isFuture() ? 'Scheduled website plan' : 'Current website plan' }}</p>
+                @if($savedPlan)
+                    <h2 class="mt-3 text-3xl font-semibold text-foreground">{{ $displayAgreement->currency }} {{ number_format($savedPlan[$displayAgreement->currency], 2) }}</h2>
+                    <p class="mt-2 text-sm text-muted-foreground">{{ $savedPlan['name'] }} · monthly website subscription</p>
+                    <p class="mt-2 text-sm text-muted-foreground">{{ $displayAgreement->editor_seats }} website editor seats. Starts {{ $displayAgreement->effective_from->format('j M Y') }}. Additional purchased seats, modules, active access, eligible usage and taxes are shown separately on invoices.</p>
+                @else
+                    <h2 class="mt-3 text-3xl font-semibold text-foreground">{{ $tenant->billingCurrency() }} {{ ($tenant->billingCurrency() === 'GHS' && $tenant->package?->price_ghs === null) ? 'Not configured' : number_format((float) ($tenant->billingCurrency() === 'GHS' ? $tenant->package?->price_ghs : $tenant->package?->price), 2) }}</h2>
+                    <p class="mt-2 text-sm text-muted-foreground">{{ $tenant->package?->name ?? 'No package selected' }}</p>
+                @endif
                 <div class="mt-6 space-y-2 text-sm">
                     <div class="flex items-center justify-between gap-3">
                         <span class="text-muted-foreground">Next Invoice</span>
-                        <span class="font-medium text-foreground">{{ $subscription?->current_period_end?->format('d/m/Y') ?? 'N/A' }}</span>
+                        <span class="font-medium text-foreground">{{ isset($displayAgreement) ? ($displayAgreement->effective_from->isFuture() ? $displayAgreement->effective_from->copy()->addMonthNoOverflow() : today()->addMonthNoOverflow()->startOfMonth())->format('d/m/Y') : ($subscription?->current_period_end?->format('d/m/Y') ?? 'N/A') }}</span>
                     </div>
                     <div class="flex items-center justify-between gap-3">
                         <span class="text-muted-foreground">Subscription</span>
@@ -126,7 +132,7 @@
                                 </div>
                             </div>
 
-                            @if(in_array($transaction->status, ['success', 'succeeded'], true))
+                            @if(auth()->user()?->can('admin.tenants.update') && in_array($transaction->status, ['success', 'succeeded'], true))
                                 <form action="{{ route('billing.refund', ['transaction' => $transaction->id, 'subdomain' => $tenant->slug]) }}" method="POST" class="mt-3" onsubmit="return confirm('Issue refund?')">
                                     @csrf
                                     <button type="submit" class="kt-btn kt-btn-sm kt-btn-outline">Refund</button>
@@ -144,6 +150,18 @@
                     {{ $transactions->links() }}
                 </div>
             </div>
+        </div>
+        <div class="kt-card p-6">
+            <h2 class="text-lg font-semibold text-foreground">Billing email history</h2>
+            <p class="mt-2 text-sm text-muted-foreground">Cycle notices arrive 7 days and 1 day before the new month. Reviewed invoices include secure checkout; GHS invoices use Paystack. Receipts follow verified payment. Sent means accepted by the mail transport, not proof of inbox delivery.</p>
+            @forelse(($billingMessages ?? collect()) as $billingMessage)
+                <div class="mt-4 border-t border-border pt-3 text-sm text-foreground">
+                    <strong>{{ ucfirst(str_replace('_', ' ', $billingMessage->kind)) }}</strong> · {{ $billingMessage->status }}
+                    <span class="block text-muted-foreground">{{ $billingMessage->recipient }} · {{ $billingMessage->created_at->format('j M Y H:i') }}</span>
+                </div>
+            @empty
+                <p class="mt-4 text-sm text-muted-foreground">No billing emails recorded yet. Check your billing contact in Billing Settings.</p>
+            @endforelse
         </div>
     </section>
 @endsection

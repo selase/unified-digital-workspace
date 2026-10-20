@@ -117,7 +117,7 @@ final class StripeGateway implements PaymentGateway
             return [
                 'status' => $session->payment_status === 'paid' ? 'success' : $session->payment_status,
                 'amount' => (int) ($session->amount_total ?? 0),
-                'currency' => mb_strtoupper((string) ($session->currency ?? 'USD')),
+                'currency' => mb_strtoupper((string) ($session->currency ?? '')),
                 'metadata' => $session->metadata?->toArray() ?? [],
                 'transaction_id' => $session->payment_intent,
                 'type' => $session->mode, // 'payment' or 'subscription'
@@ -129,7 +129,7 @@ final class StripeGateway implements PaymentGateway
         return [
             'status' => $pi->status,
             'amount' => (int) ($pi->amount ?? 0),
-            'currency' => mb_strtoupper((string) ($pi->currency ?? 'USD')),
+            'currency' => mb_strtoupper((string) ($pi->currency ?? '')),
             'metadata' => $pi->metadata?->toArray() ?? [],
             'transaction_id' => $pi->id,
             'type' => 'payment',

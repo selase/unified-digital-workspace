@@ -11,13 +11,12 @@ use function Pest\Laravel\mock;
 
 uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
-test('admins can initiate a refund for a successful transaction', function () {
+test('supplier admins can initiate a refund for a successful transaction', function () {
     $user = User::factory()->create();
     $tenant = setActiveTenantForTest($user);
     grantOrganisationAdminAccess($user);
 
-    // Assume user has permission (if using permissions, otherwise check role)
-    // For now, assuming any auth user in this test context is admin/owner
+    Illuminate\Support\Facades\Gate::before(fn ($actor, $ability) => $ability === 'admin.tenants.update' && $actor->is($user) ? true : null);
 
     $transaction = Transaction::factory()->create([
         'tenant_id' => $tenant->id,
@@ -69,6 +68,7 @@ test('refund button is visible for success transactions', function () {
     $user = User::factory()->create();
     $tenant = setActiveTenantForTest($user);
     grantOrganisationAdminAccess($user);
+    Illuminate\Support\Facades\Gate::before(fn ($actor, $ability) => $ability === 'admin.tenants.update' && $actor->is($user) ? true : null);
 
     Transaction::factory()->create([
         'tenant_id' => $tenant->id,
@@ -80,4 +80,14 @@ test('refund button is visible for success transactions', function () {
 
     $response->assertSee('Refund');
     $response->assertSee(route('billing.refund', ['transaction' => Transaction::first(), 'subdomain' => $tenant->slug]));
+});
+
+test('organisation administrators cannot initiate supplier refunds even for their own transactions', function (): void {
+    $user = User::factory()->create();
+    $tenant = setActiveTenantForTest($user);
+    grantOrganisationAdminAccess($user);
+    $transaction = Transaction::factory()->create(['tenant_id' => $tenant->id, 'status' => 'success']);
+    $this->actingAs($user)->post(route('billing.refund', $transaction))->assertForbidden();
+    expect($transaction->fresh()->status)->toBe('success');
+    $this->get(route('billing.index'))->assertOk()->assertDontSee('Issue refund?');
 });
