@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 namespace App\Console;
 
+use App\Enum\TenantStatusEnum;
+use App\Models\Tenant;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
+use RuntimeException;
+use Spatie\Backup\Events\BackupHasFailed;
 use Spatie\Health\Commands\RunHealthChecksCommand;
 
 final class Kernel extends ConsoleKernel
@@ -17,9 +21,15 @@ final class Kernel extends ConsoleKernel
     {
         // $schedule->command('inspire')->hourly();
         $schedule->command(RunHealthChecksCommand::class)->everyMinute();
-        $schedule->command('backup:clean')->daily()->at('01:00');
-        $schedule->command('backup:run')->daily()->at('01:30');
-        $schedule->command('backup:monitor')->dailyAt('02:00');
+        $schedule->command('backup:clean')->daily()->at('01:00')
+            ->withoutOverlapping()
+            ->before(fn () => $this->assertBackupDestinationConfigured());
+        $schedule->command('backup:run')->daily()->at('01:30')
+            ->withoutOverlapping()
+            ->before(fn () => $this->assertBackupDestinationConfigured());
+        $schedule->command('backup:monitor')->dailyAt('02:00')
+            ->withoutOverlapping()
+            ->before(fn () => $this->assertBackupDestinationConfigured());
 
         // Usage Metering & Billing
         $schedule->command('tenants:audit-storage')->dailyAt('03:00');
@@ -59,5 +69,41 @@ final class Kernel extends ConsoleKernel
         $this->load(__DIR__.'/Commands');
 
         require base_path('routes/console.php');
+    }
+
+    private function assertBackupDestinationConfigured(): void
+    {
+        $required = [
+            'bucket' => 'AWS_BUCKET',
+            'region' => 'AWS_DEFAULT_REGION',
+            'key' => 'AWS_ACCESS_KEY_ID',
+            'secret' => 'AWS_SECRET_ACCESS_KEY',
+        ];
+        $missing = [];
+
+        foreach ($required as $setting => $variable) {
+            $value = config('filesystems.disks.s3.'.$setting);
+            if (! is_string($value) || mb_trim($value) === '') {
+                $missing[] = $variable;
+            }
+        }
+
+        if ($missing !== []) {
+            $message = 'S3 backup preflight failed. Missing configuration: '.implode(', ', $missing).'. No backup or maintenance was started.';
+        } elseif (Tenant::query()
+            ->where('status', TenantStatusEnum::ACTIVE)
+            ->whereIn('isolation_mode', ['db_per_tenant', 'byo'])
+            ->exists()) {
+            $message = 'S3 backup preflight failed: active dedicated tenant databases are not covered by the configured main-database-only backup. No backup or maintenance was started.';
+        } else {
+            return;
+        }
+
+        $exception = new RuntimeException($message);
+        try {
+            event(new BackupHasFailed($exception));
+        } finally {
+            throw $exception;
+        }
     }
 }
