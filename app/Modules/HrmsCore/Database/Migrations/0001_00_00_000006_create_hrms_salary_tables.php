@@ -27,7 +27,9 @@ return new class extends Migration
             $table->integer('sort_order')->default(0);
             $table->timestamps();
 
-            $table->foreign('tenant_id')->references('id')->on('tenants')->cascadeOnDelete();
+            if (Schema::hasTable('tenants')) {
+                $table->foreign('tenant_id')->references('id')->on('tenants')->cascadeOnDelete();
+            }
             $table->index(['tenant_id', 'is_active']);
         });
 
@@ -46,7 +48,9 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             $table->timestamps();
 
-            $table->foreign('tenant_id')->references('id')->on('tenants')->cascadeOnDelete();
+            if (Schema::hasTable('tenants')) {
+                $table->foreign('tenant_id')->references('id')->on('tenants')->cascadeOnDelete();
+            }
             $table->index(['tenant_id', 'grade_id']);
         });
 
@@ -63,7 +67,9 @@ return new class extends Migration
             $table->integer('sort_order')->default(0);
             $table->timestamps();
 
-            $table->foreign('tenant_id')->references('id')->on('tenants')->cascadeOnDelete();
+            if (Schema::hasTable('tenants')) {
+                $table->foreign('tenant_id')->references('id')->on('tenants')->cascadeOnDelete();
+            }
             $table->index(['tenant_id', 'is_active']);
         });
 
@@ -82,7 +88,9 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             $table->timestamps();
 
-            $table->foreign('tenant_id')->references('id')->on('tenants')->cascadeOnDelete();
+            if (Schema::hasTable('tenants')) {
+                $table->foreign('tenant_id')->references('id')->on('tenants')->cascadeOnDelete();
+            }
             $table->index(['tenant_id', 'allowance_type_id']);
         });
 
@@ -100,7 +108,9 @@ return new class extends Migration
             $table->text('notes')->nullable();
             $table->timestamps();
 
-            $table->foreign('tenant_id')->references('id')->on('tenants')->cascadeOnDelete();
+            if (Schema::hasTable('tenants')) {
+                $table->foreign('tenant_id')->references('id')->on('tenants')->cascadeOnDelete();
+            }
             $table->index(['tenant_id', 'employee_id']);
             $table->index(['effective_from', 'effective_to']);
         });

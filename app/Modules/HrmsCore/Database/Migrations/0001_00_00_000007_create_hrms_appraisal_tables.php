@@ -27,7 +27,9 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             $table->timestamps();
 
-            $table->foreign('tenant_id')->references('id')->on('tenants')->cascadeOnDelete();
+            if (Schema::hasTable('tenants')) {
+                $table->foreign('tenant_id')->references('id')->on('tenants')->cascadeOnDelete();
+            }
             $table->index(['tenant_id', 'is_active']);
         });
 
@@ -45,7 +47,9 @@ return new class extends Migration
             $table->integer('sort_order')->default(0);
             $table->timestamps();
 
-            $table->foreign('tenant_id')->references('id')->on('tenants')->cascadeOnDelete();
+            if (Schema::hasTable('tenants')) {
+                $table->foreign('tenant_id')->references('id')->on('tenants')->cascadeOnDelete();
+            }
             $table->index(['tenant_id', 'is_active']);
         });
 
@@ -62,7 +66,9 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             $table->timestamps();
 
-            $table->foreign('tenant_id')->references('id')->on('tenants')->cascadeOnDelete();
+            if (Schema::hasTable('tenants')) {
+                $table->foreign('tenant_id')->references('id')->on('tenants')->cascadeOnDelete();
+            }
             $table->index(['template_id', 'sort_order']);
         });
 
@@ -80,7 +86,9 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             $table->timestamps();
 
-            $table->foreign('tenant_id')->references('id')->on('tenants')->cascadeOnDelete();
+            if (Schema::hasTable('tenants')) {
+                $table->foreign('tenant_id')->references('id')->on('tenants')->cascadeOnDelete();
+            }
             $table->index(['section_id', 'sort_order']);
         });
 
@@ -96,7 +104,9 @@ return new class extends Migration
             $table->string('color')->nullable(); // CSS color for UI
             $table->timestamps();
 
-            $table->foreign('tenant_id')->references('id')->on('tenants')->cascadeOnDelete();
+            if (Schema::hasTable('tenants')) {
+                $table->foreign('tenant_id')->references('id')->on('tenants')->cascadeOnDelete();
+            }
             $table->unique(['tenant_id', 'period_id', 'value']);
         });
 
@@ -132,7 +142,9 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
-            $table->foreign('tenant_id')->references('id')->on('tenants')->cascadeOnDelete();
+            if (Schema::hasTable('tenants')) {
+                $table->foreign('tenant_id')->references('id')->on('tenants')->cascadeOnDelete();
+            }
             $table->unique(['employee_id', 'period_id']); // One appraisal per employee per period
             $table->index(['tenant_id', 'status']);
             $table->index(['period_id', 'status']);
@@ -160,7 +172,9 @@ return new class extends Migration
 
             $table->timestamps();
 
-            $table->foreign('tenant_id')->references('id')->on('tenants')->cascadeOnDelete();
+            if (Schema::hasTable('tenants')) {
+                $table->foreign('tenant_id')->references('id')->on('tenants')->cascadeOnDelete();
+            }
             $table->unique(['appraisal_id', 'criterion_id']);
         });
 
@@ -185,7 +199,9 @@ return new class extends Migration
             $table->integer('sort_order')->default(0);
             $table->timestamps();
 
-            $table->foreign('tenant_id')->references('id')->on('tenants')->cascadeOnDelete();
+            if (Schema::hasTable('tenants')) {
+                $table->foreign('tenant_id')->references('id')->on('tenants')->cascadeOnDelete();
+            }
             $table->index(['appraisal_id', 'status']);
         });
 
@@ -207,7 +223,9 @@ return new class extends Migration
             $table->integer('sort_order')->default(0);
             $table->timestamps();
 
-            $table->foreign('tenant_id')->references('id')->on('tenants')->cascadeOnDelete();
+            if (Schema::hasTable('tenants')) {
+                $table->foreign('tenant_id')->references('id')->on('tenants')->cascadeOnDelete();
+            }
             $table->index(['appraisal_id']);
         });
 
@@ -227,7 +245,9 @@ return new class extends Migration
             $table->timestamp('reviewed_at')->nullable();
             $table->timestamps();
 
-            $table->foreign('tenant_id')->references('id')->on('tenants')->cascadeOnDelete();
+            if (Schema::hasTable('tenants')) {
+                $table->foreign('tenant_id')->references('id')->on('tenants')->cascadeOnDelete();
+            }
             $table->unique(['appraisal_id', 'reviewer_type']);
         });
 
@@ -243,7 +263,9 @@ return new class extends Migration
             $table->boolean('is_private')->default(false); // Only visible to HR/management
             $table->timestamps();
 
-            $table->foreign('tenant_id')->references('id')->on('tenants')->cascadeOnDelete();
+            if (Schema::hasTable('tenants')) {
+                $table->foreign('tenant_id')->references('id')->on('tenants')->cascadeOnDelete();
+            }
             $table->index(['appraisal_id', 'created_at']);
         });
 
@@ -260,7 +282,9 @@ return new class extends Migration
             $table->decimal('weighted_score', 5, 2)->nullable(); // Score * weight
             $table->timestamps();
 
-            $table->foreign('tenant_id')->references('id')->on('tenants')->cascadeOnDelete();
+            if (Schema::hasTable('tenants')) {
+                $table->foreign('tenant_id')->references('id')->on('tenants')->cascadeOnDelete();
+            }
             $table->unique(['appraisal_id', 'section_id']);
         });
 
@@ -280,7 +304,9 @@ return new class extends Migration
             $table->string('status')->default('pending'); // pending, approved, rejected, implemented
             $table->timestamps();
 
-            $table->foreign('tenant_id')->references('id')->on('tenants')->cascadeOnDelete();
+            if (Schema::hasTable('tenants')) {
+                $table->foreign('tenant_id')->references('id')->on('tenants')->cascadeOnDelete();
+            }
             $table->index(['appraisal_id', 'type']);
         });
     }

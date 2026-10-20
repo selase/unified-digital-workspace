@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\HrmsCore\Database\Seeders;
 
 use App\Modules\HrmsCore\Models\Leave\LeaveCategory;
+use App\Services\Tenancy\TenantContext;
 use Illuminate\Database\Seeder;
 
 /**
@@ -76,9 +77,15 @@ final class LeaveCategorySeeder extends Seeder
      */
     public function run(): void
     {
+        $tenant = app(TenantContext::class)->getTenant();
+
+        if (! $tenant) {
+            return;
+        }
+
         foreach (self::CATEGORIES as $index => $category) {
             LeaveCategory::firstOrCreate(
-                ['name' => $category['name']],
+                ['tenant_id' => $tenant->id, 'name' => $category['name']],
                 [
                     'default_days' => $category['default_days'],
                     'description' => $category['description'],

@@ -6,6 +6,7 @@ namespace App\Modules\HrmsCore\Database\Seeders;
 
 use App\Models\Tenant;
 use App\Modules\HrmsCore\Models\Organization\Grade;
+use App\Services\Tenancy\TenantContext;
 use Illuminate\Database\Seeder;
 
 final class GradeSeeder extends Seeder
@@ -31,9 +32,9 @@ final class GradeSeeder extends Seeder
      */
     public function run(): void
     {
-        $tenants = Tenant::all();
+        $tenant = app(TenantContext::class)->getTenant();
 
-        foreach ($tenants as $tenant) {
+        if ($tenant) {
             $this->seedGradesForTenant($tenant);
         }
     }

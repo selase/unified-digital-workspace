@@ -31,9 +31,7 @@ final class HrmsCoreSeeder extends Seeder
             return;
         }
 
-        $this->call([
-            GradeSeeder::class,
-            LeaveCategorySeeder::class,
-        ]);
+        app(GradeSeeder::class)->seedGradesForTenant($tenant);
+        $this->call(LeaveCategorySeeder::class);
     }
 }

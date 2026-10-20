@@ -19,7 +19,11 @@ return new class extends Migration
             $table->uuid('tenant_id');
 
             // User association (optional - employee may not have login)
-            $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
+            if (Schema::hasTable('users')) {
+                $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
+            } else {
+                $table->unsignedBigInteger('user_id')->nullable()->index();
+            }
 
             // Staff identification
             $table->string('employee_staff_id')->nullable();

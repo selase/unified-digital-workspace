@@ -183,7 +183,7 @@ final class HrmsSalaryWebController extends Controller
         $level = SalaryLevel::query()->create([
             'tenant_id' => $tenantId,
             'name' => $name,
-            'slug' => $this->uniqueSlug(SalaryLevel::class, $name, 'salary-level'),
+            'slug' => $this->uniqueSlug(SalaryLevel::class, $name, 'salary-level', $tenantId),
             'grade_id' => isset($validated['grade_id']) ? (int) $validated['grade_id'] : null,
             'base_salary' => (float) $validated['base_salary'],
             'description' => isset($validated['description']) ? (string) $validated['description'] : null,
@@ -278,7 +278,7 @@ final class HrmsSalaryWebController extends Controller
         $step = SalaryStep::query()->create([
             'tenant_id' => $tenantId,
             'name' => $name,
-            'slug' => $this->uniqueSlug(SalaryStep::class, "{$salaryLevel->name}-{$name}", 'salary-step'),
+            'slug' => $this->uniqueSlug(SalaryStep::class, "{$salaryLevel->name}-{$name}", 'salary-step', $tenantId),
             'salary_level_id' => $salaryLevel->id,
             'grade_id' => $stepGradeId,
             'step_number' => (int) $validated['step_number'],
@@ -373,7 +373,7 @@ final class HrmsSalaryWebController extends Controller
         $allowanceType = AllowanceType::query()->create([
             'tenant_id' => $tenantId,
             'name' => $name,
-            'slug' => $this->uniqueSlug(AllowanceType::class, $name, 'allowance-type'),
+            'slug' => $this->uniqueSlug(AllowanceType::class, $name, 'allowance-type', $tenantId),
             'description' => isset($validated['description']) ? (string) $validated['description'] : null,
             'is_taxable' => $request->boolean('is_taxable', true),
             'is_active' => $request->boolean('is_active', true),
@@ -458,7 +458,7 @@ final class HrmsSalaryWebController extends Controller
         $allowance = Allowance::query()->create([
             'tenant_id' => $tenantId,
             'name' => $name,
-            'slug' => $this->uniqueSlug(Allowance::class, $name, 'allowance'),
+            'slug' => $this->uniqueSlug(Allowance::class, $name, 'allowance', $tenantId),
             'allowance_type_id' => (int) $validated['allowance_type_id'],
             'grade_id' => isset($validated['grade_id']) ? (int) $validated['grade_id'] : null,
             'amount' => (float) $validated['amount'],
@@ -716,20 +716,20 @@ final class HrmsSalaryWebController extends Controller
     /**
      * @param  class-string<Model>  $modelClass
      */
-    private function uniqueSlug(string $modelClass, string $name, string $fallback): string
+    private function uniqueSlug(string $modelClass, string $name, string $fallback, string $tenantId): string
     {
         $base = Str::slug($name);
         if ($base === '') {
             $base = $fallback;
         }
 
-        if (! $modelClass::withoutGlobalScopes()->where('slug', $base)->exists()) {
+        if (! $modelClass::withoutGlobalScopes()->where('tenant_id', $tenantId)->where('slug', $base)->exists()) {
             return $base;
         }
 
         for ($counter = 2; $counter <= 50; $counter++) {
             $candidate = "{$base}-{$counter}";
-            if (! $modelClass::withoutGlobalScopes()->where('slug', $candidate)->exists()) {
+            if (! $modelClass::withoutGlobalScopes()->where('tenant_id', $tenantId)->where('slug', $candidate)->exists()) {
                 return $candidate;
             }
         }

@@ -244,7 +244,7 @@ final class HrmsAppraisalWebController extends Controller
             $period = AppraisalPeriod::query()->create([
                 'tenant_id' => $tenantId,
                 'name' => $name,
-                'slug' => $this->uniquePeriodSlug($name),
+                'slug' => $this->uniquePeriodSlug($name, $tenantId),
                 'cycle' => (string) $validated['cycle'],
                 'start_date' => (string) $validated['start_date'],
                 'end_date' => (string) $validated['end_date'],
@@ -262,7 +262,7 @@ final class HrmsAppraisalWebController extends Controller
                     'tenant_id' => $tenantId,
                     'period_id' => $period->id,
                     'name' => $templateName,
-                    'slug' => $this->uniqueTemplateSlug($templateName),
+                    'slug' => $this->uniqueTemplateSlug($templateName, $tenantId),
                     'description' => "Standard evaluation template for {$period->name}.",
                     'is_default' => true,
                     'is_active' => true,
@@ -305,7 +305,7 @@ final class HrmsAppraisalWebController extends Controller
             'tenant_id' => $tenantId,
             'period_id' => isset($validated['period_id']) ? (int) $validated['period_id'] : null,
             'name' => $name,
-            'slug' => $this->uniqueTemplateSlug($name),
+            'slug' => $this->uniqueTemplateSlug($name, $tenantId),
             'description' => isset($validated['description']) ? (string) $validated['description'] : null,
             'is_default' => $request->boolean('is_default'),
             'is_active' => $request->boolean('is_active', true),
@@ -1051,20 +1051,20 @@ final class HrmsAppraisalWebController extends Controller
         }
     }
 
-    private function uniquePeriodSlug(string $name): string
+    private function uniquePeriodSlug(string $name, string $tenantId): string
     {
         $base = Str::slug($name);
         if ($base === '') {
             $base = 'appraisal-period';
         }
 
-        if (! AppraisalPeriod::withoutGlobalScopes()->where('slug', $base)->exists()) {
+        if (! AppraisalPeriod::withoutGlobalScopes()->where('tenant_id', $tenantId)->where('slug', $base)->exists()) {
             return $base;
         }
 
         for ($counter = 2; $counter <= 50; $counter++) {
             $candidate = "{$base}-{$counter}";
-            if (! AppraisalPeriod::withoutGlobalScopes()->where('slug', $candidate)->exists()) {
+            if (! AppraisalPeriod::withoutGlobalScopes()->where('tenant_id', $tenantId)->where('slug', $candidate)->exists()) {
                 return $candidate;
             }
         }
@@ -1072,20 +1072,20 @@ final class HrmsAppraisalWebController extends Controller
         return $base.'-'.Str::lower(Str::random(8));
     }
 
-    private function uniqueTemplateSlug(string $name): string
+    private function uniqueTemplateSlug(string $name, string $tenantId): string
     {
         $base = Str::slug($name);
         if ($base === '') {
             $base = 'appraisal-template';
         }
 
-        if (! AppraisalTemplate::withoutGlobalScopes()->where('slug', $base)->exists()) {
+        if (! AppraisalTemplate::withoutGlobalScopes()->where('tenant_id', $tenantId)->where('slug', $base)->exists()) {
             return $base;
         }
 
         for ($counter = 2; $counter <= 50; $counter++) {
             $candidate = "{$base}-{$counter}";
-            if (! AppraisalTemplate::withoutGlobalScopes()->where('slug', $candidate)->exists()) {
+            if (! AppraisalTemplate::withoutGlobalScopes()->where('tenant_id', $tenantId)->where('slug', $candidate)->exists()) {
                 return $candidate;
             }
         }

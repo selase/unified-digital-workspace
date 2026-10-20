@@ -28,7 +28,9 @@ return new class extends Migration
             $table->integer('sort_order')->default(0);
             $table->timestamps();
 
-            $table->foreign('tenant_id')->references('id')->on('tenants')->cascadeOnDelete();
+            if (Schema::hasTable('tenants')) {
+                $table->foreign('tenant_id')->references('id')->on('tenants')->cascadeOnDelete();
+            }
             $table->index(['tenant_id', 'is_active']);
         });
 
@@ -44,7 +46,9 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             $table->timestamps();
 
-            $table->foreign('tenant_id')->references('id')->on('tenants')->cascadeOnDelete();
+            if (Schema::hasTable('tenants')) {
+                $table->foreign('tenant_id')->references('id')->on('tenants')->cascadeOnDelete();
+            }
             $table->index(['tenant_id', 'date']);
             $table->unique(['tenant_id', 'date', 'name']);
         });
@@ -64,7 +68,9 @@ return new class extends Migration
             $table->integer('remaining_days')->storedAs('entitled_days + carried_forward_days - used_days - pending_days');
             $table->timestamps();
 
-            $table->foreign('tenant_id')->references('id')->on('tenants')->cascadeOnDelete();
+            if (Schema::hasTable('tenants')) {
+                $table->foreign('tenant_id')->references('id')->on('tenants')->cascadeOnDelete();
+            }
             $table->unique(['employee_id', 'leave_category_id', 'year']);
             $table->index(['tenant_id', 'year']);
         });
@@ -131,7 +137,9 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
-            $table->foreign('tenant_id')->references('id')->on('tenants')->cascadeOnDelete();
+            if (Schema::hasTable('tenants')) {
+                $table->foreign('tenant_id')->references('id')->on('tenants')->cascadeOnDelete();
+            }
             $table->index(['tenant_id', 'status']);
             $table->index(['employee_id', 'status']);
             $table->index(['proposed_start_date', 'proposed_end_date']);
