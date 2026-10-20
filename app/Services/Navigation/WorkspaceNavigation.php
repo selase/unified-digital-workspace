@@ -277,6 +277,13 @@ final class WorkspaceNavigation
     {
         $groups = [
             [
+                'label' => 'Help',
+                'icon' => 'ki-filled ki-question-2',
+                'items' => [
+                    ['label' => 'Module Help', 'url' => route('help.modules', [], false), 'active_patterns' => ['help.modules']],
+                ],
+            ],
+            [
                 'label' => 'Organization',
                 'icon' => 'ki-filled ki-setting-2',
                 'items' => [
@@ -309,27 +316,32 @@ final class WorkspaceNavigation
         ];
 
         return collect($groups)
-            ->map(function (array $group) use ($tenantSlug, $currentRouteName, $user): ?array {
-                $items = collect($group['items'])
-                    ->map(fn (array $item): ?array => $this->resolveLink($item, $tenantSlug, $currentRouteName, $user))
-                    ->filter()
-                    ->values();
-
-                if ($items->isEmpty()) {
-                    return null;
-                }
-
-                $isActive = $items->contains(fn (array $item): bool => $item['is_active'] === true);
-
-                return [
-                    'label' => $group['label'],
-                    'icon' => $group['icon'],
-                    'is_active' => $isActive,
-                    'items' => $items->all(),
-                ];
-            })
+            ->map(fn (array $group): ?array => $this->resolveTenantGroup($group, $tenantSlug, $currentRouteName, $user))
             ->filter()
             ->values();
+    }
+
+    /**
+     * @param  array{label: string, icon: string, items: array<int, array<string, mixed>>}  $group
+     * @return array{label: string, icon: string, is_active: bool, items: array<int, array<string, mixed>>}|null
+     */
+    private function resolveTenantGroup(array $group, ?string $tenantSlug, string $currentRouteName, ?User $user): ?array
+    {
+        $items = collect($group['items'])
+            ->map(fn (array $item): ?array => $this->resolveLink($item, $tenantSlug, $currentRouteName, $user))
+            ->filter()
+            ->values();
+
+        if ($items->isEmpty()) {
+            return null;
+        }
+
+        return [
+            'label' => $group['label'],
+            'icon' => $group['icon'],
+            'is_active' => $items->contains(fn (array $item): bool => $item['is_active'] === true),
+            'items' => $items->all(),
+        ];
     }
 
     /**

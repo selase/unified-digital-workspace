@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\CmsCore\Support;
 
+use Illuminate\Support\Str;
 use Symfony\Component\HtmlSanitizer\HtmlSanitizer;
 use Symfony\Component\HtmlSanitizer\HtmlSanitizerConfig;
 
@@ -24,6 +25,27 @@ final class ContentSanitizer
         }
 
         return self::htmlSanitizer()->sanitize($html);
+    }
+
+    /**
+     * Render bundled Markdown without raw HTML or unsafe links.
+     *
+     * Guides can exceed the rich-text sanitizer's default 20 KB limit.
+     */
+    public static function markdown(string $markdown): string
+    {
+        $sanitizer = new HtmlSanitizer(
+            (new HtmlSanitizerConfig)
+                ->allowSafeElements()
+                ->allowRelativeLinks()
+                ->allowLinkSchemes(['http', 'https', 'mailto', 'tel'])
+                ->withMaxInputLength(1_000_000)
+        );
+
+        return $sanitizer->sanitize(Str::markdown($markdown, [
+            'html_input' => 'strip',
+            'allow_unsafe_links' => false,
+        ]));
     }
 
     /**

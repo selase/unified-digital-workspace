@@ -22,6 +22,7 @@ final class CmsPublicNewsletterController extends Controller
     {
         $posts = Post::query()
             ->published()
+            ->publicOnly()
             ->forType('newsletter')
             ->with(['author:uuid,first_name,last_name', 'featuredMedia', 'media'])
             ->latest('published_at')
@@ -40,6 +41,7 @@ final class CmsPublicNewsletterController extends Controller
     {
         $post = Post::query()
             ->published()
+            ->publicOnly()
             ->forType('newsletter')
             ->where('slug', $slug)
             ->with(['author:uuid,first_name,last_name', 'featuredMedia', 'media', 'meta'])

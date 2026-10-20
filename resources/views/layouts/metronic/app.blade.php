@@ -501,6 +501,7 @@
 
         <main class="grow pt-5" id="content" role="content">
             <div class="kt-container-fixed">
+                <x-metronic.module-help />
                 @yield('content')
             </div>
         </main>

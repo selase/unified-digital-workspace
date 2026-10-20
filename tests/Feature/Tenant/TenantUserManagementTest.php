@@ -131,9 +131,19 @@ test('a user with only content permissions is kept out of organisation, billing 
     $navigation = app(App\Services\Navigation\WorkspaceNavigation::class)
         ->forRequest(tap(request(), fn ($request) => $request->setUserResolver(fn () => $editor)));
 
-    $visibleLinks = collect($navigation['sidebar']['tenant_groups'])->flatMap(fn (array $group) => $group['items'])->pluck('label')->all();
+    $tenantGroups = collect($navigation['sidebar']['tenant_groups']);
+    $visibleItems = $tenantGroups->flatMap(fn (array $group): array => $group['items']);
+    $visibleLinks = $visibleItems->pluck('label')->all();
 
-    expect($visibleLinks)->toBe([]);
+    expect($visibleLinks)
+        ->toContain('Module Help')
+        ->not->toContain(
+            'Organization Settings', 'Users', 'Roles', 'Modules',
+            'Billing Settings', 'Payment Methods', 'Finance', 'Tenant Billing', 'Pricing',
+            'API Keys', 'LLM Usage', 'LLM Configuration',
+        )
+        ->and($tenantGroups->pluck('label')->all())->toBe(['Help'])
+        ->and($visibleItems->firstWhere('label', 'Module Help')['url'])->toBe(route('help.modules', [], false));
 });
 
 test('an organisation admin still reaches billing settings and sees the organisation menu', function () {

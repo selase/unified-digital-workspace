@@ -42,7 +42,7 @@ Route::group(['middleware' => ['auth', '2fa_challenge', 'onboarding']], function
         ->name('tenant.settings.payments.update');
 
     Route::post('users/all', [UserController::class, 'getAllUsers'])->name('tenant.users.all');
-    Route::resource('users', UserController::class)->names('tenant.users');
+    Route::resource('users', UserController::class)->except(['create', 'show', 'destroy'])->names('tenant.users');
     Route::resource('roles', RoleController::class)->names('tenant.roles');
     Route::resource('api-keys', App\Http\Controllers\Tenant\ApiKeyController::class)
         ->names('tenant.api-keys')

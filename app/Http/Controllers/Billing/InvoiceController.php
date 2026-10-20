@@ -8,9 +8,25 @@ use App\Http\Controllers\Controller;
 use App\Models\Invoice;
 use App\Services\Tenancy\PdfInvoiceService;
 use App\Services\Tenancy\TenantContext;
+use Illuminate\Contracts\View\View;
 
 final class InvoiceController extends Controller
 {
+    public function index(TenantContext $tenantContext): View
+    {
+        $tenant = $tenantContext->getTenant();
+        abort_if($tenant === null, 404);
+
+        $invoices = Invoice::query()
+            ->where('tenant_id', $tenant->id)
+            ->where('status', '!=', Invoice::STATUS_DRAFT)
+            ->latest()
+            ->orderByDesc('id')
+            ->paginate(15);
+
+        return view('billing.invoices.index', compact('invoices', 'tenant'));
+    }
+
     public function show(string $id, TenantContext $tenantContext)
     {
         $tenant = $tenantContext->getTenant();
