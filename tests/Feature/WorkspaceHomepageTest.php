@@ -55,11 +55,14 @@ final class WorkspaceHomepageTest extends TestCase
         $this->compiledPath = sys_get_temp_dir().'/workspace-homepage-'.bin2hex(random_bytes(8));
         mkdir($this->compiledPath);
         $files = new Filesystem;
+        $bladeCompiler = new BladeCompiler($files, $this->compiledPath);
         $engines = new EngineResolver;
-        $engines->register('blade', fn (): CompilerEngine => new CompilerEngine(new BladeCompiler($files, $this->compiledPath), $files));
+        $engines->register('blade', fn (): CompilerEngine => new CompilerEngine($bladeCompiler, $files));
         $this->views = new Factory($engines, new FileViewFinder($files, [dirname(__DIR__, 2).'/resources/views']), $events);
         $this->views->setContainer($this->app);
         $this->views->share('__env', $this->views);
+        $this->app->instance('view', $this->views);
+        $this->app->instance('blade.compiler', $bladeCompiler);
     }
 
     protected function tearDown(): void
@@ -110,6 +113,9 @@ final class WorkspaceHomepageTest extends TestCase
             $target = mb_substr($link->getAttribute('href'), 1);
             self::assertSame(1, $xpath->query('//*[@id="'.$target.'"]')->length);
         }
+
+        self::assertStringContainsString('d="M12 14V26C12 32.6274 17.3726 38 24 38C30.6274 38 36 32.6274 36 26V14"', $html);
+        self::assertStringNotContainsString('<i></i><i></i><i></i><i></i>', $html);
     }
 
     public function test_homepage_includes_interactive_workbench_and_section_separators(): void

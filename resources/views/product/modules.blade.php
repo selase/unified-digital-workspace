@@ -12,6 +12,7 @@
     <meta name="description" content="Explore every module of the Unified Digital Workspace. Purpose-built tools for projects, documents, people, CMS, forms, CRM, facilities, and automation.">
     <meta name="theme-color" content="#2455b5">
     <title>Modules — Unified Digital Workspace</title>
+    <link rel="icon" type="image/svg+xml" href="{{ asset('assets/media/logos/udw-logo.svg') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -118,21 +119,16 @@
         .brand-mark {
             width: 32px;
             height: 32px;
-            background: var(--blue);
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 3px;
-            padding: 7px;
-            border-radius: 6px;
-            box-shadow: inset 0 1px 0 rgba(255,255,255,0.25);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            line-height: 0;
         }
-        .brand-mark i {
-            background: var(--white);
-            border-radius: 1.5px;
+        .brand-mark svg {
             display: block;
-        }
-        .brand-mark i:last-child {
-            background: #9ec0ff;
+            width: 32px;
+            height: 32px;
         }
 
         .nav-cell {
@@ -655,7 +651,7 @@
     <div class="rail header-grid">
         <div class="brand-cell">
             <a class="brand" href="{{ url('/') }}" aria-label="Unified Digital Workspace home">
-                <span class="brand-mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
+                <span class="brand-mark" aria-hidden="true"><x-udw-logo size="32" /></span>
                 <span>Unified Digital Workspace</span>
             </a>
         </div>
@@ -1367,7 +1363,10 @@
 
 <footer class="rail">
     <div class="footer-grid">
-        <div class="footer-brand">Unified Digital Workspace</div>
+        <div class="footer-brand" style="display: inline-flex; align-items: center; gap: 10px;">
+            <x-udw-logo size="20" badge-radius="5" />
+            <span>Unified Digital Workspace</span>
+        </div>
         <nav class="footer-links" aria-label="Footer navigation">
             <a href="{{ url('/#workspace') }}">Workspace</a>
             <a href="{{ url('/#tools') }}">Tools</a>
@@ -1380,3 +1379,4 @@
 </footer>
 </body>
 </html>
+
