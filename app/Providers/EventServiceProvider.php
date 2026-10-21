@@ -22,6 +22,9 @@ final class EventServiceProvider extends ServiceProvider
      * @var array<class-string, array<int, class-string>>
      */
     protected $listen = [
+        \Spatie\Backup\Events\BackupManifestWasCreated::class => [
+            \App\Listeners\SnapshotTenantMedia::class,
+        ],
         \App\Events\InvoicePaymentReceived::class => [
             \App\Listeners\QueueInvoiceReceipt::class,
         ],
