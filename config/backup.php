@@ -13,6 +13,16 @@ use Spatie\Backup\Tasks\Cleanup\Strategies\DefaultStrategy;
 use Spatie\Backup\Tasks\Monitor\HealthChecks\MaximumAgeInDays;
 use Spatie\Backup\Tasks\Monitor\HealthChecks\MaximumStorageInMegabytes;
 
+$backupFileSources = [base_path()];
+$backupReleaseRoot = realpath(base_path()) ?: base_path();
+$backupStorageRoot = realpath(storage_path()) ?: storage_path();
+
+// Forge keeps customer files outside each release. Include that root explicitly
+// rather than following every symlink, which could traverse unrelated projects.
+if (! str_starts_with($backupStorageRoot.DIRECTORY_SEPARATOR, $backupReleaseRoot.DIRECTORY_SEPARATOR)) {
+    $backupFileSources[] = $backupStorageRoot.DIRECTORY_SEPARATOR.'app';
+}
+
 return [
 
     'backup' => [
@@ -30,9 +40,7 @@ return [
                 /*
                  * The list of directories and files that will be included in the backup.
                  */
-                'include' => [
-                    base_path(),
-                ],
+                'include' => $backupFileSources,
 
                 /*
                  * These directories and files will be excluded from the backup.
