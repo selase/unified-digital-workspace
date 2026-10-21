@@ -15,9 +15,13 @@ it('includes shared application files outside a symlinked release without follow
     $fs = new Filesystem;
     $fs->makeDirectory($storage.'/app/public', 0700, true);
     $fs->makeDirectory($release.'/vendor', 0700, true);
+    $fs->makeDirectory($release.'/.git', 0700, true);
+    $fs->makeDirectory($storage.'/app/backup-temp/stale', 0700, true);
     $fs->makeDirectory($root.'/unrelated', 0700, true);
     file_put_contents($release.'/source.php', '<?php');
     file_put_contents($release.'/vendor/excluded.php', 'not backed up');
+    file_put_contents($release.'/.git/config', 'repository metadata');
+    file_put_contents($storage.'/app/backup-temp/stale/archive.zip', 'old temporary backup');
     file_put_contents($storage.'/app/public/upload.txt', 'restorable customer upload');
     file_put_contents($root.'/unrelated/private.txt', 'another application');
     symlink($root.'/unrelated', $release.'/unrelated-link');
@@ -39,8 +43,10 @@ it('includes shared application files outside a symlinked release without follow
                 $selected[] = realpath($path);
             }
         }
-        expect($selected)->toContain(realpath($storage.'/app/public/upload.txt'), realpath($release.'/source.php'))
-            ->not->toContain(realpath($release.'/vendor/excluded.php'), realpath($root.'/unrelated/private.txt'));
+        expect($selected)->toContain(realpath($storage.'/app/public/upload.txt'), realpath($release.'/source.php'));
+        foreach ([$release.'/vendor/excluded.php', $root.'/unrelated/private.txt', $release.'/.git/config', $storage.'/app/backup-temp/stale/archive.zip'] as $excluded) {
+            expect($selected)->not->toContain(realpath($excluded));
+        }
         expect(array_count_values($selected)[realpath($storage.'/app/public/upload.txt')])->toBe(1);
     } finally {
         Container::setInstance($original);
