@@ -4,113 +4,40 @@ declare(strict_types=1);
 
 return [
     'brand' => [
-        'name' => 'StarterKit',
-        'logo_text' => 'SK',
+        'name' => 'Unified Digital Workspace',
+        'logo_text' => 'UW',
     ],
 
     'nav' => [
         'links' => [
             ['label' => 'Pricing', 'href' => '/product-template#pricing'],
             ['label' => 'Modules', 'href' => '/modules'],
-            ['label' => 'Enterprise', 'href' => '/product-enterprise'],
+            ['label' => 'Plan your workspace', 'href' => '/product-enterprise'],
         ],
         'cta_secondary' => ['label' => 'Sign in', 'href' => '/login'],
         'cta_primary' => ['label' => 'View pricing', 'href' => '/product-template#pricing'],
     ],
 
-    'hero' => [
-        'title' => "Launch your next\nSaaS in days",
-        'subtitle' => 'The ultimate Laravel starter kit with multi-tenancy, LLM integration, and premium Metronic styling.',
-        'cta_primary' => ['label' => 'Get Started', 'href' => '/register'],
-        'cta_secondary' => ['label' => 'View Demo', 'href' => '#'],
-        'media' => [
-            'type' => 'image',
-            'src' => '/assets/img/marketing/hero.png',
-            'alt' => 'App screenshot',
-        ],
-    ],
-
-    'intro' => [
-        'eyebrow' => 'Onboarding',
-        'title' => 'Ready-to-use business logic',
-        'body' => 'Skip the boilerplate and focus on your core product. We handle the heavy lifting of multi-tenancy and user management.',
-        'cards' => [
-            ['kicker' => 'Tenancy', 'title' => 'Multi-tenant by default', 'body' => 'Each client gets their own space, subdomain, and isolated data.'],
-            ['kicker' => 'Payments', 'title' => 'Stripe ready', 'body' => 'Integrated billing with per-tenant subscription management.'],
-            ['kicker' => 'AI', 'title' => 'LLM Integration', 'body' => 'Native support for OpenAI, Anthropic, and Google Gemini.'],
-        ],
-    ],
-
-    'capabilities' => [
-        'title' => 'Everything you need to scale',
-        'subtitle' => 'Highly modular architecture designed for high-performance and developer happiness.',
-        'items' => [
-            ['icon' => '↗', 'title' => 'Multilingual', 'body' => 'Full localization support for global audiences.'],
-            ['icon' => '⌘', 'title' => 'Audit Trail', 'body' => 'Complete activity logs for every action in the system.'],
-            ['icon' => '⚙', 'title' => 'Queues', 'body' => 'Tenant-aware background jobs and reliable scheduling.'],
-            ['icon' => '⌁', 'title' => 'Health Checks', 'body' => 'Built-in monitoring for CPU, database, and system status.'],
-            ['icon' => '✉', 'title' => 'Mail & Notifications', 'body' => 'Transactional emails and real-time alerts.'],
-            ['icon' => '✈', 'title' => 'Storage', 'body' => 'Isolated storage foundations for S3 or local drivers.'],
-        ],
-    ],
-
-    'testimonials' => [
-        [
-            'quote' => 'This starter kit saved us at least 3 months of development time. The multi-tenancy implementation is flawless.',
-            'name' => 'Alex Rivera',
-            'role' => 'CEO',
-            'company' => 'CloudFlow',
-        ],
-        [
-            'quote' => 'The best Laravel boilerplate I have ever used. The attention to detail in the Metronic integration is impressive.',
-            'name' => 'Sarah Chen',
-            'role' => 'Fullstack Developer',
-            'company' => 'DevEngine',
-        ],
-    ],
-
-    'deep_sections' => [
-        [
-            'eyebrow' => 'Management',
-            'title' => 'Granular control over organizations',
-            'body' => 'Manage tenants, users, and roles with ease via the comprehensive landlord and tenant admin panels.',
-            'features' => [
-                ['title' => 'Package Management', 'title' => 'Custom Packages', 'body' => 'Define what features and limits each plan gets.'],
-                ['title' => 'Branding', 'title' => 'Tenant Branding', 'body' => 'Custom logos and primary colors for every organization.'],
-                ['title' => 'IP Whitelisting', 'title' => 'Enhanced Security', 'body' => 'Restrict access based on IP or specific LLM models.'],
-            ],
-            'media' => [
-                'type' => 'image',
-                'src' => '/assets/img/marketing/rbac.png',
-                'alt' => 'Admin dashboard',
-            ],
-        ],
-    ],
-
     'faqs' => [
-        ['q' => 'Is it compatible with Laravel 12?', 'a' => 'Yes, it is built on the latest version of Laravel and follows modern best practices.'],
-        ['q' => 'Can I use it for single-tenant apps?', 'a' => 'While optimized for multi-tenancy, you can easily use it for a single-tenant application by setting up one default tenant.'],
-    ],
-
-    'final_cta' => [
-        'title' => 'Ready to launch your vision?',
-        'subtitle' => 'Join hundreds of developers building the future with StarterKit.',
-        'cta_primary' => ['label' => 'Get Started', 'href' => '/register'],
-        'cta_secondary' => ['label' => 'Contact Sales', 'href' => '/contact'],
+        ['q' => 'Can I start with just a website?', 'a' => 'Yes. Website Essentials and Managed Business include CMS publishing, forms, hosting and a stated number of website editors. Operational modules and access can be added separately.'],
+        ['q' => 'Do public visitors count as paid users?', 'a' => 'No. Public visitors and external customers are not staff seats. Website editors use their plan allowance; operational users are counted at their highest access level for the month.'],
+        ['q' => 'What happens when I reach a usage limit?', 'a' => 'Contact us about a larger plan or an agreed capacity quote. The calculator does not add automatic website overage charges. External CDN and direct static delivery are outside application-served bandwidth controls.'],
+        ['q' => 'Are setup, domains and taxes included?', 'a' => 'Standard setup is a separate one-time fee shown in the calculator. Domain registration, renewals, custom design, migration and mailbox hosting are separate. Applicable taxes and agreed services may be additional.'],
+        ['q' => 'Will using the calculator change my billing?', 'a' => 'No. It only estimates costs. Existing customer agreements keep their agreed rates; a new agreement must be explicitly adopted before it controls billing.'],
+        ['q' => 'How do I pay an invoice?', 'a' => 'Issued invoices include a private payment link. GHS invoices use secure Paystack checkout. After verified payment, the invoice is marked paid and a receipt is available. Payment reminders go to the organisation billing contact.'],
     ],
 
     'footer' => [
-        'tagline' => 'Building the future of SaaS, one project at a time.',
+        'tagline' => 'Projects, documents, people and public websites in one workspace.',
         'columns' => [
-            'Product' => [
-                ['label' => 'Pricing', 'href' => '/product-template#pricing'],
+            'Workspace' => [
+                ['label' => 'Home', 'href' => '/'],
                 ['label' => 'Modules', 'href' => '/modules'],
-                ['label' => 'Enterprise', 'href' => '/product-enterprise'],
+                ['label' => 'Pricing', 'href' => '/product-template#pricing'],
             ],
-            'Company' => [
-                ['label' => 'About Us', 'href' => '#'],
-                ['label' => 'Terms', 'href' => '/terms'],
-                ['label' => 'Privacy', 'href' => '/privacy'],
+            'Get started' => [
+                ['label' => 'Plan your workspace', 'href' => '/product-enterprise'],
+                ['label' => 'Sign in', 'href' => '/login'],
             ],
         ],
     ],

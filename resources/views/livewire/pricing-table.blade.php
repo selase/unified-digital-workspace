@@ -1,4 +1,4 @@
-<section id="pricing" class="mx-auto my-16 max-w-6xl space-y-8 rounded-2xl bg-white p-6 text-slate-900">
+<section id="pricing" class="mx-auto max-w-6xl space-y-8 bg-white p-6 text-slate-900 md:p-10">
     <header class="space-y-3">
         <p class="text-sm font-semibold uppercase tracking-wide">Website plans and optional modules</p>
         <h2 class="text-3xl font-semibold">Hybrid pricing preview</h2>

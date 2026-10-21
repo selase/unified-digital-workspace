@@ -49,7 +49,7 @@ it('renders paid pricing publicly without a free workspace promise', function ()
     $this->get(route('product.template'))->assertSuccessful()
         ->assertSee('Hybrid pricing preview')
         ->assertSee('GHS 300.00 / USD 25.00')
-        ->assertSee('View pricing')
+        ->assertSee('Compare plans &amp; estimate costs', false)
         ->assertDontSee('Start for free')
         ->assertDontSee('no monthly base charge');
 });
@@ -85,4 +85,46 @@ it('shows saved agreement guidance instead of direct legacy switching instructio
     expect($html)->toContain('Your Billing Agreement')
         ->toContain('Your saved agreement controls billing and access')
         ->not->toContain('Direct plan changes are available before usage');
+});
+
+it('presents pricing in the workspace theme without template claims or sample testimonials', function (): void {
+    config(['product-page.testimonials' => [[
+        'quote' => 'UNVERIFIED_CUSTOMER_CLAIM', 'name' => 'Sample Person', 'role' => 'CEO', 'company' => 'Sample Company',
+    ]]]);
+
+    $this->get(route('product.template'))->assertSuccessful()
+        ->assertSee('Plans &amp; pricing — Unified Digital Workspace', false)
+        ->assertSee('A website first. A workspace when you need it.')
+        ->assertSee('How billing works')
+        ->assertSee('Existing customer agreements keep their agreed rates.')
+        ->assertSee('GHS 300.00 / USD 25.00')
+        ->assertSee('GHS 600.00 / USD 50.00')
+        ->assertDontSee('StarterKit')
+        ->assertDontSee('SaaS in days')
+        ->assertDontSee('UNVERIFIED_CUSTOMER_CLAIM')
+        ->assertDontSee('avatar-alex')
+        ->assertDontSee('cdn.tailwindcss.com')
+        ->assertDontSee('@endsection')
+        ->assertDontSee('href="#"', false);
+});
+
+it('uses the enquiry route instead of a disabled signup on the public pricing page', function (): void {
+    config(['app.system_setting.allow_registration' => false]);
+
+    $this->get(route('product.template'))->assertSuccessful()
+        ->assertSee(route('product.enterprise'), false)
+        ->assertDontSee('href="'.route('register').'"', false);
+});
+
+it('reads the public plan summary prices and included editors from the billing catalogue', function (): void {
+    config([
+        'usage-pricing.hybrid.website_plans.essentials.GHS' => 345,
+        'usage-pricing.hybrid.website_plans.essentials.setup.GHS' => 700,
+        'usage-pricing.hybrid.website_plans.essentials.editors' => 4,
+    ]);
+
+    $this->get(route('product.template'))->assertSuccessful()
+        ->assertSee('GHS 345', false)
+        ->assertSee('One-time standard setup: GHS 700', false)
+        ->assertSee('4 website editors');
 });

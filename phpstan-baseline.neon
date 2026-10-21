@@ -2691,12 +2691,6 @@ parameters:
 			path: app/View/Components/Modal.php
 
 		-
-			rawMessage: 'Array has 2 duplicate keys with value ''title'' (''title'', ''title'').'
-			identifier: array.duplicateKey
-			count: 3
-			path: config/product-page.php
-
-		-
 			rawMessage: 'Class Database\Factories\PackageFactory extends generic class Illuminate\Database\Eloquent\Factories\Factory but does not specify its types: TModel'
 			identifier: missingType.generics
 			count: 1
