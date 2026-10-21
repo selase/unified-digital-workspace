@@ -74,12 +74,30 @@ final class WorkspaceHomepageTest extends TestCase
     {
         $html = $this->views->make('welcome')->render();
 
-        foreach (['Unified Digital Workspace', 'Make room for the work that matters.', 'Illustrative workspace', 'Documents', 'People', 'Sites', 'Projects', 'Forms'] as $text) {
+        foreach ([
+            'Unified Digital Workspace',
+            'Every tool for your work.',
+            'One shared workspace.',
+            'Inside the Unified Digital Workspace',
+            'Illustrative workspace',
+            '01 / The Tools',
+            '02 / Why Unified',
+            '03 / Plans &amp; Pricing',
+            'Documents &amp; Memos',
+            'People &amp; HR',
+            'Sites &amp; Forms',
+            'Projects &amp; Tasks',
+            'Purpose-built tools for everyday work, connected to one shared engine.',
+            'Too many tools fragment the work. One workspace keeps it whole.',
+            'A website today. A wider workspace when you need it.',
+        ] as $text) {
             self::assertStringContainsString($text, $html);
         }
         self::assertStringNotContainsString('<title>Laravel</title>', $html);
         self::assertStringNotContainsString('href="#"', $html);
-        self::assertStringNotContainsString('<button', $html);
+        self::assertStringNotContainsString('php artisan', $html);
+        self::assertStringNotContainsString('TenantResolver::fromHost', $html);
+        self::assertStringNotContainsString('class="pill"', $html);
         self::assertStringContainsString('href="#main-content"', $html);
         self::assertStringContainsString('id="main-content"', $html);
 
@@ -91,6 +109,25 @@ final class WorkspaceHomepageTest extends TestCase
             $target = mb_substr($link->getAttribute('href'), 1);
             self::assertSame(1, $xpath->query('//*[@id="'.$target.'"]')->length);
         }
+    }
+
+    public function test_homepage_includes_interactive_workbench_and_section_separators(): void
+    {
+        $html = $this->views->make('welcome')->render();
+
+        // Interactive workbench view panels
+        self::assertStringContainsString('id="view-overview"', $html);
+        self::assertStringContainsString('id="view-projects"', $html);
+        self::assertStringContainsString('id="view-documents"', $html);
+        self::assertStringContainsString('id="view-people"', $html);
+        self::assertStringContainsString('id="view-sites"', $html);
+
+        // Section separators breaking continuous rail grid
+        self::assertStringContainsString('class="section-separator"', $html);
+        self::assertStringContainsString('class="section-separator sep-alt"', $html);
+        self::assertStringContainsString('6 Integrated Core Modules', $html);
+        self::assertStringContainsString('The Single-System Advantage', $html);
+        self::assertStringContainsString('Zero context switching', $html);
     }
 
     public function test_homepage_links_to_real_conversion_destinations_and_configured_prices(): void
