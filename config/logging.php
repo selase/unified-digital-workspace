@@ -53,6 +53,16 @@ return [
     */
 
     'channels' => [
+        'payment_webhooks' => [
+            'driver' => 'daily',
+            'path' => storage_path('logs/payment-webhooks.log'),
+            'level' => 'info',
+            'days' => 30,
+            'permission' => 0600,
+            'locking' => true,
+            'formatter' => Monolog\Formatter\JsonFormatter::class,
+        ],
+
         'stack' => [
             'driver' => 'stack',
             'channels' => ['single'],

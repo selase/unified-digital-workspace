@@ -119,35 +119,65 @@ final class WebhookController extends Controller
         $secret = (string) config('services.paystack.secret_key');
         $signature = $request->header('x-paystack-signature');
         if ($secret === '' || ! is_string($signature) || ! hash_equals(hash_hmac('sha512', $request->getContent(), $secret), $signature)) {
-            return response()->json(['error' => 'Invalid signature'], 400);
+            return $this->paystackResponse($request, ['error' => 'Invalid signature'], 'invalid_signature', 400);
         }
-        if ($request->input('event') !== 'charge.success') {
-            return response()->json(['status' => 'ignored']);
+        $request->attributes->set('payment_webhook.signature_valid', true);
+        $event = $request->input('event');
+        if (is_string($event) && preg_match('/^[a-z][a-z0-9_.]{0,79}$/D', $event)) {
+            $request->attributes->set('payment_webhook.event', $event);
+        }
+        if ($event !== 'charge.success') {
+            return $this->paystackResponse($request, ['status' => 'ignored'], 'ignored_event');
         }
         $reference = $request->input('data.reference');
         if (! is_string($reference) || ! preg_match('/^[A-Za-z0-9_.=-]{1,200}$/D', $reference)) {
-            return response()->json(['error' => 'Invalid reference'], 400);
+            return $this->paystackResponse($request, ['error' => 'Invalid reference'], 'invalid_reference', 400);
         }
+        $request->attributes->set('payment_webhook.reference', $reference);
         $result = app(\App\Services\Payment\PaystackGateway::class)->verifyTransaction($reference);
         if (($result['status'] ?? '') !== 'success') {
-            return response()->json(['error' => 'Payment not confirmed'], 422);
+            return $this->paystackResponse($request, ['error' => 'Payment not confirmed'], 'payment_unconfirmed', 422);
+        }
+        $transactionId = $result['transaction_id'] ?? null;
+        if ((is_string($transactionId) || is_int($transactionId)) && preg_match('/^[A-Za-z0-9_.=-]{1,200}$/D', (string) $transactionId)) {
+            $request->attributes->set('payment_webhook.provider_transaction_id', (string) $transactionId);
         }
         $invoiceId = data_get($result, 'metadata.invoice_id');
         $application = data_get($result, 'metadata.application');
-        if (($application !== null && $application !== 'udworkspace') || ! is_string($invoiceId) || ! Str::isUuid($invoiceId)) {
-            return response()->json(['status' => 'ignored']);
+        if ($application !== null && $application !== 'udworkspace') {
+            return $this->paystackResponse($request, ['status' => 'ignored'], 'ignored_application');
+        }
+        if (! is_string($invoiceId) || ! Str::isUuid($invoiceId)) {
+            return $this->paystackResponse($request, ['status' => 'ignored'], 'ignored_invoice');
         }
         $invoice = Invoice::query()->find($invoiceId);
         if (! $invoice) {
-            return response()->json(['status' => 'ignored']);
+            return $this->paystackResponse($request, ['status' => 'ignored'], 'ignored_invoice');
         }
+        $request->attributes->set('payment_webhook.invoice_id', $invoiceId);
+        $wasAlreadySettled = $invoice->status === Invoice::STATUS_PAID
+            && data_get($invoice->meta, 'provider') === 'paystack'
+            && data_get($invoice->meta, 'payment_reference') === (string) ($result['transaction_id'] ?? '');
         try {
-            $fulfillment->fulfillInvoicePayment($invoice, (string) ($result['transaction_id'] ?? ''), 'paystack',
+            $settled = $fulfillment->fulfillInvoicePayment($invoice, (string) ($result['transaction_id'] ?? ''), 'paystack',
                 (int) ($result['amount'] ?? 0), (string) ($result['currency'] ?? ''), (array) ($result['metadata'] ?? []));
         } catch (DomainException $exception) {
-            return response()->json(['error' => 'Invoice payment mismatch'], 422);
+            return $this->paystackResponse($request, ['error' => 'Invoice payment mismatch'], 'payment_mismatch', 422);
         }
 
-        return response()->json(['status' => 'success']);
+        $outcome = $wasAlreadySettled ? 'duplicate' : 'processed';
+        if (data_get($settled->meta, 'payment_reference') !== (string) ($result['transaction_id'] ?? '')) {
+            $outcome = 'reconciliation_required';
+        }
+
+        return $this->paystackResponse($request, ['status' => 'success'], $outcome);
+    }
+
+    /** @param array<string, string> $body */
+    private function paystackResponse(Request $request, array $body, string $outcome, int $status = 200): JsonResponse
+    {
+        $request->attributes->set('payment_webhook.outcome', $outcome);
+
+        return response()->json($body, $status);
     }
 }

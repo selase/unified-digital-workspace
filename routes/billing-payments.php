@@ -14,4 +14,5 @@ Route::middleware(['signed', 'cache.headers:no_store;private', App\Http\Middlewa
 });
 Route::get('/billing/payment-return/{provider}', [InvoicePaymentPortalController::class, 'callback'])
     ->whereIn('provider', ['paystack', 'stripe'])->middleware(['throttle:30,1,billing-payment-return', App\Http\Middleware\BillingPaymentHeaders::class])->name('billing.payment.callback');
-Route::post('/webhooks/paystack', [WebhookController::class, 'handlePaystack'])->name('webhooks.paystack');
+Route::post('/webhooks/paystack', [WebhookController::class, 'handlePaystack'])
+    ->middleware(App\Http\Middleware\LogPaymentWebhook::class)->name('webhooks.paystack');
