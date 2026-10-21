@@ -669,3 +669,22 @@ test('self service scope survives access revocation during an admitted request',
         return response('scoped');
     });
 });
+
+test('unassigned members can use signed Paystack recovery without a paid access level', function (): void {
+    ($this->adopt)();
+    $this->actingAs($this->member);
+    $invoice = App\Models\Invoice::query()->create([
+        'tenant_id' => $this->billingTenant->id, 'number' => 'RECOVERY-'.Illuminate\Support\Str::uuid(),
+        'period_start' => today(), 'period_end' => today(), 'due_at' => today()->addDay(),
+        'status' => App\Models\Invoice::STATUS_ISSUED, 'currency' => 'GHS', 'subtotal' => 2, 'tax_total' => 0, 'total' => 2,
+    ]);
+    $links = app(App\Services\Billing\InvoicePaymentLinkService::class);
+    $parameters = ['reference' => 'pending-ref', 'access_code' => 'pending-code'];
+    config(['services.paystack.secret_key' => 'test-key']);
+    Illuminate\Support\Facades\Http::fake(['api.paystack.co/transaction/verify/pending-ref' => Illuminate\Support\Facades\Http::response([
+        'data' => ['id' => 123, 'status' => 'pending'],
+    ])]);
+    $this->get($links->signedUrl($invoice, 'billing.payment.checkout', $parameters))->assertOk();
+    $this->postJson($links->signedUrl($invoice, 'billing.payment.check', $parameters))->assertOk()->assertJson(['status' => 'pending']);
+    expect(TenantBillingMonthlyUser::query()->where('tenant_id', $this->billingTenant->id)->count())->toBe(0);
+});

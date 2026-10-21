@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Billing;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Billing\InvoiceCheckoutStatusRequest;
 use App\Models\Invoice;
 use App\Services\Billing\InvoiceCheckoutService;
 use App\Services\Billing\InvoicePaymentLinkService;
@@ -15,6 +16,9 @@ use App\Services\Payment\StripeGateway;
 use App\Services\Tenancy\PdfInvoiceService;
 use DomainException;
 use Illuminate\Contracts\View\View;
+use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\RequestException;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -56,6 +60,70 @@ final class InvoicePaymentPortalController extends Controller
         $this->ensureVisible($invoice);
 
         return $pdf->download($invoice);
+    }
+
+    public function checkout(InvoiceCheckoutStatusRequest $request, Invoice $invoice, InvoicePaymentLinkService $links): View
+    {
+        $this->ensureVisible($invoice);
+        abort_unless($invoice->currency === 'GHS', 404);
+        $parameters = ['reference' => (string) $request->validated('reference')];
+        $code = $request->validated('access_code');
+        if (is_string($code)) {
+            $parameters['access_code'] = $code;
+        }
+
+        return view('billing.payments.checkout', [
+            'invoice' => $invoice, 'checkUrl' => $links->signedUrl($invoice, 'billing.payment.check', $parameters),
+            'invoiceUrl' => $links->url($invoice),
+            'checkoutUrl' => is_string($code) && $invoice->status !== Invoice::STATUS_PAID ? 'https://checkout.paystack.com/'.$code : null,
+        ]);
+    }
+
+    public function check(InvoiceCheckoutStatusRequest $request, Invoice $invoice, InvoicePaymentLinkService $links, PaymentFulfillmentService $fulfillment): JsonResponse|RedirectResponse
+    {
+        $this->ensureVisible($invoice);
+        abort_unless($invoice->currency === 'GHS', 404);
+        $reference = (string) $request->validated('reference');
+        $status = 'pending';
+        $message = 'Awaiting payment confirmation. If you have been debited, do not pay again.';
+        $httpStatus = 200;
+        try {
+            $result = app(PaystackGateway::class)->verifyTransaction($reference);
+            if (($result['status'] ?? '') === 'success') {
+                $application = data_get($result, 'metadata.application');
+                if ($application !== null && $application !== 'udworkspace') {
+                    throw new DomainException('Foreign application payment.');
+                }
+                $fulfillment->fulfillInvoicePayment($invoice, (string) ($result['transaction_id'] ?? ''), 'paystack',
+                    (int) ($result['amount'] ?? 0), (string) ($result['currency'] ?? ''), (array) ($result['metadata'] ?? []));
+                if (! $request->expectsJson()) {
+                    return redirect($links->url($invoice));
+                }
+
+                return response()->json(['status' => 'paid', 'redirect' => $links->url($invoice)]);
+            }
+            if (in_array($result['status'] ?? '', ['failed', 'abandoned', 'reversed'], true)) {
+                $status = 'failed';
+                $message = 'Paystack has not confirmed this payment. If you were debited, contact billing support before paying again.';
+            }
+        } catch (DomainException $exception) {
+            $status = 'mismatch';
+            $message = 'This payment did not match the invoice. Contact billing support; do not pay again.';
+            $httpStatus = 422;
+        } catch (ConnectionException|RequestException $exception) {
+            $message = 'Paystack is taking longer to respond. We will check again; do not pay again if you were debited.';
+            $httpStatus = 503;
+        }
+        if ($request->expectsJson()) {
+            return response()->json(['status' => $status, 'message' => $message], $httpStatus);
+        }
+        $parameters = ['reference' => $reference];
+        $code = $request->validated('access_code');
+        if (is_string($code)) {
+            $parameters['access_code'] = $code;
+        }
+
+        return redirect($links->signedUrl($invoice, 'billing.payment.checkout', $parameters))->with('checkout_status', $message);
     }
 
     public function receipt(Invoice $invoice, InvoiceReceiptService $receipts): Response

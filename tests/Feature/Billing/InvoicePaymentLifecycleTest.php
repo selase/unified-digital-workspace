@@ -130,11 +130,12 @@ it('rejects missing expired and tampered portal signatures', function (): void {
 
 it('initializes exact GHS hosted checkout for the billing contact with a verifying callback', function (): void {
     Http::fake(['api.paystack.co/transaction/initialize' => Http::response([
-        'status' => true, 'data' => ['authorization_url' => 'https://checkout.paystack.com/invoice-test'],
+        'status' => true, 'data' => ['authorization_url' => 'https://checkout.paystack.com/invoice-test', 'reference' => 'invoice-ref', 'access_code' => 'invoice-test'],
     ])]);
     $tenantMeta = $this->billingTenant->meta;
     $url = app(InvoicePaymentLinkService::class)->signedUrl($this->invoice, 'billing.payment.pay');
-    $this->post($url)->assertRedirect('https://checkout.paystack.com/invoice-test');
+    $response = $this->post($url)->assertRedirect();
+    expect($response->headers->get('Location'))->toContain('/checkout?', 'reference=invoice-ref', 'access_code=invoice-test');
     Http::assertSent(fn ($request) => $request['amount'] === 10000 && $request['currency'] === 'GHS'
         && $request['email'] === 'accounts@example.test'
         && $request['metadata']['tenant_id'] === $this->billingTenant->id
@@ -231,7 +232,7 @@ it('does not fabricate receipts for historical paid invoices', function (): void
 
 it('falls back to tenant email without altering tenant customer details', function (): void {
     $this->billingTenant->update(['meta' => []]);
-    Http::fake(['api.paystack.co/transaction/initialize' => Http::response(['data' => ['authorization_url' => 'https://checkout.paystack.com/test']])]);
+    Http::fake(['api.paystack.co/transaction/initialize' => Http::response(['data' => ['authorization_url' => 'https://checkout.paystack.com/test', 'reference' => 'test-ref', 'access_code' => 'test']])]);
     app(InvoiceCheckoutService::class)->checkout($this->invoice->fresh());
     Http::assertSent(fn ($request) => $request['email'] === 'default@example.test');
 });
@@ -327,7 +328,7 @@ it('requires CSRF even when the checkout bearer signature is valid', function ()
 
 it('rate limits repeated signed checkout attempts', function (): void {
     Http::fake(['api.paystack.co/transaction/initialize' => Http::response([
-        'data' => ['authorization_url' => 'https://checkout.paystack.com/test'],
+        'data' => ['authorization_url' => 'https://checkout.paystack.com/test', 'reference' => 'test-ref', 'access_code' => 'test'],
     ])]);
     $url = app(InvoicePaymentLinkService::class)->signedUrl($this->invoice, 'billing.payment.pay');
     $this->get(app(InvoicePaymentLinkService::class)->url($this->invoice))->assertOk();
@@ -356,4 +357,99 @@ it('shows a clear unavailable state without opening checkout when Paystack is no
     $this->get($links->url($this->invoice))->assertOk()->assertSee('Online payment is awaiting setup')->assertDontSee('<button type="submit">Pay', false);
     $this->post($links->signedUrl($this->invoice, 'billing.payment.pay'))->assertRedirect()->assertSessionHas('error');
     Http::assertNothingSent();
+});
+
+function lifecycleCheckoutUrl(Invoice $invoice, string $route = 'billing.payment.check'): string
+{
+    return app(InvoicePaymentLinkService::class)->signedUrl($invoice, $route, ['reference' => 'return-ref', 'access_code' => 'existing-code']);
+}
+
+it('checks checkout status independently of the hosted checkout and deduplicates paid checks', function (): void {
+    Http::fake(['api.paystack.co/transaction/verify/return-ref' => Http::response(['data' => $this->verifiedPayment])]);
+    $url = lifecycleCheckoutUrl($this->invoice);
+    $this->postJson($url)->assertOk()->assertJson(['status' => 'paid'])->assertJsonPath('redirect', app(InvoicePaymentLinkService::class)->url($this->invoice));
+    $receipt = $this->invoice->fresh()->meta['receipt'];
+    $this->postJson($url)->assertOk()->assertJson(['status' => 'paid']);
+    expect($this->invoice->fresh()->meta['receipt'])->toBe($receipt)
+        ->and(Transaction::query()->where('provider_transaction_id', '7654321')->count())->toBe(1)
+        ->and(App\Models\BillingMessage::query()->where('invoice_id', $this->invoice->id)->where('kind', 'payment_receipt')->count())->toBe(1);
+});
+
+it('renders a secure checkout window with automatic and manual status checks', function (): void {
+    $this->get(lifecycleCheckoutUrl($this->invoice, 'billing.payment.checkout'))
+        ->assertOk()->assertSee('Open secure Paystack checkout')->assertSee('Check payment')
+        ->assertSee('https://checkout.paystack.com/existing-code', false)->assertSee('window.location.replace', false)
+        ->assertHeader('Referrer-Policy', 'no-referrer');
+    Http::assertNothingSent();
+});
+
+it('keeps pending or failed payments unpaid', function (string $state): void {
+    $data = $this->verifiedPayment;
+    $data['status'] = $state;
+    Http::fake(['api.paystack.co/transaction/verify/return-ref' => Http::response(['data' => $data])]);
+    $this->postJson(lifecycleCheckoutUrl($this->invoice))->assertOk()->assertJson(['status' => $state === 'failed' ? 'failed' : 'pending']);
+    expect($this->invoice->fresh()->status)->toBe(Invoice::STATUS_ISSUED);
+})->with(['pending', 'ongoing', 'failed']);
+
+it('rejects mismatched checkout verification without settling the invoice', function (string $kind): void {
+    $data = $this->verifiedPayment;
+    match ($kind) {
+        'amount' => $data['amount'] = 1,
+        'currency' => $data['currency'] = 'USD',
+        'invoice' => $data['metadata']['invoice_id'] = (string) Illuminate\Support\Str::uuid(),
+        'tenant' => $data['metadata']['tenant_id'] = (string) Illuminate\Support\Str::uuid(),
+        'application' => $data['metadata']['application'] = 'foreign-app',
+    };
+    Http::fake(['api.paystack.co/transaction/verify/return-ref' => Http::response(['data' => $data])]);
+    $this->postJson(lifecycleCheckoutUrl($this->invoice))->assertUnprocessable();
+    expect($this->invoice->fresh()->status)->toBe(Invoice::STATUS_ISSUED);
+})->with(['amount', 'currency', 'invoice', 'tenant', 'application']);
+
+it('does not allow request bodies to override the signed checkout reference', function (): void {
+    Http::fake(['api.paystack.co/transaction/verify/return-ref' => Http::response(['data' => $this->verifiedPayment])]);
+    $this->postJson(lifecycleCheckoutUrl($this->invoice), ['reference' => 'attacker-ref', 'access_code' => 'attacker-code'])->assertOk()->assertJson(['status' => 'paid']);
+    Http::assertSent(fn ($request) => str_ends_with($request->url(), '/return-ref'));
+    Http::assertSentCount(1);
+});
+
+it('requires valid signatures on the checkout progress and status routes', function (string $route): void {
+    if ($route === 'billing.payment.checkout') {
+        $this->get(route($route, $this->invoice))->assertForbidden();
+        $this->get(lifecycleCheckoutUrl($this->invoice, $route).'&reference=changed')->assertForbidden();
+    } else {
+        $this->postJson(route($route, $this->invoice))->assertForbidden();
+        $this->postJson(lifecycleCheckoutUrl($this->invoice, $route).'&reference=changed')->assertForbidden();
+    }
+    Http::assertNothingSent();
+})->with(['billing.payment.checkout', 'billing.payment.check']);
+
+it('shows a recoverable pending state when Paystack cannot be reached', function (): void {
+    Http::fake(fn () => throw new Illuminate\Http\Client\ConnectionException('timeout'));
+    $this->postJson(lifecycleCheckoutUrl($this->invoice))->assertStatus(503)->assertJson(['status' => 'pending']);
+    expect($this->invoice->fresh()->status)->toBe(Invoice::STATUS_ISSUED);
+});
+
+it('redirects a manual paid check without JavaScript', function (): void {
+    Http::fake(['api.paystack.co/transaction/verify/return-ref' => Http::response(['data' => $this->verifiedPayment])]);
+    $this->post(lifecycleCheckoutUrl($this->invoice))->assertRedirect(app(InvoicePaymentLinkService::class)->url($this->invoice));
+});
+
+it('requires CSRF for signed payment status checks', function (): void {
+    $url = lifecycleCheckoutUrl($this->invoice);
+    app()->instance('env', 'local');
+    try {
+        $this->postJson($url)->assertStatus(419);
+        Http::assertNothingSent();
+    } finally {
+        app()->instance('env', 'testing');
+    }
+});
+
+it('keeps manual pending checks on the same signed checkout', function (): void {
+    $data = $this->verifiedPayment;
+    $data['status'] = 'pending';
+    Http::fake(['api.paystack.co/transaction/verify/return-ref' => Http::response(['data' => $data])]);
+    $this->post(lifecycleCheckoutUrl($this->invoice))
+        ->assertRedirect(lifecycleCheckoutUrl($this->invoice, 'billing.payment.checkout'))
+        ->assertSessionHas('checkout_status');
 });

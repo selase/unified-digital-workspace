@@ -252,7 +252,7 @@ final class EnforceBillingAccess
     private function publicBillingRoute(Request $request): bool
     {
         $controller = \App\Http\Controllers\Billing\InvoicePaymentPortalController::class;
-        foreach (['show' => 'GET', 'pay' => 'POST', 'invoice' => 'GET', 'receipt' => 'GET', 'callback' => 'GET'] as $action => $method) {
+        foreach (['show' => 'GET', 'pay' => 'POST', 'checkout' => 'GET', 'check' => 'POST', 'invoice' => 'GET', 'receipt' => 'GET', 'callback' => 'GET'] as $action => $method) {
             if ($this->matches($request, 'billing.payment.'.$action, $controller, $action, $method)) {
                 return true;
             }

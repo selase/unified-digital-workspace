@@ -47,8 +47,12 @@ final class InvoiceCheckoutService
         ];
         $callback = $this->links->callbackUrl($provider);
 
-        return $provider === 'paystack'
-            ? app(PaystackGateway::class)->createInvoiceCheckout($email, $amount, $callback, $metadata)
-            : app(StripeGateway::class)->createOneTimeCheckoutSession($email, $amount, $currency, $callback, $metadata);
+        if ($provider === 'paystack') {
+            $checkout = app(PaystackGateway::class)->createInvoiceCheckout($email, $amount, $callback, $metadata);
+
+            return $this->links->signedUrl($invoice, 'billing.payment.checkout', $checkout);
+        }
+
+        return app(StripeGateway::class)->createOneTimeCheckoutSession($email, $amount, $currency, $callback, $metadata);
     }
 }

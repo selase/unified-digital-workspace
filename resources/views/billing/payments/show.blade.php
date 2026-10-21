@@ -54,7 +54,7 @@
             @csrf
             <button type="submit">Pay {{ $invoice->currency }} {{ number_format((float) $invoice->total, 2) }}</button>
         </form>
-        <p>You will continue to secure hosted checkout.</p>
+        <p>{{ $invoice->currency === 'GHS' ? 'We will keep your payment status visible while you pay securely with Paystack.' : 'You will continue to secure hosted checkout.' }}</p>
     @else
         <p role="status" class="notice">Online payment is awaiting setup. Please contact billing support. Do not send card details by email.</p>
     @endif

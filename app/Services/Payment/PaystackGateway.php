@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Payment;
 
 use App\Contracts\PaymentGateway;
+use DomainException;
 use Exception;
 use Illuminate\Support\Facades\Http;
 
@@ -62,8 +63,11 @@ final class PaystackGateway implements PaymentGateway
         return $response->json('data.authorization_url');
     }
 
-    /** @param array<string, mixed> $metadata */
-    public function createInvoiceCheckout(string $email, int $amount, string $callbackUrl, array $metadata): string
+    /**
+     * @param  array<string, mixed>  $metadata
+     * @return array{reference: string, access_code: string}
+     */
+    public function createInvoiceCheckout(string $email, int $amount, string $callbackUrl, array $metadata): array
     {
         $response = Http::withToken($this->secret)->post("{$this->baseUrl}/transaction/initialize", [
             'email' => $email,
@@ -73,7 +77,14 @@ final class PaystackGateway implements PaymentGateway
             'metadata' => $metadata,
         ])->throw();
 
-        return (string) $response->json('data.authorization_url');
+        $reference = $response->json('data.reference');
+        $code = $response->json('data.access_code');
+        if (! is_string($reference) || ! preg_match('/^[A-Za-z0-9_.=-]{1,200}$/D', $reference)
+            || ! is_string($code) || ! preg_match('/^[A-Za-z0-9_-]{1,200}$/D', $code)) {
+            throw new DomainException('Unable to prepare secure checkout. Please contact billing support.');
+        }
+
+        return ['reference' => $reference, 'access_code' => $code];
     }
 
     public function charge(string $customerId, int $amount, string $currency, array $options = []): string
@@ -121,7 +132,7 @@ final class PaystackGateway implements PaymentGateway
 
     public function verifyTransaction(string $reference): array
     {
-        $response = Http::withToken($this->secret)->get("{$this->baseUrl}/transaction/verify/{$reference}")->throw();
+        $response = Http::withToken($this->secret)->timeout(10)->get("{$this->baseUrl}/transaction/verify/{$reference}")->throw();
         $data = $response->json('data');
 
         return [
