@@ -169,4 +169,17 @@ final class WorkspaceHomepageTest extends TestCase
         self::assertStringContainsString('Plan your workspace', $html);
         self::assertStringContainsString('/product-enterprise', $html);
     }
+
+    public function test_preview_tables_have_named_keyboard_accessible_scroll_regions(): void
+    {
+        $document = new DOMDocument;
+        $document->loadHTML($this->views->make('welcome')->render(), LIBXML_NOERROR | LIBXML_NOWARNING);
+        $xpath = new DOMXPath($document);
+
+        foreach (['overview', 'projects', 'documents', 'people', 'sites'] as $panel) {
+            $regions = $xpath->query('//*[@id="view-'.$panel.'"]//*[@role="region" and @tabindex="0" and @aria-label]');
+            self::assertSame(1, $regions->length);
+            self::assertSame(1, $xpath->query('.//table', $regions->item(0))->length);
+        }
+    }
 }

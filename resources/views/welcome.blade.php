@@ -395,6 +395,8 @@
         /* Interactive Tool Switcher Bar */
         .stage-tabs {
             display: flex;
+            min-width: 0;
+            max-width: 100%;
             gap: 2px;
             background: rgba(15, 34, 74, 0.55);
             padding: 4px;
@@ -403,6 +405,7 @@
             overflow-x: auto;
         }
         .stage-tab {
+            flex-shrink: 0;
             padding: 8px 14px;
             font-family: var(--font-sans);
             font-size: 13px;
@@ -537,6 +540,7 @@
 
         /* Workspace Interactive Views */
         .app-main {
+            min-width: 0;
             padding: 28px 32px;
             background: var(--white);
         }
@@ -608,6 +612,9 @@
         }
 
         /* Workspace Table Rows */
+        .ws-table-scroll { max-width: 100%; overflow-x: auto; }
+        .ws-table-scroll:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+        .table-scroll-hint { display: none; }
         .ws-table {
             width: 100%;
             border-collapse: collapse;
@@ -1113,7 +1120,8 @@
 
         /* Responsive */
         @media (max-width: 1080px) {
-            .header-grid { grid-template-columns: auto 1fr auto; }
+            .header-grid { grid-template-columns: minmax(0, 1fr) auto; }
+            .nav-cell { display: none; }
             .separator-inner {
                 grid-template-columns: 1fr;
                 gap: 20px;
@@ -1128,7 +1136,7 @@
             .ledger-grid,
             .iconic-blue-band,
             .closing-grid {
-                grid-template-columns: 1fr;
+                grid-template-columns: minmax(0, 1fr);
             }
             .hero-main,
             .section-head-left,
@@ -1146,7 +1154,7 @@
             }
             .tool-cell:nth-child(3n) { border-right: 1px solid var(--line); }
             .tool-cell:nth-child(2n) { border-right: none; }
-            .app-body { grid-template-columns: 1fr; }
+            .app-body { grid-template-columns: minmax(0, 1fr); }
             .app-sidebar { display: none; }
             .footer-grid { grid-template-columns: 1fr; }
             .footer-brand, .footer-copy { border: none; border-bottom: 1px solid var(--line); }
@@ -1158,7 +1166,17 @@
             .separator-inner { padding-inline: 24px; gap: 14px; }
             .tools-spec-bar { padding: 16px 24px; }
             .nav-cell { display: none; }
-            .header-grid { grid-template-columns: 1fr auto; }
+            .header-grid { grid-template-columns: minmax(0, 1fr); }
+            .brand-cell { padding: 14px 24px; border-right: none; border-bottom: 1px solid var(--line); }
+            .brand-mark { flex-shrink: 0; }
+            .account-cell { flex-wrap: wrap; padding: 12px 24px; border-left: none; }
+            .app-main { padding: 20px 16px; }
+            .view-header { flex-wrap: wrap; }
+            .view-meta { text-align: left; }
+            .app-titlebar, .stage-caption, .plan-row { flex-wrap: wrap; gap: 12px; }
+            .ws-table { min-width: 520px; }
+            .table-scroll-hint { display: block; margin-top: 16px; font-size: 12px; color: var(--muted); }
+            .app-path { overflow-wrap: anywhere; }
             .hero-main,
             .hero-aside-top,
             .hero-aside-bottom,
@@ -1377,6 +1395,8 @@
                                 </div>
                             </div>
 
+                            <p class="table-scroll-hint">Scroll the table sideways to see all columns.</p>
+                            <div class="ws-table-scroll" role="region" aria-label="Illustrative workspace records" tabindex="0">
                             <table class="ws-table">
                                 <thead>
                                     <tr>
@@ -1425,6 +1445,7 @@
                                     </tr>
                                 </tbody>
                             </table>
+                            </div>
                         </div>
 
                         {{-- View 2: Projects --}}
@@ -1455,6 +1476,8 @@
                                 </div>
                             </div>
 
+                            <p class="table-scroll-hint">Scroll the table sideways to see all columns.</p>
+                            <div class="ws-table-scroll" role="region" aria-label="Illustrative workspace records" tabindex="0">
                             <table class="ws-table">
                                 <thead>
                                     <tr>
@@ -1494,6 +1517,7 @@
                                     </tr>
                                 </tbody>
                             </table>
+                            </div>
                         </div>
 
                         {{-- View 3: Documents & Memos --}}
@@ -1524,6 +1548,8 @@
                                 </div>
                             </div>
 
+                            <p class="table-scroll-hint">Scroll the table sideways to see all columns.</p>
+                            <div class="ws-table-scroll" role="region" aria-label="Illustrative workspace records" tabindex="0">
                             <table class="ws-table">
                                 <thead>
                                     <tr>
@@ -1563,6 +1589,7 @@
                                     </tr>
                                 </tbody>
                             </table>
+                            </div>
                         </div>
 
                         {{-- View 4: People & HR --}}
@@ -1593,6 +1620,8 @@
                                 </div>
                             </div>
 
+                            <p class="table-scroll-hint">Scroll the table sideways to see all columns.</p>
+                            <div class="ws-table-scroll" role="region" aria-label="Illustrative workspace records" tabindex="0">
                             <table class="ws-table">
                                 <thead>
                                     <tr>
@@ -1632,6 +1661,7 @@
                                     </tr>
                                 </tbody>
                             </table>
+                            </div>
                         </div>
 
                         {{-- View 5: Sites & Forms --}}
@@ -1662,6 +1692,8 @@
                                 </div>
                             </div>
 
+                            <p class="table-scroll-hint">Scroll the table sideways to see all columns.</p>
+                            <div class="ws-table-scroll" role="region" aria-label="Illustrative workspace records" tabindex="0">
                             <table class="ws-table">
                                 <thead>
                                     <tr>
@@ -1701,6 +1733,7 @@
                                     </tr>
                                 </tbody>
                             </table>
+                            </div>
                         </div>
                     </div>
                 </div>
