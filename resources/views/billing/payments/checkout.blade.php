@@ -41,7 +41,7 @@
     const button = document.getElementById('check-button');
     const notice = document.getElementById('payment-status');
     const checkoutLink = document.getElementById('open-checkout');
-    const deadline = Date.now() + 10 * 60 * 1000;
+    let deadline = Date.now() + 10 * 60 * 1000;
     let checkoutWindow = null;
     let busy = false;
     let automatic = true;
@@ -49,6 +49,9 @@
 
     if (checkoutLink) {
         checkoutLink.addEventListener('click', (event) => {
+            automatic = true;
+            deadline = Date.now() + 10 * 60 * 1000;
+            checkPayment();
             const opened = window.open('about:blank', 'udw-payment-' + Date.now(), 'popup,width=560,height=780');
             if (!opened) return;
             try {
@@ -97,7 +100,7 @@
                 window.location.replace(destination.href);
                 return;
             }
-            if (result.status === 'failed' || result.status === 'mismatch') automatic = false;
+            if (result.status === 'mismatch') automatic = false;
             notice.textContent = result.message || 'Confirmation is taking longer. Do not pay again if you were debited.';
             if (!response.ok) delay = 20000;
         } catch (_) {
