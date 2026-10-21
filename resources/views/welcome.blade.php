@@ -1203,8 +1203,10 @@
             <a href="#tools">Tools</a>
             <a href="#why-unified">Why Unified</a>
             <a href="#pricing">Pricing</a>
-            @if (\Illuminate\Support\Facades\Route::has('product.docs'))
-                <a href="{{ route('product.docs') }}">Documentation</a>
+            @if (\Illuminate\Support\Facades\Route::has('product.modules'))
+                <a href="{{ route('product.modules') }}">Modules</a>
+            @elseif (\Illuminate\Support\Facades\Route::has('product.docs'))
+                <a href="{{ route('product.docs') }}">Modules</a>
             @endif
         </nav>
 
@@ -1994,6 +1996,11 @@
             <a href="#tools">Tools</a>
             <a href="#why-unified">Why Unified</a>
             <a href="{{ $pricingUrl }}">Plans &amp; pricing</a>
+            @if (\Illuminate\Support\Facades\Route::has('product.modules'))
+                <a href="{{ route('product.modules') }}">Modules</a>
+            @elseif (\Illuminate\Support\Facades\Route::has('product.docs'))
+                <a href="{{ route('product.docs') }}">Modules</a>
+            @endif
         </nav>
         <div class="footer-copy">&copy; {{ date('Y') }} Unified Digital Workspace</div>
     </div>

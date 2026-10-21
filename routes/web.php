@@ -43,9 +43,8 @@ Route::get('/sample-product', fn (): Factory|View => view('sample-product-page')
 Route::get('/product-template', fn (): Factory|View => view('product.landing'))->name('product.template');
 Route::get('/product-enterprise', fn (): Factory|View => view('product.enterprise'))->name('product.enterprise');
 Route::post('/product-enterprise/leads', [App\Http\Controllers\Marketing\LeadController::class, 'store'])->name('product.enterprise.lead');
-Route::get('/product-docs/{section?}', function (?string $section = 'start-guide') {
-    return view('product.docs', ['section' => $section]);
-})->name('product.docs');
+Route::get('/modules/{category?}', fn (?string $category = null): Factory|View => view('product.modules', ['activeCategory' => $category]))->name('product.modules');
+Route::get('/product-docs/{section?}', fn (?string $section = null) => redirect()->route('product.modules'))->name('product.docs');
 
 Route::group(['middleware' => ['auth', '2fa_challenge', 'onboarding']], function (): void {
     Route::get('/help/modules', App\Http\Controllers\ModuleHelpController::class)->name('help.modules');

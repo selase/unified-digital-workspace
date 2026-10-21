@@ -11,7 +11,7 @@ return [
     'nav' => [
         'links' => [
             ['label' => 'Pricing', 'href' => '/product-template#pricing'],
-            ['label' => 'Documentation', 'href' => '/product-docs'],
+            ['label' => 'Modules', 'href' => '/modules'],
             ['label' => 'Enterprise', 'href' => '/product-enterprise'],
         ],
         'cta_secondary' => ['label' => 'Sign in', 'href' => '/login'],
@@ -104,7 +104,7 @@ return [
         'columns' => [
             'Product' => [
                 ['label' => 'Pricing', 'href' => '/product-template#pricing'],
-                ['label' => 'Documentation', 'href' => '/product-docs'],
+                ['label' => 'Modules', 'href' => '/modules'],
                 ['label' => 'Enterprise', 'href' => '/product-enterprise'],
             ],
             'Company' => [

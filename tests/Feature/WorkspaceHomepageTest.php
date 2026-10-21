@@ -47,6 +47,7 @@ final class WorkspaceHomepageTest extends TestCase
         $router->get('/register', fn (): string => '')->name('register');
         $router->get('/product-template', fn (): string => '')->name('product.template');
         $router->get('/product-enterprise', fn (): string => '')->name('product.enterprise');
+        $router->get('/modules/{category?}', fn (): string => '')->name('product.modules');
         $router->getRoutes()->refreshNameLookups();
         $this->app->instance('router', $router);
         $this->app->instance('url', new UrlGenerator($router->getRoutes(), Request::create('https://udworkspace.com')));
