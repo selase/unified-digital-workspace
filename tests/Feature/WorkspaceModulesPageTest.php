@@ -65,6 +65,8 @@ final class WorkspaceModulesPageTest extends TestCase
 
     protected function tearDown(): void
     {
+        Illuminate\View\Component::flushCache();
+        Illuminate\View\Component::forgetFactory();
         (new Filesystem)->deleteDirectory($this->compiledPath);
         Facade::clearResolvedInstances();
         Facade::setFacadeApplication(null);
