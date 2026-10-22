@@ -3,7 +3,7 @@
     "type": "module",
     "scripts": {
         "dev": "vite",
-        "build": "vite build",
+        "build": "php -d memory_limit=256M scripts/prebuilt-assets.php --invalidate && vite build && php -d memory_limit=256M scripts/prebuilt-assets.php --write",
         "preview": "vite preview",
         "lint": "eslint .",
         "format": "prettier --write ."

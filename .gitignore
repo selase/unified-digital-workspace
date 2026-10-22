@@ -30,3 +30,6 @@ yarn-error.log
 
 # Soloterm dev process config (personal)
 /solo.yml
+
+# Forge-generated Composer credentials
+/auth.json

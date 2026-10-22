@@ -1,0 +1,159 @@
+<?php
+
+declare(strict_types=1);
+
+use Symfony\Component\Filesystem\Filesystem;
+use Symfony\Component\Process\Process;
+
+beforeEach(function (): void {
+    $this->assetRoot = sys_get_temp_dir().'/prebuilt-assets-'.bin2hex(random_bytes(8));
+    mkdir($this->assetRoot.'/public/build/assets', 0777, true);
+    mkdir($this->assetRoot.'/resources', 0777, true);
+    file_put_contents($this->assetRoot.'/resources/app.js', 'source');
+    file_put_contents($this->assetRoot.'/package.json', '{}');
+    file_put_contents($this->assetRoot.'/.gitignore', '/vendor/');
+    mkdir($this->assetRoot.'/vendor/laravel/framework/src/Illuminate/Pagination/resources/views', 0777, true);
+    file_put_contents($this->assetRoot.'/vendor/laravel/framework/src/Illuminate/Pagination/resources/views/tailwind.blade.php', '<nav>pagination</nav>');
+    file_put_contents($this->assetRoot.'/public/build/assets/app.js', 'compiled');
+    file_put_contents($this->assetRoot.'/public/build/manifest.json', json_encode([
+        'resources/app.js' => ['file' => 'assets/app.js', 'isEntry' => true],
+    ], JSON_THROW_ON_ERROR));
+    (new Process(['git', 'init', '-q', $this->assetRoot]))->mustRun();
+    (new Process(['git', 'add', '.'], $this->assetRoot))->mustRun();
+    $this->assets = function (string ...$arguments): Process {
+        $process = new Process([PHP_BINARY, '-d', 'memory_limit=32M', __DIR__.'/../../scripts/prebuilt-assets.php', ...$arguments], $this->assetRoot);
+        $process->run();
+
+        return $process;
+    };
+});
+
+afterEach(function (): void {
+    (new Filesystem)->remove($this->assetRoot);
+});
+
+it('generates deterministic metadata and validates without application dependencies', function (): void {
+    expect(($this->assets)('--write')->getExitCode())->toBe(0);
+    $metadata = file_get_contents($this->assetRoot.'/public/build/build-metadata.json');
+    expect(($this->assets)()->getExitCode())->toBe(0);
+    expect(($this->assets)('--write')->getExitCode())->toBe(0);
+    expect(file_get_contents($this->assetRoot.'/public/build/build-metadata.json'))->toBe($metadata);
+});
+
+it('rejects stale missing or tampered build inputs', function (string $mutation): void {
+    expect(($this->assets)('--write')->getExitCode())->toBe(0);
+    $root = $this->assetRoot;
+    match ($mutation) {
+        'source' => file_put_contents($root.'/resources/app.js', 'changed'),
+        'new source' => file_put_contents($root.'/resources/new.js', 'new'),
+        'deleted source' => unlink($root.'/resources/app.js'),
+        'config' => file_put_contents($root.'/package.json', '{"changed":true}'),
+        'asset' => file_put_contents($root.'/public/build/assets/app.js', 'tampered'),
+        'missing asset' => unlink($root.'/public/build/assets/app.js'),
+        'manifest' => file_put_contents($root.'/public/build/manifest.json', '{}'),
+        'missing manifest' => unlink($root.'/public/build/manifest.json'),
+        'metadata' => file_put_contents($root.'/public/build/build-metadata.json', '{}'),
+        'missing metadata' => unlink($root.'/public/build/build-metadata.json'),
+        'malformed metadata' => file_put_contents($root.'/public/build/build-metadata.json', '{'),
+        'metadata traversal' => (function () use ($root): void {
+            $path = $root.'/public/build/build-metadata.json';
+            $data = json_decode(file_get_contents($path), true, 512, JSON_THROW_ON_ERROR);
+            $data['files']['../package.json'] = hash_file('sha256', $root.'/package.json');
+            file_put_contents($path, json_encode($data, JSON_THROW_ON_ERROR));
+        })(),
+        'extra asset' => file_put_contents($root.'/public/build/assets/extra.js', 'extra'),
+        'symlink' => (function () use ($root): void {
+            unlink($root.'/public/build/assets/app.js');
+            symlink($root.'/resources/app.js', $root.'/public/build/assets/app.js');
+        })(),
+    };
+    expect(($this->assets)()->getExitCode())->toBe(1);
+})->with(['source', 'new source', 'deleted source', 'config', 'asset', 'missing asset', 'manifest', 'missing manifest', 'metadata', 'missing metadata', 'malformed metadata', 'metadata traversal', 'extra asset', 'symlink']);
+
+it('refuses to certify unsafe or unresolved manifest references', function (array $entry): void {
+    file_put_contents($this->assetRoot.'/public/build/manifest.json', json_encode(['entry' => $entry], JSON_THROW_ON_ERROR));
+    expect(($this->assets)('--write')->getExitCode())->toBe(1);
+    expect(is_file($this->assetRoot.'/public/build/build-metadata.json'))->toBeFalse();
+})->with([
+    'traversal' => [['file' => '../package.json']],
+    'absolute' => [['file' => '/etc/passwd']],
+    'missing css' => [['file' => 'assets/app.js', 'css' => ['assets/missing.css']]],
+    'missing import' => [['file' => 'assets/app.js', 'imports' => ['missing']]],
+    'missing dynamic import' => [['file' => 'assets/app.js', 'dynamicImports' => ['missing']]],
+    'missing asset reference' => [['file' => 'assets/app.js', 'assets' => ['missing.svg']]],
+]);
+
+it('invalidates previous certification before starting another build', function (): void {
+    expect(($this->assets)('--write')->getExitCode())->toBe(0);
+    expect(($this->assets)('--invalidate')->getExitCode())->toBe(0);
+    expect(($this->assets)()->getExitCode())->toBe(1);
+});
+
+it('accepts Forge shared runtime directories after tracked placeholders disappear', function (string $runtime): void {
+    $directory = $this->assetRoot.'/'.$runtime;
+    mkdir($directory, 0777, true);
+    file_put_contents($directory.'/.gitignore', "*\n!.gitignore\n");
+    (new Process(['git', 'add', $runtime.'/.gitignore'], $this->assetRoot))->mustRun();
+    (new Process(['git', '-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.test', 'commit', '-qm', 'Fixture'], $this->assetRoot))->mustRun();
+    expect(($this->assets)('--write')->getExitCode())->toBe(0);
+
+    $shared = $this->assetRoot.'/../'.basename($this->assetRoot).'-shared';
+    mkdir($shared);
+    try {
+        (new Filesystem)->remove($directory);
+        symlink($shared, $directory);
+        file_put_contents($shared.'/runtime.php', '<?php return [];');
+        $status = (new Process(['git', 'status', '--porcelain'], $this->assetRoot))->mustRun()->getOutput();
+        expect($status)->toContain(' D '.$runtime.'/.gitignore');
+        expect($status)->toContain('?? '.$runtime);
+        expect(($this->assets)()->getExitCode())->toBe(0);
+        file_put_contents($shared.'/runtime.php', '<?php return [1];');
+        expect(($this->assets)()->getExitCode())->toBe(0);
+    } finally {
+        unlink($directory);
+        (new Filesystem)->remove($shared);
+    }
+})->with(['storage', 'bootstrap/cache']);
+
+it('continues detecting real sources adjacent to runtime exclusions', function (string $path): void {
+    mkdir(dirname($this->assetRoot.'/'.$path), 0777, true);
+    file_put_contents($this->assetRoot.'/'.$path, 'original');
+    expect(($this->assets)('--write')->getExitCode())->toBe(0);
+    file_put_contents($this->assetRoot.'/'.$path, 'changed');
+    expect(($this->assets)()->getExitCode())->toBe(1);
+})->with(['storage-source/input.js', 'bootstrap/cache-source/input.js', 'bootstrap/app.php', 'resources/views/page.blade.php']);
+
+it('rejects drift in ignored installed vendor pagination build inputs', function (string $mutation): void {
+    expect(($this->assets)('--write')->getExitCode())->toBe(0);
+    $directory = $this->assetRoot.'/vendor/laravel/framework/src/Illuminate/Pagination/resources/views';
+    match ($mutation) {
+        'changed' => file_put_contents($directory.'/tailwind.blade.php', '<nav>changed</nav>'),
+        'removed' => unlink($directory.'/tailwind.blade.php'),
+        'added' => file_put_contents($directory.'/simple.blade.php', '<nav>new</nav>'),
+        'symlinked' => (function () use ($directory): void {
+            unlink($directory.'/tailwind.blade.php');
+            symlink($this->assetRoot.'/resources/app.js', $directory.'/tailwind.blade.php');
+        })(),
+    };
+    expect(($this->assets)()->getExitCode())->toBe(1);
+})->with(['changed', 'removed', 'added', 'symlinked']);
+
+it('refuses certification without installed vendor pagination templates', function (): void {
+    (new Filesystem)->remove($this->assetRoot.'/vendor');
+    expect(($this->assets)('--write')->getExitCode())->toBe(1);
+});
+
+it('accepts Forge generated root Composer authentication without hashing credentials', function (): void {
+    expect(($this->assets)('--write')->getExitCode())->toBe(0);
+    file_put_contents($this->assetRoot.'/auth.json', '{"fixture":1}');
+    expect(($this->assets)()->getExitCode())->toBe(0);
+    file_put_contents($this->assetRoot.'/auth.json', '{"fixture":2}');
+    expect(($this->assets)()->getExitCode())->toBe(0);
+});
+
+it('continues hashing nested files named auth.json', function (): void {
+    file_put_contents($this->assetRoot.'/resources/auth.json', '{"source":1}');
+    expect(($this->assets)('--write')->getExitCode())->toBe(0);
+    file_put_contents($this->assetRoot.'/resources/auth.json', '{"source":2}');
+    expect(($this->assets)()->getExitCode())->toBe(1);
+});

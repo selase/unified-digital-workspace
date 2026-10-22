@@ -43,6 +43,9 @@ jobs:
     - name: Install Dependencies
       run: composer install -q --no-ansi --no-interaction --no-scripts --no-progress --prefer-dist
 
+    - name: Verify Committed Prebuilt Assets
+      run: php -d memory_limit=256M scripts/prebuilt-assets.php
+
     - name: Generate key
       run: php artisan key:generate
 
@@ -66,6 +69,9 @@ jobs:
 
     - name: Build Assets
       run: npm run build
+
+    - name: Verify Prebuilt Assets
+      run: php -d memory_limit=256M scripts/prebuilt-assets.php
 
     - name: Run JS Linting
       run: npm run lint
