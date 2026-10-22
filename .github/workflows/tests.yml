@@ -11,6 +11,10 @@ jobs:
     name: laravel-tests (PHP ${{ matrix.php }})
     runs-on: ubuntu-latest
 
+    env:
+      BACKUP_NOTIFICATION_EMAIL: backup-ci@example.test
+      MAIL_MAILER: array
+
     strategy:
       fail-fast: false
       matrix:
