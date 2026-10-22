@@ -13,14 +13,6 @@ final class SaveTaxRequest extends FormRequest
         return $this->user()?->can('access-superadmin-dashboard') ?? false;
     }
 
-    protected function prepareForValidation(): void
-    {
-        if ($this->has('country_code') && is_string($this->input('country_code'))) {
-            $country = mb_strtoupper(trim($this->input('country_code')));
-            $this->merge(['country_code' => $country === '' ? null : $country]);
-        }
-    }
-
     /** @return array<string, list<string>> */
     public function rules(): array
     {
@@ -46,5 +38,13 @@ final class SaveTaxRequest extends FormRequest
             'is_compound.boolean' => 'Choose whether the tax is compound.',
             'is_active.boolean' => 'Choose whether the tax rule is active.',
         ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        if ($this->has('country_code') && is_string($this->input('country_code'))) {
+            $country = mb_strtoupper(mb_trim($this->input('country_code')));
+            $this->merge(['country_code' => $country === '' ? null : $country]);
+        }
     }
 }

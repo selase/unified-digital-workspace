@@ -43,7 +43,7 @@ final class PrebuiltAssets
                 throw new RuntimeException('Symlinked metadata is forbidden.');
             }
             $json = json_encode($expected, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR)."\n";
-            if (file_put_contents($temporary, $json) !== strlen($json) || ! rename($temporary, $metadataPath)) {
+            if (file_put_contents($temporary, $json) !== mb_strlen($json) || ! rename($temporary, $metadataPath)) {
                 throw new RuntimeException('Cannot write build metadata.');
             }
         } elseif ($this->readJson($metadataPath) !== $expected) {
@@ -83,7 +83,7 @@ final class PrebuiltAssets
             throw new RuntimeException('Missing vendor pagination templates; install Composer dependencies before validating or building.');
         }
         foreach ($paginationFiles as $file) {
-            $paths[] = substr($file, strlen($this->root) + 1);
+            $paths[] = mb_substr($file, mb_strlen($this->root) + 1);
         }
         $paths = array_unique($paths);
         sort($paths, SORT_STRING);
@@ -115,7 +115,7 @@ final class PrebuiltAssets
             if ($file->isDir()) {
                 continue;
             }
-            $path = substr($file->getPathname(), strlen($directory) + 1);
+            $path = mb_substr($file->getPathname(), mb_strlen($directory) + 1);
             if ($path === self::METADATA) {
                 continue;
             }

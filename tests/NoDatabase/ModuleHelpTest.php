@@ -88,7 +88,7 @@ it('offers shared module home help for all seventeen homes only', function (): v
     }
     foreach (['tenant.pricing', 'cms-core.posts.show', 'help.modules', 'tenant.dashboard'] as $name) {
         $route->name($name);
-        expect(trim(Blade::render('<x-metronic.module-help />')))->toBe('');
+        expect(mb_trim(Blade::render('<x-metronic.module-help />')))->toBe('');
     }
 });
 
