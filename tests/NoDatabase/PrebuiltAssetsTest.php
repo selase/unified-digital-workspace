@@ -233,3 +233,59 @@ it('allows certification after a source deletion is committed', function (): voi
     expect(($this->assets)('--write')->getExitCode())->toBe(0);
     expect(($this->assets)()->getExitCode())->toBe(0);
 });
+
+it('reports exact source drift paths and counts without file contents', function (): void {
+    file_put_contents($this->assetRoot.'/resources/removed.js', 'original');
+    expect(($this->assets)('--write')->getExitCode())->toBe(0);
+    file_put_contents($this->assetRoot.'/resources/app.js', 'PRIVATE_CHANGED_CONTENT');
+    unlink($this->assetRoot.'/resources/removed.js');
+    file_put_contents($this->assetRoot.'/.env.default', 'PRIVATE_GENERATED_CONTENT');
+    $process = ($this->assets)();
+
+    expect($process->getExitCode())->toBe(1)
+        ->and($process->getErrorOutput())->toContain(
+            'source changed (1): ["resources/app.js"]',
+            'source missing (1): ["resources/removed.js"]',
+            'source added (1): [".env.default"]',
+        )->not->toContain('PRIVATE_CHANGED_CONTENT', 'PRIVATE_GENERATED_CONTENT');
+});
+
+it('writes only deterministic source path hashes and excludes private runtime inputs', function (): void {
+    file_put_contents($this->assetRoot.'/.gitignore', "/vendor/\n.env\n");
+    file_put_contents($this->assetRoot.'/.env', 'PRIVATE_ENVIRONMENT_CONTENT');
+    file_put_contents($this->assetRoot.'/auth.json', 'PRIVATE_AUTH_CONTENT');
+    mkdir($this->assetRoot.'/storage');
+    file_put_contents($this->assetRoot.'/storage/runtime', 'PRIVATE_RUNTIME_CONTENT');
+    expect(($this->assets)('--write')->getExitCode())->toBe(0);
+    $json = file_get_contents($this->assetRoot.'/public/build/build-metadata.json');
+    $metadata = json_decode($json, true, flags: JSON_THROW_ON_ERROR);
+
+    expect($metadata['version'])->toBe(2)
+        ->and($metadata['source_files']['resources/app.js'])->toBe(hash('sha256', 'source'))
+        ->and($metadata['source_files'])->not->toHaveKeys(['.env', 'auth.json', 'storage/runtime'])
+        ->and($json)->not->toContain('PRIVATE_ENVIRONMENT_CONTENT', 'PRIVATE_AUTH_CONTENT', 'PRIVATE_RUNTIME_CONTENT');
+});
+
+it('keeps version one certifications strict and usable without per path diagnostics', function (): void {
+    expect(($this->assets)('--write')->getExitCode())->toBe(0);
+    $path = $this->assetRoot.'/public/build/build-metadata.json';
+    $metadata = json_decode(file_get_contents($path), true, flags: JSON_THROW_ON_ERROR);
+    $metadata['version'] = 1;
+    unset($metadata['source_files']);
+    file_put_contents($path, json_encode($metadata, JSON_THROW_ON_ERROR));
+    expect(($this->assets)()->getExitCode())->toBe(0);
+    file_put_contents($this->assetRoot.'/resources/app.js', 'changed');
+    $process = ($this->assets)();
+    expect($process->getExitCode())->toBe(1)
+        ->and($process->getErrorOutput())->toContain('version 1 metadata has no per-input hashes');
+});
+
+it('bounds diagnostic path listings while preserving full mismatch counts', function (): void {
+    expect(($this->assets)('--write')->getExitCode())->toBe(0);
+    for ($i = 0; $i < 70; $i++) {
+        file_put_contents($this->assetRoot.'/resources/added-'.$i.'.js', 'new');
+    }
+    $process = ($this->assets)();
+    expect($process->getExitCode())->toBe(1)
+        ->and($process->getErrorOutput())->toContain('source added (70):', '20 additional paths omitted');
+});
