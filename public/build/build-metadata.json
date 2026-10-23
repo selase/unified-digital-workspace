@@ -1,6 +1,6 @@
 {
     "version": 2,
-    "source_sha256": "fc78392eb5a97383a2d85023a9bb092c450101a1e6c60d073c58b3238a857b4a",
+    "source_sha256": "479f82d59c19e3e64c382a961cd433a1c8531f1b3698d3fb9844e19017a85960",
     "source_files": {
         ".agent/rules/path-to-php.md": "c559a7b17fe39107f8e1a69a9b93fe720c8d11b947d9decaf6541ed429714359",
         ".agent/rules/testing.md": "8289cda546c31080a26018179a337bafa1f65c0967dd23d2d1561d6c9b0a9c1f",
@@ -6358,7 +6358,7 @@
         "routes/public.php": "ac4d34a783169eeb93a7e9c934222890390ed7407f6a1d10556d335f44b1ae20",
         "routes/subdomain.php": "af279e5fc4f9b2993b9c7b7d1ba88144708dae14914270696d6b02f95d44f258",
         "routes/web.php": "2d21fd98da8299d8c0d473fb3a84b3795d68038b3bef0537c3dd58041187dafc",
-        "scripts/prebuilt-assets.php": "23ed572730be08a8ecbec422ddcc115822136f36d9d4d35b76f8f02a4a5b15ec",
+        "scripts/prebuilt-assets.php": "c660aa84efc93e6976fdafd87042d035f189cd1e66d99f01cd33da2ab7615db0",
         "stubs/action.stub": "53d591fec9c6b5b897cf0509afce5ea6bd5f121b858ff69b6684530f8680caf7",
         "stubs/cast.inbound.stub": "6909f8c50de18b72266a0d565547123e500d372a88f822a5a8ec390789eaed36",
         "stubs/cast.stub": "cd1a7778d0e9d1e2b3d2544c2c9f65341c068523ee9f9d81c91a6b4e79aa2871",
@@ -6614,7 +6614,7 @@
         "tests/NoDatabase/PaymentCheckoutClientTest.php": "b145fcbd5dde5b37b3c46eb08cbe1220d3627bd165ffe7b7db58aeb3e50f1288",
         "tests/NoDatabase/PlatformBillingRoutingTest.php": "07d39b89bf39692cf2a3df83b8a8a5b9b1312849a4eee2a8e4b60d44141b235d",
         "tests/NoDatabase/PostgresCloudConfigurationTest.php": "4b7ced48f7974cb9d0c6897c7a05d360e23f0f391b33bd10f5490710ce31b877",
-        "tests/NoDatabase/PrebuiltAssetsTest.php": "275284d7156638f97366915b2854f8191f16d5f86f6fa6ae41af0dc2a9f78ff9",
+        "tests/NoDatabase/PrebuiltAssetsTest.php": "2b3eb58dd68d01b69ad947a0a4d25d24a538676c5f0b0d1034185b6fa7e33ae4",
         "tests/NoDatabase/SharedCacheQueueTest.php": "2f3c924139acc6447643d41724948e0fb6ffeca6c4ea2d02f821461808351711",
         "tests/NoDatabase/StripeOneTimeCheckoutTest.php": "ab2a04c75540da394b677314dbb50952d7f493889629fd124ec030a7d22927ae",
         "tests/NoDatabase/TenantAdminRedirectTest.php": "c1f48bfb14b5089def8c0e69fe7914b246ed34fa3f0f13ffeff0a76a93fad29d",

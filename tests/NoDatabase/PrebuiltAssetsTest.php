@@ -289,3 +289,44 @@ it('bounds diagnostic path listings while preserving full mismatch counts', func
     expect($process->getExitCode())->toBe(1)
         ->and($process->getErrorOutput())->toContain('source added (70):', '20 additional paths omitted');
 });
+
+it('accepts only the two untracked Cloud build files added after certification', function (): void {
+    expect(($this->assets)('--write')->getExitCode())->toBe(0);
+    mkdir($this->assetRoot.'/.lc-build');
+    file_put_contents($this->assetRoot.'/.lc-build/build-command.sh', 'cloud generated command');
+    file_put_contents($this->assetRoot.'/.npmrc', 'cloud generated npm configuration');
+
+    expect(($this->assets)()->getExitCode())->toBe(0);
+});
+
+it('still protects Cloud file names tracked in either HEAD or the current index', function (string $path, bool $headOnly, string $mutation): void {
+    if (! is_dir(dirname($this->assetRoot.'/'.$path))) {
+        mkdir(dirname($this->assetRoot.'/'.$path), 0777, true);
+    }
+    file_put_contents($this->assetRoot.'/'.$path, 'tracked original');
+    (new Process(['git', 'add', '--', $path], $this->assetRoot))->mustRun();
+    if ($headOnly) {
+        (new Process(['git', '-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.test', 'commit', '-qm', 'Track protected input'], $this->assetRoot))->mustRun();
+    }
+    expect(($this->assets)('--write')->getExitCode())->toBe(0);
+    if ($headOnly) {
+        (new Process(['git', 'rm', '--cached', '--', $path], $this->assetRoot))->mustRun();
+        expect(($this->assets)()->getExitCode())->toBe(0);
+    }
+    match ($mutation) {
+        'changed' => file_put_contents($this->assetRoot.'/'.$path, 'tampered'),
+        'missing' => unlink($this->assetRoot.'/'.$path),
+    };
+
+    expect(($this->assets)()->getExitCode())->toBe(1);
+})->with(['.lc-build/build-command.sh', '.npmrc'])->with([false, true])->with(['changed', 'missing']);
+
+it('rejects unrelated files inside the Cloud build directory', function (): void {
+    expect(($this->assets)('--write')->getExitCode())->toBe(0);
+    mkdir($this->assetRoot.'/.lc-build');
+    file_put_contents($this->assetRoot.'/.lc-build/unexpected.sh', 'not exempt');
+    $process = ($this->assets)();
+
+    expect($process->getExitCode())->toBe(1)
+        ->and($process->getErrorOutput())->toContain('source added (1): [".lc-build/unexpected.sh"]');
+});

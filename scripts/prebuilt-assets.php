@@ -72,7 +72,17 @@ final class PrebuiltAssets
             $arguments[] = '--with-tree='.$head;
         }
         $output = $this->gitOutput($arguments);
-        $paths = array_unique(array_filter(explode("\0", $output), static function (string $path): bool {
+        $cloudFiles = ['.lc-build/build-command.sh', '.npmrc'];
+        $trackedArguments = ['ls-files', '-z', '--cached'];
+        if ($head !== '') {
+            $trackedArguments[] = '--with-tree='.$head;
+        }
+        $trackedArguments = array_merge($trackedArguments, ['--'], $cloudFiles);
+        $trackedCloudFiles = array_fill_keys(explode("\0", $this->gitOutput($trackedArguments)), true);
+        $paths = array_unique(array_filter(explode("\0", $output), static function (string $path) use ($cloudFiles, $trackedCloudFiles): bool {
+            if (in_array($path, $cloudFiles, true) && ! isset($trackedCloudFiles[$path])) {
+                return false;
+            }
             if ($path === '' || $path === 'auth.json') {
                 return false;
             }
