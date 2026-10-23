@@ -7,10 +7,11 @@ namespace App\Services\Tenancy;
 use App\Models\Tenant;
 use App\Services\ModuleManager;
 use Exception;
+use Illuminate\Database\ConfigurationUrlParser;
+use Illuminate\Database\Connectors\PostgresConnector;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use PDO;
 use PDOException;
 use RuntimeException;
 
@@ -55,27 +56,14 @@ final class TenantProvisioner
 
         try {
             if ($tenant->db_driver === 'pgsql') {
-                // PostgreSQL forbids CREATE DATABASE inside a transaction block, and
-                // Laravel's connection manager + test framework's RefreshDatabase both
-                // wrap operations in transactions. Open a dedicated PDO bound to the
-                // landlord credentials so the DDL runs outside whatever transaction
-                // the caller may be in. Preserve sslmode from the landlord config so
-                // this still works against managed postgres that enforces TLS.
-                $landlord = config('database.connections.landlord');
-                $dsn = sprintf(
-                    'pgsql:host=%s;port=%s;dbname=%s;sslmode=%s',
-                    $landlord['host'] ?? '127.0.0.1',
-                    $landlord['port'] ?? 5432,
-                    $landlord['database'],
-                    $landlord['sslmode'] ?? 'prefer'
-                );
+                // CREATE DATABASE needs a fresh connection outside the caller's transaction.
+                $landlord = (new ConfigurationUrlParser)->parseConfiguration(config('database.connections.landlord'));
 
                 try {
-                    $rawPdo = new PDO($dsn, $landlord['username'] ?? null, $landlord['password'] ?? null);
+                    $rawPdo = app(PostgresConnector::class)->connect($landlord);
                 } catch (PDOException $e) {
                     throw new RuntimeException("Failed to open landlord PDO for CREATE DATABASE ({$dbName}): ".$e->getMessage(), 0, $e);
                 }
-                $rawPdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
                 $check = $rawPdo->prepare('SELECT 1 FROM pg_database WHERE datname = ?');
                 $check->execute([$dbName]);

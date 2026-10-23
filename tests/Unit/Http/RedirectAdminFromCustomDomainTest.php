@@ -48,7 +48,7 @@ function makeTenant(string $domain, string $status = 'active'): Tenant
 }
 
 beforeEach(function (): void {
-    config(['session.domain' => '.udworkspace.com']);
+    config(['session.domain' => '.udworkspace.com', 'app.tenant_domain' => 'udworkspace.com']);
 });
 
 test('admin route on a verified custom domain redirects to tenant subdomain', function (): void {

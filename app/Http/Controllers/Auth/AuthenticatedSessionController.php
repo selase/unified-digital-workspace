@@ -29,16 +29,15 @@ final class AuthenticatedSessionController extends Controller
 
     /**
      * Handle an incoming authentication request.
-     *
-     * @return RedirectResponse
      */
-    public function store(LoginRequest $request)
+    public function store(LoginRequest $request): RedirectResponse
     {
         $request->authenticate();
 
         $request->session()->regenerate();
 
-        $tenantId = session('active_tenant_id');
+        $resolvedTenant = app(\App\Services\Tenancy\TenantResolver::class)->resolve($request);
+        $tenantId = $resolvedTenant !== null ? $resolvedTenant->id : session('active_tenant_id');
 
         // Capture user before checking roles to avoid unnecessary queries
         $user = $request->user();
@@ -55,9 +54,9 @@ final class AuthenticatedSessionController extends Controller
         $subdomain = $tenant?->slug;
 
         if ($tenant && $subdomain !== null) {
-            $tenantDomain = str_replace('://', '://'.$subdomain.'.', config('app.url'));
+            $request->session()->put('active_tenant_id', $tenant->id);
 
-            return redirect()->intended($tenantDomain.RouteServiceProvider::HOME);
+            return app(\App\Services\Tenancy\TenantAdminRedirect::class)->toDashboard($request, $tenant);
         }
 
         return redirect()->intended(RouteServiceProvider::HOME);

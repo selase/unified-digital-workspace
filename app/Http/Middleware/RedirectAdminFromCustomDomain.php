@@ -40,7 +40,7 @@ final class RedirectAdminFromCustomDomain
             return $next($request);
         }
 
-        $adminHost = $tenant->slug.'.'.mb_ltrim((string) config('session.domain'), '.');
+        $adminHost = $tenant->slug.'.'.mb_ltrim((string) config('app.tenant_domain'), '.');
         $target = $request->getScheme().'://'.$adminHost.$request->getRequestUri();
 
         return redirect()->away($target);

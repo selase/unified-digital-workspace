@@ -38,6 +38,9 @@ final class TenantSwitchController extends Controller
             throw new HttpException(403, 'User does not belong to this tenant');
         }
 
+        $redirects = app(\App\Services\Tenancy\TenantAdminRedirect::class);
+        $redirects->assertSwitchOrigin($request, $tenant);
+
         $fromTenantId = Session::get('active_tenant_id');
         Session::put('active_tenant_id', $tenant->id);
 
@@ -46,7 +49,7 @@ final class TenantSwitchController extends Controller
         return response()->json([
             'message' => 'Tenant switched successfully',
             'tenant' => $tenant,
-            'redirect_url' => $tenant->url(\App\Providers\RouteServiceProvider::HOME),
+            'redirect_url' => $redirects->toDashboard($request, $tenant)->getTargetUrl(),
         ]);
     }
 

@@ -57,3 +57,27 @@ test('it prevents switching to non member tenant', function () {
         ->assertStatus(403);
     expect(Session::get('active_tenant_id'))->toBeNull();
 });
+
+test('host only switches on the platform retain their origin and active tenant', function (): void {
+    useHostOnlyTenantRoutesForTest();
+    $user = User::factory()->create();
+    $tenant = Tenant::factory()->create(['isolation_mode' => 'shared']);
+    $tenant->users()->attach($user->id);
+
+    $this->actingAs($user)->postJson('https://preview.laravel.cloud/tenant/switch', ['tenant_id' => $tenant->id])
+        ->assertOk()->assertJsonPath('redirect_url', 'https://preview.laravel.cloud/workspace/'.$tenant->slug.'/dashboard')
+        ->assertSessionHas('active_tenant_id', $tenant->id);
+});
+
+test('host only switches cannot silently override a different tenant hostname', function (): void {
+    useHostOnlyTenantRoutesForTest();
+    $user = User::factory()->create();
+    $old = Tenant::factory()->create(['slug' => 'old', 'isolation_mode' => 'shared']);
+    $target = Tenant::factory()->create(['slug' => 'next', 'isolation_mode' => 'shared']);
+    $old->users()->attach($user->id);
+    $target->users()->attach($user->id);
+
+    $this->actingAs($user)->withSession(['active_tenant_id' => $old->id])
+        ->postJson('https://old.workspace.example.test/tenant/switch', ['tenant_id' => $target->id])
+        ->assertStatus(409)->assertSessionHas('active_tenant_id', $old->id);
+});

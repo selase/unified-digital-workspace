@@ -688,3 +688,16 @@ test('unassigned members can use signed Paystack recovery without a paid access 
     $this->postJson($links->signedUrl($invoice, 'billing.payment.check', $parameters))->assertOk()->assertJson(['status' => 'pending']);
     expect(TenantBillingMonthlyUser::query()->where('tenant_id', $this->billingTenant->id)->count())->toBe(0);
 });
+
+test('host only operational dashboards remain on the authenticated origin', function (): void {
+    useHostOnlyTenantRoutesForTest();
+    ($this->adopt)();
+    $this->access->assign($this->billingTenant, $this->member, 'operational');
+    $response = $this->actingAs($this->member)->get('https://preview.laravel.cloud/dashboard');
+    $target = $response->headers->get('Location');
+
+    $response->assertRedirect();
+    expect(parse_url($target, PHP_URL_HOST))->toBe('preview.laravel.cloud')
+        ->and(parse_url($target, PHP_URL_PATH))->toBe('/workspace/'.$this->billingTenant->slug.'/dashboard');
+    $this->get($target)->assertOk()->assertViewIs('tenant.dashboard');
+});

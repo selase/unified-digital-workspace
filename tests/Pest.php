@@ -142,17 +142,8 @@ function refreshTenantDatabases(): void
  */
 function dropTenantDatabase(string $name): void
 {
-    $landlord = config('database.connections.landlord');
-    // Preserve sslmode so this still works when the landlord requires TLS.
-    $dsn = sprintf(
-        'pgsql:host=%s;port=%s;dbname=%s;sslmode=%s',
-        $landlord['host'] ?? '127.0.0.1',
-        $landlord['port'] ?? 5432,
-        $landlord['database'],
-        $landlord['sslmode'] ?? 'prefer'
-    );
-    $pdo = new PDO($dsn, $landlord['username'] ?? null, $landlord['password'] ?? null);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    $landlord = (new Illuminate\Database\ConfigurationUrlParser)->parseConfiguration(config('database.connections.landlord'));
+    $pdo = app(Illuminate\Database\Connectors\PostgresConnector::class)->connect($landlord);
     // Purge Laravel's tracked tenant connection so its PDO releases the DB
     // before we DROP, then use FORCE (pg13+) to evict any other holders.
     DB::purge('tenant');
@@ -233,4 +224,19 @@ function createIncidentApiContext(): array
     app(App\Services\ModuleManager::class)->enableForTenant('incident-management', $tenant);
 
     return [$user, $tenant];
+}
+
+/** Rebuild tenant routes as a fresh host-only deployment, excluding old domain routes. */
+function useHostOnlyTenantRoutesForTest(string $baseDomain = 'workspace.example.test'): void
+{
+    config(['session.domain' => null, 'app.tenant_domain' => $baseDomain]);
+    $routes = new Illuminate\Routing\RouteCollection;
+    foreach (app('router')->getRoutes() as $route) {
+        if (! str_contains((string) $route->getDomain(), '{subdomain}')) {
+            $routes->add($route);
+        }
+    }
+    app('router')->setRoutes($routes);
+    app('url')->setRoutes($routes);
+    app()->register(App\Providers\RouteServiceProvider::class, true);
 }

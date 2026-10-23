@@ -52,9 +52,13 @@ final class TenantResolver
 
         // 2. Subdomain
         $subdomain = $request->route('subdomain');
+        $baseDomain = mb_ltrim((string) config('app.tenant_domain'), '.');
+        if ($subdomain && ! config('session.domain') && $baseDomain !== ''
+            && str_ends_with($host, '.'.$baseDomain) && $host !== $subdomain.'.'.$baseDomain) {
+            throw new HttpException(404, 'Tenant host and workspace path do not match.');
+        }
 
         if (! $subdomain) {
-            $baseDomain = mb_ltrim((string) config('session.domain'), '.');
             if ($baseDomain && str_ends_with($host, '.'.$baseDomain)) {
                 $subdomain = str_replace('.'.$baseDomain, '', $host);
             }

@@ -53,18 +53,13 @@ final class PrebuiltAssets
 
     private function sourceDigest(): string
     {
-        $pipes = [];
-        $process = proc_open(['git', 'ls-files', '-z', '--cached', '--others', '--exclude-standard'], [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes, $this->root);
-        if (! is_resource($process)) {
-            throw new RuntimeException('Git is required to enumerate build inputs.');
+        $head = mb_trim($this->gitOutput(['rev-parse', '--verify', '--quiet', 'HEAD'], true));
+        $arguments = ['ls-files', '-z', '--cached', '--others', '--exclude-standard'];
+        if ($head !== '') {
+            // Retain committed paths when a deployment rewrites only the index.
+            $arguments[] = '--with-tree='.$head;
         }
-        $output = stream_get_contents($pipes[1]);
-        $error = stream_get_contents($pipes[2]);
-        fclose($pipes[1]);
-        fclose($pipes[2]);
-        if (proc_close($process) !== 0 || $output === false || $error === false) {
-            throw new RuntimeException('Cannot enumerate build inputs with Git.');
-        }
+        $output = $this->gitOutput($arguments);
         $paths = array_unique(array_filter(explode("\0", $output), static function (string $path): bool {
             if ($path === '' || $path === 'auth.json') {
                 return false;
@@ -97,6 +92,26 @@ final class PrebuiltAssets
         }
 
         return hash_final($hash);
+    }
+
+    /** @param list<string> $arguments */
+    private function gitOutput(array $arguments, bool $allowUnbornHead = false): string
+    {
+        $pipes = [];
+        $process = proc_open(['git', ...$arguments], [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes, $this->root);
+        if (! is_resource($process)) {
+            throw new RuntimeException('Git is required to enumerate build inputs.');
+        }
+        $output = stream_get_contents($pipes[1]);
+        $error = stream_get_contents($pipes[2]);
+        fclose($pipes[1]);
+        fclose($pipes[2]);
+        $status = proc_close($process);
+        if ($output === false || $error === false || ($status !== 0 && ! ($allowUnbornHead && $status === 1 && $output === '' && $error === ''))) {
+            throw new RuntimeException('Cannot enumerate build inputs with Git.');
+        }
+
+        return $output;
     }
 
     /** @return array<string, string> */

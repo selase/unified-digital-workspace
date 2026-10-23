@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 
 define('LARAVEL_START', microtime(true));
 
+require __DIR__.'/../bootstrap/cloud-verification.php';
+
 /*
 |--------------------------------------------------------------------------
 | Check If The Application Is Under Maintenance

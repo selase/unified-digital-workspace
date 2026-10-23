@@ -157,7 +157,7 @@ return [
     |
     */
 
-    'domain' => '.'.env('SESSION_DOMAIN'),
+    'domain' => ($domain = env('SESSION_DOMAIN')) ? '.'.mb_ltrim((string) $domain, '.') : null,
 
     /*
     |--------------------------------------------------------------------------

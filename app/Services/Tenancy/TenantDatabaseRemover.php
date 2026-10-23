@@ -6,6 +6,8 @@ namespace App\Services\Tenancy;
 
 use App\Models\Tenant;
 use DomainException;
+use Illuminate\Database\ConfigurationUrlParser;
+use Illuminate\Database\Connectors\PostgresConnector;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use PDO;
@@ -62,7 +64,7 @@ final class TenantDatabaseRemover
     private function resolveDatabaseName(Tenant $tenant): string
     {
         $database = (string) ($tenant->meta['database'] ?? '');
-        $landlordDatabase = (string) Config::get('database.connections.landlord.database');
+        $landlordDatabase = (string) (new ConfigurationUrlParser)->parseConfiguration(Config::get('database.connections.landlord'))['database'];
 
         if ($database === '' || $database === $landlordDatabase || ! str_starts_with($database, 'tenant_')) {
             throw new DomainException(
@@ -96,7 +98,7 @@ final class TenantDatabaseRemover
         }
 
         $file = $directory.'/'.$database.'-'.now()->format('Ymd-His').'.dump';
-        $landlord = Config::get('database.connections.landlord');
+        $landlord = (new ConfigurationUrlParser)->parseConfiguration(Config::get('database.connections.landlord'));
 
         $process = new Process(
             [
@@ -110,7 +112,13 @@ final class TenantDatabaseRemover
                 $database,
             ],
             null,
-            ['PGPASSWORD' => (string) ($landlord['password'] ?? '')],
+            array_filter([
+                'PGPASSWORD' => (string) ($landlord['password'] ?? ''),
+                'PGSSLMODE' => $landlord['sslmode'] ?? null,
+                'PGSSLROOTCERT' => $landlord['sslrootcert'] ?? null,
+                'PGSSLCERT' => $landlord['sslcert'] ?? null,
+                'PGSSLKEY' => $landlord['sslkey'] ?? null,
+            ], static fn (mixed $value): bool => $value !== null),
             null,
             300
         );
@@ -148,21 +156,8 @@ final class TenantDatabaseRemover
 
     private function landlordPdo(): PDO
     {
-        $landlord = Config::get('database.connections.landlord');
+        $landlord = (new ConfigurationUrlParser)->parseConfiguration(Config::get('database.connections.landlord'));
 
-        $pdo = new PDO(
-            sprintf(
-                'pgsql:host=%s;port=%s;dbname=%s;sslmode=%s',
-                $landlord['host'] ?? '127.0.0.1',
-                $landlord['port'] ?? 5432,
-                $landlord['database'],
-                $landlord['sslmode'] ?? 'prefer'
-            ),
-            $landlord['username'] ?? null,
-            $landlord['password'] ?? null
-        );
-        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-
-        return $pdo;
+        return app(PostgresConnector::class)->connect($landlord);
     }
 }

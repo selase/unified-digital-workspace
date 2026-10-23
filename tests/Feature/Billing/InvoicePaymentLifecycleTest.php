@@ -114,6 +114,23 @@ it('signs the canonical application host even when the active request is a tenan
     }
 });
 
+it('keeps billing links and callbacks canonical after tenant route generation is cached', function (): void {
+    $this->freezeTime();
+    config(['app.url' => 'https://billing.example.test']);
+    URL::forceRootUrl('https://tenant.example.test');
+    try {
+        URL::route('billing.payment.show', ['invoice' => $this->invoice->id]);
+        $links = app(InvoicePaymentLinkService::class);
+        $signed = $links->url($this->invoice);
+        expect(parse_url($signed, PHP_URL_HOST))->toBe('billing.example.test')
+            ->and(parse_url($links->callbackUrl('paystack'), PHP_URL_HOST))->toBe('billing.example.test')
+            ->and(parse_url(URL::route('billing.payment.show', ['invoice' => $this->invoice->id]), PHP_URL_HOST))->toBe('tenant.example.test')
+            ->and(URL::hasValidSignature(Illuminate\Http\Request::create($signed)))->toBeTrue();
+    } finally {
+        URL::forceRootUrl(null);
+    }
+});
+
 it('allows a billing contact without an account to see a signed invoice', function (): void {
     $this->get(app(InvoicePaymentLinkService::class)->url($this->invoice))
         ->assertOk()->assertSee($this->invoice->number)->assertSee('Pay GHS 100.00')
@@ -252,6 +269,7 @@ it('does not dispatch receipt events or persist payment when the outer transacti
 });
 
 it('never opens another checkout for a paid invoice', function (): void {
+    $this->freezeTime();
     fulfillLifecycleInvoice($this->invoice);
     $links = app(InvoicePaymentLinkService::class);
     $this->post($links->signedUrl($this->invoice, 'billing.payment.pay'))->assertRedirect($links->url($this->invoice));
