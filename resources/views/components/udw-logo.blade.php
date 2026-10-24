@@ -33,3 +33,4 @@
     />
     <rect x="20" y="19" width="8" height="8" rx="2" fill="{{ $coreColor }}" />
 </svg>
+
