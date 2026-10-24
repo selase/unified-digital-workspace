@@ -28,7 +28,9 @@ final class SiteLifepartnersPlatformServiceProvider extends CmsSiteServiceProvid
     protected function bootModule(): void
     {
         $this->app['events']->listen(RequestHandled::class, function (RequestHandled $event): void {
-            if ($this->app->make(TenantContext::class)->getTenant()?->slug === $this->getTenantSlug()
+            $tenant = $this->app->make(TenantContext::class)->getTenant();
+            if ($tenant?->slug === $this->getTenantSlug()
+                && ! ($tenant->meta['launched'] ?? false)
                 && $event->request->routeIs('cms-core.website.*', 'cms-core.public.*')) {
                 $event->response->headers->set('X-Robots-Tag', 'noindex, nofollow');
             }

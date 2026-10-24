@@ -118,7 +118,16 @@ it('rejects dedicated connections and adopted customer agreements before import'
         $this->preview->update(['isolation_mode' => 'db_per_tenant']);
     }
     expect(fn () => app(LifepartnersPreviewImporter::class)->import($this->preview, $this->editor))
-        ->toThrow(RuntimeException::class, 'unbilled local shared');
+        ->toThrow(RuntimeException::class, 'unbilled shared Lifepartners tenant');
     $this->artisan('cms:lifepartners-preview', ['--execute' => true, '--editor' => $this->editor->email])->assertFailed();
     expect(Post::query()->count())->toBe(0)->and(Media::query()->count())->toBe(0);
 })->with([true, false]);
+
+it('imports into the unbilled launch tenant on the real domain and launch command rejects unknown editors', function (): void {
+    $this->preview->update(['meta' => ['migration_launch' => 'lifepartners', 'launched' => true], 'custom_domain' => 'lifepartnersplatform.org']);
+    $result = app(LifepartnersPreviewImporter::class)->import($this->preview, $this->editor);
+    expect($result['pages'])->toBe(6)->and($result['media'])->toBe(9);
+
+    $this->artisan('cms:lifepartners-launch', ['--execute' => true, '--editor' => ['nobody@example.test']])->assertFailed();
+    $this->artisan('cms:lifepartners-launch')->assertSuccessful();
+});

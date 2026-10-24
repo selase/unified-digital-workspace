@@ -1,4 +1,7 @@
 @php
+    $launched = (bool) (app(\App\Services\Tenancy\TenantContext::class)->getTenant()?->meta['launched'] ?? false);
+@endphp
+@php
     $menu = $theme->headerMenu();
     $menuItems = $menu?->items->whereNull('parent_id')->sortBy('sort_order') ?? collect();
     $resolveUrl = function (\App\Modules\CmsCore\Models\MenuItem $item) use ($cmsUrl): string {
@@ -17,7 +20,9 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    @unless ($launched)
     <meta name="robots" content="noindex, nofollow">
+    @endunless
     <title>@yield('title', $theme->siteName())</title>
     <link rel="icon" href="data:,">
     <link rel="stylesheet" href="/assets/sites/lifepartners/argon-dashboard.css">
@@ -25,9 +30,11 @@
 </head>
 <body class="lpp-body lpp-page-{{ $contentSlug }}">
     <a class="lpp-skip-link" href="#lpp-content">Skip to content</a>
+    @unless ($launched)
     <aside class="lpp-preview-banner" aria-label="Website preview">
         Preview — Life Partners Platform. This website is being reviewed before launch.
     </aside>
+    @endunless
     <header class="lpp-header">
         <div class="container lpp-header-inner">
             <a class="lpp-brand" href="{{ $cmsUrl->route('home') }}">

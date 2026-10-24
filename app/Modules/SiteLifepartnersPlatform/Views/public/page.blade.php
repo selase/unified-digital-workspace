@@ -5,7 +5,7 @@
 @section('content')
     <h1 class="lpp-visually-hidden">{{ $page->title }}</h1>
     {!! $page->body !!}
-    @if ($page->slug === 'contact')
+    @if ($page->slug === 'contact' && ! (bool) (app(\App\Services\Tenancy\TenantContext::class)->getTenant()?->meta['launched'] ?? false))
         <section class="container my-5 lpp-contact-details" aria-label="Preview contact placeholders">
             <h2>Contact details — placeholders</h2>
             <p>Preview only. These details will be replaced before launch.</p>

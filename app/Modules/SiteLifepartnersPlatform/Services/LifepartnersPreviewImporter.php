@@ -35,14 +35,17 @@ final class LifepartnersPreviewImporter
     /** @return array{pages: int, media: int, bytes: int} */
     public function import(Tenant $tenant, User $editor): array
     {
-        if (! app()->environment(['local', 'testing'])
-            || ($tenant->meta['migration_preview'] ?? null) !== 'lifepartners'
+        $isLaunch = ($tenant->meta['migration_launch'] ?? null) === 'lifepartners'
+            && $tenant->custom_domain === 'lifepartnersplatform.org';
+        $isLocalPreview = app()->environment(['local', 'testing'])
+            && ($tenant->meta['migration_preview'] ?? null) === 'lifepartners'
+            && preg_match('/\A[a-z0-9.-]+\.test\z/', (string) $tenant->custom_domain) === 1;
+        if (! ($isLaunch || $isLocalPreview)
             || $tenant->slug !== 'lifepartners-platform'
             || $tenant->isolation_mode !== 'shared'
-            || ! preg_match('/\A[a-z0-9.-]+\.test\z/', (string) $tenant->custom_domain)
             || TenantBillingAgreement::query()->where('tenant_id', $tenant->id)->exists()
             || ! $tenant->users()->whereKey($editor->id)->exists()) {
-            throw new RuntimeException('Import requires an unbilled local shared Lifepartners preview, .test host and tenant member.');
+            throw new RuntimeException('Import requires an unbilled shared Lifepartners tenant (local .test preview or its launch domain) and a tenant member.');
         }
 
         $directory = dirname(__DIR__).'/Database/Seeders';

@@ -112,7 +112,6 @@ it('limits response noindex headers to Lifepartners public CMS routes', function
     }
 });
 
-
 it('labels unverified source stories without replacing editable CMS content', function (): void {
     $html = view('site-lifepartners-platform::public.home', [
         'homepage' => new Post(['body' => '<section><h2 class="display-4">Success Stories</h2><blockquote>Unverified source quotation.</blockquote></section>']),
@@ -125,4 +124,26 @@ it('labels unverified source stories without replacing editable CMS content', fu
     ])->render();
     expect($empty)->toContain('This preview page is not available yet.')
         ->not->toContain('Source story awaiting verification');
+});
+
+it('drops preview artefacts and noindex once the tenant is launched', function (): void {
+    $launched = (new Tenant)->forceFill(['id' => 'synthetic-launched-tenant', 'slug' => 'lifepartners-platform', 'meta' => ['launched' => true]]);
+    app(TenantContext::class)->setTenant($launched);
+
+    $html = view('site-lifepartners-platform::public.page', [
+        'page' => new Post(['slug' => 'contact', 'title' => 'Contact us', 'body' => '<main><h2>Contact us</h2></main>']),
+        'theme' => $this->previewTheme,
+    ])->render();
+    expect($html)->not->toContain('Contact details', 'be confirmed', 'lpp-preview-banner', 'noindex');
+
+    $home = view('site-lifepartners-platform::public.home', [
+        'homepage' => new Post(['body' => '<h2>Success Stories</h2>']), 'theme' => $this->previewTheme,
+    ])->render();
+    expect($home)->not->toContain('awaiting verification');
+
+    $request = Request::create('/');
+    $request->setRouteResolver(fn () => (new RoutingRoute('GET', '/', []))->name('cms-core.website.home'));
+    $response = response('Synthetic');
+    Event::dispatch(new RequestHandled($request, $response));
+    expect($response->headers->has('X-Robots-Tag'))->toBeFalse();
 });
