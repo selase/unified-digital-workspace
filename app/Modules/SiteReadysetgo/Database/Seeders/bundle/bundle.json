@@ -1,0 +1,96 @@
+{
+  "version": 1,
+  "module_slug": "site-readysetgo",
+  "tenant": {
+    "slug": "readysetgo",
+    "name": "Ghana Sports Movement",
+    "domain": "readysetgoghana.com",
+    "country": "Ghana"
+  },
+  "settings": {
+    "site_name": "Ghana Sports Movement",
+    "site_tagline": "Making disciples for Christ in the world of sport and play",
+    "primary_color": "#1f7c89",
+    "secondary_color": "#570be0",
+    "footer_text": "© Ghana Sports Movement · c/o Bible Society of Ghana, Accra · sportsmovementgh@gmail.com · +233 54 367 4167"
+  },
+  "settings_media": {},
+  "assets": [
+    {
+      "key": "logo",
+      "file": "logo.png",
+      "sha256": "5db88e8c6778b5ed693b0ba2679b831942baf711ba42d01a3aed773ae7e45ed3",
+      "bytes": 175986,
+      "source": "logo.png",
+      "alt": "Ghana Sports Movement"
+    },
+    {
+      "key": "banner",
+      "file": "banner.jpg",
+      "sha256": "6c6bc1154b0490966997db2ae251514afe26db09492f930e9f6b366443fd5106",
+      "bytes": 548915,
+      "source": "more_than_gold_2024_bananer.jpg",
+      "alt": "More than Gold 2024"
+    },
+    {
+      "key": "proclaim",
+      "file": "proclaim.jpg",
+      "sha256": "ecf316099adbce166087fcce621936386a56935fcd4b94e810479bda05d6c999",
+      "bytes": 24058,
+      "source": "children_playing.jpg",
+      "alt": "Proclaim the Gospel"
+    },
+    {
+      "key": "disciples",
+      "file": "disciples.jpg",
+      "sha256": "70aba1ab0b554a42a535d8d43897156fa4cb75898c8c1ba7e792692caaa933b7",
+      "bytes": 24388,
+      "source": "make_disciples.jpg",
+      "alt": "Make Disciples"
+    },
+    {
+      "key": "bible",
+      "file": "bible.jpg",
+      "sha256": "aa297276975350c1c35b414a5f09f851c063ca62e48c5cfa7d1fda5d06f374ee",
+      "bytes": 14112,
+      "source": "obey_bible.jpg",
+      "alt": "Obey the Bible"
+    },
+    {
+      "key": "about-banner",
+      "file": "about-banner.jpg",
+      "sha256": "0ddb3e674ca8acc121de8ec0ecb3fd27805ea2dddc4a52ae09c4e15ac3fe6083",
+      "bytes": 32402,
+      "source": "readysetgologonorunner.jpg",
+      "alt": "Ready Set Go"
+    },
+    {
+      "key": "partner-bsg",
+      "file": "partner-bsg.jpg",
+      "sha256": "09fd503d61d976a99fa3e5220ad1648edcfeb51d017dad23d137806801a891b3",
+      "bytes": 10454,
+      "source": "bsg_logo.jpg",
+      "alt": "Bible Society of Ghana"
+    }
+  ],
+  "pages": [
+    {
+      "slug": "home",
+      "title": "Home",
+      "menu_label": "Home",
+      "body": "<p><img src=\"{{asset:banner}}\" alt=\"More than Gold 2024\"></p><div style=\"display:flex;flex-wrap:wrap;gap:1rem;justify-content:center;margin:2rem 0\"><figure style=\"max-width:320px\"><img src=\"{{asset:proclaim}}\" alt=\"Proclaim the Gospel\"><figcaption>Proclaim the Gospel</figcaption></figure><figure style=\"max-width:320px\"><img src=\"{{asset:disciples}}\" alt=\"Make Disciples\"><figcaption>Make Disciples</figcaption></figure><figure style=\"max-width:320px\"><img src=\"{{asset:bible}}\" alt=\"Obey the Bible\"><figcaption>Obey the Bible</figcaption></figure></div><h2>Who are we?</h2><p>We are a dynamic organization dedicated to harnessing the influence of sports for positive change. Through a range of programs and initiatives, our goal is to elevate individuals, encourage community involvement, and share the message of faith.</p><p><a href=\"/contactus\">Get in touch</a></p><h3>Our Partners</h3><p><img style=\"height:64px;width:auto;display:inline-block\" src=\"{{asset:partner-bsg}}\" alt=\"Bible Society of Ghana\"></p>"
+    },
+    {
+      "slug": "aboutus",
+      "title": "About us",
+      "menu_label": "About Us",
+      "body": "<p><img src=\"{{asset:about-banner}}\" alt=\"Ready Set Go\"></p><h2>Who We Are &amp; What We Do</h2><p>We are a dynamic organization dedicated to harnessing the influence of sports for positive change. Through a range of programs and initiatives, our goal is to elevate individuals, encourage community involvement, and share the message of faith.</p><p><strong>We Proclaim the Gospel:</strong> Communicate and share the message of salvation through sports ministry activities.</p><p><strong>We Make Disciples:</strong> Nurturing and ensuring individuals grow as committed followers of Christ.</p><p><strong>We Obey the Bible:</strong> Uphold the principles and teachings of the Bible while aligning actions and decisions with biblical values.</p><h2>Our Mission &amp; Vision</h2><p>The mission of the GSM is to partner with organizations, churches, communities and individuals to serve Christ's Kingdom in the world of sport and play. The vision of the Movement is to make disciples for Christ in the world of sport and play.</p>"
+    },
+    {
+      "slug": "contactus",
+      "title": "Contact us",
+      "menu_label": "Contact Us",
+      "body": "<h2>We would like to hear from you</h2><p>We welcome you to get in touch for partnership opportunities, training for your employees, or just to say hello.</p><h3>For Partnership Enquiries</h3><p><strong>Email:</strong> <a href=\"mailto:sportsmovementgh@gmail.com\">sportsmovementgh@gmail.com</a></p><p><strong>Office address:</strong><br>C/O Bible Society of Ghana<br>Accra-Ghana (West Africa)</p><p><strong>Phone:</strong> +233 54 367 4167 or +233 50 629 4494 or 0208333151</p>"
+    }
+  ]
+}

@@ -1,0 +1,187 @@
+{
+  "version": 1,
+  "module_slug": "site-kunneo",
+  "tenant": {
+    "slug": "kunneo",
+    "name": "Kunneo Creations",
+    "domain": "kunneo.com",
+    "country": "Ghana"
+  },
+  "settings": {
+    "site_name": "Kunneo Creations",
+    "site_tagline": "Handcrafted artisanal products from Ghana to the world",
+    "primary_color": "#e03a3e",
+    "secondary_color": "#2e7d32",
+    "footer_text": "© Kunneo Creations · Accra, Ghana · hello@mail.kunneo.com · +233 550 574 363"
+  },
+  "settings_media": {
+    "slider_media_ids": [
+      "slide1",
+      "slide2",
+      "slide3",
+      "slide4"
+    ]
+  },
+  "assets": [
+    {
+      "key": "logo",
+      "file": "logo.png",
+      "sha256": "ddb5d178e64852e7edcf8021eaadca47740b722469cbb93cd1969e08b0abefc6",
+      "bytes": 40657,
+      "source": "logo_1@3x.png",
+      "alt": "Kunneo Creations"
+    },
+    {
+      "key": "slide1",
+      "file": "slide1.jpg",
+      "sha256": "5d64fcac246edace13a3f867ff3c53ec91cdb77be54092f586e2907dc8eac860",
+      "bytes": 268557,
+      "source": "sliider-file-1703947612.jpg",
+      "alt": "Kunneo handcrafted products"
+    },
+    {
+      "key": "slide2",
+      "file": "slide2.jpg",
+      "sha256": "d84ef5c32d2631b3f090b0464909bbef082c6be19df495e0872aae7eaa2f5d20",
+      "bytes": 67877,
+      "source": "sliider-file-1703882724.jpg",
+      "alt": "Kunneo handcrafted products"
+    },
+    {
+      "key": "slide3",
+      "file": "slide3.jpg",
+      "sha256": "18e4363a60514d501e05ced5450e7e24ea192d1476508988108f25e08721aa39",
+      "bytes": 53115,
+      "source": "sliider-file-1703879656.jpg",
+      "alt": "Kunneo handcrafted products"
+    },
+    {
+      "key": "slide4",
+      "file": "slide4.jpg",
+      "sha256": "0ba7b13236909ccf6db1a7928bc92b48be00e5bb106a8fcaa796e7350075d8fa",
+      "bytes": 171628,
+      "source": "sliider-file-1703879270.jpg",
+      "alt": "Kunneo handcrafted products"
+    },
+    {
+      "key": "leather-bowl",
+      "file": "leather-bowl.jpg",
+      "sha256": "f6bc9e9b818b3c59ee910d9eb1a7b5827b3214110b6312bc6d8767f220ec32db",
+      "bytes": 22647,
+      "source": "round_leather_bowl.jpg",
+      "alt": "Leather bowl"
+    },
+    {
+      "key": "tote-bag",
+      "file": "tote-bag.jpg",
+      "sha256": "07a45e7988f2e625f7525c3ba551f5fb36fd243232b86d65dd1464a574fe4da9",
+      "bytes": 60130,
+      "source": "tote_wh_.jpg",
+      "alt": "Tote bag"
+    },
+    {
+      "key": "sandals",
+      "file": "sandals.jpg",
+      "sha256": "18a42ad91d2c180ffc330cccc470ef6478dda3b4aee0920a33d41ecd57e10a50",
+      "bytes": 53295,
+      "source": "sandals_many_small.jpg",
+      "alt": "Leather sandals"
+    },
+    {
+      "key": "pillow",
+      "file": "pillow.jpg",
+      "sha256": "8087fb53723f3e9f75513b4cfedf80041b2d2ac8b6fd6003cc47f064826e7b6a",
+      "bytes": 72381,
+      "source": "pillow_ready_set_go.jpg",
+      "alt": "Branded pillow"
+    },
+    {
+      "key": "about",
+      "file": "about.jpg",
+      "sha256": "7825662739131681b94251070626ae84a62901560a5ff5bb6a5c42f58b2e97e0",
+      "bytes": 85226,
+      "source": "kunneo_about_us.jpg",
+      "alt": "Kunneo workshop"
+    },
+    {
+      "key": "two-bowls",
+      "file": "two-bowls.jpg",
+      "sha256": "a0e983cd79fec2582aee9351f4713363a531535f7c3e785f3d44f52c282bdfc6",
+      "bytes": 118841,
+      "source": "two_bowls.jpg",
+      "alt": "Handcrafted bowls"
+    },
+    {
+      "key": "client-ug",
+      "file": "client-ug.png",
+      "sha256": "b0f6738447ca2d7eea4f85f027e3e1cc4117cad699dfa544ea61f6dc74e030de",
+      "bytes": 5266,
+      "source": "ug_logo.png",
+      "alt": "University of Ghana"
+    },
+    {
+      "key": "client-lhcare",
+      "file": "client-lhcare.jpg",
+      "sha256": "c5eb70d5cdbc6c04eda87843b4ca58b87f4c37948f59ec49c5a4b703a6a84cf8",
+      "bytes": 4314,
+      "source": "lhcare.jpg",
+      "alt": "LH Care"
+    },
+    {
+      "key": "client-lakecity",
+      "file": "client-lakecity.png",
+      "sha256": "b860f581de26b945418553da759f403a9e482b706d040b11b13abfb62ccbaa23",
+      "bytes": 4228,
+      "source": "lakecity_logo.png",
+      "alt": "Lake City"
+    },
+    {
+      "key": "client-heart",
+      "file": "client-heart.png",
+      "sha256": "c83b4e8271f4482d4558ce9afce0253bda9b7b54f7ce24bb5be316e16cee9309",
+      "bytes": 3219,
+      "source": "heart.png",
+      "alt": "Heart"
+    },
+    {
+      "key": "client-musdarls",
+      "file": "client-musdarls.png",
+      "sha256": "130d0751ce2e43e26516d7d1ff470d9e4cb6ccf3e9982ff37fb3186dfcd15a46",
+      "bytes": 4644,
+      "source": "musdarls.png",
+      "alt": "Musdarls"
+    }
+  ],
+  "pages": [
+    {
+      "slug": "home",
+      "title": "Home",
+      "menu_label": "Home",
+      "body": "<h2>We make <span style=\"color:#2e7d32\">eco friendly</span> handcrafted artisanal products from Ghana to the world</h2><p><a href=\"/contactus\">Get in touch</a></p><div style=\"display:flex;flex-wrap:wrap;gap:1rem;justify-content:center;margin:2rem 0\"><figure style=\"max-width:320px\"><img src=\"{{asset:leather-bowl}}\" alt=\"Leather artifacts\"><figcaption>Leather Artifacts</figcaption></figure><figure style=\"max-width:320px\"><img src=\"{{asset:tote-bag}}\" alt=\"Tote bag\"><figcaption>Tote Bags</figcaption></figure><figure style=\"max-width:320px\"><img src=\"{{asset:sandals}}\" alt=\"Leather sandals\"><figcaption>Leather Products</figcaption></figure></div><h2>We create tokens that elevate your brand</h2><p>Elevate your brand with our premium tote bags, leather products &amp; others – a perfect blend of functionality, style, and sustainability. Our meticulously crafted products are designed to help your brand make a statement.</p><p><a href=\"/contactus\">Get in touch</a></p><p><img src=\"{{asset:pillow}}\" alt=\"Branded pillow\"></p><h3>Our Clients</h3><p style=\"display:flex;flex-wrap:wrap;gap:1.5rem;justify-content:center;align-items:center\"><img style=\"height:56px;width:auto\" src=\"{{asset:client-ug}}\" alt=\"University of Ghana\"><img style=\"height:56px;width:auto\" src=\"{{asset:client-lhcare}}\" alt=\"LH Care\"><img style=\"height:56px;width:auto\" src=\"{{asset:client-lakecity}}\" alt=\"Lake City\"><img style=\"height:56px;width:auto\" src=\"{{asset:client-heart}}\" alt=\"Heart\"><img style=\"height:56px;width:auto\" src=\"{{asset:client-musdarls}}\" alt=\"Musdarls\"></p>"
+    },
+    {
+      "slug": "aboutus",
+      "title": "About us",
+      "menu_label": "About Us",
+      "body": "<h2>Who We Are &amp; What We Do</h2><p>We are dedicated to crafting more than just products at Kunneo Creations; we create tokens that embody meaningful experiences. Using materials like fabric, leather, and wood, we strive to transcend the ordinary and delve into the extraordinary. Each piece from our workshop reflects a fusion of artistry and functionality, paying homage to the intrinsic value found in every thread, fiber, and grain.</p><p>Our passion for innovation and pursuit of harmony are deeply rooted in Ghanaian craftsmanship—a tradition passed down through generations, characterized by skill and dedication. This tradition guides our decisions, from material selection to the final touches that transform our creations into enduring tokens of beauty. The vibrant colors, intricate patterns, and textures in our fabric, leather, and wood products are more than aesthetic choices; they are a homage to the cultural heritage shaping our identity.</p><img src=\"{{asset:about}}\" alt=\"Kunneo workshop\"><h2>Our Vision</h2><p>Envisioning a world where Kunneo Creations' tokens seamlessly merge tradition and modernity, enhancing everyday experiences and connecting individuals to the timeless beauty of Ghanaian craftsmanship.</p><h2>Our Mission</h2><p>Our mission is to deliver transformative experiences through meticulously crafted tokens, uniting the past with contemporary life.</p>"
+    },
+    {
+      "slug": "products",
+      "title": "Products",
+      "menu_label": "Products",
+      "body": "<p>Kunneo Creations makes handcrafted tote bags, leather slippers for men and women, and cane products from fabric, leather and wood.</p><p>Our product catalogue is being prepared. In the meantime, please <a href=\"/contactus\">get in touch</a> to discuss tote bags, leather products and branded merchandise for your organisation.</p><p style=\"display:flex;flex-wrap:wrap;gap:1rem;justify-content:center\"><img src=\"{{asset:tote-bag}}\" alt=\"Tote bag\"><img src=\"{{asset:sandals}}\" alt=\"Leather sandals\"><img src=\"{{asset:two-bowls}}\" alt=\"Handcrafted bowls\"></p>"
+    },
+    {
+      "slug": "services",
+      "title": "Our Services",
+      "menu_label": "Services",
+      "body": "<p>We cater to a range of needs from tote bags, school uniforms and workwear to merchandise, corporate solutions, and health and age care essentials. Explore how we can tailor our offerings to meet your specific requirements, ensuring quality, functionality, and style in every order.</p><h2>We Supply Uniforms</h2><p>We provide top quality medical equipment, medical supplies and nursing supplies to care homes, nursing homes, clinics and hospitals. We ensure quality, consistency, and reliable service, all geared towards achieving complete customer satisfaction. Explore our extensive range of school uniform products, including shirts, polos, jackets, jumpers, vests, pants, shorts, skirts, knitwear, dresses, bags, caps, socks, ties, footwear, as well as staff uniforms, sportswear, and maintenance workwear.</p><h2>Merchandise</h2><p>We provide cost-effective solutions for branded uniforms and merchandise needs to our corporate clients, aiming to enhance your brand's perception through accessible and affordable custom apparel and merchandise options. Explore our wide range of customizable products, including pens, drinkware, key rings, printed materials, business bags, leisure items, headwear, technology accessories, apparel, and outdoor products.</p><h2>Tote Bags</h2><p>Explore our range of meticulously crafted tote bags, each offering the perfect blend of durability, elegance, and practicality to suit your lifestyle needs. Whether you're heading to work, school, or a weekend getaway, our tote bags are crafted to accompany you on every journey.</p>"
+    },
+    {
+      "slug": "contactus",
+      "title": "Contact us",
+      "menu_label": "Contact Us",
+      "body": "<h2>We would like to hear from you</h2><p>We create tokens, and memorable experiences through our fabric, leather, and wood products. Our quest for innovation and harmony in our creations stems from a long tradition of Ghanaian craftsmanship and artisanry.</p><h3>Sales &amp; Partnership Enquiries</h3><p><strong>Email:</strong> <a href=\"mailto:hello@mail.kunneo.com?subject=Sales%20Request\">hello@mail.kunneo.com</a></p><p><strong>Office address:</strong><br>3rd Korley Kofi Lane, Martey Tsuru<br>Accra-Ghana (West Africa)</p><p><strong>Phone:</strong> +233 550 574 363</p><img src=\"{{asset:two-bowls}}\" alt=\"Handcrafted bowls\">"
+    }
+  ]
+}
