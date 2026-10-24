@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Storage;
 
 beforeEach(function () {
+    Storage::fake('s3');
+
     Artisan::call('migrate', [
         '--path' => 'database/migrations/landlord',
         '--realpath' => true,

@@ -15,6 +15,12 @@ final class DashboardController extends Controller
 {
     public function __invoke(\Illuminate\Http\Request $request, \App\Services\TenantStatsService $tenantStatsService): Factory|View
     {
+        if (! config('session.domain')
+            && app(\App\Services\Tenancy\TenantContext::class)->getTenant()
+            && ! \Illuminate\Support\Facades\Gate::allows('access-superadmin-dashboard')) {
+            return app()->call([app(\App\Http\Controllers\Tenant\DashboardController::class), 'index']);
+        }
+
         $this->authorize('core.dashboard.access');
 
         $days = $request->integer('days', 7);

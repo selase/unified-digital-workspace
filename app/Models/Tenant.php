@@ -291,8 +291,9 @@ final class Tenant extends Model
             return 'https://'.mb_rtrim($this->custom_domain, '/').($path ? '/'.mb_ltrim($path, '/') : '');
         }
 
-        $baseUrl = config('app.url');
-        $domain = str_replace('://', "://{$this->slug}.", $baseUrl);
+        $scheme = parse_url((string) config('app.url'), PHP_URL_SCHEME) ?: 'https';
+        $port = parse_url((string) config('app.url'), PHP_URL_PORT);
+        $domain = $scheme.'://'.$this->slug.'.'.config('app.tenant_domain').($port ? ':'.$port : '');
 
         return mb_rtrim($domain, '/').($path ? '/'.mb_ltrim($path, '/') : '');
     }

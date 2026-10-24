@@ -6,6 +6,7 @@ namespace App\Services\Tenancy;
 
 use App\Contracts\Secrets\SecretsProvider;
 use App\Models\Tenant;
+use Illuminate\Database\ConfigurationUrlParser;
 use Illuminate\Support\Facades\Config;
 
 /**
@@ -27,13 +28,17 @@ class TenantDatabaseManager
 
         if (empty($tenant->db_secret_ref)) {
             // Fallback to landlord credentials but override the database name
-            $landlord = Config::get('database.connections.landlord');
+            $landlord = (new ConfigurationUrlParser)->parseConfiguration(Config::get('database.connections.landlord'));
             $creds = [
                 'host' => $landlord['host'] ?? '127.0.0.1',
                 'port' => $landlord['port'] ?? 5432,
                 'database' => $tenant->meta['database'] ?? $landlord['database'],
                 'username' => $landlord['username'] ?? 'root',
                 'password' => $landlord['password'] ?? '',
+                'sslmode' => $landlord['sslmode'] ?? 'prefer',
+                'sslrootcert' => $landlord['sslrootcert'] ?? null,
+                'sslcert' => $landlord['sslcert'] ?? null,
+                'sslkey' => $landlord['sslkey'] ?? null,
             ];
         } else {
             $creds = $this->secrets->getSecret((string) $tenant->db_secret_ref);
@@ -53,7 +58,10 @@ class TenantDatabaseManager
             'strict' => true,
             'engine' => null,
             'search_path' => 'public',
-            'sslmode' => 'prefer',
+            'sslmode' => $creds['sslmode'] ?? 'prefer',
+            'sslrootcert' => $creds['sslrootcert'] ?? null,
+            'sslcert' => $creds['sslcert'] ?? null,
+            'sslkey' => $creds['sslkey'] ?? null,
         ]);
 
         app('db')->purge('tenant');

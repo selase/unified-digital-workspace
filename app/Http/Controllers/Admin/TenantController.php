@@ -12,7 +12,6 @@ use App\Http\Requests\Tenant\DestroyTenantRequest;
 use App\Libraries\Helper;
 use App\Models\Tenant;
 use App\Models\UsageRollup;
-use App\Providers\RouteServiceProvider;
 use App\Services\Tenancy\TenantContext;
 use App\Services\Tenancy\TenantDatabaseRemover;
 use App\Services\Tenancy\TenantProvisioner;
@@ -520,15 +519,16 @@ final class TenantController extends Controller
             abort(404);
         }
 
+        app(\App\Services\Tenancy\TenantAdminRedirect::class)->assertSwitchOrigin(request(), $tenant);
+
         // Change tenant
         $user->update(['tenant_id' => $tenantId]);
 
         if ($tenant && $tenant->slug !== null) {
-            $tenantDomain = str_replace('://', '://'.$tenant->slug.'.', config('app.url'));
-
             session()->put('tenant_id', $tenant->id);
+            session()->put('active_tenant_id', $tenant->id);
 
-            return redirect()->intended($tenantDomain.RouteServiceProvider::HOME);
+            return app(\App\Services\Tenancy\TenantAdminRedirect::class)->toDashboard(request(), $tenant);
         }
 
         return back()->with([

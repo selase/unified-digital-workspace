@@ -17,6 +17,7 @@ final class InvoicePaymentLinkService
     public function signedUrl(Invoice $invoice, string $route, array $parameters = []): string
     {
         $generator = clone app('url');
+        $generator->setRequest($generator->getRequest());
         $root = mb_rtrim((string) config('app.url'), '/');
         $generator->forceRootUrl($root);
         $generator->forceScheme(parse_url($root, PHP_URL_SCHEME) ?: 'https');
@@ -27,6 +28,7 @@ final class InvoicePaymentLinkService
     public function callbackUrl(string $provider): string
     {
         $generator = clone app('url');
+        $generator->setRequest($generator->getRequest());
         $root = mb_rtrim((string) config('app.url'), '/');
         $generator->forceRootUrl($root);
         $generator->forceScheme(parse_url($root, PHP_URL_SCHEME) ?: 'https');

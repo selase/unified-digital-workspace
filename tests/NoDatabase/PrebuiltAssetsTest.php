@@ -157,3 +157,176 @@ it('continues hashing nested files named auth.json', function (): void {
     file_put_contents($this->assetRoot.'/resources/auth.json', '{"source":2}');
     expect(($this->assets)()->getExitCode())->toBe(1);
 });
+
+it('preserves certification across index removals with proven ignored source membership drift', function (bool $ignored): void {
+    if ($ignored) {
+        file_put_contents($this->assetRoot.'/.gitignore', "/vendor/\n/resources/\n");
+    }
+    (new Process(['git', '-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.test', 'commit', '-qm', 'Fixture'], $this->assetRoot))->mustRun();
+    expect(($this->assets)('--write')->getExitCode())->toBe(0);
+    $metadata = file_get_contents($this->assetRoot.'/public/build/build-metadata.json');
+    $listing = ['git', 'ls-files', '-z', '--cached', '--others', '--exclude-standard'];
+    $before = explode("\0", (new Process($listing, $this->assetRoot))->mustRun()->getOutput());
+    expect($before)->toContain('resources/app.js');
+
+    (new Process(['git', 'rm', '--cached', '-r', 'resources'], $this->assetRoot))->mustRun();
+    $status = (new Process(['git', 'status', '--porcelain', '--untracked-files=all'], $this->assetRoot))->mustRun()->getOutput();
+    expect($status)->toContain('D  resources/app.js');
+    expect(file_get_contents($this->assetRoot.'/resources/app.js'))->toBe('source');
+    $after = explode("\0", (new Process($listing, $this->assetRoot))->mustRun()->getOutput());
+    if ($ignored) {
+        expect($after)->not->toContain('resources/app.js');
+        expect($status)->not->toContain('?? resources/app.js');
+        $ignoredPaths = (new Process(['git', 'ls-files', '-z', '--others', '--ignored', '--exclude-standard'], $this->assetRoot))->mustRun()->getOutput();
+        expect(explode("\0", $ignoredPaths))->toContain('resources/app.js');
+    } else {
+        expect($status)->toContain('?? resources/app.js');
+        expect($after)->toContain('resources/app.js');
+    }
+    $validation = ($this->assets)();
+    expect($validation->getErrorOutput())->toBe('');
+    expect($validation->getExitCode())->toBe(0);
+    expect(($this->assets)('--write')->getExitCode())->toBe(0);
+    expect(file_get_contents($this->assetRoot.'/public/build/build-metadata.json'))->toBe($metadata);
+})->with(['untracked originals' => false, 'ignored originals' => true]);
+
+it('rejects source tampering after committed sources are removed from the index', function (string $mutation): void {
+    file_put_contents($this->assetRoot.'/.gitignore', "/vendor/\n/resources/\n");
+    (new Process(['git', '-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.test', 'commit', '-qm', 'Fixture'], $this->assetRoot))->mustRun();
+    expect(($this->assets)('--write')->getExitCode())->toBe(0);
+    (new Process(['git', 'rm', '--cached', '-r', 'resources'], $this->assetRoot))->mustRun();
+    match ($mutation) {
+        'changed' => file_put_contents($this->assetRoot.'/resources/app.js', 'changed'),
+        'missing' => unlink($this->assetRoot.'/resources/app.js'),
+        'symlinked' => (function (): void {
+            unlink($this->assetRoot.'/resources/app.js');
+            symlink($this->assetRoot.'/package.json', $this->assetRoot.'/resources/app.js');
+        })(),
+    };
+    expect(($this->assets)()->getExitCode())->toBe(1);
+    if ($mutation !== 'changed') {
+        expect(($this->assets)('--write')->getExitCode())->toBe(1);
+    }
+})->with(['changed', 'missing', 'symlinked']);
+
+it('hashes restored committed inputs from disk rather than trusting HEAD contents', function (): void {
+    file_put_contents($this->assetRoot.'/.gitignore', "/vendor/\n/resources/\n");
+    (new Process(['git', '-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.test', 'commit', '-qm', 'Fixture'], $this->assetRoot))->mustRun();
+    (new Process(['git', 'rm', '--cached', '-r', 'resources'], $this->assetRoot))->mustRun();
+    expect(($this->assets)('--write')->getExitCode())->toBe(0);
+    file_put_contents($this->assetRoot.'/resources/app.js', 'changed');
+    expect(($this->assets)()->getExitCode())->toBe(1);
+    expect(($this->assets)('--write')->getExitCode())->toBe(0);
+    expect(($this->assets)()->getExitCode())->toBe(0);
+    file_put_contents($this->assetRoot.'/resources/new.js', 'new');
+    (new Process(['git', 'add', '-f', 'resources/new.js'], $this->assetRoot))->mustRun();
+    expect(($this->assets)()->getExitCode())->toBe(1);
+});
+
+it('allows certification after a source deletion is committed', function (): void {
+    (new Process(['git', '-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.test', 'commit', '-qm', 'Fixture'], $this->assetRoot))->mustRun();
+    expect(($this->assets)('--write')->getExitCode())->toBe(0);
+    (new Process(['git', 'rm', 'resources/app.js'], $this->assetRoot))->mustRun();
+    expect(($this->assets)('--write')->getExitCode())->toBe(1);
+    (new Process(['git', '-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.test', 'commit', '-qm', 'Remove source'], $this->assetRoot))->mustRun();
+    expect(($this->assets)()->getExitCode())->toBe(1);
+    expect(($this->assets)('--write')->getExitCode())->toBe(0);
+    expect(($this->assets)()->getExitCode())->toBe(0);
+});
+
+it('reports exact source drift paths and counts without file contents', function (): void {
+    file_put_contents($this->assetRoot.'/resources/removed.js', 'original');
+    expect(($this->assets)('--write')->getExitCode())->toBe(0);
+    file_put_contents($this->assetRoot.'/resources/app.js', 'PRIVATE_CHANGED_CONTENT');
+    unlink($this->assetRoot.'/resources/removed.js');
+    file_put_contents($this->assetRoot.'/.env.default', 'PRIVATE_GENERATED_CONTENT');
+    $process = ($this->assets)();
+
+    expect($process->getExitCode())->toBe(1)
+        ->and($process->getErrorOutput())->toContain(
+            'source changed (1): ["resources/app.js"]',
+            'source missing (1): ["resources/removed.js"]',
+            'source added (1): [".env.default"]',
+        )->not->toContain('PRIVATE_CHANGED_CONTENT', 'PRIVATE_GENERATED_CONTENT');
+});
+
+it('writes only deterministic source path hashes and excludes private runtime inputs', function (): void {
+    file_put_contents($this->assetRoot.'/.gitignore', "/vendor/\n.env\n");
+    file_put_contents($this->assetRoot.'/.env', 'PRIVATE_ENVIRONMENT_CONTENT');
+    file_put_contents($this->assetRoot.'/auth.json', 'PRIVATE_AUTH_CONTENT');
+    mkdir($this->assetRoot.'/storage');
+    file_put_contents($this->assetRoot.'/storage/runtime', 'PRIVATE_RUNTIME_CONTENT');
+    expect(($this->assets)('--write')->getExitCode())->toBe(0);
+    $json = file_get_contents($this->assetRoot.'/public/build/build-metadata.json');
+    $metadata = json_decode($json, true, flags: JSON_THROW_ON_ERROR);
+
+    expect($metadata['version'])->toBe(2)
+        ->and($metadata['source_files']['resources/app.js'])->toBe(hash('sha256', 'source'))
+        ->and($metadata['source_files'])->not->toHaveKeys(['.env', 'auth.json', 'storage/runtime'])
+        ->and($json)->not->toContain('PRIVATE_ENVIRONMENT_CONTENT', 'PRIVATE_AUTH_CONTENT', 'PRIVATE_RUNTIME_CONTENT');
+});
+
+it('keeps version one certifications strict and usable without per path diagnostics', function (): void {
+    expect(($this->assets)('--write')->getExitCode())->toBe(0);
+    $path = $this->assetRoot.'/public/build/build-metadata.json';
+    $metadata = json_decode(file_get_contents($path), true, flags: JSON_THROW_ON_ERROR);
+    $metadata['version'] = 1;
+    unset($metadata['source_files']);
+    file_put_contents($path, json_encode($metadata, JSON_THROW_ON_ERROR));
+    expect(($this->assets)()->getExitCode())->toBe(0);
+    file_put_contents($this->assetRoot.'/resources/app.js', 'changed');
+    $process = ($this->assets)();
+    expect($process->getExitCode())->toBe(1)
+        ->and($process->getErrorOutput())->toContain('version 1 metadata has no per-input hashes');
+});
+
+it('bounds diagnostic path listings while preserving full mismatch counts', function (): void {
+    expect(($this->assets)('--write')->getExitCode())->toBe(0);
+    for ($i = 0; $i < 70; $i++) {
+        file_put_contents($this->assetRoot.'/resources/added-'.$i.'.js', 'new');
+    }
+    $process = ($this->assets)();
+    expect($process->getExitCode())->toBe(1)
+        ->and($process->getErrorOutput())->toContain('source added (70):', '20 additional paths omitted');
+});
+
+it('accepts only the two untracked Cloud build files added after certification', function (): void {
+    expect(($this->assets)('--write')->getExitCode())->toBe(0);
+    mkdir($this->assetRoot.'/.lc-build');
+    file_put_contents($this->assetRoot.'/.lc-build/build-command.sh', 'cloud generated command');
+    file_put_contents($this->assetRoot.'/.npmrc', 'cloud generated npm configuration');
+
+    expect(($this->assets)()->getExitCode())->toBe(0);
+});
+
+it('still protects Cloud file names tracked in either HEAD or the current index', function (string $path, bool $headOnly, string $mutation): void {
+    if (! is_dir(dirname($this->assetRoot.'/'.$path))) {
+        mkdir(dirname($this->assetRoot.'/'.$path), 0777, true);
+    }
+    file_put_contents($this->assetRoot.'/'.$path, 'tracked original');
+    (new Process(['git', 'add', '--', $path], $this->assetRoot))->mustRun();
+    if ($headOnly) {
+        (new Process(['git', '-c', 'user.name=Fixture', '-c', 'user.email=fixture@example.test', 'commit', '-qm', 'Track protected input'], $this->assetRoot))->mustRun();
+    }
+    expect(($this->assets)('--write')->getExitCode())->toBe(0);
+    if ($headOnly) {
+        (new Process(['git', 'rm', '--cached', '--', $path], $this->assetRoot))->mustRun();
+        expect(($this->assets)()->getExitCode())->toBe(0);
+    }
+    match ($mutation) {
+        'changed' => file_put_contents($this->assetRoot.'/'.$path, 'tampered'),
+        'missing' => unlink($this->assetRoot.'/'.$path),
+    };
+
+    expect(($this->assets)()->getExitCode())->toBe(1);
+})->with(['.lc-build/build-command.sh', '.npmrc'])->with([false, true])->with(['changed', 'missing']);
+
+it('rejects unrelated files inside the Cloud build directory', function (): void {
+    expect(($this->assets)('--write')->getExitCode())->toBe(0);
+    mkdir($this->assetRoot.'/.lc-build');
+    file_put_contents($this->assetRoot.'/.lc-build/unexpected.sh', 'not exempt');
+    $process = ($this->assets)();
+
+    expect($process->getExitCode())->toBe(1)
+        ->and($process->getErrorOutput())->toContain('source added (1): [".lc-build/unexpected.sh"]');
+});

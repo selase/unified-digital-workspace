@@ -32,10 +32,11 @@ final class PrebuiltAssets
             throw new RuntimeException('Usage: php scripts/prebuilt-assets.php [--write|--invalidate]');
         }
 
-        $source = $this->sourceDigest();
+        $sourceFiles = $this->sourceFiles($mode !== '--write');
+        $source = $this->sourceDigest($sourceFiles);
         $files = $this->buildFiles();
         $this->validateManifest($files);
-        $expected = ['version' => 1, 'source_sha256' => $source, 'files' => $files];
+        $expected = ['version' => 2, 'source_sha256' => $source, 'source_files' => $sourceFiles, 'files' => $files];
 
         if ($mode === '--write') {
             $temporary = $metadataPath.'.tmp';
@@ -46,26 +47,42 @@ final class PrebuiltAssets
             if (file_put_contents($temporary, $json) !== mb_strlen($json) || ! rename($temporary, $metadataPath)) {
                 throw new RuntimeException('Cannot write build metadata.');
             }
-        } elseif ($this->readJson($metadataPath) !== $expected) {
-            throw new RuntimeException('Prebuilt assets are stale or tampered; run npm run build locally and include public/build.');
+        } else {
+            $recorded = $this->readJson($metadataPath);
+            $legacyExpected = ['version' => 1, 'source_sha256' => $source, 'files' => $files];
+            if ($recorded === $expected || ($recorded === $legacyExpected && ! in_array(null, $sourceFiles, true))) {
+                return;
+            }
+
+            $details = ($recorded['version'] ?? null) === 1
+                ? 'version 1 metadata has no per-input hashes; rebuild locally for path diagnostics.'
+                : $this->differences('source', $recorded['source_files'] ?? [], $sourceFiles);
+            $details .= ' '.$this->differences('build', $recorded['files'] ?? [], $files);
+            throw new RuntimeException('Prebuilt assets are stale or tampered; '.mb_trim($details));
         }
     }
 
-    private function sourceDigest(): string
+    /** @return array<string, string|null> */
+    private function sourceFiles(bool $allowMissing): array
     {
-        $pipes = [];
-        $process = proc_open(['git', 'ls-files', '-z', '--cached', '--others', '--exclude-standard'], [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes, $this->root);
-        if (! is_resource($process)) {
-            throw new RuntimeException('Git is required to enumerate build inputs.');
+        $head = mb_trim($this->gitOutput(['rev-parse', '--verify', '--quiet', 'HEAD'], true));
+        $arguments = ['ls-files', '-z', '--cached', '--others', '--exclude-standard'];
+        if ($head !== '') {
+            // Retain committed paths when a deployment rewrites only the index.
+            $arguments[] = '--with-tree='.$head;
         }
-        $output = stream_get_contents($pipes[1]);
-        $error = stream_get_contents($pipes[2]);
-        fclose($pipes[1]);
-        fclose($pipes[2]);
-        if (proc_close($process) !== 0 || $output === false || $error === false) {
-            throw new RuntimeException('Cannot enumerate build inputs with Git.');
+        $output = $this->gitOutput($arguments);
+        $cloudFiles = ['.lc-build/build-command.sh', '.npmrc'];
+        $trackedArguments = ['ls-files', '-z', '--cached'];
+        if ($head !== '') {
+            $trackedArguments[] = '--with-tree='.$head;
         }
-        $paths = array_unique(array_filter(explode("\0", $output), static function (string $path): bool {
+        $trackedArguments = array_merge($trackedArguments, ['--'], $cloudFiles);
+        $trackedCloudFiles = array_fill_keys(explode("\0", $this->gitOutput($trackedArguments)), true);
+        $paths = array_unique(array_filter(explode("\0", $output), static function (string $path) use ($cloudFiles, $trackedCloudFiles): bool {
+            if (in_array($path, $cloudFiles, true) && ! isset($trackedCloudFiles[$path])) {
+                return false;
+            }
             if ($path === '' || $path === 'auth.json') {
                 return false;
             }
@@ -90,13 +107,82 @@ final class PrebuiltAssets
         if (! in_array('package.json', $paths, true)) {
             throw new RuntimeException('Run from the project root containing tracked package.json.');
         }
-        $hash = hash_init('sha256');
+        $files = [];
         foreach ($paths as $path) {
-            $absolute = $this->safeFile($this->root, $path);
-            hash_update($hash, $path."\0".$this->fileHash($absolute)."\0");
+            try {
+                $files[$path] = $this->fileHash($this->safeFile($this->root, $path));
+            } catch (RuntimeException $exception) {
+                if (! $allowMissing || ! str_starts_with($exception->getMessage(), 'Missing or unreadable input:')) {
+                    throw $exception;
+                }
+                $files[$path] = null;
+            }
+        }
+
+        return $files;
+    }
+
+    /** @param array<string, string|null> $files */
+    private function sourceDigest(array $files): string
+    {
+        $hash = hash_init('sha256');
+        foreach ($files as $path => $digest) {
+            hash_update($hash, $path."\0".$digest."\0");
         }
 
         return hash_final($hash);
+    }
+
+    /**
+     * Only bounded JSON-escaped relative paths are reported, never input contents.
+     *
+     * @param  array<string, string>  $recorded
+     * @param  array<string, string|null>  $actual
+     */
+    private function differences(string $scope, array $recorded, array $actual): string
+    {
+        $groups = ['changed' => [], 'missing' => [], 'added' => []];
+        foreach ($recorded as $path => $digest) {
+            if (! isset($actual[$path])) {
+                $groups['missing'][] = $path;
+            } elseif ($actual[$path] !== $digest) {
+                $groups['changed'][] = $path;
+            }
+        }
+        foreach ($actual as $path => $digest) {
+            if ($digest !== null && ! array_key_exists($path, $recorded)) {
+                $groups['added'][] = $path;
+            }
+        }
+        $messages = [];
+        foreach ($groups as $kind => $paths) {
+            sort($paths, SORT_STRING);
+            $count = count($paths);
+            $listing = json_encode(array_slice($paths, 0, 50), JSON_UNESCAPED_SLASHES | JSON_INVALID_UTF8_SUBSTITUTE | JSON_THROW_ON_ERROR);
+            $messages[] = $scope.' '.$kind.' ('.$count.'): '.$listing.($count > 50 ? ' ('.($count - 50).' additional paths omitted)' : '');
+        }
+
+        return implode('; ', $messages);
+    }
+
+    /** @param list<string> $arguments */
+    private function gitOutput(array $arguments, bool $allowUnbornHead = false): string
+    {
+        $pipes = [];
+        $process = proc_open(['git', ...$arguments], [1 => ['pipe', 'w'], 2 => ['pipe', 'w']], $pipes, $this->root);
+        if (! is_resource($process)) {
+            throw new RuntimeException('Git is required to enumerate build inputs.');
+        }
+        $output = stream_get_contents($pipes[1]);
+        $error = stream_get_contents($pipes[2]);
+        fclose($pipes[1]);
+        fclose($pipes[2]);
+        $status = proc_close($process);
+        if ($output === false || $error === false || ($status !== 0 && ! ($allowUnbornHead && $status === 1 && $output === '' && $error === ''))) {
+            throw new RuntimeException('Cannot enumerate build inputs with Git.');
+        }
+
+        return $output;
     }
 
     /** @return array<string, string> */

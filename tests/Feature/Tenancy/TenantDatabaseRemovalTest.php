@@ -243,3 +243,15 @@ test('tenants:delete removes the tenant and its database from the command line',
 
     $this->artisan('tenants:delete', ['tenant' => 'does-not-exist', '--force' => true])->assertFailed();
 });
+
+test('the application PostgreSQL dumper still targets the selected database with TLS connection options', function (): void {
+    $this->pgTools ?? test()->markTestSkipped('pg_dump is not installed.');
+    $file = tempnam(sys_get_temp_dir(), 'udw-configured-dump-');
+    $this->createdFiles[] = $file;
+    $dumper = Spatie\Backup\Tasks\Backup\DbDumperFactory::createFromConnection('landlord');
+    $dumper->includeTables(['migrations']);
+    $dumper->dumpToFile($file);
+
+    $sql = file_get_contents($file);
+    expect($sql)->toContain('CREATE TABLE public.migrations', 'COPY public.migrations');
+});

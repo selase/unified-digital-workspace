@@ -27,12 +27,12 @@ final class RouteServiceProvider extends ServiceProvider
         $this->configureRateLimiting();
 
         $this->routes(function (): void {
-            // Build the sub‑domain pattern using the SESSION_DOMAIN value.
-            $domain = '{subdomain}.'.mb_ltrim((string) config('session.domain'), '.');
-
-            Route::domain($domain)
-                ->middleware('web')
-                ->group(base_path('routes/subdomain.php'));
+            if (config('session.domain')) {
+                $domain = '{subdomain}.'.mb_ltrim((string) config('app.tenant_domain'), '.');
+                Route::domain($domain)->middleware('web')->group(base_path('routes/subdomain.php'));
+            } else {
+                Route::prefix('workspace/{subdomain}')->middleware('web')->group(base_path('routes/subdomain.php'));
+            }
 
             Route::middleware('api')
                 ->prefix('api')

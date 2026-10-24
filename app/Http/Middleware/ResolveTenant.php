@@ -45,6 +45,10 @@ final class ResolveTenant
         }
 
         $this->context->setTenant($tenant);
+        if (! config('session.domain') && $request->route('subdomain') === $tenant->slug
+            && $request->hasSession() && $request->user()) {
+            $request->session()->put('active_tenant_id', $tenant->id);
+        }
 
         \Illuminate\Support\Facades\Log::info('ResolveTenant middleware reached', [
             'tenant_id' => $tenant->id,

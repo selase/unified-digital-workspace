@@ -58,3 +58,17 @@ test('it configures byo storage', function () {
     expect($config['region'])->toBe('us-west-2');
     expect($config)->not->toHaveKey('root');
 });
+
+test('a preview flag never redirects production tenant storage to local files', function (): void {
+    $tenant = (new Tenant)->forceFill([
+        'slug' => 'lifepartners-platform', 's3_mode' => 'shared',
+        'meta' => ['migration_preview' => 'lifepartners'],
+    ]);
+    $this->app->instance('env', 'production');
+    Config::set('filesystems.disks.s3', [
+        'driver' => 's3', 'key' => 'synthetic-key', 'bucket' => 'synthetic-bucket',
+    ]);
+    app(TenantStorageManager::class)->configure($tenant);
+    expect(Config::get('filesystems.disks.tenant.driver'))->toBe('s3')
+        ->and(Config::get('filesystems.disks.tenant.root'))->toBe('tenants/lifepartners-platform');
+});

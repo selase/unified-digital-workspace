@@ -2,7 +2,28 @@
 
 declare(strict_types=1);
 
+use Illuminate\Database\ConfigurationUrlParser;
 use Illuminate\Support\Str;
+
+$postgresConnection = (new ConfigurationUrlParser)->parseConfiguration([
+    'driver' => env('DB_CONNECTION', 'mysql'),
+    'url' => env('DATABASE_URL'),
+    'sslmode' => env('DB_SSLMODE', env('PGSSLMODE', 'prefer')),
+    'sslrootcert' => env('DB_SSLROOTCERT', env('PGSSLROOTCERT')),
+]);
+$postgresTls = array_intersect_key($postgresConnection, array_flip(['sslmode', 'sslrootcert']));
+
+$postgresDumpConnection = [];
+foreach ($postgresTls as $name => $value) {
+    if ($value !== null && $value !== '') {
+        $postgresDumpConnection[] = $name."='".str_replace(['\\', "'"], ['\\\\', "\\'"], (string) $value)."'";
+    }
+}
+
+$postgresDumpOptions = [
+    'dump_binary_path' => env('PG_DUMP_BINARY_PATH', ''),
+    'add_extra_option' => '--dbname='.escapeshellarg(implode(' ', $postgresDumpConnection)),
+];
 
 return [
 
@@ -53,11 +74,12 @@ return [
             'strict' => true,
             'engine' => null,
             'search_path' => 'public',
-            'sslmode' => 'prefer',
+            'sslmode' => $postgresTls['sslmode'],
+            'sslrootcert' => $postgresTls['sslrootcert'],
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 Pdo\Mysql::ATTR_SSL_CA => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],
-            'dump' => [
+            'dump' => $postgresConnection['driver'] === 'pgsql' ? $postgresDumpOptions : [
                 'dump_binary_path' => env('PG_DUMP_BINARY_PATH', ''),
             ],
         ],
@@ -109,10 +131,9 @@ return [
             'prefix' => '',
             'prefix_indexes' => true,
             'search_path' => 'public',
-            'sslmode' => 'prefer',
-            'dump' => [
-                'dump_binary_path' => env('PG_DUMP_BINARY_PATH', ''),
-            ],
+            'sslmode' => $postgresTls['sslmode'],
+            'sslrootcert' => $postgresTls['sslrootcert'],
+            'dump' => $postgresDumpOptions,
         ],
 
         'sqlsrv' => [

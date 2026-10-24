@@ -14,7 +14,14 @@ final class TenantStorageManager
 
     public function configure(Tenant $tenant): void
     {
-        if ($tenant->s3_mode === 'byo') {
+        if (app()->environment(['local', 'testing']) && $tenant->slug === 'lifepartners-platform'
+            && ($tenant->meta['migration_preview'] ?? null) === 'lifepartners') {
+            $local = (array) Config::get('filesystems.disks.local');
+            Config::set('filesystems.disks.tenant', array_merge($local, [
+                'driver' => 'local',
+                'root' => mb_rtrim((string) ($local['root'] ?? storage_path('app')), '/').'/previews/tenants/'.$tenant->slug,
+            ]));
+        } elseif ($tenant->s3_mode === 'byo') {
             $this->configureByo($tenant);
         } else {
             $this->configureShared($tenant);
