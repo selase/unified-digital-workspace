@@ -1,6 +1,6 @@
 {
     "version": 2,
-    "source_sha256": "48eeb9a834ab18648e92bcdb03a69cea62b0a94352f650eb0f9c92e7c4c39909",
+    "source_sha256": "c20914d2515fc0257906e7873817739c669204b145a6925fd8dc87aae81ab0b5",
     "source_files": {
         ".agent/rules/path-to-php.md": "c559a7b17fe39107f8e1a69a9b93fe720c8d11b947d9decaf6541ed429714359",
         ".agent/rules/testing.md": "8289cda546c31080a26018179a337bafa1f65c0967dd23d2d1561d6c9b0a9c1f",
@@ -397,7 +397,7 @@
         "app/Modules/CmsCore/Views/posts-show.blade.php": "e9a48ece98e39221bfa23d001249310b051f329cee1d0963c9e9f6a87221261d",
         "app/Modules/CmsCore/Views/posts.blade.php": "c86ae23554325edd5d3f03bdf485d460d3f5d4d849e3553b5627fb5eb4378d45",
         "app/Modules/CmsCore/Views/public/archive.blade.php": "059e7c24896686662feb96f7ca9ff88568a8762d81928b0e04539ab5b3dd47d5",
-        "app/Modules/CmsCore/Views/public/brochure-home.blade.php": "75f16323a13be9363addfbddd80fd995ef02696e67a7f5137095b9f0f0e66082",
+        "app/Modules/CmsCore/Views/public/brochure-home.blade.php": "ef45ebdcf7c838b4dc74ead4122c0d9d50606e54efc085077211e3866035d2f6",
         "app/Modules/CmsCore/Views/public/home.blade.php": "967d4698e0ab7d78f673503df9a17866237e29a388a14a053f8f29053ce4beef",
         "app/Modules/CmsCore/Views/public/layouts/website.blade.php": "321e36c4de24978de4a29e1e7c27e6e12f4e244c9322ab0fb32482a05d5130ef",
         "app/Modules/CmsCore/Views/public/newsletters/archive.blade.php": "6a6cc69dc1e5810f9b0790298dba2f3a9ec3f3d76cacbf0722b778868904cdcf",
@@ -6734,8 +6734,8 @@
         "vite.config.js": "1bd7f75ae1df969c819e63114e9be5f0e2a69e399d4dcab4373aa680314a93d9"
     },
     "files": {
-        "assets/app-D1CFJkJ0.css": "dfa7006d59099b9d67c39f49ba7e62dc8ee3cdab7164fd1420ec796bacae3125",
+        "assets/app-B4rizjgP.css": "fd8c099c2b0e5ad15e8f236286b8ede8c0195afa3317be5fdc4791fb52b372e4",
         "assets/app-DZ7vsMlk.js": "9e50c4955507aaeebcd1314deed2cd1c97b55d9ac9c9388ab60cf33f0e6d510e",
-        "manifest.json": "4d37adfa8bce110b7fc65bd1242edaecb2e9703989a08e396c58d6ea13dbf7d0"
+        "manifest.json": "dbb9a4a618dfe84e09a5493f5fef3c5b223258980add3a5c953c48497a5983be"
     }
 }
