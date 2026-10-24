@@ -1,6 +1,6 @@
 {
     "version": 2,
-    "source_sha256": "097668516540ead74f8d3bbf3bf5fc5a82d7c2c40d4d03891fa18d28698168f2",
+    "source_sha256": "2f914e2f397980374c5092ebe22173ba8ad3dff49e220169bdf39d4feceaeba8",
     "source_files": {
         ".agent/rules/path-to-php.md": "c559a7b17fe39107f8e1a69a9b93fe720c8d11b947d9decaf6541ed429714359",
         ".agent/rules/testing.md": "8289cda546c31080a26018179a337bafa1f65c0967dd23d2d1561d6c9b0a9c1f",
@@ -160,7 +160,7 @@
         "app/Http/Controllers/Tenant/PaymentSettingsController.php": "53234b3701b70f131bd71349c22275f39c92217ce38736585dbd6eeb6c88de29",
         "app/Http/Controllers/Tenant/RoleController.php": "bbbea0009111fcb772f473f68c48dfd307c9ac359da73ddaceb86832c90248b5",
         "app/Http/Controllers/Tenant/UserController.php": "97a20ba878b433d9b9b78aeceafd8c2d164ccbd01588911d87a634208eb9b356",
-        "app/Http/Kernel.php": "352e7582be33a47e3243a28cd69b7c84076680bf815d29abdbbf11116f28a4b3",
+        "app/Http/Kernel.php": "28efee866404c16e0b49346a5d0fe88efce9f6e958c1a6eefdb108444750234e",
         "app/Http/Middleware/Authenticate.php": "e48fd1191abb58024ca398b442407054568ea5579a78538b36f35ab17a67e7c3",
         "app/Http/Middleware/AuthenticateWithApiKey.php": "939aed12d3b8a9cc4723e0fe9fc395d4b54f58d00aba9b9f38b348af33acbfed",
         "app/Http/Middleware/BillingPaymentHeaders.php": "4dc54bdec9e14642a4731cfbd51d6da8af2af62ee5a2cf6757ea69e0c68d2a67",
@@ -179,6 +179,7 @@
         "app/Http/Middleware/PreventRequestsDuringMaintenance.php": "045b16beef2117aeb6137420bd02c06c6bc7b6366b97ead5d37095eeb066ff61",
         "app/Http/Middleware/RedirectAdminFromCustomDomain.php": "00816ef0bcbd1b7aa196eb71e173bc48055484794e5c45b3c8526c08ddefc6d1",
         "app/Http/Middleware/RedirectIfAuthenticated.php": "58003a10951f47727e742f676ed63e0d45d39b314c9fcc4b4855c63a8e12ce25",
+        "app/Http/Middleware/RehearsalBasicGuard.php": "c6cc37598caba60eea076eee41a5b9fd5df4f2a485a55757bd8cdfab9e856f16",
         "app/Http/Middleware/ResolveTenant.php": "d62fa3da7f74a430d725fe38f9460979b1bb4a0222df8583cd87896c64db8fe0",
         "app/Http/Middleware/SecurityHeaders.php": "52bfc2670e78d53e93407bb7ae746c392af3ab1b51bc78fb8185445b5e28dea1",
         "app/Http/Middleware/ThrottleLlmRequests.php": "fe21e8ddfa55e376e990f23ae2209524f3a28e91160fdaa52a67d2eb8c3e71af",
@@ -1269,7 +1270,7 @@
         "composer.json": "f1bf0670e8b96ab1464d305530be0e23790ba59e93a86570f98bdf5cb5d66c30",
         "composer.lock": "b0a4d1a2679b3d4c52fede8c28a44ff3da2464caf3e0733ece788fe3b801946c",
         "config/activitylog.php": "3294ca2632d3e36a57ca7cdbd08a7df6f4a8052f7700dababd9458762dcf523a",
-        "config/app.php": "620b110326d15f4f476493084c4c84241d9f7685073d15f26445c48f34a6cae1",
+        "config/app.php": "87b1efa938d8578a40c8343e25d69295641adc8c192e8149fce26a8812db5449",
         "config/auth.php": "fbd110ba3407d450e13d7dab92ce0e940221dd53545899f1aca17728408591f1",
         "config/backup.php": "13e3dafd4c7192d299313b0aa67ca3703cafcf33785046b17cad6a1dc95d267b",
         "config/billing.php": "309a83f1267bf2489487d8328455a100a37a55192cb73c46cab51c92b6e1fafb",
@@ -6666,8 +6667,8 @@
         "vite.config.js": "1bd7f75ae1df969c819e63114e9be5f0e2a69e399d4dcab4373aa680314a93d9"
     },
     "files": {
+        "assets/app-CBewZfWT.css": "20c8452cb7882d28d55cfd364d3142b664c32e02d188bc3b3a717022716b6e99",
         "assets/app-DZ7vsMlk.js": "9e50c4955507aaeebcd1314deed2cd1c97b55d9ac9c9388ab60cf33f0e6d510e",
-        "assets/app-Drk51z4V.css": "732efc4c9580fd7a1ee8713a682fe281e84eeec9b2036b0c28835f0ebd05f8ff",
-        "manifest.json": "1dcb111819d0fde2101cd51c2ffc664ae745d710e3e1b9a1fb59a88ce6f53483"
+        "manifest.json": "15acf4c91807a880282686b16ecb5dcb887fc5db9242520ab5d6eb08f72a974d"
     }
 }
