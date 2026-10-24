@@ -28,12 +28,12 @@
             aria-roledescription="carousel"
             aria-label="Featured"
         >
-            <div class="relative aspect-[16/7] w-full overflow-hidden rounded-lg bg-gray-100">
+            <div class="relative aspect-[20/9] w-full overflow-hidden rounded-lg bg-gray-100">
                 @foreach($slides as $index => $slide)
                     <img
                         src="{{ $slide->serveUrl(false) }}"
                         alt="{{ $slide->alt_text ?: $theme->siteName() }}"
-                        class="absolute inset-0 h-full w-full object-cover transition-opacity duration-700"
+                        class="absolute inset-0 h-full w-full object-contain transition-opacity duration-700"
                         x-bind:class="active === {{ $index }} ? 'opacity-100' : 'opacity-0'"
                         @if($index > 0) loading="lazy" @endif
                     />
