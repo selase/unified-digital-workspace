@@ -90,6 +90,8 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
 
+    'rehearsal_guard_password' => env('REHEARSAL_GUARD_PASSWORD'),
+
     'tenant_domain' => mb_ltrim((string) (env('TENANT_BASE_DOMAIN') ?: env('SESSION_DOMAIN') ?: parse_url((string) env('APP_URL', 'http://localhost'), PHP_URL_HOST)), '.'),
 
     'asset_url' => env('ASSET_URL'),
