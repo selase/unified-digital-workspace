@@ -50,7 +50,7 @@
             </div>
         @endif
 
-        <div class="prose max-w-none">
+        <div class="cms-page-body prose max-w-none">
             {!! $page->body !!}
         </div>
 

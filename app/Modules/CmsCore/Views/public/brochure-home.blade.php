@@ -57,7 +57,7 @@
 
     @if($homepage?->body)
         <section class="mx-auto max-w-6xl px-4 py-12 sm:px-6 lg:px-8">
-            <div class="prose prose-lg mx-auto max-w-none text-center [&_img]:mx-auto [&_h1]:tracking-wide [&_h2]:tracking-wide">
+            <div class="brochure-body prose prose-lg mx-auto max-w-none text-center [&_img]:mx-auto [&_h1]:tracking-wide [&_h2]:tracking-wide">
                 {!! $homepage->body !!}
             </div>
         </section>
