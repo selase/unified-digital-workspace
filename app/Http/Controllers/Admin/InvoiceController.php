@@ -19,7 +19,7 @@ final class InvoiceController extends Controller
     {
         $this->authorize('access-superadmin-dashboard');
 
-        $query = Invoice::with('tenant')->latest();
+        $query = Invoice::with(['tenant', 'billingMessages'])->latest();
 
         if ($request->filled('search')) {
             $search = $request->input('search');

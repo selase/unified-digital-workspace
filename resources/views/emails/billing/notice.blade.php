@@ -34,6 +34,14 @@ Review the invoice and use the secure checkout available in its currency.
 <x-mail::button :url="$paymentUrl">Review invoice and pay</x-mail::button>
 
 The invoice PDF is attached. Once payment is verified, we will record it against this invoice and send a receipt. If you have already paid, use the link to check the latest status before trying again.
+@if($messageRecord->kind === 'invoice_overdue' && ! empty($details['suspension_date']))
+
+Your invoice is now past its due date. To keep your website online, please settle it by **{{ \Carbon\Carbon::parse($details['suspension_date'])->subDay()->format('j F Y') }}**. If it remains unpaid after that date, your site will be temporarily unavailable until payment is received.
+@if(($details['days_overdue'] ?? 0) >= 8)
+
+Your next month's invoice is now added to the amount outstanding. If you need help or a little more time, just reply to this email and we will gladly assist.
+@endif
+@endif
 @endif
 
 @if($paymentUrl)

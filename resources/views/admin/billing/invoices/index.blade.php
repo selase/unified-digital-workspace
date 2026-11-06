@@ -75,6 +75,15 @@
                                         <span class="kt-badge {{ $invoice->status === 'paid' ? 'kt-badge-success' : ($invoice->status === 'draft' ? 'kt-badge-warning' : 'kt-badge-primary') }}">
                                             {{ strtoupper($invoice->status) }}
                                         </span>
+                                        @if($invoice->status !== 'draft')
+                                            @if($invoice->billingMessages->where('kind', 'invoice_issued')->where('status', 'sent')->isNotEmpty())
+                                                <span class="text-success" title="Invoice email sent">&#10003;</span>
+                                            @endif
+                                            <form action="{{ route('admin.billing.invoices.resend', $invoice) }}" method="POST" class="inline">
+                                                @csrf
+                                                <button type="submit" class="kt-btn kt-btn-sm kt-btn-ghost">Resend</button>
+                                            </form>
+                                        @endif
                                     </td>
                                     <td>{{ $invoice->period_start->format('M Y') }}</td>
                                     <td class="text-right">

@@ -10,6 +10,7 @@ use App\Models\BillingMessage;
 use App\Models\Invoice;
 use App\Models\Tenant;
 use App\Services\Tenancy\BillingAgreementService;
+use App\Services\Tenancy\BillingSuspensionService;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Throwable;
@@ -97,8 +98,8 @@ final class BillingCommunicationService
                         return;
                     }
                 }
-                if (in_array($days, config('billing.communications.due_days', [7, 3, 0]), true)
-                    || in_array(-$days, config('billing.communications.overdue_days', [7, 14]), true) && $days < 0) {
+                if ($days >= 0 && in_array($days, config('billing.communications.reminder_days_before_due', [12, 10, 8, 6, 4, 2, 0]), true)
+                    || $days < 0 && in_array(-$days, config('billing.communications.warning_days_overdue', [2, 4, 6, 8, 10, 12, 14]), true)) {
                     $kind = $days < 0 ? 'invoice_overdue' : 'invoice_due';
                     $this->queue($invoice->tenant, $kind, $kind.':'.$invoice->id.':'.$invoice->due_at->toDateString().':'.$days,
                         $this->invoicePayload($invoice), $invoice);
@@ -169,6 +170,8 @@ final class BillingCommunicationService
             'currency' => $invoice->currency, 'amount' => (float) $invoice->total, 'number' => $invoice->number,
             'due_date' => $invoice->due_at?->toDateString(), 'period_start' => $invoice->period_start->toDateString(),
             'period_end' => $invoice->period_end->toDateString(),
+            'days_overdue' => $invoice->due_at !== null ? max(0, (int) $invoice->due_at->copy()->startOfDay()->diffInDays(today(), false)) : 0,
+            'suspension_date' => app(BillingSuspensionService::class)->suspensionDate($invoice)?->toDateString(),
         ];
     }
 

@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Console\Commands;
 
 use App\Mail\Billing\MonthlyInvoiceRunFailed;
+use App\Models\Invoice;
 use App\Models\Tenant;
+use App\Services\Billing\BillingCommunicationService;
 use App\Services\Tenancy\InvoicingService;
 use Carbon\Carbon;
 use Exception;
@@ -31,7 +33,7 @@ final class GenerateMonthlyInvoices extends Command
     /**
      * Execute the console command.
      */
-    public function handle(InvoicingService $invoicingService): int
+    public function handle(InvoicingService $invoicingService, BillingCommunicationService $communications): int
     {
         $monthStr = $this->option('month') ?: now()->subMonth()->format('Y-m');
         if (! preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', $monthStr)) {
@@ -53,6 +55,9 @@ final class GenerateMonthlyInvoices extends Command
             try {
                 $invoice = $invoicingService->generate($tenant, $start, $end);
                 $this->line(" - Generated Invoice {$invoice->number} for {$tenant->name} (Total: {$invoice->total})");
+                if ($this->shouldAutoIssue($invoice, $tenant) && $communications->issue($invoice)) {
+                    $this->line("   Issued and queued the invoice email for {$tenant->name}.");
+                }
                 $count++;
             } catch (Exception $e) {
                 $failed++;
@@ -68,5 +73,13 @@ final class GenerateMonthlyInvoices extends Command
         $this->info("Invoicing completed. {$count} invoices processed.");
 
         return $failed > 0 ? self::FAILURE : self::SUCCESS;
+    }
+
+    private function shouldAutoIssue(Invoice $invoice, Tenant $tenant): bool
+    {
+        return config('billing.auto_issue', true)
+            && ($tenant->meta['billing_auto_issue'] ?? true) !== false
+            && $invoice->status === Invoice::STATUS_DRAFT
+            && (float) $invoice->total > 0;
     }
 }
