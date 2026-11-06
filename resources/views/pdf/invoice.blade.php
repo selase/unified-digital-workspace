@@ -23,7 +23,7 @@
         }
         .header table { width: 100%; }
         .logo {
-            font-size: 14px;
+            font-size: 16px;
             font-weight: bold;
             color: #181c32;
             text-transform: uppercase;
@@ -80,7 +80,7 @@
         .info-value {
             font-size: 12px;
             color: #181c32;
-            font-weight: 600;
+            font-weight: bold;
         }
         .info-sub {
             font-size: 11px;
@@ -127,7 +127,7 @@
         .items-table td.text-center { text-align: center; }
         .items-table td.text-right { text-align: right; }
         .item-name {
-            font-weight: 600;
+            font-weight: bold;
             color: #181c32;
         }
         .item-meta {
@@ -155,7 +155,7 @@
         .totals-table .value-cell {
             text-align: right;
             color: #181c32;
-            font-weight: 600;
+            font-weight: bold;
         }
         .totals-table .total-row td {
             border-top: 2px solid #e5e7eb;
@@ -182,7 +182,14 @@
         <table>
             <tr>
                 <td style="width: 50%; vertical-align: top;">
-                    <div class="logo">{{ config('app.name') }}</div>
+                    @php($supplier = config('billing.supplier'))
+                    <div class="logo">{{ $supplier['name'] }}</div>
+                    <div class="info-sub" style="margin-top: 2px;">
+                        @if($supplier['address']){{ $supplier['address'] }}<br>@endif
+                        {{ $supplier['email'] }}@if($supplier['phone']) &middot; {{ $supplier['phone'] }}@endif
+                        @if($supplier['tin'])<br>TIN: {{ $supplier['tin'] }}@endif
+                        @if($supplier['vat_number'])<br>VAT No: {{ $supplier['vat_number'] }}@endif
+                    </div>
                     <div style="margin-top: 8px;">
                         <span class="badge badge-{{ $invoice->status }}">{{ strtoupper($invoice->status) }}</span>
                         @if($invoice->due_at)
@@ -208,7 +215,7 @@
             <td style="width: 33%;">
                 <div class="info-label">Billed To</div>
                 <div class="info-value">{{ $invoice->tenant->name }}</div>
-                <div class="info-sub">{{ $invoice->tenant->email }}</div>
+                <div class="info-sub">{{ app(\App\Services\Billing\BillingCommunicationService::class)->contact($invoice->tenant) ?? $invoice->tenant->email }}</div>
             </td>
             <td style="width: 2%;"></td>
             <td style="width: 33%;">
@@ -249,7 +256,7 @@
                     </td>
                     <td class="text-center">{{ number_format((float)$item->quantity, 2) }}</td>
                     <td class="text-center">{{ $invoice->currency }} {{ number_format((float)$item->unit_price, 2) }}</td>
-                    <td class="text-right" style="font-weight: 600;">{{ $invoice->currency }} {{ number_format((float)$item->subtotal, 2) }}</td>
+                    <td class="text-right" style="font-weight: bold;">{{ $invoice->currency }} {{ number_format((float)$item->subtotal, 2) }}</td>
                 </tr>
             @endforeach
         </tbody>
@@ -270,7 +277,7 @@
             @endforeach
         @endif
         <tr class="total-row">
-            <td class="label-cell">Total</td>
+            <td class="label-cell">Total due</td>
             <td class="value-cell">{{ $invoice->currency }} {{ number_format((float)$invoice->total, 2) }}</td>
         </tr>
     </table>
@@ -281,7 +288,7 @@
             {{ $invoice->currency === 'GHS' ? 'GHS invoices use Paystack hosted checkout.' : 'Use the secure checkout provided for this invoice currency.' }}
             Never email card details. A receipt is provided after verified payment.<br>
         @endif
-        Thank you for your business! If you have any questions about this invoice, please reach out to our support team.
+        Thank you for your business. If you have any questions about this invoice, please write to {{ config('billing.supplier.email') }}.
     </div>
 </body>
 </html>
