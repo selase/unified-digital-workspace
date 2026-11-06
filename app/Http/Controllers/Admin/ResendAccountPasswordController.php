@@ -8,19 +8,25 @@ use App\Http\Controllers\Controller;
 use App\Libraries\Helper;
 use App\Mail\Users\ResendAccountPassword;
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Mail;
 
 final class ResendAccountPasswordController extends Controller
 {
     /**
      * Handle the incoming request.
-     *
-     * @return Response
      */
-    public function __invoke(Request $request, User $user)
+    public function __invoke(Request $request, User $user): JsonResponse
     {
+        $this->authorize('core.users.update');
+
+        if (! Gate::allows('access-superadmin-dashboard')) {
+            abort_unless($user->tenant_id !== null && $user->tenant_id === $request->user()->tenant_id, 403);
+            abort_if($user->hasRole('Superadmin'), 403);
+        }
+
         $newPassword = Helper::generateRandomPassword();
 
         $user->update(['password' => bcrypt($newPassword)]);
