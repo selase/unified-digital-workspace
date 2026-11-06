@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
+use App\Mail\Billing\MonthlyInvoiceRunFailed;
 use App\Models\Tenant;
 use App\Services\Tenancy\InvoicingService;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Mail;
 
 final class GenerateMonthlyInvoices extends Command
 {
@@ -45,6 +47,7 @@ final class GenerateMonthlyInvoices extends Command
         $tenants = Tenant::where('status', 'active')->get();
         $count = 0;
         $failed = 0;
+        $failures = [];
 
         foreach ($tenants as $tenant) {
             try {
@@ -53,8 +56,13 @@ final class GenerateMonthlyInvoices extends Command
                 $count++;
             } catch (Exception $e) {
                 $failed++;
+                $failures[$tenant->name] = $e->getMessage();
                 $this->error("Failed to generate invoice for {$tenant->name}: {$e->getMessage()}");
             }
+        }
+
+        if ($failures !== [] && config('billing.alert_emails') !== []) {
+            Mail::to(config('billing.alert_emails'))->send(new MonthlyInvoiceRunFailed($monthStr, $failures));
         }
 
         $this->info("Invoicing completed. {$count} invoices processed.");
