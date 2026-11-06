@@ -20,6 +20,12 @@
                             {{ strtoupper($invoice->status) }}
                         </span>
                         <span class="text-xs text-muted-foreground">Due by {{ $invoice->due_at->format('d/m/Y') }}</span>
+                        @php($emailed = $invoice->billingMessages->where('kind', 'invoice_issued')->where('status', 'sent')->sortByDesc('created_at')->first())
+                        @if($emailed)
+                            <span class="kt-badge kt-badge-success" title="Accepted by the mail service on {{ $emailed->created_at->format('j M Y H:i') }}">&#10003; Emailed to {{ $emailed->recipient }}</span>
+                        @elseif($invoice->status !== 'draft')
+                            <span class="kt-badge kt-badge-warning">Email not sent yet</span>
+                        @endif
                     </div>
                 </div>
                 <div class="no-print flex flex-wrap items-center gap-3">

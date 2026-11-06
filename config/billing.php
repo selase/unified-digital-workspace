@@ -23,9 +23,25 @@ return [
 
     'communications' => [
         'cycle_days' => [7, 1],
-        'due_days' => [7, 3, 0],
-        'overdue_days' => [7, 14],
+        // Days before the due date (the due date is 14 days after issue): every other day from issue.
+        'reminder_days_before_due' => [12, 10, 8, 6, 4, 2, 0],
+        // Days after the due date: warning notices every other day through weeks 3 and 4.
+        'warning_days_overdue' => [2, 4, 6, 8, 10, 12, 14],
+        // The site is temporarily unavailable the day after this many days past due.
+        'suspend_after_days_overdue' => 14,
     ],
+
+    /*
+     * Issue invoices automatically when the monthly run generates them. A
+     * tenant can opt out with meta.billing_auto_issue = false.
+     */
+    'auto_issue' => (bool) env('BILLING_AUTO_ISSUE', true),
+
+    /*
+     * Take tenant sites temporarily offline when an invoice stays unpaid past
+     * the suspension date. Owners can still sign in, but only to reach billing.
+     */
+    'suspension_enabled' => (bool) env('BILLING_SUSPENSION_ENABLED', true),
     /*
     |--------------------------------------------------------------------------
     | Global Markup Percentage

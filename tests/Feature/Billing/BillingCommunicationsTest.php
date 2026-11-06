@@ -20,7 +20,7 @@ beforeEach(function (): void {
     $this->service = app(BillingCommunicationService::class);
     $this->invoice = fn (string $status = 'issued'): Invoice => Invoice::create([
         'tenant_id' => $this->tenant->id, 'number' => 'INV-'.Illuminate\Support\Str::random(8),
-        'period_start' => '2026-09-01', 'period_end' => '2026-09-30', 'due_at' => '2026-11-01',
+        'period_start' => '2026-09-01', 'period_end' => '2026-09-30', 'due_at' => '2026-11-02',
         'status' => $status, 'currency' => 'GHS', 'subtotal' => 600, 'tax_total' => 0, 'total' => 600,
     ]);
 });

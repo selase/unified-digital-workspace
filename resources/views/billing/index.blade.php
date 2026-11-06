@@ -7,6 +7,9 @@
         $savedPlan = isset($displayAgreement) ? $displayAgreement->snapshot['hybrid']['website_plans'][$displayAgreement->plan_slug] : null;
     @endphp
     <section class="grid gap-6">
+        @if(session('warning'))
+            <div class="kt-card p-5 text-sm text-foreground bg-warning/10" role="alert">{{ session('warning') }} Open an invoice below and choose <strong>Pay</strong>.</div>
+        @endif
         <div class="kt-card p-6 lg:p-8">
             <div class="flex flex-wrap items-start justify-between gap-4">
                 <div>

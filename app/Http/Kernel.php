@@ -65,6 +65,7 @@ final class Kernel extends HttpKernel
             SubstituteBindings::class,
             Middleware\RedirectAdminFromCustomDomain::class,
             Middleware\EnforceBillingAccess::class,
+            Middleware\EnforceInvoiceSuspension::class,
             Middleware\EnforceUsageLimits::class,
             Middleware\MeterRequestUsage::class,
             Middleware\TrackActiveUser::class,
