@@ -138,9 +138,7 @@ return [
             /*
              * The disk names on which the backups will be stored.
              */
-            'disks' => [
-                's3',
-            ],
+            'disks' => array_values(array_filter(['s3', env('BACKUP_OFFSITE_BUCKET') ? 's3_offsite' : null])),
         ],
 
         /*
@@ -234,7 +232,7 @@ return [
     'monitor_backups' => [
         [
             'name' => env('APP_NAME', 'laravel-backup'),
-            'disks' => ['s3'],
+            'disks' => array_values(array_filter(['s3', env('BACKUP_OFFSITE_BUCKET') ? 's3_offsite' : null])),
             'health_checks' => [
                 MaximumAgeInDays::class => 1,
                 MaximumStorageInMegabytes::class => 5000,

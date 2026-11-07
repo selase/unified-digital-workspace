@@ -58,6 +58,17 @@ return [
             'throw' => false,
         ],
 
+        's3_offsite' => [
+            'driver' => 's3',
+            'key' => env('BACKUP_OFFSITE_KEY_ID'),
+            'secret' => env('BACKUP_OFFSITE_SECRET'),
+            'region' => 'auto',
+            'bucket' => env('BACKUP_OFFSITE_BUCKET'),
+            'endpoint' => env('BACKUP_OFFSITE_ENDPOINT'),
+            'use_path_style_endpoint' => true,
+            'throw' => false,
+        ],
+
         'tenant' => [
             'driver' => 's3',
             'key' => null,
