@@ -21,5 +21,8 @@ final class VerifyCsrfToken extends Middleware
         // token and rate limiting instead (see EnquiryToken).
         'enquiries',
         'site/enquiries',
+        // Careers applications: same protections as enquiries (honeypot, signed token, rate limit).
+        'site/careers/*/apply',
+        'careers/*/apply',
     ];
 }

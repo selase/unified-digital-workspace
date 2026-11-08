@@ -48,4 +48,26 @@ final class HrmsCoreServiceProvider extends ModuleServiceProvider
             \App\Modules\HrmsCore\Console\Commands\HrmsLeaveRolloverCommand::class,
         ]);
     }
+
+    /**
+     * Adds the public careers page next to the authenticated module routes: under /site for
+     * subdomain access and at the root for custom domains, as the CMS public pages do.
+     */
+    protected function registerRoutes(): void
+    {
+        parent::registerRoutes();
+
+        $publicRoutes = $this->getModulePath().'/Routes/public.php';
+
+        \Illuminate\Support\Facades\Route::group([
+            'middleware' => ['web', 'module:hrms-core'],
+            'prefix' => 'site',
+            'as' => 'hrms-core.public.',
+        ], fn () => require $publicRoutes);
+
+        \Illuminate\Support\Facades\Route::group([
+            'middleware' => ['web', 'cms.website', 'module:hrms-core'],
+            'as' => 'hrms-core.website.',
+        ], fn () => require $publicRoutes);
+    }
 }
