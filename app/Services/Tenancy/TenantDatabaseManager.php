@@ -26,8 +26,20 @@ class TenantDatabaseManager
             return;
         }
 
+        Config::set('database.connections.tenant', $this->connectionConfig($tenant));
+
+        app('db')->purge('tenant');
+    }
+
+    /**
+     * The connection settings for a dedicated-database tenant: its own secret when
+     * one is set, otherwise the landlord server with the tenant's database name.
+     *
+     * @return array<string, mixed>
+     */
+    public function connectionConfig(Tenant $tenant): array
+    {
         if (empty($tenant->db_secret_ref)) {
-            // Fallback to landlord credentials but override the database name
             $landlord = (new ConfigurationUrlParser)->parseConfiguration(Config::get('database.connections.landlord'));
             $creds = [
                 'host' => $landlord['host'] ?? '127.0.0.1',
@@ -44,7 +56,7 @@ class TenantDatabaseManager
             $creds = $this->secrets->getSecret((string) $tenant->db_secret_ref);
         }
 
-        Config::set('database.connections.tenant', [
+        return [
             'driver' => $tenant->db_driver,
             'host' => $creds['host'],
             'port' => $creds['port'],
@@ -62,9 +74,7 @@ class TenantDatabaseManager
             'sslrootcert' => $creds['sslrootcert'] ?? null,
             'sslcert' => $creds['sslcert'] ?? null,
             'sslkey' => $creds['sslkey'] ?? null,
-        ]);
-
-        app('db')->purge('tenant');
+        ];
     }
 
     /**
