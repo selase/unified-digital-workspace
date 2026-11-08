@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Modules\HrmsCore\Http\Controllers\Web\HrmsAppraisalWebController;
+use App\Modules\HrmsCore\Http\Controllers\Web\HrmsAttendanceController;
 use App\Modules\HrmsCore\Http\Controllers\Web\HrmsDepartmentDirectoryController;
 use App\Modules\HrmsCore\Http\Controllers\Web\HrmsEmployeeDirectoryController;
 use App\Modules\HrmsCore\Http\Controllers\Web\HrmsHubController;
@@ -10,6 +11,7 @@ use App\Modules\HrmsCore\Http\Controllers\Web\HrmsLeaveRequestController;
 use App\Modules\HrmsCore\Http\Controllers\Web\HrmsPromotionWebController;
 use App\Modules\HrmsCore\Http\Controllers\Web\HrmsRecruitmentController;
 use App\Modules\HrmsCore\Http\Controllers\Web\HrmsSalaryWebController;
+use App\Modules\HrmsCore\Http\Controllers\Web\HrmsTimesheetController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -167,4 +169,18 @@ Route::prefix('promotions')->name('promotions.')->group(function (): void {
     Route::post('/{promotion}/supervisor-review', [HrmsPromotionWebController::class, 'reviewBySupervisor'])->name('supervisor-review');
     Route::post('/{promotion}/hr-review', [HrmsPromotionWebController::class, 'reviewByHr'])->name('hr-review');
     Route::delete('/{promotion}', [HrmsPromotionWebController::class, 'destroy'])->name('destroy');
+});
+
+Route::prefix('attendance')->name('attendance.')->group(function (): void {
+    Route::get('/', [HrmsAttendanceController::class, 'index'])->name('index');
+    Route::post('/clock-in', [HrmsAttendanceController::class, 'clockIn'])->name('clock-in');
+    Route::post('/clock-out', [HrmsAttendanceController::class, 'clockOut'])->name('clock-out');
+    Route::post('/manual', [HrmsAttendanceController::class, 'storeManual'])->name('manual');
+    Route::put('/{record}', [HrmsAttendanceController::class, 'correct'])->name('correct');
+});
+
+Route::prefix('timesheets')->name('timesheets.')->group(function (): void {
+    Route::get('/', [HrmsTimesheetController::class, 'index'])->name('index');
+    Route::post('/', [HrmsTimesheetController::class, 'save'])->name('save');
+    Route::post('/{timesheet}/review', [HrmsTimesheetController::class, 'review'])->name('review');
 });
