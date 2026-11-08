@@ -51,6 +51,8 @@
             <form method="POST" action="{{ $payUrl }}">@csrf<button class="btn" type="submit">Pay {{ Money::format($document->balanceDue(), $document->currency) }}</button></form>
         @endif
 
+        <p class="muted" style="margin-top:16px"><a href="{{ $pdfUrl }}">Download PDF</a></p>
+
         @if($document->terms)<p class="muted" style="margin-top:20px">{{ $document->terms }}</p>@endif
     </div>
 </div>

@@ -13,6 +13,7 @@ use App\Modules\Finance\Models\FinFund;
 use App\Modules\Finance\Models\FinInvoice;
 use App\Modules\Finance\Models\FinItem;
 use App\Modules\Finance\Models\FinTax;
+use App\Modules\Finance\Services\FinancePdf;
 use App\Modules\Finance\Services\FinanceSettings;
 use App\Modules\Finance\Services\InvoiceService;
 use App\Modules\Finance\Services\OnlinePaymentService;
@@ -30,7 +31,7 @@ final class InvoiceController extends Controller
     public function index(Request $request): View
     {
         $tenantId = $this->allow($request, 'finance.view');
-        $type = $request->query('type') === FinInvoice::TYPE_QUOTE ? FinInvoice::TYPE_QUOTE : FinInvoice::TYPE_INVOICE;
+        $type = in_array($request->query('type'), [FinInvoice::TYPE_QUOTE, FinInvoice::TYPE_CREDIT_NOTE], true) ? (string) $request->query('type') : FinInvoice::TYPE_INVOICE;
         $status = $request->string('status')->trim()->toString();
 
         return view('finance::invoices.index', [
@@ -149,6 +150,30 @@ final class InvoiceController extends Controller
         Mail::to($recipient)->send(new FinanceInvoiceMail($model, $settings->legal_name ?: (string) config('app.name'), $online->paymentUrl($model), $settings->email));
 
         return back()->with('success', 'Emailed to '.$recipient.'.');
+    }
+
+    public function pdf(Request $request, FinancePdf $pdf, string $invoice): \Illuminate\Http\Response
+    {
+        $tenantId = $this->allow($request, 'finance.view');
+        $model = $this->find($tenantId, $invoice);
+
+        return response($pdf->output($model), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="'.$pdf->filename($model).'"',
+        ]);
+    }
+
+    public function creditNote(Request $request, InvoiceService $invoices, string $invoice): RedirectResponse
+    {
+        $tenantId = $this->allow($request, 'finance.invoices.manage');
+
+        try {
+            $note = $invoices->createCreditNote($this->find($tenantId, $invoice), $this->actorId($request));
+        } catch (DomainException $error) {
+            return back()->with('error', $error->getMessage());
+        }
+
+        return redirect()->route('finance.invoices.edit', $note->uuid)->with('success', 'Credit note draft created. Reduce the lines to credit only part of the invoice, then issue it.');
     }
 
     public function convert(Request $request, InvoiceService $invoices, string $invoice): RedirectResponse

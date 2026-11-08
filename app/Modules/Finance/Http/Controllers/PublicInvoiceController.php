@@ -7,6 +7,7 @@ namespace App\Modules\Finance\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant;
 use App\Modules\Finance\Models\FinInvoice;
+use App\Modules\Finance\Services\FinancePdf;
 use App\Modules\Finance\Services\FinanceSettings;
 use App\Modules\Finance\Services\OnlinePaymentService;
 use App\Modules\Finance\Support\ActivateTenant;
@@ -30,6 +31,17 @@ final class PublicInvoiceController extends Controller
             'settings' => app(FinanceSettings::class)->for($model->tenant_id),
             'canPay' => $online->canCollect($model),
             'payUrl' => $online->payActionUrl($model),
+            'pdfUrl' => $online->pdfUrl($model),
+        ]);
+    }
+
+    public function pdf(string $tenant, string $invoice, FinancePdf $pdf): \Illuminate\Http\Response
+    {
+        $model = $this->load($tenant, $invoice);
+
+        return response($pdf->output($model), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="'.$pdf->filename($model).'"',
         ]);
     }
 

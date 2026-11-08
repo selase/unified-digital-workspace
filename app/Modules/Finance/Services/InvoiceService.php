@@ -110,7 +110,11 @@ final class InvoiceService
         $isQuote = $invoice->type === FinInvoice::TYPE_QUOTE;
 
         return DB::connection('tenant')->transaction(function () use ($invoice, $tenantId, $settings, $isQuote, $userId): FinInvoice {
-            $key = $isQuote ? 'quote' : 'invoice';
+            $key = match ($invoice->type) {
+                FinInvoice::TYPE_QUOTE => 'quote',
+                FinInvoice::TYPE_CREDIT_NOTE => 'credit_note',
+                default => 'invoice',
+            };
             $invoice->number = $this->numbers->next($tenantId, $key, $this->settings->prefix($settings, $key));
             $terms = $invoice->contact->payment_terms_days ?? $settings->default_payment_terms_days;
             $invoice->due_date ??= $invoice->issue_date->copy()->addDays($terms);
@@ -118,16 +122,28 @@ final class InvoiceService
             $invoice->sent_at = now();
 
             if (! $isQuote) {
+                $isCredit = $invoice->type === FinInvoice::TYPE_CREDIT_NOTE;
+                $original = $isCredit ? $this->originalFor($invoice) : null;
+                if ($original instanceof FinInvoice && $invoice->total > $original->balanceDue()) {
+                    throw new DomainException('A credit note cannot be more than the amount still owed on '.$original->number.'.');
+                }
+
                 $journal = $this->ledger->post(
                     $tenantId,
                     $invoice->issue_date,
-                    $this->journalLines($invoice),
-                    'Invoice '.$invoice->number,
-                    'invoice',
+                    $this->journalLines($invoice, $isCredit),
+                    ($isCredit ? 'Credit note ' : 'Invoice ').$invoice->number,
+                    $isCredit ? 'credit_note' : 'invoice',
                     $invoice->id,
                     $userId,
                 );
                 $invoice->journal_id = $journal->id;
+
+                if ($original instanceof FinInvoice) {
+                    $invoice->status = FinInvoice::STATUS_APPLIED;
+                    $original->increment('credits_applied', $invoice->total);
+                    $this->refreshPaymentStatus($original->refresh());
+                }
             }
 
             $invoice->save();
@@ -179,14 +195,58 @@ final class InvoiceService
             throw new DomainException('An invoice with payments cannot be voided. Void the payments first.');
         }
 
+        if ($invoice->type === FinInvoice::TYPE_INVOICE && $invoice->credits_applied > 0) {
+            throw new DomainException('This invoice has credit notes applied. Void them first.');
+        }
+
         return DB::connection('tenant')->transaction(function () use ($invoice, $userId): FinInvoice {
             if ($invoice->journal_id !== null) {
                 $this->ledger->reverse($invoice->journal()->firstOrFail(), null, $userId);
             }
 
+            if ($invoice->type === FinInvoice::TYPE_CREDIT_NOTE && $invoice->status === FinInvoice::STATUS_APPLIED) {
+                $original = $this->originalFor($invoice);
+                if ($original instanceof FinInvoice) {
+                    $original->decrement('credits_applied', $invoice->total);
+                    $this->refreshPaymentStatus($original->refresh());
+                }
+            }
+
             $invoice->forceFill(['status' => FinInvoice::STATUS_VOID, 'voided_at' => now()])->save();
 
             return $invoice;
+        });
+    }
+
+    /** Starts a draft credit note that copies an open invoice's lines; edit it to credit only part. */
+    public function createCreditNote(FinInvoice $invoice, ?string $userId = null): FinInvoice
+    {
+        if ($invoice->type !== FinInvoice::TYPE_INVOICE || ! in_array($invoice->status, [FinInvoice::STATUS_SENT, FinInvoice::STATUS_PARTLY_PAID], true) || $invoice->balanceDue() <= 0) {
+            throw new DomainException('A credit note can only be raised against an issued invoice that still has a balance.');
+        }
+
+        $invoice->load(['contact', 'lines']);
+
+        return DB::connection('tenant')->transaction(function () use ($invoice, $userId): FinInvoice {
+            $note = $this->saveDraft(
+                $invoice->tenant_id,
+                $invoice->contact,
+                ['type' => FinInvoice::TYPE_CREDIT_NOTE, 'issue_date' => today()->toDateString(), 'notes' => 'Credit for '.$invoice->number],
+                $invoice->lines->map(fn (FinInvoiceLine $line): array => [
+                    'description' => $line->description,
+                    'quantity' => $line->quantity_thousandths / 1000,
+                    'unit_price' => $line->unit_price,
+                    'item_id' => $line->item_id,
+                    'account_id' => $line->account_id,
+                    'tax_id' => $line->tax_id,
+                    'fund_id' => $line->fund_id,
+                ])->all(),
+                null,
+                $userId,
+            );
+            $note->forceFill(['credit_for_id' => $invoice->id])->save();
+
+            return $note;
         });
     }
 
@@ -197,10 +257,11 @@ final class InvoiceService
         }
 
         $paid = (int) $invoice->allocations()->sum('amount');
+        $covered = $paid + $invoice->credits_applied;
         $invoice->amount_paid = $paid;
         $invoice->status = match (true) {
-            $paid >= $invoice->total => FinInvoice::STATUS_PAID,
-            $paid > 0 => FinInvoice::STATUS_PARTLY_PAID,
+            $covered >= $invoice->total => FinInvoice::STATUS_PAID,
+            $covered > 0 => FinInvoice::STATUS_PARTLY_PAID,
             default => FinInvoice::STATUS_SENT,
         };
         $invoice->save();
@@ -211,7 +272,7 @@ final class InvoiceService
     /**
      * @return list<array{account_id: int, debit?: int, credit?: int, memo?: string|null, contact_id?: int|null, fund_id?: int|null}>
      */
-    private function journalLines(FinInvoice $invoice): array
+    private function journalLines(FinInvoice $invoice, bool $isCredit = false): array
     {
         $tenantId = $invoice->tenant_id;
         $receivable = $this->accounts->bySystemKey($tenantId, ChartOfAccounts::RECEIVABLE);
@@ -246,7 +307,31 @@ final class InvoiceService
             ];
         }
 
+        if ($isCredit) {
+            // A credit note is the invoice posted the other way round.
+            $lines = array_map(function (array $line): array {
+                $flipped = $line;
+                unset($flipped['debit'], $flipped['credit']);
+                if (isset($line['debit'])) {
+                    $flipped['credit'] = $line['debit'];
+                }
+                if (isset($line['credit'])) {
+                    $flipped['debit'] = $line['credit'];
+                }
+
+                return $flipped;
+            }, $lines);
+        }
+
         return $lines;
+    }
+
+    private function originalFor(FinInvoice $note): ?FinInvoice
+    {
+        return $note->credit_for_id === null ? null : FinInvoice::query()
+            ->where('tenant_id', $note->tenant_id)
+            ->lockForUpdate()
+            ->find($note->credit_for_id);
     }
 
     private function taxFor(string $tenantId, bool $taxEnabled, ?int $taxId, int $lineTotal): int

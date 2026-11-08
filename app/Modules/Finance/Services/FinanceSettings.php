@@ -11,6 +11,7 @@ final class FinanceSettings
     public const DEFAULT_PREFIXES = [
         'invoice' => 'INV-',
         'quote' => 'QUO-',
+        'credit_note' => 'CN-',
         'payment' => 'PAY-',
         'journal' => 'JNL-',
     ];

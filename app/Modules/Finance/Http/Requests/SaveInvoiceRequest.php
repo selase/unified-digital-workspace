@@ -25,7 +25,7 @@ final class SaveInvoiceRequest extends FormRequest
 
         return [
 
-            'type' => ['required', Rule::in(['invoice', 'quote'])],
+            'type' => ['required', Rule::in(['invoice', 'quote', 'credit_note'])],
             'contact_id' => ['required', Rule::exists('fin_contacts', 'id')->where('tenant_id', $tenantId)],
             'issue_date' => ['required', 'date'],
             'due_date' => ['nullable', 'date', 'after_or_equal:issue_date'],

@@ -3,6 +3,7 @@
         'finance.index' => ['Overview', 'finance.index'],
         'finance.invoices' => ['Invoices', 'finance.invoices.index'],
         'finance.quotes' => ['Quotes', 'finance.invoices.index', ['type' => 'quote']],
+        'finance.credits' => ['Credit notes', 'finance.invoices.index', ['type' => 'credit_note']],
         'finance.recurring' => ['Recurring', 'finance.recurring.index'],
         'finance.payments' => ['Payments', 'finance.payments.index'],
         'finance.contacts' => ['Customers', 'finance.contacts.index'],
@@ -14,6 +15,7 @@
     ];
     $current = request()->route()?->getName() ?? '';
     $isQuotes = str_starts_with($current, 'finance.invoices') && request('type') === 'quote';
+    $isCredits = str_starts_with($current, 'finance.invoices') && request('type') === 'credit_note';
 @endphp
 <div class="flex flex-col gap-4">
     <div class="flex flex-wrap items-center gap-1 rounded-lg bg-muted/30 p-1">
@@ -21,7 +23,7 @@
             @php
                 $active = $key === 'finance.quotes'
                     ? $isQuotes
-                    : (! $isQuotes && ($key === 'finance.index' ? $current === 'finance.index' : str_starts_with($current, $key)));
+                    : ($key === 'finance.credits' ? $isCredits : (! $isQuotes && ! $isCredits && ($key === 'finance.index' ? $current === 'finance.index' : str_starts_with($current, $key))));
             @endphp
             <a href="{{ route($tab[1], $tab[2] ?? []) }}" class="kt-btn kt-btn-sm {{ $active ? 'kt-btn-primary' : 'kt-btn-ghost' }}">{{ $tab[0] }}</a>
         @endforeach

@@ -36,6 +36,11 @@ final class OnlinePaymentService
         return $this->signed('finance.public.invoice', $invoice);
     }
 
+    public function pdfUrl(FinInvoice $invoice): string
+    {
+        return $this->signed('finance.public.pdf', $invoice);
+    }
+
     public function payActionUrl(FinInvoice $invoice): string
     {
         return $this->signed('finance.public.pay', $invoice);
