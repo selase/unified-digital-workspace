@@ -41,6 +41,22 @@ final class TenantBackupSources
     }
 
     /**
+     * Registers the dedicated databases only when the command line is a backup run.
+     *
+     * @param  array<int, string>  $argv
+     */
+    public function registerWhenBackingUp(array $argv): bool
+    {
+        if (! in_array('backup:run', $argv, true)) {
+            return false;
+        }
+
+        $this->register();
+
+        return true;
+    }
+
+    /**
      * Defines a connection per dedicated tenant and lists it as a backup source.
      *
      * @return list<string> the connection names added

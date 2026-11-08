@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 use Opcodes\LogViewer\Facades\LogViewer;
+use Throwable;
 
 final class AppServiceProvider extends ServiceProvider
 {
@@ -100,11 +101,12 @@ final class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        \Illuminate\Support\Facades\Event::listen(\Illuminate\Console\Events\CommandStarting::class, function (\Illuminate\Console\Events\CommandStarting $event): void {
-            if ($event->command === 'backup:run') {
-                app(\App\Services\Tenancy\TenantBackupSources::class)->register();
-            }
-        });
+        try {
+            // Must run during boot: the backup package reads its config when its command is constructed.
+            app(\App\Services\Tenancy\TenantBackupSources::class)->registerWhenBackingUp($_SERVER['argv'] ?? []);
+        } catch (Throwable $error) {
+            report($error);
+        }
 
         $this->loadMigrationsFrom(database_path('migrations/landlord'));
 

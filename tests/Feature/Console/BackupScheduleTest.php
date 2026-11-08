@@ -126,12 +126,15 @@ it('backs up every active dedicated tenant database alongside the main one', fun
         ->and(array_count_values(config('backup.backup.source.databases'))[$connection])->toBe(1);
 });
 
-it('adds the dedicated databases when the backup command starts', function (): void {
+it('adds the dedicated databases only for a backup run command line', function (): void {
     $tenant = Tenant::factory()->create(['status' => 'active', 'isolation_mode' => 'db_per_tenant', 'db_driver' => 'pgsql', 'meta' => ['database' => 'tenant_xyz']]);
+    $connection = 'backup_tenant_'.str_replace('-', '_', (string) $tenant->id);
+    $sources = app(App\Services\Tenancy\TenantBackupSources::class);
 
-    event(new Illuminate\Console\Events\CommandStarting('backup:run', new Symfony\Component\Console\Input\ArrayInput([]), new Symfony\Component\Console\Output\NullOutput));
-
-    expect(config('backup.backup.source.databases'))->toContain('backup_tenant_'.str_replace('-', '_', (string) $tenant->id));
+    expect($sources->registerWhenBackingUp(['artisan', 'migrate']))->toBeFalse()
+        ->and(config('backup.backup.source.databases'))->not->toContain($connection)
+        ->and($sources->registerWhenBackingUp(['artisan', 'backup:run', '--only-db']))->toBeTrue()
+        ->and(config('backup.backup.source.databases'))->toContain($connection);
 });
 
 it('allows the current shared-tenant CMS coverage without touching dedicated database connections', function (): void {
