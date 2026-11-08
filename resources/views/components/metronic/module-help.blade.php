@@ -9,6 +9,7 @@
         'project-management.index',
         'quality-monitoring.index',
         'crm.index',
+        'finance.index',
         'vendor-marketplace.index',
         'real-estate.index',
         'facilities-management.index',

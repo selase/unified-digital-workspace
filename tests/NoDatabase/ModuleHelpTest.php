@@ -28,9 +28,9 @@ beforeEach(function (): void {
     ]);
 });
 
-it('bundles all seventeen module quickstarts', function (): void {
+it('bundles all eighteen module quickstarts', function (): void {
     $guide = File::get(base_path('docs/MODULE_QUICKSTARTS.md'));
-    expect(preg_match_all('/^## \d+\./m', $guide))->toBe(17);
+    expect(preg_match_all('/^## \d+\./m', $guide))->toBe(18);
 });
 
 it('redirects guests to login without reading the guide', function (string $url): void {
@@ -76,10 +76,10 @@ it('shows a useful message if the bundled guide is missing', function (): void {
         ->assertSee('Module help is temporarily unavailable')->assertSee('workspace administrator');
 });
 
-it('offers shared module home help for all seventeen homes only', function (): void {
+it('offers shared module home help for all eighteen homes only', function (): void {
     $navigation = file_get_contents(app_path('Services/Navigation/WorkspaceNavigation.php'));
     preg_match_all("/'home_route' => '([^']+)'/", $navigation, $matches);
-    expect($matches[1])->toHaveCount(17);
+    expect($matches[1])->toHaveCount(18);
     foreach ($matches[1] as $name) {
         $route = new Illuminate\Routing\Route('GET', '/', fn (): null => null);
         $route->name($name);

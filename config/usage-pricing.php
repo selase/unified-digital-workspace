@@ -51,6 +51,7 @@ return [
             'website' => ['name' => 'Intranet', 'GHS' => 100.00, 'USD' => 10.00, 'modules' => ['intranet'], 'features' => []],
             'collaboration' => ['name' => 'Collaboration & Documents', 'GHS' => 500.00, 'USD' => 40.00, 'modules' => ['document-management', 'memos', 'forums', 'project-management', 'reports', 'workflow-automation'], 'features' => []],
             'crm' => ['name' => 'CRM', 'GHS' => 500.00, 'USD' => 40.00, 'modules' => ['crm'], 'features' => []],
+            'finance' => ['name' => 'Finance & Accounting', 'GHS' => 750.00, 'USD' => 60.00, 'modules' => ['finance'], 'features' => []],
             'hr' => ['name' => 'HR Management', 'GHS' => 1000.00, 'USD' => 80.00, 'modules' => ['hrms-core'], 'features' => []],
             'quality' => ['name' => 'Quality & Safety', 'GHS' => 1000.00, 'USD' => 80.00, 'modules' => ['incident-management', 'quality-monitoring'], 'features' => []],
             'facilities' => ['name' => 'Facilities', 'GHS' => 500.00, 'USD' => 40.00, 'modules' => ['facilities-management'], 'features' => []],

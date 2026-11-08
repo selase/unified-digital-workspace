@@ -201,6 +201,17 @@ _Source: `app/Modules/FacilitiesManagement/Routes/web.php`; `Http/Controllers/We
 
 _Source: `app/Modules/Store/Routes/web.php`; `Http/Controllers/Web/StoreWebController.php`; `Services/StoreInventoryService.php`; store product, order and platform-package views._
 
+## 18. Finance: invoices, payments and the ledger (paid add-on)
+
+1. Open Finance, then Customers, and add the people or organisations you invoice. Add an email address if you want to send them a payment link.
+2. Open Invoices and create an invoice (or a quote). Save it as a draft, check it, then choose Issue. Issuing numbers the invoice and posts it to the ledger.
+3. Share the payment link or email the invoice. When the customer pays through Paystack the payment is recorded automatically; otherwise open Payments and record a bank, cash or mobile money payment and apply it to the invoice.
+4. Use Reports for aged receivables and the trial balance, and Recurring to schedule repeat invoices.
+
+**Limits:** posted entries cannot be edited; correct them by voiding or reversing. Online payment needs the organisation's own Paystack keys. Tax stays off until the organisation is VAT-registered and switches it on in Settings. Bills, expenses, bank reconciliation, profit and loss and balance sheet reports, and credit notes are not part of this release.
+
+_Source: `app/Modules/Finance/Routes/web.php`; `Http/Controllers/*Controller.php`; `Services/{LedgerService,InvoiceService,PaymentService}.php`; finance views._
+
 ## When something does not work
 
 - **403 / forbidden:** confirm you are signed in to the correct organisation. Ask an administrator to check the action permission, role assignment, employee/account link and department, ownership or participant restrictions. Report the module and action that failed. A hidden approval button may reflect permissions or lifecycle state.
