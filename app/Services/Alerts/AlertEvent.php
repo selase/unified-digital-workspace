@@ -20,6 +20,8 @@ final class AlertEvent
 
     public const CREDITS_LOW = 'credits.low_balance';
 
+    public const JOB_APPLICATION = 'hrms.application_received';
+
     /** @return array<string, array{label: string, description: string}> */
     public static function all(): array
     {
@@ -29,6 +31,7 @@ final class AlertEvent
             self::FORM_SUBMISSION => ['label' => 'Form submission received', 'description' => 'Someone submits one of your forms.'],
             self::DOCUMENT_REVIEW_DUE => ['label' => 'Document review or expiry due', 'description' => 'A controlled document needs review or is about to expire.'],
             self::CREDITS_LOW => ['label' => 'Credit balance low', 'description' => 'Your SMS, email or AI credits are running out.'],
+            self::JOB_APPLICATION => ['label' => 'Job application received', 'description' => 'Someone applies for a job on your careers page.'],
         ];
     }
 
