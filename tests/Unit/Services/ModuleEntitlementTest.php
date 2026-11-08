@@ -202,3 +202,19 @@ test('downgrade revokes cached module access without deleting its enabled row', 
     expect(fn () => $middleware->handle($request, fn () => response('allowed'), 'crm'))
         ->toThrow(Symfony\Component\HttpKernel\Exception\HttpException::class);
 });
+
+test('a complimentary grant unlocks a module that the package does not include, and only that module', function (): void {
+    $tenant = Tenant::factory()->create();
+
+    expect($this->mm->canEnableForTenant('finance', $tenant))->toBeFalse();
+
+    TenantFeature::query()->create([
+        'tenant_id' => $tenant->id,
+        'feature_key' => 'module-finance',
+        'enabled' => true,
+        'meta' => ['source' => 'complimentary'],
+    ]);
+
+    expect($this->mm->canEnableForTenant('finance', $tenant))->toBeTrue()
+        ->and($this->mm->canEnableForTenant('finance', Tenant::factory()->create()))->toBeFalse();
+});

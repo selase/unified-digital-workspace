@@ -52,6 +52,7 @@ function createFinanceContext(bool $withPermissions = true): array
     }
 
     app(TenantDatabaseManager::class)->configure($tenant);
+    App\Models\TenantFeature::query()->create(['tenant_id' => $tenant->id, 'feature_key' => 'module-finance', 'enabled' => true, 'meta' => ['source' => 'complimentary']]);
     app(ModuleManager::class)->enableForTenant('finance', $tenant);
 
     Artisan::call('migrate', [
