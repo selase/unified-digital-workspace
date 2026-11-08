@@ -11,7 +11,7 @@
         h1 { overflow-wrap: anywhere; font-size: 1.6rem; } table { width: 100%; border-collapse: collapse; }
         th, td { padding: 12px 4px; text-align: left; border-bottom: 1px solid #d9dfe5; overflow-wrap: anywhere; }
         button { padding: 12px 20px; background: #173f68; color: white; border: 0; border-radius: 6px; font: inherit; cursor: pointer; }
-        a { color: #173f68; } .notice { padding: 12px; background: #eef3f8; } footer { margin-top: 24px; }
+        a { color: #173f68; } .consent { display: flex; gap: 12px; align-items: flex-start; margin: 20px 0 12px; padding: 16px; background: #eef6ee; border: 2px solid #2f7d4f; border-radius: 8px; cursor: pointer; } .consent input { width: 22px; height: 22px; margin-top: 2px; flex: none; } .notice { padding: 12px; background: #eef3f8; } footer { margin-top: 24px; }
     </style>
 </head>
 <body>
@@ -53,7 +53,10 @@
         <form method="POST" action="{{ $payUrl }}">
             @csrf
             @if($offerSaveCard)
-                <p><label><input type="checkbox" name="save_card" value="1"> Save my card and charge it automatically on the due date of future unpaid invoices. I can remove it at any time from Billing in my workspace, and each charge appears on my invoice and receipt.</label></p>
+                <label class="consent">
+                    <input type="checkbox" name="save_card" value="1">
+                    <span><strong>Optional: pay automatically next time.</strong><br>Save my card and charge it automatically on the due date of future unpaid invoices. I can remove it at any time from Billing in my workspace, and each charge appears on my invoice and receipt.</span>
+                </label>
             @endif
             <button type="submit">Pay {{ $invoice->currency }} {{ number_format((float) $invoice->total, 2) }}</button>
         </form>
