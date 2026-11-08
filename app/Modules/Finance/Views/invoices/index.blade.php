@@ -1,17 +1,19 @@
 @extends('layouts.metronic.app')
 
-@section('title', $type === 'quote' ? 'Quotes' : 'Invoices')
+@section('title', $type === 'quote' ? 'Quotes' : ($type === 'credit_note' ? 'Credit notes' : 'Invoices'))
 
 @section('content')
-@php use App\Modules\Finance\Support\Money; $label = $type === 'quote' ? 'Quotes' : 'Invoices'; @endphp
+@php use App\Modules\Finance\Support\Money; $label = $type === 'quote' ? 'Quotes' : ($type === 'credit_note' ? 'Credit notes' : 'Invoices'); @endphp
 <div class="flex flex-col gap-6">
     <div class="flex items-center justify-between gap-4">
         <div>
             <h1 class="text-xl font-bold text-foreground">{{ $label }}</h1>
-            <p class="text-xs text-muted-foreground">{{ $type === 'quote' ? 'Offers sent to customers. Convert an accepted quote into an invoice.' : 'Invoices post to the ledger when they are issued.' }}</p>
+            <p class="text-xs text-muted-foreground">{{ $type === 'quote' ? 'Offers sent to customers. Convert an accepted quote into an invoice.' : ($type === 'credit_note' ? 'Reduce what a customer owes. Raise one from an invoice.' : 'Invoices post to the ledger when they are issued.') }}</p>
         </div>
         @can('finance.invoices.manage')
-            <a href="{{ route('finance.invoices.create', ['type' => $type]) }}" class="kt-btn kt-btn-sm kt-btn-primary">New {{ $type === 'quote' ? 'quote' : 'invoice' }}</a>
+            @if($type !== 'credit_note')
+                <a href="{{ route('finance.invoices.create', ['type' => $type]) }}" class="kt-btn kt-btn-sm kt-btn-primary">New {{ $type === 'quote' ? 'quote' : 'invoice' }}</a>
+            @endif
         @endcan
     </div>
 
@@ -23,7 +25,7 @@
                 <input type="hidden" name="type" value="{{ $type }}">
                 <select class="kt-select" name="status" onchange="this.form.submit()">
                     <option value="">All statuses</option>
-                    @foreach(['draft', 'sent', 'partly_paid', 'paid', 'overdue', 'void', 'accepted'] as $option)
+                    @foreach(['draft', 'sent', 'partly_paid', 'paid', 'overdue', 'void', 'accepted', 'applied'] as $option)
                         <option value="{{ $option }}" @selected($status === $option)>{{ str_replace('_', ' ', ucfirst($option)) }}</option>
                     @endforeach
                 </select>

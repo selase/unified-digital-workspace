@@ -569,3 +569,85 @@ describe('Finance routing', function (): void {
         expect(route('finance.index', [], false))->toBe('/finance/overview');
     });
 });
+
+describe('Finance PDF', function (): void {
+    test('renders a PDF for staff and for the signed customer link only', function (): void {
+        [$user, $tenant] = createFinanceContext();
+        $invoice = issueInvoice($tenant, financeCustomer($tenant));
+
+        $staff = $this->actingAs($user)->withSession(['active_tenant_id' => $tenant->id])->get(route('finance.invoices.pdf', $invoice->uuid));
+        $staff->assertOk()->assertHeader('Content-Type', 'application/pdf');
+        expect(str_starts_with($staff->getContent(), '%PDF'))->toBeTrue();
+
+        $this->get(route('finance.public.pdf', ['tenant' => $tenant->id, 'invoice' => $invoice->uuid]))->assertForbidden();
+
+        $signed = app(OnlinePaymentService::class)->pdfUrl($invoice);
+        $public = $this->get($signed);
+        $public->assertOk();
+        expect(str_starts_with($public->getContent(), '%PDF'))->toBeTrue();
+    });
+});
+
+describe('Finance credit notes', function (): void {
+    function partialCredit(Tenant $tenant, FinContact $customer, FinInvoice $invoice, int $amount): FinInvoice
+    {
+        $service = app(InvoiceService::class);
+        $note = $service->createCreditNote($invoice->fresh());
+
+        return $service->saveDraft($tenant->id, $customer, ['type' => 'credit_note', 'issue_date' => today()->toDateString()], [
+            ['description' => 'Discount', 'quantity' => 1, 'unit_price' => $amount],
+        ], $note);
+    }
+
+    test('a credit note reduces what is owed, posts the reverse entry and can be voided', function (): void {
+        [, $tenant] = createFinanceContext();
+        $customer = financeCustomer($tenant);
+        $invoice = issueInvoice($tenant, $customer, 100_000);
+        $service = app(InvoiceService::class);
+
+        $note = $service->send(partialCredit($tenant, $customer, $invoice, 40_000));
+
+        expect($note->number)->toBe('CN-00001')->and($note->status)->toBe('applied')->and($note->credit_for_id)->toBe($invoice->id)
+            ->and($invoice->fresh()->balanceDue())->toBe(60_000)
+            ->and($invoice->fresh()->status)->toBe('partly_paid')
+            ->and(accountBalance($tenant, ChartOfAccounts::RECEIVABLE))->toBe(60_000)
+            ->and(accountBalance($tenant, ChartOfAccounts::DEFAULT_INCOME))->toBe(-60_000)
+            ->and(fn () => $service->void($invoice->fresh()))->toThrow(DomainException::class, 'credit notes');
+
+        $service->void($note->fresh());
+
+        expect($invoice->fresh()->balanceDue())->toBe(100_000)->and($invoice->fresh()->status)->toBe('sent')
+            ->and(accountBalance($tenant, ChartOfAccounts::RECEIVABLE))->toBe(100_000);
+
+        $trial = app(FinanceReports::class)->trialBalance($tenant->id);
+        expect($trial['debit'])->toBe($trial['credit']);
+    });
+
+    test('crediting the full balance settles the invoice and a larger credit is refused', function (): void {
+        [, $tenant] = createFinanceContext();
+        $customer = financeCustomer($tenant);
+        $invoice = issueInvoice($tenant, $customer, 100_000);
+        $service = app(InvoiceService::class);
+        app(PaymentService::class)->record($tenant->id, $customer, 30_000, today(), [$invoice->id => 30_000]);
+
+        expect(fn () => $service->send(partialCredit($tenant, $customer, $invoice, 80_000)))->toThrow(DomainException::class, 'more than the amount still owed');
+
+        $service->send(partialCredit($tenant, $customer, $invoice, 70_000));
+        expect($invoice->fresh()->status)->toBe('paid')->and($invoice->fresh()->balanceDue())->toBe(0)
+            ->and(fn () => $service->createCreditNote($invoice->fresh()))->toThrow(DomainException::class);
+    });
+
+    test('the screen creates a credit note draft from an invoice', function (): void {
+        [$user, $tenant] = createFinanceContext();
+        $invoice = issueInvoice($tenant, financeCustomer($tenant), 50_000);
+
+        $this->actingAs($user)->withSession(['active_tenant_id' => $tenant->id])
+            ->post(route('finance.invoices.credit-note', $invoice->uuid))->assertRedirect();
+
+        $note = FinInvoice::query()->where('type', 'credit_note')->firstOrFail();
+        expect($note->status)->toBe('draft')->and($note->total)->toBe(50_000)->and($note->credit_for_id)->toBe($invoice->id);
+
+        $this->get(route('finance.invoices.edit', $note->uuid))->assertOk();
+        $this->get(route('finance.invoices.index', ['type' => 'credit_note']))->assertOk()->assertSee('Credit notes');
+    });
+});

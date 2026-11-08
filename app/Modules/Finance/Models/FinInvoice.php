@@ -19,6 +19,8 @@ final class FinInvoice extends Model
 
     public const TYPE_QUOTE = 'quote';
 
+    public const TYPE_CREDIT_NOTE = 'credit_note';
+
     public const STATUS_DRAFT = 'draft';
 
     public const STATUS_SENT = 'sent';
@@ -33,6 +35,8 @@ final class FinInvoice extends Model
 
     public const STATUS_DECLINED = 'declined';
 
+    public const STATUS_APPLIED = 'applied';
+
     protected $table = 'fin_invoices';
 
     /** @var list<string> */
@@ -40,7 +44,7 @@ final class FinInvoice extends Model
 
     public function balanceDue(): int
     {
-        return max(0, $this->total - $this->amount_paid);
+        return max(0, $this->total - $this->amount_paid - $this->credits_applied);
     }
 
     public function isOverdue(): bool
@@ -85,6 +89,7 @@ final class FinInvoice extends Model
             'tax_total' => 'integer',
             'total' => 'integer',
             'amount_paid' => 'integer',
+            'credits_applied' => 'integer',
         ];
     }
 }
