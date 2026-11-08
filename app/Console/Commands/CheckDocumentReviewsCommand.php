@@ -110,6 +110,10 @@ final class CheckDocumentReviewsCommand extends Command
                         actionUrl: route('document-management.documents.show', $doc)
                     ));
 
+                    if ($tenant) {
+                        app(\App\Services\Alerts\AlertDispatcher::class)->dispatchSafely($tenant, \App\Services\Alerts\AlertEvent::DOCUMENT_REVIEW_DUE, $subject, $message, 'doc-review-'.$doc->id.'-'.($isOverdue ? 'overdue' : 'soon'));
+                    }
+
                     DocumentAudit::create([
                         'tenant_id' => $doc->tenant_id,
                         'document_id' => $doc->id,
@@ -165,6 +169,10 @@ final class CheckDocumentReviewsCommand extends Command
                         workflowRuleId: 0,
                         actionUrl: route('document-management.documents.show', $doc)
                     ));
+
+                    if ($tenant) {
+                        app(\App\Services\Alerts\AlertDispatcher::class)->dispatchSafely($tenant, \App\Services\Alerts\AlertEvent::DOCUMENT_REVIEW_DUE, $subject, $message, 'doc-expiry-'.$doc->id.'-'.($isExpired ? 'expired' : 'soon'));
+                    }
 
                     DocumentAudit::create([
                         'tenant_id' => $doc->tenant_id,

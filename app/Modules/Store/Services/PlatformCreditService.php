@@ -137,7 +137,33 @@ final class PlatformCreditService
             $wallet->decrement('balance', $amount);
             $wallet->increment('total_consumed', $amount);
 
+            $this->alertIfLow($tenantId, $creditType, (int) $wallet->balance, (int) $wallet->total_purchased);
+
             return true;
         });
+    }
+
+    /**
+     * Raises the "credit balance low" alert once per top-up, when the balance falls to
+     * a tenth of what was bought (or ten credits, whichever is larger).
+     */
+    private function alertIfLow(string $tenantId, string $creditType, int $balance, int $purchased): void
+    {
+        if ($balance > max(10, (int) floor($purchased / 10))) {
+            return;
+        }
+
+        $tenant = \App\Models\Tenant::query()->find($tenantId);
+        if ($tenant === null) {
+            return;
+        }
+
+        app(\App\Services\Alerts\AlertDispatcher::class)->dispatchSafely(
+            $tenant,
+            \App\Services\Alerts\AlertEvent::CREDITS_LOW,
+            'Credit balance low',
+            'Your '.str_replace('_', ' ', $creditType).' credits are running low ('.$balance.' left). Top up to keep them working.',
+            'credits-low-'.$creditType.'-'.$purchased,
+        );
     }
 }

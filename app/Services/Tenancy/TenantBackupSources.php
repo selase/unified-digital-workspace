@@ -17,6 +17,17 @@ final class TenantBackupSources
 {
     public function __construct(private readonly TenantDatabaseManager $databases) {}
 
+    /**
+     * Whether this command line is a backup run. Checked before anything is resolved so
+     * ordinary requests and commands never touch the tenant database setup.
+     *
+     * @param  array<int, string>  $argv
+     */
+    public static function isBackupRun(array $argv): bool
+    {
+        return in_array('backup:run', $argv, true);
+    }
+
     /** @return Collection<int, Tenant> */
     public function dedicatedTenants(): Collection
     {
@@ -38,22 +49,6 @@ final class TenantBackupSources
             ->map(fn (Tenant $tenant): string => $tenant->name.' ('.$tenant->id.') has no database name or secret to back up')
             ->values()
             ->all();
-    }
-
-    /**
-     * Registers the dedicated databases only when the command line is a backup run.
-     *
-     * @param  array<int, string>  $argv
-     */
-    public function registerWhenBackingUp(array $argv): bool
-    {
-        if (! in_array('backup:run', $argv, true)) {
-            return false;
-        }
-
-        $this->register();
-
-        return true;
     }
 
     /**

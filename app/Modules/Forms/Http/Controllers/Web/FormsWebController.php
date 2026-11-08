@@ -736,6 +736,16 @@ final class FormsWebController extends Controller
 
         $request->session()->put("submitted_form_{$form->id}", true);
 
+        if ($formTenant = \App\Models\Tenant::query()->find($form->tenant_id)) {
+            app(\App\Services\Alerts\AlertDispatcher::class)->dispatchSafely(
+                $formTenant,
+                \App\Services\Alerts\AlertEvent::FORM_SUBMISSION,
+                'New form submission',
+                'Someone submitted "'.$form->title.'".',
+                'form-submission-'.$submission->id,
+            );
+        }
+
         \App\Modules\WorkflowAutomation\Events\WorkflowDomainEvent::dispatch(
             (string) $form->tenant_id,
             'form.submitted',

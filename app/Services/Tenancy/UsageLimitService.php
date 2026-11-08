@@ -82,6 +82,18 @@ final class UsageLimitService
     {
         Log::warning("Usage Alert for Tenant {$tenant->name}: {$limit->metric->value} is at ".round($percent, 2).'% capacity.');
 
+        $handled = app(\App\Services\Alerts\AlertDispatcher::class)->dispatchSafely(
+            $tenant,
+            \App\Services\Alerts\AlertEvent::USAGE_LIMIT,
+            'Usage limit reached',
+            ucfirst(str_replace(['.', '_'], ' ', $limit->metric->value)).' is at '.round($percent).'% of your limit.',
+            'usage-'.$limit->id.'-'.now()->format('Y-m'),
+        );
+
+        if ($handled > 0) {
+            return;
+        }
+
         try {
             $notification = new \App\Notifications\UsageLimitAlertNotification($tenant, $limit, $percent);
 

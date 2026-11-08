@@ -131,10 +131,13 @@ it('adds the dedicated databases only for a backup run command line', function (
     $connection = 'backup_tenant_'.str_replace('-', '_', (string) $tenant->id);
     $sources = app(App\Services\Tenancy\TenantBackupSources::class);
 
-    expect($sources->registerWhenBackingUp(['artisan', 'migrate']))->toBeFalse()
-        ->and(config('backup.backup.source.databases'))->not->toContain($connection)
-        ->and($sources->registerWhenBackingUp(['artisan', 'backup:run', '--only-db']))->toBeTrue()
-        ->and(config('backup.backup.source.databases'))->toContain($connection);
+    expect(App\Services\Tenancy\TenantBackupSources::isBackupRun(['artisan', 'migrate']))->toBeFalse()
+        ->and(App\Services\Tenancy\TenantBackupSources::isBackupRun(['artisan', 'backup:run', '--only-db']))->toBeTrue()
+        ->and(config('backup.backup.source.databases'))->not->toContain($connection);
+
+    $sources->register();
+
+    expect(config('backup.backup.source.databases'))->toContain($connection);
 });
 
 it('allows the current shared-tenant CMS coverage without touching dedicated database connections', function (): void {

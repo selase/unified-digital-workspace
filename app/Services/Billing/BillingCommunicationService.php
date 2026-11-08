@@ -97,6 +97,10 @@ final class BillingCommunicationService
                     if (! in_array($invoice->status, [Invoice::STATUS_ISSUED, Invoice::STATUS_OVERDUE], true)) {
                         return;
                     }
+                    if ($invoice->tenant !== null) {
+                        app(\App\Services\Alerts\AlertDispatcher::class)->dispatchSafely($invoice->tenant, \App\Services\Alerts\AlertEvent::INVOICE_OVERDUE, 'Invoice overdue',
+                            'Invoice '.$invoice->number.' is past its due date. Please pay it to keep your site available.', 'invoice-overdue-'.$invoice->id);
+                    }
                 }
                 if ($days >= 0 && in_array($days, config('billing.communications.reminder_days_before_due', [12, 10, 8, 6, 4, 2, 0]), true)
                     || $days < 0 && in_array(-$days, config('billing.communications.warning_days_overdue', [2, 4, 6, 8, 10, 12, 14]), true)) {
