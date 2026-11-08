@@ -77,6 +77,8 @@ final class InvoicingService
                 $subtotal += app(HybridInvoiceService::class)->append($tenant, $agreement, $invoice);
             }
 
+            $subtotal += app(\App\Services\Billing\DiscountService::class)->apply($tenant, $invoice, $start, $end, $subtotal);
+
             // 5. Calculate Taxes
             $taxCalc = Tax::calculateForTenant($subtotal, $tenant);
 
