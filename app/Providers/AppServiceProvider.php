@@ -100,6 +100,12 @@ final class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        \Illuminate\Support\Facades\Event::listen(\Illuminate\Console\Events\CommandStarting::class, function (\Illuminate\Console\Events\CommandStarting $event): void {
+            if ($event->command === 'backup:run') {
+                app(\App\Services\Tenancy\TenantBackupSources::class)->register();
+            }
+        });
+
         $this->loadMigrationsFrom(database_path('migrations/landlord'));
 
         $this->registerBladeDirectives();

@@ -4,8 +4,7 @@ declare(strict_types=1);
 
 namespace App\Console;
 
-use App\Enum\TenantStatusEnum;
-use App\Models\Tenant;
+use App\Services\Tenancy\TenantBackupSources;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 use RuntimeException;
@@ -92,11 +91,8 @@ final class Kernel extends ConsoleKernel
 
         if ($missing !== []) {
             $message = 'S3 backup preflight failed. Missing configuration: '.implode(', ', $missing).'. No backup or maintenance was started.';
-        } elseif (Tenant::query()
-            ->where('status', TenantStatusEnum::ACTIVE)
-            ->whereIn('isolation_mode', ['db_per_tenant', 'byo'])
-            ->exists()) {
-            $message = 'S3 backup preflight failed: active dedicated tenant databases are not covered by the configured main-database-only backup. No backup or maintenance was started.';
+        } elseif (($uncovered = app(TenantBackupSources::class)->problems()) !== []) {
+            $message = 'Backup preflight failed: '.implode('; ', $uncovered).'. No backup or maintenance was started.';
         } else {
             return;
         }

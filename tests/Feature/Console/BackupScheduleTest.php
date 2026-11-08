@@ -88,7 +88,7 @@ it('preserves the missing-settings error even when the failure notification cann
         ->toThrow(RuntimeException::class, 'AWS_BUCKET');
 });
 
-it('blocks scheduled backups rather than claiming coverage of active dedicated databases', function (string $mode): void {
+it('blocks scheduled backups when an active dedicated tenant has no database to back up', function (string $mode): void {
     Event::fake([BackupHasFailed::class]);
     config(['filesystems.disks.s3' => [
         'driver' => 's3', 'key' => 'test-key', 'secret' => 'test-secret', 'bucket' => 'test-bucket', 'region' => 'test-region',
@@ -97,10 +97,42 @@ it('blocks scheduled backups rather than claiming coverage of active dedicated d
 
     foreach (scheduledBackupEvents() as $event) {
         expect(fn () => $event->callBeforeCallbacks(app()))
-            ->toThrow(RuntimeException::class, 'active dedicated tenant databases are not covered');
+            ->toThrow(RuntimeException::class, 'has no database name or secret to back up');
     }
     Event::assertDispatchedTimes(BackupHasFailed::class, 3);
 })->with(['db_per_tenant', 'byo']);
+
+it('backs up every active dedicated tenant database alongside the main one', function (): void {
+    Event::fake([BackupHasFailed::class]);
+    config(['filesystems.disks.s3' => [
+        'driver' => 's3', 'key' => 'test-key', 'secret' => 'test-secret', 'bucket' => 'test-bucket', 'region' => 'test-region',
+    ]]);
+    $dedicated = Tenant::factory()->create(['status' => 'active', 'isolation_mode' => 'db_per_tenant', 'db_driver' => 'pgsql', 'meta' => ['database' => 'tenant_abc']]);
+    Tenant::factory()->create(['status' => 'active', 'isolation_mode' => 'shared']);
+    Tenant::factory()->create(['status' => 'deactivated', 'isolation_mode' => 'db_per_tenant', 'meta' => ['database' => 'tenant_old']]);
+
+    foreach (scheduledBackupEvents() as $event) {
+        $event->callBeforeCallbacks(app());
+    }
+    Event::assertNotDispatched(BackupHasFailed::class);
+
+    $added = app(App\Services\Tenancy\TenantBackupSources::class)->register();
+    $connection = 'backup_tenant_'.str_replace('-', '_', (string) $dedicated->id);
+
+    expect($added)->toBe([$connection])
+        ->and(config('backup.backup.source.databases'))->toContain('pgsql', $connection)
+        ->and(config("database.connections.{$connection}.database"))->toBe('tenant_abc')
+        ->and(app(App\Services\Tenancy\TenantBackupSources::class)->register())->toBe([$connection])
+        ->and(array_count_values(config('backup.backup.source.databases'))[$connection])->toBe(1);
+});
+
+it('adds the dedicated databases when the backup command starts', function (): void {
+    $tenant = Tenant::factory()->create(['status' => 'active', 'isolation_mode' => 'db_per_tenant', 'db_driver' => 'pgsql', 'meta' => ['database' => 'tenant_xyz']]);
+
+    event(new Illuminate\Console\Events\CommandStarting('backup:run', new Symfony\Component\Console\Input\ArrayInput([]), new Symfony\Component\Console\Output\NullOutput));
+
+    expect(config('backup.backup.source.databases'))->toContain('backup_tenant_'.str_replace('-', '_', (string) $tenant->id));
+});
 
 it('allows the current shared-tenant CMS coverage without touching dedicated database connections', function (): void {
     Event::fake([BackupHasFailed::class]);
