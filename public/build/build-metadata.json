@@ -1,6 +1,6 @@
 {
     "version": 2,
-    "source_sha256": "5fd1d9413822b0be694335c76d771387c89a9c322dfeba533827413d89c55f36",
+    "source_sha256": "f9670b6109708f5c9f3cb7053dc05df096cf9809c2886cafd34c7587df25f728",
     "source_files": {
         ".agent/rules/path-to-php.md": "c559a7b17fe39107f8e1a69a9b93fe720c8d11b947d9decaf6541ed429714359",
         ".agent/rules/testing.md": "8289cda546c31080a26018179a337bafa1f65c0967dd23d2d1561d6c9b0a9c1f",
@@ -6335,7 +6335,7 @@
         "resources/views/billing/invoices/show.blade.php": "7d9460fece05ab2d42b5083cf810ee96ccb7e06420cd373feb976a4952ad71e4",
         "resources/views/billing/payments/checkout.blade.php": "9c28589bb1aae67b4f45fd1378b5cd9e1ee84edbb331406754bdaa6408b97435",
         "resources/views/billing/payments/receipt.blade.php": "c0d86183abbd2712e31cecb3792118db82e621f8a3e36af0f10c2c07123c435c",
-        "resources/views/billing/payments/show.blade.php": "6b4e94d1be74c8382dc7ba40e67867b64d301616bbdfc5e6c9e75f74fcbf8c3b",
+        "resources/views/billing/payments/show.blade.php": "5b253ff259145386f026f6ee5e920a335bfecc03ac0c3f5d80527496d4832b85",
         "resources/views/billing/pricing.blade.php": "1bc3360e4cc8cecb76fa7a1baa504de126b828d3cb498e054e41994670912a35",
         "resources/views/components/application-logo.blade.php": "04c3856ee2f37fe07cb10135b26c5c2c622a7a13d5ca492a27dcc773ad91cd48",
         "resources/views/components/auth-card.blade.php": "d7f055a8786b00405aa9497d2619dd45ea67887cb863d59401252fc7a48138ae",
