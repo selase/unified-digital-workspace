@@ -458,6 +458,15 @@ final class ModuleManager
         $plans = config('packages.plans', []);
         $managedModules = array_unique(array_merge(...array_column($plans, 'modules')));
 
+        // Paid add-on modules (sold only as a package, not part of any plan) always need an explicit grant.
+        $addOnModules = array_diff(
+            array_merge(...array_column(config('usage-pricing.hybrid.packages', []), 'modules')),
+            $managedModules,
+        );
+        if (in_array($module['slug'], $addOnModules, true)) {
+            return array_values(array_unique([...$required, 'module-'.$module['slug']]));
+        }
+
         if ($module['slug'] === 'core' || ! in_array($module['slug'], $managedModules, true)) {
             return $required;
         }
@@ -489,6 +498,19 @@ final class ModuleManager
      */
     private function tenantHasFeature(Tenant $tenant, string $featureSlug): bool
     {
+        // A complimentary grant (meta.source = complimentary) is given on purpose, free of any plan
+        // or billing agreement, for example to the operator's own organisation.
+        $complimentary = TenantFeature::query()
+            ->where('tenant_id', $tenant->id)
+            ->where('feature_key', $featureSlug)
+            ->where('meta->source', 'complimentary')
+            ->where('enabled', true)
+            ->exists();
+
+        if ($complimentary) {
+            return true;
+        }
+
         $agreements = app(Tenancy\BillingAgreementService::class);
         if (($agreement = $agreements->activeFor($tenant)) !== null) {
             if (str_starts_with($featureSlug, 'module-')) {
