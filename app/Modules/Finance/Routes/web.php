@@ -14,7 +14,8 @@ use App\Modules\Finance\Http\Controllers\ReportController;
 use App\Modules\Finance\Http\Controllers\SettingsController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', [FinanceDashboardController::class, 'index'])->name('index');
+// '/finance' itself belongs to the tenant revenue page, so the module home lives at /finance/overview.
+Route::get('/overview', [FinanceDashboardController::class, 'index'])->name('index');
 
 Route::get('/accounts', [AccountController::class, 'index'])->name('accounts.index');
 Route::post('/accounts', [AccountController::class, 'store'])->name('accounts.store');

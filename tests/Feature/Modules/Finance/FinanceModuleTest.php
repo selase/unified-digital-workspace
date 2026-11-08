@@ -563,3 +563,9 @@ describe('Finance email', function (): void {
         Illuminate\Support\Facades\Mail::assertSent(App\Modules\Finance\Mail\FinanceInvoiceMail::class, fn ($mail): bool => $mail->hasTo('pay@acme.test') && str_contains($mail->viewUrl, 'finance-pay'));
     });
 });
+
+describe('Finance routing', function (): void {
+    test('the module home does not collide with the tenant revenue page at /finance', function (): void {
+        expect(route('finance.index', [], false))->toBe('/finance/overview');
+    });
+});
