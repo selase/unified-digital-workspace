@@ -171,6 +171,8 @@ final class BillingCommunicationService
             'due_date' => $invoice->due_at?->toDateString(), 'period_start' => $invoice->period_start->toDateString(),
             'period_end' => $invoice->period_end->toDateString(),
             'days_overdue' => $invoice->due_at !== null ? max(0, (int) $invoice->due_at->copy()->startOfDay()->diffInDays(today(), false)) : 0,
+            'saved_card' => app(CardOnFileService::class)->enabled() && $invoice->tenant !== null
+                ? app(CardOnFileService::class)->methodFor($invoice->tenant)?->description() : null,
             'suspension_date' => app(BillingSuspensionService::class)->suspensionDate($invoice)?->toDateString(),
         ];
     }

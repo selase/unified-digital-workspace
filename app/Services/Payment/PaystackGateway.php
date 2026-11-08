@@ -108,6 +108,30 @@ final class PaystackGateway implements PaymentGateway
         return $response->json('data.reference');
     }
 
+    /**
+     * Charges a card the customer previously agreed to save. The caller must
+     * verify the returned reference before treating the invoice as paid.
+     *
+     * @param  array<string, mixed>  $metadata
+     * @return array{status: string, message: string}
+     */
+    public function chargeSavedCard(string $email, int $amount, string $authorizationCode, string $reference, array $metadata): array
+    {
+        $response = Http::withToken($this->secret)->timeout(30)->post("{$this->baseUrl}/transaction/charge_authorization", [
+            'email' => $email,
+            'amount' => $amount,
+            'currency' => 'GHS',
+            'authorization_code' => $authorizationCode,
+            'reference' => $reference,
+            'metadata' => $metadata,
+        ]);
+
+        return [
+            'status' => (string) $response->json('data.status', 'failed'),
+            'message' => (string) ($response->json('data.gateway_response') ?? $response->json('message') ?? 'Charge was not accepted.'),
+        ];
+    }
+
     public function subscriptionDetails(string $subscriptionId): array
     {
         $response = Http::withToken($this->secret)->get("{$this->baseUrl}/subscription/{$subscriptionId}")->throw();
@@ -141,6 +165,8 @@ final class PaystackGateway implements PaymentGateway
             'currency' => (string) ($data['currency'] ?? ''),
             'metadata' => $data['metadata'] ?? [],
             'transaction_id' => $data['id'],
+            'authorization' => (array) ($data['authorization'] ?? []),
+            'customer_email' => (string) data_get($data, 'customer.email', ''),
             'type' => isset($data['plan']) && $data['plan'] ? 'subscription' : 'payment',
         ];
     }

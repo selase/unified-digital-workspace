@@ -135,6 +135,9 @@ Route::group(['middleware' => ['auth', '2fa_challenge', 'onboarding']], function
         Route::get('/billing', [App\Http\Controllers\Billing\BillingController::class, 'index'])
             ->name('billing.index');
 
+        Route::delete('/billing/card', [App\Http\Controllers\Billing\BillingController::class, 'destroyCard'])
+            ->name('billing.card.destroy');
+
         Route::post('/billing/checkout', [App\Http\Controllers\Billing\CheckoutController::class, 'store'])
             ->name('billing.checkout');
 

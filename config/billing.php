@@ -38,6 +38,12 @@ return [
     'auto_issue' => (bool) env('BILLING_AUTO_ISSUE', true),
 
     /*
+     * Let customers opt in to saving a card at checkout and charge it on the due
+     * date of each unpaid invoice. Off until the consent wording has been approved.
+     */
+    'card_autocharge_enabled' => (bool) env('BILLING_CARD_AUTOCHARGE', false),
+
+    /*
      * Take tenant sites temporarily offline when an invoice stays unpaid past
      * the suspension date. Owners can still sign in, but only to reach billing.
      */
