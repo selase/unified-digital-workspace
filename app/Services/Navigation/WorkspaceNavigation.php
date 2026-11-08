@@ -585,6 +585,8 @@ final class WorkspaceNavigation
                     ['label' => 'Add Employee', 'route' => 'hrms-core.employees.create', 'permission' => 'hrms.employees.create'],
                     ['label' => 'Departments', 'route' => 'hrms-core.departments.index', 'permission' => 'hrms.departments.view'],
                     ['label' => 'Leave Requests', 'route' => 'hrms-core.leave-requests.index', 'permission' => 'hrms.leave.view'],
+                    ['label' => 'Attendance', 'route' => 'hrms-core.attendance.index', 'permission' => 'hrms.attendance.view'],
+                    ['label' => 'Timesheets', 'route' => 'hrms-core.timesheets.index', 'permission' => 'hrms.attendance.view'],
                     ['label' => 'Recruitment', 'route' => 'hrms-core.recruitment.index', 'permission' => 'hrms.jobs.view'],
                     ['label' => 'Appraisals', 'route' => 'hrms-core.appraisals.index', 'permission' => 'hrms.appraisal.view', 'active_patterns' => ['hrms-core.appraisals.*']],
                     ['label' => 'Salary & Allowances', 'route' => 'hrms-core.salary.index', 'permission' => 'hrms.salary.view', 'active_patterns' => ['hrms-core.salary.*']],
@@ -604,6 +606,8 @@ final class WorkspaceNavigation
                         'label' => 'People Ops',
                         'items' => [
                             ['label' => 'Leave Requests', 'route' => 'hrms-core.leave-requests.index', 'permission' => 'hrms.leave.view'],
+                            ['label' => 'Attendance', 'route' => 'hrms-core.attendance.index', 'permission' => 'hrms.attendance.view'],
+                            ['label' => 'Timesheets', 'route' => 'hrms-core.timesheets.index', 'permission' => 'hrms.attendance.view'],
                             ['label' => 'Public Holidays', 'route' => 'hrms-core.holidays.index', 'permission' => 'hrms.leave.manage_holidays'],
                             ['label' => 'Recruitment', 'route' => 'hrms-core.recruitment.index', 'permission' => 'hrms.jobs.view'],
                             ['label' => 'Appraisals', 'route' => 'hrms-core.appraisals.index', 'permission' => 'hrms.appraisal.view'],

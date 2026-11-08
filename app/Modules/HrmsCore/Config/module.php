@@ -172,6 +172,11 @@ return [
         'hrms.jobs.manage',
         'hrms.applications.view',
         'hrms.applications.manage',
+
+        // Attendance and timesheets
+        'hrms.attendance.view',
+        'hrms.attendance.manage',
+        'hrms.timesheets.approve',
     ],
 
     /*
