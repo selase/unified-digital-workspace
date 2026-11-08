@@ -11,10 +11,13 @@
                     <h1 class="mt-2 text-2xl font-semibold text-foreground">System Invoices</h1>
                     <p class="mt-2 text-sm text-muted-foreground">Issue and track invoices for tenant subscriptions.</p>
                 </div>
-                <a href="{{ route('admin.billing.invoices.create') }}" class="kt-btn kt-btn-primary">
-                    <i class="ki-filled ki-plus text-base"></i>
-                    Create Invoice
-                </a>
+                <div class="flex flex-wrap gap-2">
+                    <a href="{{ route('admin.billing.discounts.index') }}" class="kt-btn kt-btn-outline">Discounts</a>
+                    <a href="{{ route('admin.billing.invoices.create') }}" class="kt-btn kt-btn-primary">
+                        <i class="ki-filled ki-plus text-base"></i>
+                        Create Invoice
+                    </a>
+                </div>
             </div>
         </div>
 

@@ -211,7 +211,7 @@
                         </div>
                     </div>
                     <div class="kt-form-item">
-                        <label class="kt-form-label">Amount ($) <span class="text-destructive">*</span></label>
+                        <label class="kt-form-label">Amount ({{ $invoice->currency }}) <span class="text-destructive">*</span></label>
                         <div class="kt-form-control">
                             <input type="number" step="0.01" name="amount" class="kt-input" placeholder="0.00" required>
                             <p class="mt-2 text-xs text-muted-foreground">Use negative values for discounts/credits.</p>

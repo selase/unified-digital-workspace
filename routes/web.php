@@ -201,6 +201,10 @@ Route::group(['middleware' => ['auth', '2fa_challenge', 'onboarding']], function
         Route::delete('invoices/items/{item}', [App\Http\Controllers\Admin\InvoiceController::class, 'removeAdjustment'])
             ->name('invoices.items.destroy');
 
+        Route::get('discounts', [App\Http\Controllers\Admin\TenantDiscountController::class, 'index'])->name('discounts.index');
+        Route::post('discounts', [App\Http\Controllers\Admin\TenantDiscountController::class, 'store'])->name('discounts.store');
+        Route::patch('discounts/{discount}/toggle', [App\Http\Controllers\Admin\TenantDiscountController::class, 'toggle'])->name('discounts.toggle');
+
         Route::resource('invoices', App\Http\Controllers\Admin\InvoiceController::class)
             ->only(['index', 'show', 'create', 'store']);
     });
