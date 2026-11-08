@@ -732,6 +732,35 @@ final class WorkspaceNavigation
                     ],
                 ],
             ],
+            'finance' => [
+                'label' => 'Finance',
+                'icon' => 'ki-filled ki-wallet',
+                'permission' => 'finance.view',
+                'home_route' => 'finance.index',
+                'sidebar' => [
+                    ['label' => 'Overview', 'route' => 'finance.index'],
+                    ['label' => 'Invoices', 'route' => 'finance.invoices.index'],
+                    ['label' => 'Payments', 'route' => 'finance.payments.index'],
+                    ['label' => 'Customers', 'route' => 'finance.contacts.index'],
+                    ['label' => 'Chart of Accounts', 'route' => 'finance.accounts.index'],
+                    ['label' => 'Reports', 'route' => 'finance.reports.aged-receivables'],
+                ],
+                'top_menu' => [
+                    [
+                        'label' => 'Finance',
+                        'items' => [
+                            ['label' => 'Overview', 'route' => 'finance.index'],
+                            ['label' => 'Invoices', 'route' => 'finance.invoices.index'],
+                            ['label' => 'Quotes', 'route' => 'finance.invoices.index', 'params' => ['type' => 'quote']],
+                            ['label' => 'Recurring', 'route' => 'finance.recurring.index'],
+                            ['label' => 'Payments', 'route' => 'finance.payments.index'],
+                            ['label' => 'Customers', 'route' => 'finance.contacts.index'],
+                            ['label' => 'Journals', 'route' => 'finance.journals.index'],
+                            ['label' => 'Settings', 'route' => 'finance.settings.edit', 'permission' => 'finance.settings.manage'],
+                        ],
+                    ],
+                ],
+            ],
             'vendor-marketplace' => [
                 'label' => 'Vendors & Escrow',
                 'icon' => 'ki-filled ki-shop',

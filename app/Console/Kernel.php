@@ -42,6 +42,7 @@ final class Kernel extends ConsoleKernel
         $schedule->command('billing:generate-invoices')->monthlyOn(1, '05:00');
         $schedule->command('billing:charge-saved-cards')->dailyAt('06:00')->withoutOverlapping();
         $schedule->command('billing:send-reminders')->dailyAt('08:00')->withoutOverlapping();
+        $schedule->command('finance:run-recurring')->dailyAt('05:30')->withoutOverlapping();
 
         // Incident Management
         $schedule->command('incidents:check-sla')->hourly();

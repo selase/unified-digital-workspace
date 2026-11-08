@@ -15,6 +15,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Throwable;
 use UnexpectedValueException;
 
 final class WebhookController extends Controller
@@ -141,6 +142,18 @@ final class WebhookController extends Controller
         $transactionId = $result['transaction_id'] ?? null;
         if ((is_string($transactionId) || is_int($transactionId)) && preg_match('/^[A-Za-z0-9_.=-]{1,200}$/D', (string) $transactionId)) {
             $request->attributes->set('payment_webhook.provider_transaction_id', (string) $transactionId);
+        }
+        if (data_get($result, 'metadata.type') === 'finance_invoice' && is_string($financeTenantId = data_get($result, 'metadata.tenant_id'))) {
+            // A customer paid a tenant's Finance invoice through the shared Paystack account.
+            try {
+                app(\App\Modules\Finance\Services\OnlinePaymentService::class)->recordVerified($financeTenantId, $reference);
+            } catch (Throwable $error) {
+                report($error);
+
+                return $this->paystackResponse($request, ['error' => 'Finance payment not recorded'], 'finance_error', 500);
+            }
+
+            return $this->paystackResponse($request, ['status' => 'finance_recorded'], 'finance_invoice');
         }
         $invoiceId = data_get($result, 'metadata.invoice_id');
         $application = data_get($result, 'metadata.application');
