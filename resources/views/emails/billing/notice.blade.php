@@ -32,6 +32,10 @@ Review the invoice and pay through **Paystack** using the secure link below. Pay
 Review the invoice and use the secure checkout available in its currency.
 @endif
 <x-mail::button :url="$paymentUrl">Review invoice and pay</x-mail::button>
+@if(! empty($details['saved_card']) && $messageRecord->kind !== 'invoice_overdue')
+
+As you agreed, your {{ $details['saved_card'] }} will be charged automatically on the due date if the invoice is still unpaid. You can pay sooner with the button above, or remove the card any time under Billing in your workspace.
+@endif
 
 The invoice PDF is attached. Once payment is verified, we will record it against this invoice and send a receipt. If you have already paid, use the link to check the latest status before trying again.
 @if($messageRecord->kind === 'invoice_overdue' && ! empty($details['suspension_date']))

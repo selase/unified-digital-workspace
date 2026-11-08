@@ -22,7 +22,7 @@ final class InvoiceCheckoutService
         };
     }
 
-    public function checkout(Invoice $invoice): string
+    public function checkout(Invoice $invoice, bool $saveCard = false): string
     {
         if (! $this->availableFor($invoice)) {
             throw new DomainException('Online payment is awaiting setup. Please contact billing support; do not send card details by email.');
@@ -45,6 +45,9 @@ final class InvoiceCheckoutService
             'type' => 'invoice_payment',
             'description' => 'Invoice #'.$invoice->number,
         ];
+        if ($saveCard && $provider === 'paystack' && app(CardOnFileService::class)->enabled()) {
+            $metadata += ['save_card' => '1', 'consent_at' => now()->toIso8601String(), 'consent_version' => CardOnFileService::CONSENT_VERSION];
+        }
         $callback = $this->links->callbackUrl($provider);
 
         if ($provider === 'paystack') {

@@ -36,16 +36,17 @@ final class InvoicePaymentPortalController extends Controller
             'additionalPayments' => \App\Models\Transaction::query()->where('tenant_id', $invoice->tenant_id)
                 ->where('meta->invoice_id', $invoice->id)->where('status', 'reconciliation_required')->get(),
             'payUrl' => $links->signedUrl($invoice, 'billing.payment.pay'),
+            'offerSaveCard' => $invoice->currency === 'GHS' && app(\App\Services\Billing\CardOnFileService::class)->enabled(),
             'invoiceUrl' => $links->signedUrl($invoice, 'billing.payment.invoice'),
             'receiptUrl' => $links->signedUrl($invoice, 'billing.payment.receipt'),
         ]);
     }
 
-    public function pay(Invoice $invoice, InvoiceCheckoutService $checkout, InvoicePaymentLinkService $links): RedirectResponse
+    public function pay(Request $request, Invoice $invoice, InvoiceCheckoutService $checkout, InvoicePaymentLinkService $links): RedirectResponse
     {
         $this->ensureVisible($invoice);
         try {
-            return redirect()->away($checkout->checkout($invoice));
+            return redirect()->away($checkout->checkout($invoice, $request->boolean('save_card')));
         } catch (DomainException $exception) {
             return redirect($links->url($invoice))->with('error', $exception->getMessage());
         } catch (Throwable $exception) {
@@ -96,6 +97,7 @@ final class InvoicePaymentPortalController extends Controller
                 }
                 $fulfillment->fulfillInvoicePayment($invoice, (string) ($result['transaction_id'] ?? ''), 'paystack',
                     (int) ($result['amount'] ?? 0), (string) ($result['currency'] ?? ''), (array) ($result['metadata'] ?? []));
+                app(\App\Services\Billing\CardOnFileService::class)->captureQuietly($invoice, $result);
                 if (! $request->expectsJson()) {
                     return redirect($links->url($invoice));
                 }
@@ -146,6 +148,9 @@ final class InvoicePaymentPortalController extends Controller
             $invoice = Invoice::query()->findOrFail(data_get($result, 'metadata.invoice_id'));
             $fulfillment->fulfillInvoicePayment($invoice, (string) ($result['transaction_id'] ?? ''), $provider,
                 (int) ($result['amount'] ?? 0), (string) ($result['currency'] ?? ''), (array) ($result['metadata'] ?? []));
+            if ($provider === 'paystack') {
+                app(\App\Services\Billing\CardOnFileService::class)->captureQuietly($invoice, $result);
+            }
         } catch (DomainException $exception) {
             abort(422, 'Payment verification did not match this invoice.');
         }

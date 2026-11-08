@@ -164,6 +164,7 @@ final class WebhookController extends Controller
         } catch (DomainException $exception) {
             return $this->paystackResponse($request, ['error' => 'Invoice payment mismatch'], 'payment_mismatch', 422);
         }
+        app(\App\Services\Billing\CardOnFileService::class)->captureQuietly($invoice, $result);
 
         $outcome = $wasAlreadySettled ? 'duplicate' : 'processed';
         if (data_get($settled->meta, 'payment_reference') !== (string) ($result['transaction_id'] ?? '')) {

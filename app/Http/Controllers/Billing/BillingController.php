@@ -12,6 +12,18 @@ use Illuminate\Http\Request;
 
 final class BillingController extends Controller
 {
+    public function destroyCard(\App\Services\Tenancy\TenantContext $tenantContext, \App\Services\Billing\CardOnFileService $cards): \Illuminate\Http\RedirectResponse
+    {
+        $tenant = $tenantContext->getTenant() ?? auth()->user()->latestTenant;
+        $method = $tenant !== null ? $cards->methodFor($tenant) : null;
+
+        if ($method !== null) {
+            $cards->remove($method);
+        }
+
+        return redirect()->route('billing.index')->with('success', 'Your saved card has been removed. It will no longer be charged.');
+    }
+
     public function index(Request $request, \App\Services\Tenancy\TenantContext $tenantContext)
     {
         $tenant = $tenantContext->getTenant(); // Resolve via DI
@@ -67,6 +79,7 @@ final class BillingController extends Controller
         $billingAgreement = app(\App\Services\Tenancy\BillingAgreementService::class)->activeFor($tenant);
 
         return view('billing.index', [
+            'savedCard' => app(\App\Services\Billing\CardOnFileService::class)->methodFor($tenant),
             'tenant' => $tenant,
             'transactions' => $transactions,
             'invoices' => $invoices,

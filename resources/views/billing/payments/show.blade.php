@@ -52,6 +52,9 @@
     @elseif($paymentAvailable)
         <form method="POST" action="{{ $payUrl }}">
             @csrf
+            @if($offerSaveCard)
+                <p><label><input type="checkbox" name="save_card" value="1"> Save my card and charge it automatically on the due date of future unpaid invoices. I can remove it at any time from Billing in my workspace, and each charge appears on my invoice and receipt.</label></p>
+            @endif
             <button type="submit">Pay {{ $invoice->currency }} {{ number_format((float) $invoice->total, 2) }}</button>
         </form>
         <p>{{ $invoice->currency === 'GHS' ? 'We will keep your payment status visible while you pay securely with Paystack.' : 'You will continue to secure hosted checkout.' }}</p>

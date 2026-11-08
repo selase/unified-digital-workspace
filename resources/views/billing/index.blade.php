@@ -24,6 +24,22 @@
             </div>
         </div>
 
+        @if($savedCard)
+            <div class="kt-card p-6">
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                    <div>
+                        <p class="text-xs uppercase tracking-wide text-muted-foreground">Saved card</p>
+                        <p class="mt-1 font-semibold text-foreground">{{ $savedCard->description() }}</p>
+                        <p class="text-sm text-muted-foreground">You agreed on {{ $savedCard->consented_at->format('j M Y') }} to have this card charged on the due date of unpaid invoices.</p>
+                    </div>
+                    <form action="{{ route('billing.card.destroy') }}" method="POST">
+                        @csrf @method('DELETE')
+                        <button type="submit" class="kt-btn kt-btn-outline">Remove card</button>
+                    </form>
+                </div>
+            </div>
+        @endif
+
         <div class="grid gap-6 xl:grid-cols-4">
             <div class="kt-card p-6 xl:col-span-1">
                 <p class="text-xs uppercase tracking-wide text-muted-foreground">{{ isset($displayAgreement) && $displayAgreement->effective_from->isFuture() ? 'Scheduled website plan' : 'Current website plan' }}</p>
