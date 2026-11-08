@@ -733,7 +733,7 @@ final class WorkspaceNavigation
                 ],
             ],
             'finance' => [
-                'label' => 'Finance',
+                'label' => 'Accounting',
                 'icon' => 'ki-filled ki-wallet',
                 'permission' => 'finance.view',
                 'home_route' => 'finance.index',
@@ -747,7 +747,7 @@ final class WorkspaceNavigation
                 ],
                 'top_menu' => [
                     [
-                        'label' => 'Finance',
+                        'label' => 'Accounting',
                         'items' => [
                             ['label' => 'Overview', 'route' => 'finance.index'],
                             ['label' => 'Invoices', 'route' => 'finance.invoices.index'],
