@@ -101,11 +101,15 @@ final class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        try {
-            // Must run during boot: the backup package reads its config when its command is constructed.
-            app(\App\Services\Tenancy\TenantBackupSources::class)->registerWhenBackingUp($_SERVER['argv'] ?? []);
-        } catch (Throwable $error) {
-            report($error);
+        \Illuminate\Support\Facades\Notification::extend('sms', fn ($app) => $app->make(\App\Notifications\Channels\SmsChannel::class));
+
+        if (\App\Services\Tenancy\TenantBackupSources::isBackupRun($_SERVER['argv'] ?? [])) {
+            try {
+                // Must run during boot: the backup package reads its config when its command is constructed.
+                app(\App\Services\Tenancy\TenantBackupSources::class)->register();
+            } catch (Throwable $error) {
+                report($error);
+            }
         }
 
         $this->loadMigrationsFrom(database_path('migrations/landlord'));

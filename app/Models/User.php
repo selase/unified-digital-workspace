@@ -134,6 +134,11 @@ final class User extends Authenticatable
         return is_null($key) ? $key : (string) $key;
     }
 
+    public function routeNotificationForSms(): ?string
+    {
+        return $this->phone_no ? (string) $this->phone_no : null;
+    }
+
     /**
      * Get the user's full name.
      */

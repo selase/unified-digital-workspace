@@ -36,6 +36,14 @@ Route::group(['middleware' => ['auth', '2fa_challenge', 'onboarding']], function
         ->name('tenant.settings.billing.update')
         ->middleware('can:core.settings.manage');
 
+    Route::middleware('can:core.settings.manage')->prefix('/settings/alerts')->group(function (): void {
+        Route::get('/', [App\Http\Controllers\Tenant\AlertSettingsController::class, 'index'])->name('tenant.settings.alerts.index');
+        Route::post('/channels', [App\Http\Controllers\Tenant\AlertSettingsController::class, 'updateChannels'])->name('tenant.settings.alerts.channels');
+        Route::post('/', [App\Http\Controllers\Tenant\AlertSettingsController::class, 'store'])->name('tenant.settings.alerts.store');
+        Route::patch('/{rule}/toggle', [App\Http\Controllers\Tenant\AlertSettingsController::class, 'toggle'])->name('tenant.settings.alerts.toggle');
+        Route::delete('/{rule}', [App\Http\Controllers\Tenant\AlertSettingsController::class, 'destroy'])->name('tenant.settings.alerts.destroy');
+    });
+
     Route::get('/settings/payments', [App\Http\Controllers\Tenant\PaymentSettingsController::class, 'index'])
         ->name('tenant.settings.payments.index');
     Route::post('/settings/payments', [App\Http\Controllers\Tenant\PaymentSettingsController::class, 'update'])

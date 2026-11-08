@@ -321,6 +321,7 @@ final class WorkspaceNavigation
                 'icon' => 'ki-filled ki-setting-2',
                 'items' => [
                     ['label' => 'Organization Settings', 'route' => 'tenant.settings.index', 'permission' => 'core.settings.manage'],
+                    ['label' => 'Alert Settings', 'route' => 'tenant.settings.alerts.index', 'permission' => 'core.settings.manage'],
                     ['label' => 'Users', 'route' => 'tenant.users.index', 'permission' => 'core.users.read'],
                     ['label' => 'Roles', 'route' => 'tenant.roles.index', 'permission' => 'core.roles.read'],
                     ['label' => 'Modules', 'route' => 'tenant.modules.index', 'permission' => 'core.settings.manage'],
