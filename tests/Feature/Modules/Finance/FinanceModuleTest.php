@@ -828,3 +828,38 @@ describe('Finance bills and expenses', function (): void {
         $this->post(route('finance.expenses.store'), [])->assertForbidden();
     });
 });
+
+describe('Finance demo seeder', function (): void {
+    test('creates sample books that balance, and only once', function (): void {
+        [, $tenant] = createFinanceContext();
+        config(['app.demo_tenant' => $tenant->slug]);
+
+        $this->seed(App\Modules\Finance\Database\Seeders\FinanceDemoSeeder::class);
+
+        $statuses = FinInvoice::query()->pluck('status')->all();
+        expect($statuses)->toContain('paid', 'partly_paid', 'sent', 'draft')
+            ->and(FinBill::query()->pluck('status')->all())->toContain('paid', 'partly_paid', 'approved', 'draft')
+            ->and(FinExpense::query()->count())->toBe(2)
+            ->and(FinContact::query()->where('is_vendor', true)->count())->toBe(3);
+
+        $trial = app(FinanceReports::class)->trialBalance($tenant->id);
+        expect($trial['debit'])->toBe($trial['credit'])
+            ->and(app(FinanceReports::class)->agedReceivables($tenant->id)['totals']['total'])->toBeGreaterThan(0)
+            ->and(app(FinanceReports::class)->agedPayables($tenant->id)['totals']['total'])->toBeGreaterThan(0);
+
+        $count = FinJournal::query()->count();
+        $this->seed(App\Modules\Finance\Database\Seeders\FinanceDemoSeeder::class);
+        expect(FinJournal::query()->count())->toBe($count);
+    });
+
+    test('refuses to run in production', function (): void {
+        [, $tenant] = createFinanceContext();
+        config(['app.demo_tenant' => $tenant->slug]);
+        app()->detectEnvironment(fn (): string => 'production');
+
+        (new App\Modules\Finance\Database\Seeders\FinanceDemoSeeder)->run();
+        app()->detectEnvironment(fn (): string => 'testing');
+
+        expect(FinContact::query()->count())->toBe(0);
+    });
+});

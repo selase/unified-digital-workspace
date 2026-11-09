@@ -211,3 +211,19 @@ describe('Attendance and timesheet screens', function (): void {
             ->get(route('hrms-core.attendance.index'))->assertOk()->assertDontSee($foreignEmployee->first_name);
     });
 });
+
+describe('Attendance demo seeder', function (): void {
+    test('fills attendance and timesheets for employees, and only once', function (): void {
+        [, $tenant, $employee] = createAttendanceContext();
+        config(['app.demo_tenant' => $tenant->slug]);
+
+        $this->seed(App\Modules\HrmsCore\Database\Seeders\HrmsAttendanceDemoSeeder::class);
+
+        $records = AttendanceRecord::query()->where('employee_id', $employee->id)->count();
+        $statuses = Timesheet::query()->where('employee_id', $employee->id)->pluck('status')->all();
+        expect($records)->toBeGreaterThan(5)->and($statuses)->toContain('submitted', 'approved');
+
+        $this->seed(App\Modules\HrmsCore\Database\Seeders\HrmsAttendanceDemoSeeder::class);
+        expect(AttendanceRecord::query()->where('employee_id', $employee->id)->count())->toBe($records);
+    });
+});
