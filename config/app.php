@@ -107,6 +107,11 @@ return [
 
     'timezone' => 'UTC',
 
+    /*
+    | Tenant slug that the Finance and HR demo seeders fill with sample data (never in production).
+    */
+    'demo_tenant' => env('DEMO_TENANT', 'purpledot'),
+
     'date_format' => env('APP_DATE_FORMAT', 'd/m/Y'),
 
     'datetime_format' => env('APP_DATETIME_FORMAT', 'd/m/Y H:i'),
