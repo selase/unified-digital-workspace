@@ -34,7 +34,7 @@
                 <tbody>
                 @forelse($bills as $bill)
                     <tr>
-                        <td><a class="text-primary" href="{{ route('finance.bills.show', $bill->uuid) }}">{{ $bill->number ?? 'Draft' }}</a></td>
+                        <td><a class="text-primary" href="{{ route('finance.bills.show', $bill->uuid) }}">{{ $bill->number ?? 'Draft' }}</a>@if($bill->isCredit())<div class="text-xs text-muted-foreground">credit note</div>@endif</td>
                         <td>{{ $bill->contact->name }}</td>
                         <td>{{ $bill->vendor_reference }}</td>
                         <td>{{ $bill->issue_date->toInstitutionalDate() }}</td>

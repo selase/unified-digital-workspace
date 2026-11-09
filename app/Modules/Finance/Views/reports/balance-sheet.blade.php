@@ -47,7 +47,7 @@
         </div>
     </div>
     @unless($report['balanced'])
-        <div class="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">The balance sheet does not balance. This should never happen; please report it.</div>
+        <div class="rounded-lg bg-red-50 p-3 text-sm text-red-700">The balance sheet does not balance. This should never happen; please report it.</div>
     @endunless
 </div>
 @endsection

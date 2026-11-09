@@ -86,6 +86,7 @@ final class FinanceReports
 
         $bills = FinBill::query()
             ->where('tenant_id', $tenantId)
+            ->where('type', FinBill::TYPE_BILL)
             ->whereIn('status', [FinBill::STATUS_APPROVED, FinBill::STATUS_PARTLY_PAID])
             ->with('contact')
             ->orderBy('due_date')
@@ -120,6 +121,7 @@ final class FinanceReports
             ->join('fin_journals as j', 'j.id', '=', 'l.journal_id')
             ->join('fin_accounts as a', 'a.id', '=', 'l.account_id')
             ->where('j.tenant_id', $tenantId)->where('a.type', $type)
+            ->where(fn ($inner) => $inner->whereNull('j.source_type')->orWhere('j.source_type', '!=', YearEndClose::SOURCE))
             ->whereDate('j.date', '>=', $monthStart)
             ->selectRaw($type === 'income' ? 'COALESCE(SUM(l.credit - l.debit), 0) as total' : 'COALESCE(SUM(l.debit - l.credit), 0) as total')
             ->value('total');

@@ -28,7 +28,7 @@ final class BillService
     ) {}
 
     /**
-     * @param  array{issue_date: string, due_date?: string|null, vendor_reference?: string|null, notes?: string|null}  $data
+     * @param  array{issue_date: string, due_date?: string|null, vendor_reference?: string|null, notes?: string|null, type?: string, credit_for_id?: int|null}  $data
      * @param  list<array{description: string, amount: int, account_id: int, fund_id?: int|null}>  $lines
      */
     public function saveDraft(string $tenantId, FinContact $vendor, array $data, array $lines, ?FinBill $bill = null, ?string $userId = null): FinBill
@@ -53,6 +53,8 @@ final class BillService
                 'vendor_reference' => $data['vendor_reference'] ?? null,
                 'notes' => $data['notes'] ?? null,
                 'currency' => $settings->base_currency,
+                'type' => $data['type'] ?? ($bill->exists ? $bill->type : FinBill::TYPE_BILL),
+                'credit_for_id' => $data['credit_for_id'] ?? ($bill->exists ? $bill->credit_for_id : null),
                 'total' => array_sum(array_column($lines, 'amount')),
             ])->save();
 
@@ -87,32 +89,65 @@ final class BillService
         $settings = $this->settings->for($tenantId);
 
         return DB::connection('tenant')->transaction(function () use ($bill, $tenantId, $settings, $userId): FinBill {
-            $bill->number = $this->numbers->next($tenantId, 'bill', $this->settings->prefix($settings, 'bill'));
+            $isCredit = $bill->isCredit();
+            $original = $isCredit && $bill->credit_for_id !== null ? FinBill::query()->where('tenant_id', $tenantId)->lockForUpdate()->find($bill->credit_for_id) : null;
+            if ($original instanceof FinBill && $bill->total > $original->balanceDue()) {
+                throw new DomainException('A credit note cannot be more than the amount still owed on '.$original->number.'.');
+            }
+
+            $numberKey = $isCredit ? 'vendor_credit' : 'bill';
+            $bill->number = $this->numbers->next($tenantId, $numberKey, $this->settings->prefix($settings, $numberKey));
             $terms = $bill->contact->payment_terms_days ?? $settings->default_payment_terms_days;
             $bill->due_date ??= $bill->issue_date->copy()->addDays($terms);
             $bill->status = FinBill::STATUS_APPROVED;
             $bill->approved_at = now();
 
+            $side = $isCredit ? 'credit' : 'debit';
             $journalLines = $bill->lines->map(fn (FinBillLine $line): array => [
                 'account_id' => $line->account_id,
-                'debit' => $line->amount,
                 'memo' => $line->description,
                 'contact_id' => $bill->contact_id,
                 'fund_id' => $line->fund_id,
+                $side => $line->amount,
             ])->all();
             $journalLines[] = [
                 'account_id' => $this->accounts->bySystemKey($tenantId, ChartOfAccounts::PAYABLE)->id,
-                'credit' => $bill->total,
+                ($isCredit ? 'debit' : 'credit') => $bill->total,
                 'memo' => $bill->number,
                 'contact_id' => $bill->contact_id,
             ];
 
-            $journal = $this->ledger->post($tenantId, $bill->issue_date, $journalLines, 'Bill '.$bill->number, 'bill', $bill->id, $userId);
+            $journal = $this->ledger->post($tenantId, $bill->issue_date, $journalLines, ($isCredit ? 'Supplier credit ' : 'Bill ').$bill->number, $isCredit ? 'vendor_credit' : 'bill', $bill->id, $userId);
             $bill->journal_id = $journal->id;
+
+            if ($original instanceof FinBill) {
+                $bill->status = FinBill::STATUS_APPLIED;
+                $original->increment('credits_applied', $bill->total);
+                $this->refreshPaymentStatus($original->refresh());
+            }
             $bill->save();
 
             return $bill;
         });
+    }
+
+    /** Starts a supplier credit note for an approved bill: same lines, to be reduced in the draft if only part is credited. */
+    public function createCredit(FinBill $bill, ?string $userId = null): FinBill
+    {
+        if ($bill->isCredit() || ! $bill->isOpen() || $bill->balanceDue() <= 0) {
+            throw new DomainException('A credit note can only be raised against a bill that is still owed.');
+        }
+
+        $bill->load(['contact', 'lines']);
+
+        return $this->saveDraft(
+            $bill->tenant_id,
+            $bill->contact,
+            ['issue_date' => today()->toDateString(), 'vendor_reference' => 'Credit for '.$bill->number, 'type' => FinBill::TYPE_CREDIT, 'credit_for_id' => $bill->id],
+            $bill->lines->map(fn (FinBillLine $line): array => ['description' => $line->description, 'amount' => $line->amount, 'account_id' => $line->account_id, 'fund_id' => $line->fund_id])->all(),
+            null,
+            $userId,
+        );
     }
 
     /** Reverses the bill's journal. A bill with active payments must have them voided first. */
@@ -120,6 +155,10 @@ final class BillService
     {
         if ($bill->status === FinBill::STATUS_VOID) {
             throw new DomainException('This bill is already void.');
+        }
+
+        if (! $bill->isCredit() && $bill->credits_applied > 0) {
+            throw new DomainException('This bill has supplier credit notes applied. Void them first.');
         }
 
         if ($bill->payments()->whereNull('voided_at')->exists()) {
@@ -130,6 +169,14 @@ final class BillService
             $journal = FinJournal::query()->find($bill->journal_id);
             if ($journal instanceof FinJournal) {
                 $this->ledger->reverse($journal, null, $userId);
+            }
+
+            if ($bill->isCredit() && $bill->status === FinBill::STATUS_APPLIED && $bill->credit_for_id !== null) {
+                $original = FinBill::query()->where('tenant_id', $bill->tenant_id)->find($bill->credit_for_id);
+                if ($original instanceof FinBill) {
+                    $original->decrement('credits_applied', $bill->total);
+                    $this->refreshPaymentStatus($original->refresh());
+                }
             }
 
             $bill->forceFill(['status' => FinBill::STATUS_VOID, 'voided_at' => now()])->save();
@@ -211,11 +258,13 @@ final class BillService
     {
         $paid = (int) $bill->payments()->whereNull('voided_at')->sum('amount');
 
+        $settled = $paid + $bill->credits_applied;
+
         $bill->forceFill([
             'amount_paid' => $paid,
             'status' => match (true) {
-                $paid >= $bill->total => FinBill::STATUS_PAID,
-                $paid > 0 => FinBill::STATUS_PARTLY_PAID,
+                $settled >= $bill->total => FinBill::STATUS_PAID,
+                $settled > 0 => FinBill::STATUS_PARTLY_PAID,
                 default => FinBill::STATUS_APPROVED,
             },
         ])->save();

@@ -10,6 +10,7 @@ use App\Modules\Finance\Models\FinBankTransaction;
 use App\Modules\Finance\Models\FinContact;
 use App\Modules\Finance\Models\FinJournal;
 use App\Modules\Finance\Models\FinJournalLine;
+use App\Modules\Finance\Support\Money;
 use DomainException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -38,7 +39,8 @@ final class BankReconciliation
                 ->where('tenant_id', $bank->tenant_id)
                 ->where('status', FinJournal::STATUS_POSTED)
                 ->whereNull('reverses_journal_id'))
-            ->whereNotIn('id', FinBankTransaction::query()->whereNotNull('journal_line_id')->select('journal_line_id'));
+            ->whereNotIn('id', FinBankTransaction::query()->whereNotNull('journal_line_id')->select('journal_line_id'))
+            ->whereNotIn('id', DB::connection('tenant')->table('fin_bank_matches')->select('journal_line_id'));
     }
 
     /**
@@ -113,8 +115,47 @@ final class BankReconciliation
         return $transaction;
     }
 
+    /**
+     * Matches one statement line to several ledger entries that together make up its amount, such as a single
+     * deposit that paid three invoices.
+     *
+     * @param  list<int>  $journalLineIds
+     */
+    public function matchMany(FinBankTransaction $transaction, array $journalLineIds): FinBankTransaction
+    {
+        if ($transaction->status !== FinBankTransaction::STATUS_UNMATCHED) {
+            throw new DomainException('This statement line is already matched or excluded.');
+        }
+
+        $ids = array_values(array_unique(array_map('intval', $journalLineIds)));
+        if (count($ids) < 2) {
+            throw new DomainException('Choose at least two ledger entries, or use a normal match for one.');
+        }
+
+        $bank = $transaction->bankAccount()->firstOrFail();
+        $lines = $this->unmatchedLedgerLines($bank)->whereIn('id', $ids)->get();
+        if ($lines->count() !== count($ids)) {
+            throw new DomainException('One of those ledger entries is not available to match.');
+        }
+
+        $total = (int) $lines->sum(fn (FinJournalLine $line): int => $line->debit - $line->credit);
+        if ($total !== $transaction->amount) {
+            throw new DomainException('The chosen entries add up to '.Money::format($total, '').', not the statement amount of '.Money::format($transaction->amount, '').'.');
+        }
+
+        DB::connection('tenant')->transaction(function () use ($transaction, $ids): void {
+            foreach ($ids as $id) {
+                DB::connection('tenant')->table('fin_bank_matches')->insert(['transaction_id' => $transaction->id, 'journal_line_id' => $id]);
+            }
+            $transaction->forceFill(['status' => FinBankTransaction::STATUS_MATCHED, 'matched_at' => now()])->save();
+        });
+
+        return $transaction;
+    }
+
     public function unmatch(FinBankTransaction $transaction): FinBankTransaction
     {
+        DB::connection('tenant')->table('fin_bank_matches')->where('transaction_id', $transaction->id)->delete();
         $transaction->forceFill(['journal_line_id' => null, 'status' => FinBankTransaction::STATUS_UNMATCHED, 'matched_at' => null])->save();
 
         return $transaction;

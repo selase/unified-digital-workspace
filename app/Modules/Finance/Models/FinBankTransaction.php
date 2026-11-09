@@ -26,6 +26,12 @@ final class FinBankTransaction extends Model
     /** @var list<string> */
     protected $guarded = ['id'];
 
+    /** Ledger lines matched together when one statement line covers several entries. @return \Illuminate\Database\Eloquent\Relations\BelongsToMany<FinJournalLine, $this> */
+    public function matchedLines(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(FinJournalLine::class, 'fin_bank_matches', 'transaction_id', 'journal_line_id');
+    }
+
     /** @return BelongsTo<FinBankAccount, $this> */
     public function bankAccount(): BelongsTo
     {

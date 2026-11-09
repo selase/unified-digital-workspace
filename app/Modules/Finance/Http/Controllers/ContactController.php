@@ -6,11 +6,18 @@ namespace App\Modules\Finance\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Modules\Finance\Http\Requests\SaveContactRequest;
+use App\Modules\Finance\Http\Requests\StatementRangeRequest;
 use App\Modules\Finance\Models\FinContact;
+use App\Modules\Finance\Services\CustomerStatement;
+use App\Modules\Finance\Services\FinanceSettings;
+use App\Modules\Finance\Services\ReportCsv;
 use App\Modules\Finance\Support\ResolvesFinanceTenant;
+use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class ContactController extends Controller
 {
@@ -31,6 +38,22 @@ final class ContactController extends Controller
             'search' => $search,
             'role' => $role,
         ]);
+    }
+
+    public function statement(StatementRangeRequest $request, CustomerStatement $statements, FinanceSettings $settings, ReportCsv $csv, string $contact): View|StreamedResponse
+    {
+        $tenantId = $this->allow($request, 'finance.view');
+        $model = FinContact::query()->where('tenant_id', $tenantId)->where('uuid', $contact)->firstOrFail();
+        $to = $request->filled('to') ? CarbonImmutable::parse((string) $request->validated('to')) : CarbonImmutable::today();
+        $from = $request->filled('from') ? CarbonImmutable::parse((string) $request->validated('from')) : $to->subMonths(12);
+        $report = $statements->build($model, $from, $to);
+        $currency = $settings->for($tenantId)->base_currency;
+
+        if ($request->query('format') === 'csv') {
+            return $csv->download('statement-'.Str::slug($model->name).'.csv', $csv->statement($report, $currency));
+        }
+
+        return view('finance::contacts.statement', ['report' => $report, 'currency' => $currency, 'profile' => $settings->for($tenantId)]);
     }
 
     public function store(SaveContactRequest $request): RedirectResponse

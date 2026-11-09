@@ -56,6 +56,7 @@
                         <td>{{ $contact->phone }}</td>
                         <td>{{ $contact->tax_number }}</td>
                         <td class="text-end">
+                            @if($contact->is_customer)<a class="kt-btn kt-btn-xs kt-btn-outline" href="{{ route('finance.contacts.statement', $contact->uuid) }}">Statement</a>@endif
                             @can('finance.contacts.manage')
                             <form method="POST" action="{{ route('finance.contacts.destroy', $contact->uuid) }}" onsubmit="return confirm('Delete this contact?')">
                                 @csrf @method('DELETE')

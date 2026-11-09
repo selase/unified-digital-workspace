@@ -56,7 +56,7 @@
                         <td>{{ $transaction->date->toInstitutionalDate() }}</td>
                         <td>{{ $transaction->description }}<div class="text-xs text-muted-foreground">{{ $transaction->reference }}</div></td>
                         <td class="text-end">{{ Money::format($transaction->amount, $currency) }}</td>
-                        <td>{{ ucfirst($transaction->status) }}@if($transaction->journalLine) <div class="text-xs text-muted-foreground">{{ $transaction->journalLine->journal->number }} · {{ $transaction->journalLine->journal->memo }}</div>@endif</td>
+                        <td>{{ ucfirst($transaction->status) }}@if($transaction->journalLine) <div class="text-xs text-muted-foreground">{{ $transaction->journalLine->journal->number }} · {{ $transaction->journalLine->journal->memo }}</div>@elseif($transaction->matchedLines->isNotEmpty()) <div class="text-xs text-muted-foreground">{{ $transaction->matchedLines->count() }} ledger entries</div>@endif</td>
                         <td>
                             @can('finance.bank.manage')
                             @if($transaction->status === 'unmatched')
@@ -80,6 +80,18 @@
                                         </select>
                                         <button class="kt-btn kt-btn-xs kt-btn-outline" type="submit">Book it</button>
                                     </form>
+                                    @php $nearby = $outstanding->filter(fn ($line) => abs($line->journal->date->diffInDays($transaction->date)) <= 45)->values(); @endphp
+                                    @if($nearby->count() > 1)
+                                    <details class="text-xs">
+                                        <summary class="cursor-pointer text-primary">Match to several entries</summary>
+                                        <form method="POST" action="{{ route('finance.bank.match-many', $transaction->uuid) }}" class="mt-2 flex flex-col gap-1">@csrf
+                                            @foreach($nearby as $line)
+                                                <label class="flex gap-2"><input type="checkbox" name="journal_line_ids[]" value="{{ $line->id }}"> {{ $line->journal->date->toInstitutionalDate() }} · {{ $line->journal->number }} · {{ Money::format($line->debit - $line->credit, '') }}</label>
+                                            @endforeach
+                                            <div><button class="kt-btn kt-btn-xs kt-btn-outline" type="submit">Match selected</button></div>
+                                        </form>
+                                    </details>
+                                    @endif
                                     <form method="POST" action="{{ route('finance.bank.exclude', $transaction->uuid) }}">@csrf<button class="kt-btn kt-btn-xs kt-btn-ghost" type="submit">Exclude</button></form>
                                 </div>
                             @elseif($transaction->status === 'matched')

@@ -794,6 +794,69 @@ final class WorkspaceNavigation
                     ],
                 ],
             ],
+            'grants' => [
+                'label' => 'Grants',
+                'icon' => 'ki-filled ki-award',
+                'permission' => 'grants.view',
+                'home_route' => 'grants.index',
+                'sidebar' => [
+                    ['label' => 'Grants', 'route' => 'grants.grants.index'],
+                    ['label' => 'Funders', 'route' => 'grants.funders.index'],
+                    ['label' => 'Fund Report', 'route' => 'finance.reports.funds', 'permission' => 'finance.view'],
+                ],
+                'top_menu' => [
+                    [
+                        'label' => 'Grants',
+                        'items' => [
+                            ['label' => 'Overview', 'route' => 'grants.index'],
+                            ['label' => 'Grants', 'route' => 'grants.grants.index'],
+                            ['label' => 'Funders', 'route' => 'grants.funders.index'],
+                        ],
+                    ],
+                ],
+            ],
+            'volunteers' => [
+                'label' => 'Volunteers',
+                'icon' => 'ki-filled ki-people',
+                'permission' => 'volunteers.view',
+                'home_route' => 'volunteers.index',
+                'sidebar' => [
+                    ['label' => 'Volunteers', 'route' => 'volunteers.volunteers.index'],
+                    ['label' => 'Opportunities', 'route' => 'volunteers.opportunities.index'],
+                    ['label' => 'Hours', 'route' => 'volunteers.hours.index'],
+                ],
+                'top_menu' => [
+                    [
+                        'label' => 'Volunteers',
+                        'items' => [
+                            ['label' => 'Overview', 'route' => 'volunteers.index'],
+                            ['label' => 'Volunteers', 'route' => 'volunteers.volunteers.index'],
+                            ['label' => 'Opportunities', 'route' => 'volunteers.opportunities.index'],
+                            ['label' => 'Hours', 'route' => 'volunteers.hours.index'],
+                        ],
+                    ],
+                ],
+            ],
+            'beneficiaries' => [
+                'label' => 'Beneficiaries',
+                'icon' => 'ki-filled ki-user-square',
+                'permission' => 'beneficiaries.view',
+                'home_route' => 'beneficiaries.index',
+                'sidebar' => [
+                    ['label' => 'Register', 'route' => 'beneficiaries.beneficiaries.index'],
+                    ['label' => 'Access Log', 'route' => 'beneficiaries.audit', 'permission' => 'beneficiaries.audit.view'],
+                ],
+                'top_menu' => [
+                    [
+                        'label' => 'Beneficiaries',
+                        'items' => [
+                            ['label' => 'Overview', 'route' => 'beneficiaries.index'],
+                            ['label' => 'Register', 'route' => 'beneficiaries.beneficiaries.index'],
+                            ['label' => 'Access Log', 'route' => 'beneficiaries.audit', 'permission' => 'beneficiaries.audit.view'],
+                        ],
+                    ],
+                ],
+            ],
             'vendor-marketplace' => [
                 'label' => 'Vendors & Escrow',
                 'icon' => 'ki-filled ki-shop',

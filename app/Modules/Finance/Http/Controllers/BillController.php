@@ -111,6 +111,19 @@ final class BillController extends Controller
         return back()->with('success', 'Bill '.$approved->number.' approved and posted to the ledger.');
     }
 
+    public function credit(Request $request, BillService $bills, string $bill): RedirectResponse
+    {
+        $tenantId = $this->allow($request, 'finance.bills.manage');
+
+        try {
+            $draft = $bills->createCredit($this->find($tenantId, $bill), $this->actorId($request));
+        } catch (DomainException $error) {
+            return back()->with('error', $error->getMessage());
+        }
+
+        return redirect()->route('finance.bills.edit', $draft->uuid)->with('success', 'Credit note drafted. Reduce the amounts if only part is credited, then approve it.');
+    }
+
     public function void(Request $request, BillService $bills, string $bill): RedirectResponse
     {
         $tenantId = $this->allow($request, 'finance.bills.manage');
