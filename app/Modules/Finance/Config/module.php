@@ -6,7 +6,7 @@ return [
     'name' => 'Finance & Accounting',
     'slug' => 'finance',
     'version' => '1.0.0',
-    'description' => 'Double-entry accounting: chart of accounts, journals, customers, vendors, quotes, invoices, bills, expenses, recurring invoices, payment links and receivables and payables reporting.',
+    'description' => 'Double-entry accounting: chart of accounts, journals, customers, vendors, quotes, invoices, bills, expenses, bank reconciliation, recurring invoices, payment links and receivables and payables reporting.',
 
     'namespace' => 'App\\Modules\\Finance',
     'provider' => 'App\\Modules\\Finance\\Providers\\FinanceServiceProvider',
@@ -34,6 +34,7 @@ return [
         'finance.payments.manage',
         'finance.bills.manage',
         'finance.expenses.manage',
+        'finance.bank.manage',
         'finance.settings.manage',
     ],
 

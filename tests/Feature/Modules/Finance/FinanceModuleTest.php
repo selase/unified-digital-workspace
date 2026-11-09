@@ -6,6 +6,8 @@ use App\Models\Tenant;
 use App\Models\TenantPaymentGateway;
 use App\Models\User;
 use App\Modules\Finance\Models\FinAccount;
+use App\Modules\Finance\Models\FinBankAccount;
+use App\Modules\Finance\Models\FinBankTransaction;
 use App\Modules\Finance\Models\FinBill;
 use App\Modules\Finance\Models\FinContact;
 use App\Modules\Finance\Models\FinExpense;
@@ -15,6 +17,8 @@ use App\Modules\Finance\Models\FinJournal;
 use App\Modules\Finance\Models\FinPayment;
 use App\Modules\Finance\Models\FinRecurringInvoice;
 use App\Modules\Finance\Models\FinTax;
+use App\Modules\Finance\Services\BankReconciliation;
+use App\Modules\Finance\Services\BankStatementImporter;
 use App\Modules\Finance\Services\BillService;
 use App\Modules\Finance\Services\ChartOfAccounts;
 use App\Modules\Finance\Services\ExpenseService;
@@ -840,7 +844,9 @@ describe('Finance demo seeder', function (): void {
         expect($statuses)->toContain('paid', 'partly_paid', 'sent', 'draft')
             ->and(FinBill::query()->pluck('status')->all())->toContain('paid', 'partly_paid', 'approved', 'draft')
             ->and(FinExpense::query()->count())->toBe(2)
-            ->and(FinContact::query()->where('is_vendor', true)->count())->toBe(3);
+            ->and(FinContact::query()->where('is_vendor', true)->count())->toBe(3)
+            ->and(FinBankTransaction::query()->where('status', 'matched')->count())->toBe(4)
+            ->and(FinBankTransaction::query()->where('status', 'unmatched')->count())->toBe(2);
 
         $trial = app(FinanceReports::class)->trialBalance($tenant->id);
         expect($trial['debit'])->toBe($trial['credit'])
@@ -861,5 +867,189 @@ describe('Finance demo seeder', function (): void {
         app()->detectEnvironment(fn (): string => 'testing');
 
         expect(FinContact::query()->count())->toBe(0);
+    });
+});
+
+function bankFor(Tenant $tenant): FinBankAccount
+{
+    app(ChartOfAccounts::class)->ensureSeeded($tenant->id);
+
+    return FinBankAccount::query()->create([
+        'tenant_id' => $tenant->id,
+        'name' => 'Main account',
+        'account_id' => app(ChartOfAccounts::class)->bySystemKey($tenant->id, ChartOfAccounts::BANK)->id,
+    ]);
+}
+
+function importStatement(FinBankAccount $bank, string $csv): array
+{
+    $path = tempnam(sys_get_temp_dir(), 'stmt');
+    file_put_contents($path, $csv);
+
+    try {
+        return app(BankStatementImporter::class)->import($bank, $path);
+    } finally {
+        unlink($path);
+    }
+}
+
+describe('Finance banking', function (): void {
+    test('imports signed amounts and debit/credit columns, skipping repeats and reporting bad rows', function (): void {
+        [, $tenant] = createFinanceContext();
+        $bank = bankFor($tenant);
+
+        $result = importStatement($bank, "Date,Description,Amount\n2026-11-02,Transfer in,\"1,250.50\"\n02/11/2026,Card fee,-12.00\nnot-a-date,Oops,5\n2026-11-03,Zero,0\n");
+        expect($result['imported'])->toBe(2)->and($result['errors'])->toHaveCount(2)
+            ->and(FinBankTransaction::query()->orderBy('id')->pluck('amount')->all())->toBe([125_050, -1_200]);
+
+        $again = importStatement($bank, "Date,Description,Amount\n2026-11-02,Transfer in,\"1,250.50\"\n02/11/2026,Card fee,-12.00\n");
+        expect($again['imported'])->toBe(0)->and($again['skipped'])->toBe(2);
+
+        $split = importStatement($bank, "Transaction Date,Narration,Withdrawal,Deposit\n2026-11-05,Rent,500.00,\n2026-11-06,Customer,,300.00\n");
+        expect($split['imported'])->toBe(2)
+            ->and(FinBankTransaction::query()->where('description', 'Rent')->value('amount'))->toBe(-50_000)
+            ->and(FinBankTransaction::query()->where('description', 'Customer')->value('amount'))->toBe(30_000);
+
+        expect(fn () => importStatement($bank, "Foo,Bar\n1,2\n"))->toThrow(DomainException::class, 'Date column');
+    });
+
+    test('two identical lines in one statement are both kept', function (): void {
+        [, $tenant] = createFinanceContext();
+        $bank = bankFor($tenant);
+
+        $result = importStatement($bank, "Date,Description,Amount\n2026-11-02,Bus fare,-5.00\n2026-11-02,Bus fare,-5.00\n");
+        expect($result['imported'])->toBe(2)->and(importStatement($bank, "Date,Description,Amount\n2026-11-02,Bus fare,-5.00\n2026-11-02,Bus fare,-5.00\n")['imported'])->toBe(0);
+    });
+
+    test('suggests and applies matches by amount and date, using each ledger entry once', function (): void {
+        [, $tenant] = createFinanceContext();
+        $bank = bankFor($tenant);
+        $customer = financeCustomer($tenant);
+        $invoice = issueInvoice($tenant, $customer, 100_000);
+        app(PaymentService::class)->record($tenant->id, $customer, 100_000, today()->subDays(3), [$invoice->id => 100_000]);
+
+        importStatement($bank, "Date,Description,Amount\n".today()->subDays(2)->toDateString().",ACME payment,1000.00\n".today()->subDays(2)->toDateString().",Second same amount,1000.00\n".today()->toDateString().",Unrelated,77.00\n");
+        $reconciliation = app(BankReconciliation::class);
+
+        expect($reconciliation->suggestions($bank))->toHaveCount(1)
+            ->and($reconciliation->autoMatch($bank))->toBe(1)
+            ->and(FinBankTransaction::query()->where('status', 'matched')->count())->toBe(1)
+            ->and(FinBankTransaction::query()->where('status', 'unmatched')->count())->toBe(2);
+    });
+
+    test('a manual match needs the same amount and an available ledger entry', function (): void {
+        [, $tenant] = createFinanceContext();
+        $bank = bankFor($tenant);
+        $customer = financeCustomer($tenant);
+        $invoice = issueInvoice($tenant, $customer, 100_000);
+        app(PaymentService::class)->record($tenant->id, $customer, 100_000, today(), [$invoice->id => 100_000]);
+        importStatement($bank, "Date,Description,Amount\n".today()->toDateString().",Deposit,999.00\n".today()->toDateString().",Deposit 2,1000.00\n");
+        $reconciliation = app(BankReconciliation::class);
+        $line = $reconciliation->unmatchedLedgerLines($bank)->firstOrFail();
+        [$wrong, $right] = FinBankTransaction::query()->orderBy('id')->get()->all();
+
+        expect(fn () => $reconciliation->match($wrong, $line->id))->toThrow(DomainException::class, 'amounts differ');
+
+        $reconciliation->match($right, $line->id);
+        expect($right->fresh()->status)->toBe('matched')
+            ->and(fn () => $reconciliation->match($right->fresh(), $line->id))->toThrow(DomainException::class);
+
+        $reconciliation->unmatch($right->fresh());
+        expect($right->fresh()->status)->toBe('unmatched')->and($reconciliation->unmatchedLedgerLines($bank)->count())->toBe(1);
+    });
+
+    test('statement lines with no entry can be booked as an expense or a deposit and are matched at once', function (): void {
+        [, $tenant] = createFinanceContext();
+        $bank = bankFor($tenant);
+        importStatement($bank, "Date,Description,Amount\n".today()->toDateString().",MTN charges,-20.00\n".today()->toDateString().",Grant received,400.00\n");
+        $reconciliation = app(BankReconciliation::class);
+        [$out, $in] = FinBankTransaction::query()->orderBy('id')->get()->all();
+        $expenseAccount = FinAccount::query()->where('tenant_id', $tenant->id)->where('code', '6400')->firstOrFail();
+        $income = FinAccount::query()->where('tenant_id', $tenant->id)->where('code', '4100')->firstOrFail();
+
+        expect(fn () => $reconciliation->recordFromStatement($out, $income->id))->toThrow(DomainException::class, 'expense account')
+            ->and(fn () => $reconciliation->recordFromStatement($in, $expenseAccount->id))->toThrow(DomainException::class, 'income, liability or equity');
+
+        $reconciliation->recordFromStatement($out, $expenseAccount->id);
+        $reconciliation->recordFromStatement($in, $income->id);
+
+        expect(FinExpense::query()->count())->toBe(1)
+            ->and(FinBankTransaction::query()->where('status', 'matched')->count())->toBe(2)
+            ->and(accountBalance($tenant, ChartOfAccounts::BANK))->toBe(38_000);
+
+        $summary = $reconciliation->summary($bank);
+        expect($summary['is_reconciled'])->toBeTrue()->and($summary['difference'])->toBe(0);
+        $trial = app(FinanceReports::class)->trialBalance($tenant->id);
+        expect($trial['debit'])->toBe($trial['credit']);
+    });
+
+    test('the summary shows what is left to explain, and excluded lines stay out of matching', function (): void {
+        [, $tenant] = createFinanceContext();
+        $bank = bankFor($tenant);
+        $bank->update(['opening_balance' => 100_000]);
+        $customer = financeCustomer($tenant);
+        $invoice = issueInvoice($tenant, $customer, 50_000);
+        app(PaymentService::class)->record($tenant->id, $customer, 50_000, today(), [$invoice->id => 50_000]);
+        importStatement($bank, "Date,Description,Amount\n".today()->toDateString().",Unknown,-30.00\n");
+        $reconciliation = app(BankReconciliation::class);
+
+        $summary = $reconciliation->summary($bank);
+        expect($summary['ledger_balance'])->toBe(50_000)->and($summary['statement_balance'])->toBe(97_000)
+            ->and($summary['unmatched_statement'])->toBe(1)->and($summary['outstanding_ledger'])->toBe(1)->and($summary['is_reconciled'])->toBeFalse();
+
+        $line = FinBankTransaction::query()->firstOrFail();
+        $reconciliation->exclude($line);
+        expect($line->fresh()->status)->toBe('excluded')->and(fn () => $reconciliation->match($line->fresh(), 1))->toThrow(DomainException::class);
+        $reconciliation->restore($line->fresh());
+        expect($line->fresh()->status)->toBe('unmatched');
+    });
+
+    test('a voided payment drops out of the ledger entries available to match', function (): void {
+        [, $tenant] = createFinanceContext();
+        $bank = bankFor($tenant);
+        $customer = financeCustomer($tenant);
+        $invoice = issueInvoice($tenant, $customer, 50_000);
+        $payment = app(PaymentService::class)->record($tenant->id, $customer, 50_000, today(), [$invoice->id => 50_000]);
+        expect(app(BankReconciliation::class)->unmatchedLedgerLines($bank)->count())->toBe(1);
+
+        app(PaymentService::class)->void($payment);
+        expect(app(BankReconciliation::class)->unmatchedLedgerLines($bank)->count())->toBe(0);
+    });
+
+    test('the banking screens add an account, import a file and match a line', function (): void {
+        [$user, $tenant] = createFinanceContext();
+        app(ChartOfAccounts::class)->ensureSeeded($tenant->id);
+        $bankLedger = app(ChartOfAccounts::class)->bySystemKey($tenant->id, ChartOfAccounts::BANK);
+        $customer = financeCustomer($tenant);
+        $invoice = issueInvoice($tenant, $customer, 25_000);
+        app(PaymentService::class)->record($tenant->id, $customer, 25_000, today(), [$invoice->id => 25_000]);
+        $this->actingAs($user)->withSession(['active_tenant_id' => $tenant->id]);
+
+        $this->get(route('finance.bank.index'))->assertOk();
+        $this->post(route('finance.bank.store'), ['name' => 'GCB current', 'account_id' => $bankLedger->id, 'opening_balance' => '0'])->assertRedirect();
+        $bank = FinBankAccount::query()->firstOrFail();
+        $this->post(route('finance.bank.store'), ['name' => 'Again', 'account_id' => $bankLedger->id])->assertSessionHasErrors('account_id');
+
+        $file = Illuminate\Http\UploadedFile::fake()->createWithContent('statement.csv', "Date,Description,Amount\n".today()->toDateString().",Payment,250.00\n");
+        $this->post(route('finance.bank.import', $bank->uuid), ['statement' => $file])->assertRedirect()->assertSessionHas('success');
+        $this->get(route('finance.bank.show', $bank->uuid))->assertOk()->assertSee('Payment')->assertSee('Match 1 suggested');
+
+        $this->post(route('finance.bank.auto-match', $bank->uuid))->assertRedirect();
+        expect(FinBankTransaction::query()->firstOrFail()->status)->toBe('matched');
+        $this->get(route('finance.bank.show', [$bank->uuid, 'show' => 'matched']))->assertOk()->assertSee('JNL-');
+        $this->post(route('finance.bank.unmatch', FinBankTransaction::query()->firstOrFail()->uuid))->assertRedirect();
+        $this->get(route('finance.bank.index'))->assertOk()->assertSee('GCB current');
+    });
+
+    test('banking actions need the bank permission', function (): void {
+        [$user, $tenant] = createFinanceContext();
+        $bank = bankFor($tenant);
+        $user->revokePermissionTo('finance.bank.manage');
+        app(Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+        $this->actingAs($user)->withSession(['active_tenant_id' => $tenant->id]);
+
+        $this->get(route('finance.bank.show', $bank->uuid))->assertOk();
+        $this->post(route('finance.bank.auto-match', $bank->uuid))->assertForbidden();
+        $this->post(route('finance.bank.import', $bank->uuid), [])->assertForbidden();
     });
 });
