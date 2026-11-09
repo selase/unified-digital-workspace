@@ -362,6 +362,30 @@ describe('Online giving', function (): void {
             ->and(ledgerBalance($tenant, '1010'))->toBe(40_000)->and(ledgerBalance($tenant, '1000'))->toBe(0);
     });
 
+    test('the donor is emailed the receipt once, and a mail failure does not undo the gift', function (): void {
+        Mail::fake();
+        [, $tenant] = createDonationsContext();
+        connectGivingGateway($tenant);
+        $donor = demoDonor($tenant);
+        Http::fake(['api.paystack.co/transaction/verify/ref_mail' => Http::response(['data' => [
+            'status' => 'success', 'amount' => 10_000, 'currency' => 'GHS', 'reference' => 'ref_mail',
+            'metadata' => ['type' => 'donation', 'tenant_id' => $tenant->id, 'donor_id' => (string) $donor->id],
+        ]])]);
+        $giving = app(OnlineGivingService::class);
+
+        $giving->recordVerified($tenant->id, 'ref_mail');
+        $giving->recordVerified($tenant->id, 'ref_mail');
+        Mail::assertSent(App\Modules\Donations\Mail\DonationReceiptMail::class, 1);
+        expect(DonDonation::query()->first()->receipt_sent_at)->not->toBeNull();
+
+        Mail::shouldReceive('to')->andThrow(new RuntimeException('smtp down'));
+        Http::fake(['api.paystack.co/transaction/verify/ref_fail' => Http::response(['data' => [
+            'status' => 'success', 'amount' => 20_000, 'currency' => 'GHS', 'reference' => 'ref_fail',
+            'metadata' => ['type' => 'donation', 'tenant_id' => $tenant->id, 'donor_id' => (string) $donor->id],
+        ]])]);
+        expect($giving->recordVerified($tenant->id, 'ref_fail'))->not->toBeNull()->and(DonDonation::query()->count())->toBe(2);
+    });
+
     test('a charge for another organisation or a non-donation is ignored', function (): void {
         [, $tenant] = createDonationsContext();
         connectGivingGateway($tenant);
