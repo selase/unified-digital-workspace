@@ -3,7 +3,9 @@
 declare(strict_types=1);
 
 use App\Modules\Finance\Http\Controllers\AccountController;
+use App\Modules\Finance\Http\Controllers\BillController;
 use App\Modules\Finance\Http\Controllers\ContactController;
+use App\Modules\Finance\Http\Controllers\ExpenseController;
 use App\Modules\Finance\Http\Controllers\FinanceDashboardController;
 use App\Modules\Finance\Http\Controllers\InvoiceController;
 use App\Modules\Finance\Http\Controllers\ItemController;
@@ -54,11 +56,27 @@ Route::get('/payments', [PaymentController::class, 'index'])->name('payments.ind
 Route::post('/payments', [PaymentController::class, 'store'])->name('payments.store');
 Route::post('/payments/{payment}/void', [PaymentController::class, 'void'])->name('payments.void');
 
+Route::get('/bills', [BillController::class, 'index'])->name('bills.index');
+Route::get('/bills/create', [BillController::class, 'create'])->name('bills.create');
+Route::post('/bills', [BillController::class, 'store'])->name('bills.store');
+Route::get('/bills/{bill}', [BillController::class, 'show'])->name('bills.show');
+Route::get('/bills/{bill}/edit', [BillController::class, 'edit'])->name('bills.edit');
+Route::put('/bills/{bill}', [BillController::class, 'update'])->name('bills.update');
+Route::post('/bills/{bill}/approve', [BillController::class, 'approve'])->name('bills.approve');
+Route::post('/bills/{bill}/void', [BillController::class, 'void'])->name('bills.void');
+Route::post('/bills/{bill}/pay', [BillController::class, 'pay'])->name('bills.pay');
+Route::post('/bill-payments/{payment}/void', [BillController::class, 'voidPayment'])->name('bills.payments.void');
+
+Route::get('/expenses', [ExpenseController::class, 'index'])->name('expenses.index');
+Route::post('/expenses', [ExpenseController::class, 'store'])->name('expenses.store');
+Route::post('/expenses/{expense}/void', [ExpenseController::class, 'void'])->name('expenses.void');
+
 Route::get('/recurring', [RecurringInvoiceController::class, 'index'])->name('recurring.index');
 Route::post('/recurring', [RecurringInvoiceController::class, 'store'])->name('recurring.store');
 Route::post('/recurring/{recurring}/toggle', [RecurringInvoiceController::class, 'toggle'])->name('recurring.toggle');
 
 Route::get('/reports/aged-receivables', [ReportController::class, 'agedReceivables'])->name('reports.aged-receivables');
+Route::get('/reports/aged-payables', [ReportController::class, 'agedPayables'])->name('reports.aged-payables');
 Route::get('/reports/trial-balance', [ReportController::class, 'trialBalance'])->name('reports.trial-balance');
 
 Route::get('/settings', [SettingsController::class, 'edit'])->name('settings.edit');

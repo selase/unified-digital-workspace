@@ -1,0 +1,82 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Modules\Finance\Services;
+
+use App\Modules\Finance\Models\FinContact;
+use App\Modules\Finance\Models\FinExpense;
+use App\Modules\Finance\Models\FinJournal;
+use Carbon\CarbonInterface;
+use DomainException;
+use Illuminate\Support\Facades\DB;
+
+/** Costs paid on the spot: debit the expense account, credit the account the money left from. */
+final class ExpenseService
+{
+    public function __construct(
+        private readonly LedgerService $ledger,
+        private readonly NumberSequence $numbers,
+        private readonly FinanceSettings $settings,
+    ) {}
+
+    /**
+     * @param  array{description?: string|null, reference?: string|null, fund_id?: int|null}  $details
+     */
+    public function record(string $tenantId, int $amount, CarbonInterface $date, int $expenseAccountId, int $paidFromAccountId, ?FinContact $vendor = null, array $details = [], ?string $userId = null): FinExpense
+    {
+        if ($amount <= 0) {
+            throw new DomainException('The expense amount must be greater than zero.');
+        }
+
+        return DB::connection('tenant')->transaction(function () use ($tenantId, $amount, $date, $expenseAccountId, $paidFromAccountId, $vendor, $details, $userId): FinExpense {
+            $settings = $this->settings->for($tenantId);
+
+            $expense = FinExpense::query()->create([
+                'tenant_id' => $tenantId,
+                'number' => $this->numbers->next($tenantId, 'expense', $this->settings->prefix($settings, 'expense')),
+                'contact_id' => $vendor?->id,
+                'date' => $date->toDateString(),
+                'account_id' => $expenseAccountId,
+                'paid_from_account_id' => $paidFromAccountId,
+                'fund_id' => $details['fund_id'] ?? null,
+                'amount' => $amount,
+                'description' => $details['description'] ?? null,
+                'reference' => $details['reference'] ?? null,
+                'created_by' => $userId,
+            ]);
+
+            $journal = $this->ledger->post(
+                $tenantId,
+                $date,
+                [
+                    ['account_id' => $expenseAccountId, 'debit' => $amount, 'memo' => $details['description'] ?? $expense->number, 'contact_id' => $vendor?->id, 'fund_id' => $details['fund_id'] ?? null],
+                    ['account_id' => $paidFromAccountId, 'credit' => $amount, 'memo' => $expense->number, 'contact_id' => $vendor?->id],
+                ],
+                'Expense '.$expense->number,
+                'expense',
+                $expense->id,
+                $userId,
+            );
+            $expense->forceFill(['journal_id' => $journal->id])->save();
+
+            return $expense;
+        });
+    }
+
+    public function void(FinExpense $expense, ?string $userId = null): void
+    {
+        if ($expense->voided_at !== null) {
+            throw new DomainException('This expense is already void.');
+        }
+
+        DB::connection('tenant')->transaction(function () use ($expense, $userId): void {
+            $journal = FinJournal::query()->find($expense->journal_id);
+            if ($journal instanceof FinJournal) {
+                $this->ledger->reverse($journal, null, $userId);
+            }
+
+            $expense->forceFill(['voided_at' => now()])->save();
+        });
+    }
+}

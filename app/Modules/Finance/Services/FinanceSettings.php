@@ -14,6 +14,9 @@ final class FinanceSettings
         'credit_note' => 'CN-',
         'payment' => 'PAY-',
         'journal' => 'JNL-',
+        'bill' => 'BILL-',
+        'bill_payment' => 'BPAY-',
+        'expense' => 'EXP-',
     ];
 
     public function for(string $tenantId): FinSetting

@@ -6,14 +6,18 @@ use App\Models\Tenant;
 use App\Models\TenantPaymentGateway;
 use App\Models\User;
 use App\Modules\Finance\Models\FinAccount;
+use App\Modules\Finance\Models\FinBill;
 use App\Modules\Finance\Models\FinContact;
+use App\Modules\Finance\Models\FinExpense;
 use App\Modules\Finance\Models\FinFund;
 use App\Modules\Finance\Models\FinInvoice;
 use App\Modules\Finance\Models\FinJournal;
 use App\Modules\Finance\Models\FinPayment;
 use App\Modules\Finance\Models\FinRecurringInvoice;
 use App\Modules\Finance\Models\FinTax;
+use App\Modules\Finance\Services\BillService;
 use App\Modules\Finance\Services\ChartOfAccounts;
+use App\Modules\Finance\Services\ExpenseService;
 use App\Modules\Finance\Services\FinanceReports;
 use App\Modules\Finance\Services\FinanceSettings;
 use App\Modules\Finance\Services\InvoiceService;
@@ -649,5 +653,178 @@ describe('Finance credit notes', function (): void {
 
         $this->get(route('finance.invoices.edit', $note->uuid))->assertOk();
         $this->get(route('finance.invoices.index', ['type' => 'credit_note']))->assertOk()->assertSee('Credit notes');
+    });
+});
+
+function codeBalance(Tenant $tenant, string $code): int
+{
+    $account = FinAccount::query()->where('tenant_id', $tenant->id)->where('code', $code)->firstOrFail();
+    $row = DB::connection('tenant')->table('fin_journal_lines')->where('account_id', $account->id)
+        ->selectRaw('COALESCE(SUM(debit),0) as d, COALESCE(SUM(credit),0) as c')->first();
+
+    return (int) $row->d - (int) $row->c;
+}
+
+function financeSupplier(Tenant $tenant, string $name = 'Cloud Host Ltd'): FinContact
+{
+    return FinContact::query()->create(['tenant_id' => $tenant->id, 'name' => $name, 'is_customer' => false, 'is_vendor' => true]);
+}
+
+function draftBill(Tenant $tenant, FinContact $supplier, int $amount = 80_000, string $accountKey = '6200'): FinBill
+{
+    $account = FinAccount::query()->where('tenant_id', $tenant->id)->where('code', $accountKey)->firstOrFail();
+
+    return app(BillService::class)->saveDraft(
+        $tenant->id,
+        $supplier,
+        ['issue_date' => today()->toDateString(), 'vendor_reference' => 'SUP-77'],
+        [['description' => 'Hosting', 'amount' => $amount, 'account_id' => $account->id]],
+    );
+}
+
+describe('Finance bills and expenses', function (): void {
+    test('approving a bill debits the expense and credits payables, and the books stay balanced', function (): void {
+        [, $tenant] = createFinanceContext();
+        app(ChartOfAccounts::class)->ensureSeeded($tenant->id);
+        $bill = app(BillService::class)->approve(draftBill($tenant, financeSupplier($tenant)));
+
+        expect($bill->number)->toBe('BILL-00001')->and($bill->status)->toBe('approved')->and($bill->due_date)->not->toBeNull()
+            ->and(accountBalance($tenant, ChartOfAccounts::PAYABLE))->toBe(-80_000);
+
+        $trial = app(FinanceReports::class)->trialBalance($tenant->id);
+        expect($trial['debit'])->toBe($trial['credit'])->and($trial['debit'])->toBe(80_000);
+    });
+
+    test('only draft bills can be edited and a zero bill cannot be approved', function (): void {
+        [, $tenant] = createFinanceContext();
+        app(ChartOfAccounts::class)->ensureSeeded($tenant->id);
+        $service = app(BillService::class);
+        $bill = $service->approve(draftBill($tenant, financeSupplier($tenant)));
+
+        expect(fn () => $service->saveDraft($tenant->id, $bill->contact, ['issue_date' => today()->toDateString()], [['description' => 'x', 'amount' => 1, 'account_id' => 1]], $bill))
+            ->toThrow(DomainException::class, 'Only draft')
+            ->and(fn () => $service->approve($bill))->toThrow(DomainException::class);
+    });
+
+    test('paying a bill in parts settles it and refuses overpayment', function (): void {
+        [, $tenant] = createFinanceContext();
+        app(ChartOfAccounts::class)->ensureSeeded($tenant->id);
+        $service = app(BillService::class);
+        $bank = app(ChartOfAccounts::class)->bySystemKey($tenant->id, ChartOfAccounts::BANK);
+        $bill = $service->approve(draftBill($tenant, financeSupplier($tenant), 100_000));
+
+        $service->pay($bill, 40_000, today(), $bank->id);
+        expect($bill->fresh()->status)->toBe('partly_paid')->and($bill->fresh()->balanceDue())->toBe(60_000);
+
+        expect(fn () => $service->pay($bill->fresh(), 70_000, today(), $bank->id))->toThrow(DomainException::class, 'no more than the balance');
+
+        $service->pay($bill->fresh(), 60_000, today(), $bank->id);
+        expect($bill->fresh()->status)->toBe('paid')
+            ->and(accountBalance($tenant, ChartOfAccounts::PAYABLE))->toBe(0)
+            ->and(accountBalance($tenant, ChartOfAccounts::BANK))->toBe(-100_000)
+            ->and(fn () => $service->pay($bill->fresh(), 1, today(), $bank->id))->toThrow(DomainException::class);
+    });
+
+    test('voiding a payment re-opens the bill and voiding a bill needs its payments voided first', function (): void {
+        [, $tenant] = createFinanceContext();
+        app(ChartOfAccounts::class)->ensureSeeded($tenant->id);
+        $service = app(BillService::class);
+        $bank = app(ChartOfAccounts::class)->bySystemKey($tenant->id, ChartOfAccounts::BANK);
+        $bill = $service->approve(draftBill($tenant, financeSupplier($tenant)));
+        $payment = $service->pay($bill, 80_000, today(), $bank->id);
+
+        expect(fn () => $service->void($bill->fresh()))->toThrow(DomainException::class, 'Void the payments first');
+
+        $service->voidPayment($payment);
+        expect($bill->fresh()->status)->toBe('approved')->and($bill->fresh()->amount_paid)->toBe(0)
+            ->and(fn () => $service->voidPayment($payment->fresh()))->toThrow(DomainException::class);
+
+        $service->void($bill->fresh());
+        expect($bill->fresh()->status)->toBe('void')
+            ->and(accountBalance($tenant, ChartOfAccounts::PAYABLE))->toBe(0)
+            ->and(accountBalance($tenant, ChartOfAccounts::BANK))->toBe(0);
+    });
+
+    test('an expense moves money from an asset account to an expense account and can be voided', function (): void {
+        [, $tenant] = createFinanceContext();
+        app(ChartOfAccounts::class)->ensureSeeded($tenant->id);
+        $service = app(ExpenseService::class);
+        $expenseAccount = FinAccount::query()->where('tenant_id', $tenant->id)->where('code', '6300')->firstOrFail();
+        $bank = app(ChartOfAccounts::class)->bySystemKey($tenant->id, ChartOfAccounts::BANK);
+
+        expect(fn () => $service->record($tenant->id, 0, today(), $expenseAccount->id, $bank->id))->toThrow(DomainException::class);
+
+        $expense = $service->record($tenant->id, 25_000, today(), $expenseAccount->id, $bank->id, null, ['description' => 'Flyers']);
+        expect($expense->number)->toBe('EXP-00001')
+            ->and(codeBalance($tenant, '6300'))->toBe(25_000)
+            ->and(accountBalance($tenant, ChartOfAccounts::BANK))->toBe(-25_000);
+
+        $service->void($expense);
+        expect(codeBalance($tenant, '6300'))->toBe(0);
+    });
+
+    test('aged payables lists open bills and totals what is owed', function (): void {
+        [, $tenant] = createFinanceContext();
+        app(ChartOfAccounts::class)->ensureSeeded($tenant->id);
+        $service = app(BillService::class);
+        $service->approve(draftBill($tenant, financeSupplier($tenant), 50_000));
+        $paid = $service->approve(draftBill($tenant, financeSupplier($tenant, 'Other'), 30_000));
+        $service->pay($paid, 30_000, today(), app(ChartOfAccounts::class)->bySystemKey($tenant->id, ChartOfAccounts::BANK)->id);
+
+        $report = app(FinanceReports::class)->agedPayables($tenant->id);
+        expect($report['rows'])->toHaveCount(1)->and($report['totals']['total'])->toBe(50_000);
+    });
+
+    test('the screens create, approve and pay a bill and record an expense', function (): void {
+        [$user, $tenant] = createFinanceContext();
+        app(ChartOfAccounts::class)->ensureSeeded($tenant->id);
+        $supplier = financeSupplier($tenant);
+        $account = FinAccount::query()->where('tenant_id', $tenant->id)->where('code', '6200')->firstOrFail();
+        $bank = app(ChartOfAccounts::class)->bySystemKey($tenant->id, ChartOfAccounts::BANK);
+        $this->actingAs($user)->withSession(['active_tenant_id' => $tenant->id]);
+
+        $this->get(route('finance.bills.index'))->assertOk();
+        $this->get(route('finance.bills.create'))->assertOk()->assertSee('Cloud Host Ltd');
+        $this->post(route('finance.bills.store'), [
+            'contact_id' => $supplier->id,
+            'issue_date' => today()->toDateString(),
+            'lines' => [['description' => 'Servers', 'amount' => '500.00', 'account_id' => $account->id]],
+        ])->assertRedirect();
+
+        $bill = FinBill::query()->firstOrFail();
+        expect($bill->total)->toBe(50_000)->and($bill->status)->toBe('draft');
+        $this->get(route('finance.bills.edit', $bill->uuid))->assertOk();
+        $this->post(route('finance.bills.approve', $bill->uuid))->assertRedirect();
+        $this->get(route('finance.bills.show', $bill->uuid))->assertOk()->assertSee('BILL-00001');
+        $this->post(route('finance.bills.pay', $bill->uuid), [
+            'date' => today()->toDateString(), 'amount' => '500.00', 'method' => 'bank_transfer', 'paid_from_account_id' => $bank->id,
+        ])->assertRedirect();
+        expect($bill->fresh()->status)->toBe('paid');
+
+        $this->get(route('finance.expenses.index'))->assertOk();
+        $this->post(route('finance.expenses.store'), [
+            'date' => today()->toDateString(), 'amount' => '20.00', 'account_id' => $account->id, 'paid_from_account_id' => $bank->id,
+        ])->assertRedirect();
+        expect(FinExpense::query()->count())->toBe(1);
+        $this->get(route('finance.reports.aged-payables'))->assertOk();
+        $this->get(route('finance.contacts.index', ['role' => 'vendor']))->assertOk()->assertSee('Cloud Host Ltd');
+    });
+
+    test('a bill must be for a supplier and users without the permission are blocked', function (): void {
+        [$user, $tenant] = createFinanceContext();
+        app(ChartOfAccounts::class)->ensureSeeded($tenant->id);
+        $customer = financeCustomer($tenant);
+        $account = FinAccount::query()->where('tenant_id', $tenant->id)->where('code', '6200')->firstOrFail();
+        $this->actingAs($user)->withSession(['active_tenant_id' => $tenant->id]);
+
+        $this->post(route('finance.bills.store'), [
+            'contact_id' => $customer->id, 'issue_date' => today()->toDateString(),
+            'lines' => [['description' => 'x', 'amount' => '5', 'account_id' => $account->id]],
+        ])->assertSessionHasErrors('contact_id');
+
+        $user->revokePermissionTo(['finance.bills.manage', 'finance.expenses.manage']);
+        app(Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+        $this->get(route('finance.bills.create'))->assertForbidden();
+        $this->post(route('finance.expenses.store'), [])->assertForbidden();
     });
 });
