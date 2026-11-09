@@ -16,7 +16,7 @@
             description="Institutional Executive Command Center — Real-time telemetry, cross-module governance, and operations radar."
         >
             <x-slot:actions>
-                <div class="flex items-center gap-2">
+                <div class="flex flex-wrap items-center gap-2">
                     <span class="kt-badge kt-badge-primary kt-badge-outline gap-1.5 px-3 py-1 text-xs">
                         <span class="size-2 rounded-full bg-primary animate-pulse"></span>
                         {{ $tenant->plan ?? 'Enterprise Tier' }}
