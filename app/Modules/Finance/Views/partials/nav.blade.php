@@ -13,7 +13,7 @@
         'finance.items' => ['Items', 'finance.items.index'],
         'finance.accounts' => ['Chart of accounts', 'finance.accounts.index'],
         'finance.journals' => ['Journals', 'finance.journals.index'],
-        'finance.reports' => ['Reports', 'finance.reports.aged-receivables'],
+        'finance.reports' => ['Reports', 'finance.reports.profit-and-loss'],
         'finance.settings' => ['Settings', 'finance.settings.edit'],
     ];
     $current = request()->route()?->getName() ?? '';

@@ -1,5 +1,16 @@
-<div class="flex gap-2">
-    <a href="{{ route('finance.reports.aged-receivables') }}" class="kt-btn kt-btn-sm {{ request()->routeIs('finance.reports.aged-receivables') ? 'kt-btn-primary' : 'kt-btn-outline' }}">Aged receivables</a>
-    <a href="{{ route('finance.reports.aged-payables') }}" class="kt-btn kt-btn-sm {{ request()->routeIs('finance.reports.aged-payables') ? 'kt-btn-primary' : 'kt-btn-outline' }}">Aged payables</a>
-    <a href="{{ route('finance.reports.trial-balance') }}" class="kt-btn kt-btn-sm {{ request()->routeIs('finance.reports.trial-balance') ? 'kt-btn-primary' : 'kt-btn-outline' }}">Trial balance</a>
+@php
+    $reportTabs = [
+        'finance.reports.profit-and-loss' => 'Profit and loss',
+        'finance.reports.balance-sheet' => 'Balance sheet',
+        'finance.reports.cash-flow' => 'Cash flow',
+        'finance.reports.funds' => 'Funds',
+        'finance.reports.aged-receivables' => 'Aged receivables',
+        'finance.reports.aged-payables' => 'Aged payables',
+        'finance.reports.trial-balance' => 'Trial balance',
+    ];
+@endphp
+<div class="flex flex-wrap gap-2">
+    @foreach($reportTabs as $route => $label)
+        <a href="{{ route($route) }}" class="kt-btn kt-btn-sm {{ request()->routeIs($route) ? 'kt-btn-primary' : 'kt-btn-outline' }}">{{ $label }}</a>
+    @endforeach
 </div>
