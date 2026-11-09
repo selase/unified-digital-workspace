@@ -35,6 +35,7 @@ return [
         'finance.bills.manage',
         'finance.expenses.manage',
         'finance.bank.manage',
+        'finance.budgets.manage',
         'finance.settings.manage',
     ],
 

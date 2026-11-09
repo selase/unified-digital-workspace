@@ -65,6 +65,14 @@ final class SettingsController extends Controller
         return back()->with('success', 'Fund added.');
     }
 
+    public function addNgoAccounts(Request $request, ChartOfAccounts $accounts): RedirectResponse
+    {
+        $tenantId = $this->allow($request, 'finance.settings.manage');
+        $created = $accounts->addNgoAccounts($tenantId);
+
+        return back()->with('success', $created > 0 ? $created.' foundation accounts added to the chart of accounts.' : 'The foundation accounts were already in the chart of accounts.');
+    }
+
     public function addGhanaTax(Request $request, ChartOfAccounts $accounts): RedirectResponse
     {
         $tenantId = $this->allow($request, 'finance.settings.manage');

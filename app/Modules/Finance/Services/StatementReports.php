@@ -237,6 +237,52 @@ final class StatementReports
         ];
     }
 
+    /**
+     * Every posting to one account with a running balance. The balance is shown the natural way for the account
+     * (debits positive for assets and expenses, credits positive for the rest).
+     *
+     * @return array{account: FinAccount, from: CarbonInterface, to: CarbonInterface, opening: int, lines: list<array{date: CarbonImmutable, number: string, journal_uuid: string, memo: string|null, debit: int, credit: int, balance: int}>, total_debit: int, total_credit: int, closing: int}
+     */
+    public function generalLedger(string $tenantId, FinAccount $account, CarbonInterface $from, CarbonInterface $to): array
+    {
+        $sign = $account->isDebitNormal() ? 1 : -1;
+
+        $opening = $sign * (int) $this->lines($tenantId)->where('l.account_id', $account->id)
+            ->whereDate('j.date', '<', $from->toDateString())
+            ->selectRaw('COALESCE(SUM(l.debit - l.credit), 0) as total')->value('total');
+
+        $postings = $this->lines($tenantId)->where('l.account_id', $account->id)
+            ->whereDate('j.date', '>=', $from->toDateString())->whereDate('j.date', '<=', $to->toDateString())
+            ->orderBy('j.date')->orderBy('j.id')->orderBy('l.id')
+            ->get(['j.date', 'j.number', 'j.uuid as journal_uuid', 'j.memo as journal_memo', 'l.memo', 'l.debit', 'l.credit']);
+
+        $balance = $opening;
+        $lines = [];
+        foreach ($postings as $posting) {
+            $balance += $sign * ((int) $posting->debit - (int) $posting->credit);
+            $lines[] = [
+                'date' => CarbonImmutable::parse($posting->date),
+                'number' => (string) $posting->number,
+                'journal_uuid' => (string) $posting->journal_uuid,
+                'memo' => $posting->memo ?: $posting->journal_memo,
+                'debit' => (int) $posting->debit,
+                'credit' => (int) $posting->credit,
+                'balance' => $balance,
+            ];
+        }
+
+        return [
+            'account' => $account,
+            'from' => $from,
+            'to' => $to,
+            'opening' => $opening,
+            'lines' => $lines,
+            'total_debit' => (int) array_sum(array_column($lines, 'debit')),
+            'total_credit' => (int) array_sum(array_column($lines, 'credit')),
+            'closing' => $balance,
+        ];
+    }
+
     /** @return list<int> */
     public function cashAccountIds(string $tenantId): array
     {

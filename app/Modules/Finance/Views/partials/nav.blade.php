@@ -13,6 +13,7 @@
         'finance.items' => ['Items', 'finance.items.index'],
         'finance.accounts' => ['Chart of accounts', 'finance.accounts.index'],
         'finance.journals' => ['Journals', 'finance.journals.index'],
+        'finance.budgets' => ['Budgets', 'finance.budgets.index'],
         'finance.reports' => ['Reports', 'finance.reports.profit-and-loss'],
         'finance.settings' => ['Settings', 'finance.settings.edit'],
     ];

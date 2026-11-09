@@ -206,11 +206,23 @@ _Source: `app/Modules/Store/Routes/web.php`; `Http/Controllers/Web/StoreWebContr
 1. Open Finance, then Customers, and add the people or organisations you invoice. Add an email address if you want to send them a payment link.
 2. Open Invoices and create an invoice (or a quote). Save it as a draft, check it, then choose Issue. Issuing numbers the invoice and posts it to the ledger.
 3. Share the payment link or email the invoice. When the customer pays through Paystack the payment is recorded automatically; otherwise open Payments and record a bank, cash or mobile money payment and apply it to the invoice.
-4. Use Reports for aged receivables and the trial balance, and Recurring to schedule repeat invoices.
+4. Mark suppliers in Contacts, then record what you owe under Bills (approve to post it, then pay it) and small purchases under Expenses. Under Banking, add your bank account, import its CSV statement and match each line to the books. Reports has profit and loss, balance sheet, cash flow, fund report, aged receivables and payables, and the trial balance; Recurring schedules repeat invoices.
 
-**Limits:** posted entries cannot be edited; correct them by voiding or reversing. Online payment needs the organisation's own Paystack keys. Tax stays off until the organisation is VAT-registered and switches it on in Settings. Bills, expenses, bank reconciliation, profit and loss and balance sheet reports, and credit notes are not part of this release.
+**Limits:** posted entries cannot be edited; correct them by voiding or reversing. Online payment needs the organisation's own Paystack keys. Tax stays off until the organisation is VAT-registered and switches it on in Settings. Supplier credit notes, receipt attachments, budgets, report export and VAT returns are not part of this release.
 
 _Source: `app/Modules/Finance/Routes/web.php`; `Http/Controllers/*Controller.php`; `Services/{LedgerService,InvoiceService,PaymentService}.php`; finance views._
+
+## 19. Donations: donors, campaigns and receipts (paid add-on for foundations and NGOs)
+
+1. Turn on Finance first, then open Accounting, Settings and choose "Add foundation / NGO accounts" so net assets, donation and grant income and programme costs exist. Create your funds there, marking any that donors restricted to a purpose.
+2. Open Donations, then Donors, and add the people and organisations who give. Add an email address if you want to send receipts.
+3. Open Campaigns and create an appeal with a goal. Link it to a fund and every gift to that campaign lands in that fund.
+4. Open Donations and record each gift. It posts to the ledger at once: money into your bank, income against the fund. Gifts to restricted funds use a separate restricted income account.
+5. Open or email the receipt from the donations list. The Overview shows what you raised, your top donors and campaign progress; the Fund report under Accounting shows income and spending by fund.
+
+**Limits:** gifts are recorded by staff; there is no public donation page, online card giving, recurring pledges, Gift Aid style tax claims or pledge tracking yet. Voiding a gift reverses its ledger entry and keeps the receipt number.
+
+_Source: `app/Modules/Donations/Routes/web.php`; `Services/DonationService.php`; donations views._
 
 ## When something does not work
 

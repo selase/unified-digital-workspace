@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Finance\Providers;
 
 use App\Modules\Concerns\ModuleServiceProvider;
+use App\Modules\Finance\Console\AlertOverdueInvoices;
 use App\Modules\Finance\Console\RunRecurringInvoices;
 use App\Modules\Finance\Contracts\FinancePaymentGateway;
 use App\Modules\Finance\Services\Gateways\PaystackFinanceGateway;
@@ -37,6 +38,6 @@ final class FinanceServiceProvider extends ModuleServiceProvider
 
     protected function registerCommands(): void
     {
-        $this->commands([RunRecurringInvoices::class]);
+        $this->commands([RunRecurringInvoices::class, AlertOverdueInvoices::class]);
     }
 }

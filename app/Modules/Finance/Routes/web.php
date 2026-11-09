@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Modules\Finance\Http\Controllers\AccountController;
 use App\Modules\Finance\Http\Controllers\BankController;
 use App\Modules\Finance\Http\Controllers\BillController;
+use App\Modules\Finance\Http\Controllers\BudgetController;
 use App\Modules\Finance\Http\Controllers\ContactController;
 use App\Modules\Finance\Http\Controllers\ExpenseController;
 use App\Modules\Finance\Http\Controllers\FinanceDashboardController;
@@ -83,6 +84,11 @@ Route::post('/bank-lines/{transaction}/exclude', [BankController::class, 'exclud
 Route::post('/bank-lines/{transaction}/restore', [BankController::class, 'restore'])->name('bank.restore');
 Route::post('/bank-lines/{transaction}/record', [BankController::class, 'record'])->name('bank.record');
 
+Route::get('/budgets', [BudgetController::class, 'index'])->name('budgets.index');
+Route::post('/budgets', [BudgetController::class, 'store'])->name('budgets.store');
+Route::get('/budgets/{budget}', [BudgetController::class, 'show'])->name('budgets.show');
+Route::delete('/budgets/{budget}', [BudgetController::class, 'destroy'])->name('budgets.destroy');
+
 Route::get('/recurring', [RecurringInvoiceController::class, 'index'])->name('recurring.index');
 Route::post('/recurring', [RecurringInvoiceController::class, 'store'])->name('recurring.store');
 Route::post('/recurring/{recurring}/toggle', [RecurringInvoiceController::class, 'toggle'])->name('recurring.toggle');
@@ -93,10 +99,12 @@ Route::get('/reports/profit-and-loss', [ReportController::class, 'profitAndLoss'
 Route::get('/reports/balance-sheet', [ReportController::class, 'balanceSheet'])->name('reports.balance-sheet');
 Route::get('/reports/cash-flow', [ReportController::class, 'cashFlow'])->name('reports.cash-flow');
 Route::get('/reports/funds', [ReportController::class, 'funds'])->name('reports.funds');
+Route::get('/reports/general-ledger', [ReportController::class, 'generalLedger'])->name('reports.general-ledger');
 Route::get('/reports/trial-balance', [ReportController::class, 'trialBalance'])->name('reports.trial-balance');
 
 Route::get('/settings', [SettingsController::class, 'edit'])->name('settings.edit');
 Route::put('/settings', [SettingsController::class, 'update'])->name('settings.update');
 Route::post('/settings/funds', [SettingsController::class, 'storeFund'])->name('settings.funds.store');
+Route::post('/settings/accounts/ngo', [SettingsController::class, 'addNgoAccounts'])->name('settings.accounts.ngo');
 Route::post('/settings/taxes/ghana', [SettingsController::class, 'addGhanaTax'])->name('settings.taxes.ghana');
 Route::post('/settings/taxes/{tax}/toggle', [SettingsController::class, 'toggleTax'])->name('settings.taxes.toggle');
