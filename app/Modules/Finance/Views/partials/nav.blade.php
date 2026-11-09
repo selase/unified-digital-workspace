@@ -8,6 +8,7 @@
         'finance.payments' => ['Payments', 'finance.payments.index'],
         'finance.bills' => ['Bills', 'finance.bills.index'],
         'finance.expenses' => ['Expenses', 'finance.expenses.index'],
+        'finance.bank' => ['Banking', 'finance.bank.index'],
         'finance.contacts' => ['Contacts', 'finance.contacts.index'],
         'finance.items' => ['Items', 'finance.items.index'],
         'finance.accounts' => ['Chart of accounts', 'finance.accounts.index'],

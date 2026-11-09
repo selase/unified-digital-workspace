@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Modules\Finance\Http\Controllers\AccountController;
+use App\Modules\Finance\Http\Controllers\BankController;
 use App\Modules\Finance\Http\Controllers\BillController;
 use App\Modules\Finance\Http\Controllers\ContactController;
 use App\Modules\Finance\Http\Controllers\ExpenseController;
@@ -70,6 +71,17 @@ Route::post('/bill-payments/{payment}/void', [BillController::class, 'voidPaymen
 Route::get('/expenses', [ExpenseController::class, 'index'])->name('expenses.index');
 Route::post('/expenses', [ExpenseController::class, 'store'])->name('expenses.store');
 Route::post('/expenses/{expense}/void', [ExpenseController::class, 'void'])->name('expenses.void');
+
+Route::get('/bank', [BankController::class, 'index'])->name('bank.index');
+Route::post('/bank', [BankController::class, 'store'])->name('bank.store');
+Route::get('/bank/{bank}', [BankController::class, 'show'])->name('bank.show');
+Route::post('/bank/{bank}/import', [BankController::class, 'import'])->name('bank.import');
+Route::post('/bank/{bank}/auto-match', [BankController::class, 'autoMatch'])->name('bank.auto-match');
+Route::post('/bank-lines/{transaction}/match', [BankController::class, 'match'])->name('bank.match');
+Route::post('/bank-lines/{transaction}/unmatch', [BankController::class, 'unmatch'])->name('bank.unmatch');
+Route::post('/bank-lines/{transaction}/exclude', [BankController::class, 'exclude'])->name('bank.exclude');
+Route::post('/bank-lines/{transaction}/restore', [BankController::class, 'restore'])->name('bank.restore');
+Route::post('/bank-lines/{transaction}/record', [BankController::class, 'record'])->name('bank.record');
 
 Route::get('/recurring', [RecurringInvoiceController::class, 'index'])->name('recurring.index');
 Route::post('/recurring', [RecurringInvoiceController::class, 'store'])->name('recurring.store');

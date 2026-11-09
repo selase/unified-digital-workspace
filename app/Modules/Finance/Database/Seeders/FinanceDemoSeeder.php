@@ -7,9 +7,12 @@ namespace App\Modules\Finance\Database\Seeders;
 use App\Models\Tenant;
 use App\Models\User;
 use App\Modules\Finance\Models\FinAccount;
+use App\Modules\Finance\Models\FinBankAccount;
 use App\Modules\Finance\Models\FinContact;
 use App\Modules\Finance\Models\FinFund;
 use App\Modules\Finance\Models\FinItem;
+use App\Modules\Finance\Services\BankReconciliation;
+use App\Modules\Finance\Services\BankStatementImporter;
 use App\Modules\Finance\Services\BillService;
 use App\Modules\Finance\Services\ChartOfAccounts;
 use App\Modules\Finance\Services\ExpenseService;
@@ -74,6 +77,8 @@ final class FinanceDemoSeeder extends Seeder
 
         $this->seedCustomerSide($tenantId, $userId);
         $this->seedSupplierSide($tenantId, $userId);
+
+        $this->seedBankStatement($tenantId);
 
         $this->command?->info('FinanceDemoSeeder: demo customers, invoices, bills and expenses created.');
     }
@@ -163,5 +168,36 @@ final class FinanceDemoSeeder extends Seeder
         // Paid on the spot.
         $expenses->record($tenantId, 12_000, today()->subDays(9), $byCode('6400'), $bank->id, null, ['description' => 'Bank charges'], $userId);
         $expenses->record($tenantId, 35_000, today()->subDays(4), $byCode('6300'), $momo->id, $printer, ['description' => 'Banner printing', 'reference' => 'RCPT-3321', 'fund_id' => $youth?->id], $userId);
+    }
+
+    /** A statement that mirrors most of the demo entries, plus two lines the books do not know about yet. */
+    private function seedBankStatement(string $tenantId): void
+    {
+        $bank = FinBankAccount::query()->create([
+            'tenant_id' => $tenantId,
+            'name' => 'Demo: Main current account',
+            'account_id' => app(ChartOfAccounts::class)->bySystemKey($tenantId, ChartOfAccounts::BANK)->id,
+            'institution' => 'Demo Bank',
+            'opening_balance' => 5_000_000,
+        ]);
+
+        $csv = "Date,Description,Amount,Reference\n"
+            .today()->subDays(30)->toDateString().",Transfer from Asante & Sons,15000.00,DEMO-TRF-1\n"
+            .today()->subDays(25)->toDateString().",CloudHost Ghana,-1800.00,DEMO-PAY-1\n"
+            .today()->subDays(10)->toDateString().",Ridge Properties rent,-2500.00,DEMO-PAY-2\n"
+            .today()->subDays(9)->toDateString().",Monthly bank charges,-120.00,\n"
+            .today()->subDays(6)->toDateString().",POS purchase - stationery,-85.00,POS-4471\n"
+            .today()->subDays(2)->toDateString().",Interest earned,12.00,\n";
+
+        $path = tempnam(sys_get_temp_dir(), 'demo-stmt');
+        file_put_contents($path, $csv);
+
+        try {
+            app(BankStatementImporter::class)->import($bank, $path);
+        } finally {
+            unlink($path);
+        }
+
+        app(BankReconciliation::class)->autoMatch($bank);
     }
 }
