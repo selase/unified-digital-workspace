@@ -25,6 +25,16 @@ final class ReportController extends Controller
         ]);
     }
 
+    public function agedPayables(Request $request, FinanceReports $reports, FinanceSettings $settings): View
+    {
+        $tenantId = $this->allow($request, 'finance.view');
+
+        return view('finance::reports.aged-payables', [
+            'report' => $reports->agedPayables($tenantId),
+            'currency' => $settings->for($tenantId)->base_currency,
+        ]);
+    }
+
     public function trialBalance(Request $request, FinanceReports $reports, FinanceSettings $settings): View
     {
         $tenantId = $this->allow($request, 'finance.view');

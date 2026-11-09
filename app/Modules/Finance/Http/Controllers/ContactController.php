@@ -20,12 +20,16 @@ final class ContactController extends Controller
     {
         $tenantId = $this->allow($request, 'finance.view');
         $search = $request->string('search')->trim()->toString();
+        $role = $request->string('role')->toString();
 
         return view('finance::contacts.index', [
             'contacts' => FinContact::query()->where('tenant_id', $tenantId)
                 ->when($search !== '', fn ($query) => $query->where(fn ($q) => $q->where('name', 'ilike', "%{$search}%")->orWhere('email', 'ilike', "%{$search}%")))
+                ->when($role === 'customer', fn ($query) => $query->where('is_customer', true))
+                ->when($role === 'vendor', fn ($query) => $query->where('is_vendor', true))
                 ->orderBy('name')->paginate(25)->withQueryString(),
             'search' => $search,
+            'role' => $role,
         ]);
     }
 

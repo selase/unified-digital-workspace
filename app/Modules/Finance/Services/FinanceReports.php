@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Finance\Services;
 
 use App\Modules\Finance\Models\FinAccount;
+use App\Modules\Finance\Models\FinBill;
 use App\Modules\Finance\Models\FinInvoice;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -69,6 +70,39 @@ final class FinanceReports
             $buckets[$bucket] += $invoice->balanceDue();
 
             return ['invoice' => $invoice, 'bucket' => $bucket, 'days_late' => max($daysLate, 0), 'balance' => $invoice->balanceDue()];
+        });
+
+        return ['rows' => $rows, 'totals' => $buckets + ['total' => array_sum($buckets)]];
+    }
+
+    /**
+     * Open bills grouped by how overdue they are.
+     *
+     * @return array{rows: Collection<int, array<string, mixed>>, totals: array<string, int>}
+     */
+    public function agedPayables(string $tenantId): array
+    {
+        $buckets = ['current' => 0, '1_30' => 0, '31_60' => 0, '61_90' => 0, '90_plus' => 0];
+
+        $bills = FinBill::query()
+            ->where('tenant_id', $tenantId)
+            ->whereIn('status', [FinBill::STATUS_APPROVED, FinBill::STATUS_PARTLY_PAID])
+            ->with('contact')
+            ->orderBy('due_date')
+            ->get();
+
+        $rows = $bills->map(function (FinBill $bill) use (&$buckets): array {
+            $daysLate = $bill->due_date !== null ? (int) $bill->due_date->diffInDays(today(), false) : 0;
+            $bucket = match (true) {
+                $daysLate <= 0 => 'current',
+                $daysLate <= 30 => '1_30',
+                $daysLate <= 60 => '31_60',
+                $daysLate <= 90 => '61_90',
+                default => '90_plus',
+            };
+            $buckets[$bucket] += $bill->balanceDue();
+
+            return ['bill' => $bill, 'bucket' => $bucket, 'days_late' => max($daysLate, 0), 'balance' => $bill->balanceDue()];
         });
 
         return ['rows' => $rows, 'totals' => $buckets + ['total' => array_sum($buckets)]];

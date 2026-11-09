@@ -1,19 +1,19 @@
 @extends('layouts.metronic.app')
 
-@section('title', 'Customers')
+@section('title', 'Contacts')
 
 @section('content')
 <div class="flex flex-col gap-6">
     <div>
-        <h1 class="text-xl font-bold text-foreground">Customers</h1>
-        <p class="text-xs text-muted-foreground">The people and organisations you invoice.</p>
+        <h1 class="text-xl font-bold text-foreground">Contacts</h1>
+        <p class="text-xs text-muted-foreground">Customers you invoice and suppliers you pay.</p>
     </div>
 
     @include('finance::partials.nav')
 
     @can('finance.contacts.manage')
     <div class="kt-card">
-        <div class="kt-card-header"><h3 class="kt-card-title">Add a customer</h3></div>
+        <div class="kt-card-header"><h3 class="kt-card-title">Add a contact</h3></div>
         <form method="POST" action="{{ route('finance.contacts.store') }}" class="kt-card-content grid grid-cols-1 md:grid-cols-3 gap-3">
             @csrf
             <input class="kt-input" name="name" value="{{ old('name') }}" placeholder="Name" required>
@@ -22,8 +22,12 @@
             <input class="kt-input" name="phone" value="{{ old('phone') }}" placeholder="Phone">
             <input class="kt-input" name="tax_number" value="{{ old('tax_number') }}" placeholder="TIN / tax number">
             <input class="kt-input" type="number" min="0" max="365" name="payment_terms_days" value="{{ old('payment_terms_days') }}" placeholder="Payment terms (days)">
+            <div class="flex items-center gap-4 md:col-span-3 text-sm">
+                <input type="hidden" name="is_customer" value="0"><label class="flex items-center gap-2"><input type="checkbox" name="is_customer" value="1" checked> Customer</label>
+                <input type="hidden" name="is_vendor" value="0"><label class="flex items-center gap-2"><input type="checkbox" name="is_vendor" value="1" @checked(old('is_vendor'))> Supplier</label>
+            </div>
             <textarea class="kt-input md:col-span-3" name="address" rows="2" placeholder="Address">{{ old('address') }}</textarea>
-            <div><button class="kt-btn kt-btn-primary" type="submit">Save customer</button></div>
+            <div><button class="kt-btn kt-btn-primary" type="submit">Save contact</button></div>
         </form>
     </div>
     @endcan
@@ -32,22 +36,28 @@
         <div class="kt-card-header">
             <form method="GET" class="flex gap-2">
                 <input class="kt-input" name="search" value="{{ $search }}" placeholder="Search name or email">
+                <select class="kt-select w-40" name="role">
+                    <option value="">All</option>
+                    <option value="customer" @selected($role === 'customer')>Customers</option>
+                    <option value="vendor" @selected($role === 'vendor')>Suppliers</option>
+                </select>
                 <button class="kt-btn kt-btn-outline" type="submit">Search</button>
             </form>
         </div>
         <div class="kt-card-table kt-scrollable-x-auto">
             <table class="kt-table table-auto kt-table-border">
-                <thead><tr><th>Name</th><th>Email</th><th>Phone</th><th>TIN</th><th></th></tr></thead>
+                <thead><tr><th>Name</th><th>Type</th><th>Email</th><th>Phone</th><th>TIN</th><th></th></tr></thead>
                 <tbody>
                 @forelse($contacts as $contact)
                     <tr>
                         <td>{{ $contact->name }} @unless($contact->is_active)<span class="text-xs text-muted-foreground">(off)</span>@endunless<div class="text-xs text-muted-foreground">{{ $contact->company }}</div></td>
+                        <td>{{ collect([$contact->is_customer ? 'Customer' : null, $contact->is_vendor ? 'Supplier' : null])->filter()->implode(' · ') }}</td>
                         <td>{{ $contact->email }}</td>
                         <td>{{ $contact->phone }}</td>
                         <td>{{ $contact->tax_number }}</td>
                         <td class="text-end">
                             @can('finance.contacts.manage')
-                            <form method="POST" action="{{ route('finance.contacts.destroy', $contact->uuid) }}" onsubmit="return confirm('Delete this customer?')">
+                            <form method="POST" action="{{ route('finance.contacts.destroy', $contact->uuid) }}" onsubmit="return confirm('Delete this contact?')">
                                 @csrf @method('DELETE')
                                 <button class="kt-btn kt-btn-xs kt-btn-outline" type="submit">Delete</button>
                             </form>
@@ -55,7 +65,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="5" class="text-center text-muted-foreground py-6">No customers yet.</td></tr>
+                    <tr><td colspan="6" class="text-center text-muted-foreground py-6">No contacts yet.</td></tr>
                 @endforelse
                 </tbody>
             </table>
