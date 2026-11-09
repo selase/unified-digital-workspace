@@ -89,6 +89,10 @@ Route::post('/recurring/{recurring}/toggle', [RecurringInvoiceController::class,
 
 Route::get('/reports/aged-receivables', [ReportController::class, 'agedReceivables'])->name('reports.aged-receivables');
 Route::get('/reports/aged-payables', [ReportController::class, 'agedPayables'])->name('reports.aged-payables');
+Route::get('/reports/profit-and-loss', [ReportController::class, 'profitAndLoss'])->name('reports.profit-and-loss');
+Route::get('/reports/balance-sheet', [ReportController::class, 'balanceSheet'])->name('reports.balance-sheet');
+Route::get('/reports/cash-flow', [ReportController::class, 'cashFlow'])->name('reports.cash-flow');
+Route::get('/reports/funds', [ReportController::class, 'funds'])->name('reports.funds');
 Route::get('/reports/trial-balance', [ReportController::class, 'trialBalance'])->name('reports.trial-balance');
 
 Route::get('/settings', [SettingsController::class, 'edit'])->name('settings.edit');

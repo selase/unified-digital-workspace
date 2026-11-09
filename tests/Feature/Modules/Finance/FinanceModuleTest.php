@@ -29,6 +29,7 @@ use App\Modules\Finance\Services\LedgerService;
 use App\Modules\Finance\Services\OnlinePaymentService;
 use App\Modules\Finance\Services\PaymentService;
 use App\Modules\Finance\Services\RecurringInvoiceService;
+use App\Modules\Finance\Services\StatementReports;
 use App\Services\ModuleManager;
 use App\Services\Tenancy\TenantContext;
 use App\Services\Tenancy\TenantDatabaseManager;
@@ -1051,5 +1052,104 @@ describe('Finance banking', function (): void {
         $this->get(route('finance.bank.show', $bank->uuid))->assertOk();
         $this->post(route('finance.bank.auto-match', $bank->uuid))->assertForbidden();
         $this->post(route('finance.bank.import', $bank->uuid), [])->assertForbidden();
+    });
+});
+
+/**
+ * A prior-year loss and an owner's investment, then this year's sales, bill, expense and equipment purchase.
+ *
+ * @return array{0: Tenant, 1: FinFund}
+ */
+function statementBooks(): array
+{
+    [, $tenant] = createFinanceContext();
+    app(ChartOfAccounts::class)->ensureSeeded($tenant->id);
+    $code = fn (string $accountCode): FinAccount => FinAccount::query()->where('tenant_id', $tenant->id)->where('code', $accountCode)->firstOrFail();
+    $bank = app(ChartOfAccounts::class)->bySystemKey($tenant->id, ChartOfAccounts::BANK);
+    $priorYear = today()->startOfYear()->subDays(10);
+    $fund = FinFund::query()->create(['tenant_id' => $tenant->id, 'code' => 'YTH', 'name' => 'Youth fund', 'is_restricted' => true]);
+
+    app(LedgerService::class)->post($tenant->id, $priorYear, [
+        ['account_id' => $bank->id, 'debit' => 1_000_000],
+        ['account_id' => $code('3000')->id, 'credit' => 1_000_000],
+    ], 'Owner investment');
+    app(ExpenseService::class)->record($tenant->id, 100_000, $priorYear, $code('6100')->id, $bank->id);
+
+    $customer = financeCustomer($tenant);
+    $invoice = issueInvoice($tenant, $customer, 300_000, 1, ['fund_id' => $fund->id]);
+    app(PaymentService::class)->record($tenant->id, $customer, 200_000, today(), [$invoice->id => 200_000]);
+
+    $bill = app(BillService::class)->approve(draftBill($tenant, financeSupplier($tenant), 80_000));
+    app(BillService::class)->pay($bill, 30_000, today(), $bank->id);
+
+    app(ExpenseService::class)->record($tenant->id, 20_000, today(), $code('6300')->id, $bank->id, null, ['fund_id' => $fund->id]);
+    app(LedgerService::class)->post($tenant->id, today(), [
+        ['account_id' => $code('1500')->id, 'debit' => 50_000],
+        ['account_id' => $bank->id, 'credit' => 50_000],
+    ], 'Laptop');
+
+    return [$tenant, $fund];
+}
+
+describe('Finance statements', function (): void {
+    test('profit and loss totals income and expenses for the period and can be limited to a fund', function (): void {
+        [$tenant, $fund] = statementBooks();
+        $reports = app(StatementReports::class);
+        $from = $reports->fiscalYearStart($tenant->id, today());
+
+        $all = $reports->profitAndLoss($tenant->id, $from, today());
+        expect($all['total_income'])->toBe(300_000)->and($all['total_expenses'])->toBe(100_000)->and($all['net_profit'])->toBe(200_000);
+
+        $youth = $reports->profitAndLoss($tenant->id, $from, today(), $fund->id);
+        expect($youth['total_income'])->toBe(300_000)->and($youth['total_expenses'])->toBe(20_000);
+
+        $lastYear = $reports->profitAndLoss($tenant->id, $from->subYear(), $from->subDay());
+        expect($lastYear['net_profit'])->toBe(-100_000);
+    });
+
+    test('the balance sheet balances and splits this year from earlier years', function (): void {
+        [$tenant] = statementBooks();
+        $sheet = app(StatementReports::class)->balanceSheet($tenant->id, today());
+
+        expect($sheet['total_assets'])->toBe(1_150_000)->and($sheet['total_liabilities'])->toBe(50_000)->and($sheet['total_equity'])->toBe(1_100_000)
+            ->and($sheet['current_year_profit'])->toBe(200_000)->and($sheet['prior_years_profit'])->toBe(-100_000)->and($sheet['balanced'])->toBeTrue();
+
+        $earlier = app(StatementReports::class)->balanceSheet($tenant->id, today()->startOfYear()->subDay());
+        expect($earlier['balanced'])->toBeTrue()->and($earlier['total_assets'])->toBe(900_000);
+    });
+
+    test('cash flow explains the whole change in cash and files equipment as investing', function (): void {
+        [$tenant] = statementBooks();
+        $reports = app(StatementReports::class);
+        $flow = $reports->cashFlow($tenant->id, $reports->fiscalYearStart($tenant->id, today()), today());
+
+        expect($flow['opening'])->toBe(900_000)->and($flow['closing'])->toBe(1_000_000)->and($flow['net_change'])->toBe(100_000)
+            ->and($flow['sections']['operating']['total'])->toBe(150_000)
+            ->and($flow['sections']['investing']['total'])->toBe(-50_000)
+            ->and($flow['sections']['financing']['total'])->toBe(0)
+            ->and(array_sum(array_column($flow['sections'], 'total')))->toBe($flow['net_change']);
+    });
+
+    test('the fund report shows each fund, unfunded activity and running balances', function (): void {
+        [$tenant, $fund] = statementBooks();
+        $reports = app(StatementReports::class);
+        $report = $reports->fundReport($tenant->id, $reports->fiscalYearStart($tenant->id, today()), today());
+        $rows = collect($report['rows'])->keyBy('name');
+
+        expect($rows['Youth fund']['income'])->toBe(300_000)->and($rows['Youth fund']['expenses'])->toBe(20_000)->and($rows['Youth fund']['balance'])->toBe(280_000)
+            ->and($rows['No fund']['expenses'])->toBe(80_000)->and($rows['No fund']['balance'])->toBe(-180_000)
+            ->and($report['totals']['balance'])->toBe(100_000);
+    });
+
+    test('the report screens open and reject a backwards date range', function (): void {
+        [$user, $tenant] = createFinanceContext();
+        $this->actingAs($user)->withSession(['active_tenant_id' => $tenant->id]);
+
+        foreach (['profit-and-loss', 'balance-sheet', 'cash-flow', 'funds', 'aged-payables'] as $report) {
+            $this->get(route('finance.reports.'.$report))->assertOk();
+        }
+        $this->get(route('finance.reports.profit-and-loss', ['from' => '2026-01-01', 'to' => '2026-12-31', 'fund_id' => '']))->assertOk()->assertSee('Total income');
+        $this->get(route('finance.reports.balance-sheet', ['as_of' => '2026-06-30']))->assertOk()->assertSee('Total assets');
+        $this->from(route('finance.reports.cash-flow'))->get(route('finance.reports.cash-flow', ['from' => '2026-12-31', 'to' => '2026-01-01']))->assertSessionHasErrors('to');
     });
 });
