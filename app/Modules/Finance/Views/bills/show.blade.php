@@ -7,7 +7,7 @@
 <div class="flex flex-col gap-6">
     <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-            <h1 class="text-xl font-bold text-foreground">Bill {{ $bill->number ?? '(draft)' }}</h1>
+            <h1 class="text-xl font-bold text-foreground">{{ $bill->isCredit() ? 'Supplier credit note' : 'Bill' }} {{ $bill->number ?? '(draft)' }}</h1>
             <p class="text-xs text-muted-foreground">{{ $bill->contact->name }} · {{ $bill->isOverdue() ? 'Overdue' : str_replace('_', ' ', ucfirst($bill->status)) }}</p>
         </div>
         @can('finance.bills.manage')
@@ -16,7 +16,10 @@
                 <a href="{{ route('finance.bills.edit', $bill->uuid) }}" class="kt-btn kt-btn-sm kt-btn-outline">Edit</a>
                 <form method="POST" action="{{ route('finance.bills.approve', $bill->uuid) }}">@csrf<button class="kt-btn kt-btn-sm kt-btn-primary" type="submit">Approve and post</button></form>
             @endif
-            @if(in_array($bill->status, ['draft', 'approved'], true))
+            @if($bill->isOpen())
+                <form method="POST" action="{{ route('finance.bills.credit', $bill->uuid) }}">@csrf<button class="kt-btn kt-btn-sm kt-btn-outline" type="submit">Create credit note</button></form>
+            @endif
+            @if(in_array($bill->status, ['draft', 'approved', 'applied'], true) && ! ($bill->status === 'approved' && ! $bill->isCredit() && $bill->amount_paid > 0))
                 <form method="POST" action="{{ route('finance.bills.void', $bill->uuid) }}" onsubmit="return confirm('{{ $bill->status === 'draft' ? 'Delete this draft?' : 'Void this bill?' }}')">@csrf<button class="kt-btn kt-btn-sm kt-btn-outline" type="submit">{{ $bill->status === 'draft' ? 'Delete draft' : 'Void' }}</button></form>
             @endif
         </div>
@@ -43,6 +46,7 @@
                 <tfoot>
                     <tr><td colspan="2" class="text-end font-semibold">Total</td><td class="text-end font-semibold">{{ Money::format($bill->total, $currency) }}</td></tr>
                     <tr><td colspan="2" class="text-end">Paid</td><td class="text-end">{{ Money::format($bill->amount_paid, $currency) }}</td></tr>
+                    @if($bill->credits_applied > 0)<tr><td colspan="2" class="text-end">Credit notes applied</td><td class="text-end">{{ Money::format($bill->credits_applied, $currency) }}</td></tr>@endif
                     <tr><td colspan="2" class="text-end font-semibold">Balance due</td><td class="text-end font-semibold">{{ Money::format($bill->balanceDue(), $currency) }}</td></tr>
                 </tfoot>
             </table>

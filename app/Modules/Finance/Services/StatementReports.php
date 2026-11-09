@@ -41,7 +41,7 @@ final class StatementReports
      */
     public function profitAndLoss(string $tenantId, CarbonInterface $from, CarbonInterface $to, ?int $fundId = null): array
     {
-        $totals = $this->lines($tenantId)
+        $totals = $this->withoutCloses($this->lines($tenantId))
             ->whereIn('a.type', ['income', 'expense'])
             ->whereDate('j.date', '>=', $from->toDateString())
             ->whereDate('j.date', '<=', $to->toDateString())
@@ -189,7 +189,7 @@ final class StatementReports
      */
     public function fundReport(string $tenantId, CarbonInterface $from, CarbonInterface $to): array
     {
-        $query = fn (?string $start) => $this->lines($tenantId)
+        $query = fn (?string $start) => $this->withoutCloses($this->lines($tenantId))
             ->whereIn('a.type', ['income', 'expense'])
             ->when($start, fn (Builder $q) => $q->whereDate('j.date', '>=', $start))
             ->whereDate('j.date', '<=', $to->toDateString())
@@ -291,6 +291,12 @@ final class StatementReports
         $banks = FinBankAccount::query()->where('tenant_id', $tenantId)->pluck('account_id');
 
         return $systemCash->merge($banks)->unique()->values()->all();
+    }
+
+    /** Closing journals move profit into equity; profit figures must not count them or a closed year would show zero. */
+    private function withoutCloses(Builder $query): Builder
+    {
+        return $query->where(fn ($inner) => $inner->whereNull('j.source_type')->orWhere('j.source_type', '!=', YearEndClose::SOURCE));
     }
 
     private function lines(string $tenantId): Builder

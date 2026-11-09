@@ -12,7 +12,9 @@ use App\Modules\Finance\Models\FinJournal;
 use App\Modules\Finance\Models\FinTax;
 use App\Modules\Finance\Services\ChartOfAccounts;
 use App\Modules\Finance\Services\FinanceSettings;
+use App\Modules\Finance\Services\YearEndClose;
 use App\Modules\Finance\Support\ResolvesFinanceTenant;
+use DomainException;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -30,6 +32,7 @@ final class SettingsController extends Controller
             'settings' => $settings->for($tenantId),
             'funds' => FinFund::query()->where('tenant_id', $tenantId)->orderBy('name')->get(),
             'taxes' => FinTax::query()->where('tenant_id', $tenantId)->get(),
+            'closePreview' => app(YearEndClose::class)->preview($tenantId, app(YearEndClose::class)->suggestedDate($tenantId)),
             'hasPostings' => FinJournal::query()->where('tenant_id', $tenantId)->exists(),
             'paystackReady' => TenantPaymentGateway::query()->withoutGlobalScopes()->where('tenant_id', $tenantId)->where('provider', 'paystack')->where('is_active', true)->exists(),
             'webhookUrl' => route('finance.webhooks.paystack', ['tenant' => $tenantId]),
@@ -63,6 +66,21 @@ final class SettingsController extends Controller
         FinFund::query()->create([...$data, 'tenant_id' => $tenantId, 'is_restricted' => $request->boolean('is_restricted')]);
 
         return back()->with('success', 'Fund added.');
+    }
+
+    public function closeYear(Request $request, YearEndClose $close): RedirectResponse
+    {
+        $tenantId = $this->allow($request, 'finance.settings.manage');
+        $request->validate(['year_end' => ['required', 'date', 'before_or_equal:today']], ['year_end.required' => 'Choose the last day of the financial year.']);
+        abort_unless($request->input('confirm') === 'CLOSE', 422, 'Type CLOSE to confirm.');
+
+        try {
+            $journal = $close->close($tenantId, \Carbon\CarbonImmutable::parse((string) $request->input('year_end')), $this->actorId($request));
+        } catch (DomainException $error) {
+            return back()->with('error', $error->getMessage());
+        }
+
+        return back()->with('success', 'Year closed with journal '.$journal->number.'. The books are locked up to '.$journal->date->toDateString().'.');
     }
 
     public function addNgoAccounts(Request $request, ChartOfAccounts $accounts): RedirectResponse

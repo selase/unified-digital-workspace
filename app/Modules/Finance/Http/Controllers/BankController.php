@@ -58,7 +58,7 @@ final class BankController extends Controller
         $model = $this->find($tenantId, $bank)->load('account');
         $filter = $request->string('show')->toString();
 
-        $transactions = FinBankTransaction::query()->where('bank_account_id', $model->id)->with('journalLine.journal')
+        $transactions = FinBankTransaction::query()->where('bank_account_id', $model->id)->with(['journalLine.journal', 'matchedLines'])
             ->when($filter === '' || $filter === 'open', fn ($query) => $query->where('status', '!=', FinBankTransaction::STATUS_MATCHED))
             ->when($filter === 'matched', fn ($query) => $query->where('status', FinBankTransaction::STATUS_MATCHED))
             ->orderBy('date')->orderBy('id')->paginate(50)->withQueryString();
@@ -115,6 +115,20 @@ final class BankController extends Controller
         }
 
         return back()->with('success', 'Matched.');
+    }
+
+    public function matchMany(Request $request, BankReconciliation $reconciliation, string $transaction): RedirectResponse
+    {
+        $this->allow($request, 'finance.bank.manage');
+        $ids = collect((array) $request->input('journal_line_ids', []))->filter(fn ($id): bool => is_numeric($id))->map(fn ($id): int => (int) $id)->all();
+
+        try {
+            $reconciliation->matchMany($this->transaction($request, $transaction), $ids);
+        } catch (DomainException $error) {
+            return back()->with('error', $error->getMessage());
+        }
+
+        return back()->with('success', 'Matched to '.count($ids).' ledger entries.');
     }
 
     public function unmatch(Request $request, BankReconciliation $reconciliation, string $transaction): RedirectResponse

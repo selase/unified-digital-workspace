@@ -226,6 +226,41 @@ _Source: `app/Modules/Finance/Routes/web.php`; `Http/Controllers/*Controller.php
 
 _Source: `app/Modules/Donations/Routes/web.php`; `Services/DonationService.php`; donations views._
 
+## 20. Grants: funders, agreements and funder reporting (paid add-on for foundations and NGOs)
+
+1. Turn on Finance first, then open Grants, then Funders, and add the organisations that fund you.
+2. Open Grants and create a grant with its amount, dates and purpose. A restricted fund is created for it automatically, so its income and spending are reported on their own. Mark it Awarded when the agreement is signed.
+3. Open the grant and plan its instalments. When money arrives, choose Receive: it posts to your bank and to grant income against the grant's fund.
+4. Tag bills and expenses with the grant's fund so the grant page can show how much has been spent and what is left.
+5. Add the reports the funder expects with their due dates, and mark each submitted. The Overview lists overdue instalments and reports.
+
+**Limits:** spending counts expenses tagged to the grant's fund inside the grant's dates; there are no funder-specific report templates, multi-currency grants, or budget lines per grant yet.
+
+_Source: `app/Modules/Grants/Routes/web.php`; `Services/GrantService.php`; grants views._
+
+## 21. Volunteers: sign-up, opportunities and hours (paid add-on)
+
+1. Open Volunteers and add the people who help, or share the public sign-up link on the Overview. Public sign-ups appear as awaiting approval; open one and choose Approve.
+2. Open Opportunities and create events or tasks, with a limited number of places if you need one. On a volunteer's page, sign them up for an opportunity.
+3. Open Hours and log time a volunteer gave. Someone with approval rights then approves or rejects it. Only approved hours count in the totals.
+4. The Overview shows active volunteers, hours this year, who is waiting for approval, and the most hours given.
+
+**Limits:** volunteers do not log in themselves; staff log and approve hours. There are no certificates, background-check records or shift rosters yet.
+
+_Source: `app/Modules/Volunteers/Routes/web.php`; `Services/VolunteerService.php`; volunteers views._
+
+## 22. Beneficiaries: register, consent, cases and services (paid add-on)
+
+1. Open Beneficiaries, then Register, and register each person. They get a reference such as BEN-00001.
+2. Record their consent before anything else: what they agreed to and the date. Until then services and case work are locked.
+3. Record services delivered (food, medical, education, cash and so on) and open cases for people who need follow-up. Notes can be marked confidential.
+4. If someone withdraws consent, choose Withdraw consent: no new services or case work can be recorded. If someone asks to be forgotten, choose Erase personal details: their name, phone, birth date and notes are deleted for good and only anonymous counts remain.
+5. Staff without the "confidential" permission see references and initials only. The Access log lists who opened or changed each record. The Overview shows counts by programme, gender and region, with no personal details.
+
+**Limits:** there are no photos, document uploads, referrals between organisations or offline field entry yet. The access log records views and changes inside the application, not database-level access.
+
+_Source: `app/Modules/Beneficiaries/Routes/web.php`; `Services/BeneficiaryService.php`; beneficiaries views._
+
 ## When something does not work
 
 - **403 / forbidden:** confirm you are signed in to the correct organisation. Ask an administrator to check the action permission, role assignment, employee/account link and department, ownership or participant restrictions. Report the module and action that failed. A hidden approval button may reflect permissions or lifecycle state.

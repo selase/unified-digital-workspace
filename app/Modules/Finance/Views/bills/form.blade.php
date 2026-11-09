@@ -14,7 +14,7 @@
     total() { return this.lines.reduce((sum, line) => sum + (parseFloat(line.amount) || 0), 0); },
 }">
     <div>
-        <h1 class="text-xl font-bold text-foreground">{{ $bill->exists ? 'Edit draft bill' : 'New bill' }}</h1>
+        <h1 class="text-xl font-bold text-foreground">{{ $bill->isCredit() ? 'Edit supplier credit note' : ($bill->exists ? 'Edit draft bill' : 'New bill') }}</h1>
         <p class="text-xs text-muted-foreground">Nothing is posted to the ledger until you approve it. Suppliers are contacts marked as "Supplier".</p>
     </div>
 

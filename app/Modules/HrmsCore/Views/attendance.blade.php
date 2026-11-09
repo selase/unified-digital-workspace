@@ -15,9 +15,9 @@
         <a href="{{ route('hrms-core.timesheets.index') }}" class="kt-btn kt-btn-sm kt-btn-outline">My timesheet</a>
     </div>
 
-    @if(session('success'))<div class="rounded-lg bg-success/10 p-3 text-sm text-success">{{ session('success') }}</div>@endif
-    @if(session('error'))<div class="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{{ session('error') }}</div>@endif
-    @if($errors->any())<div class="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">@foreach($errors->all() as $message)<div>{{ $message }}</div>@endforeach</div>@endif
+    @if(session('success'))<div class="rounded-lg bg-green-50 p-3 text-sm text-green-700">{{ session('success') }}</div>@endif
+    @if(session('error'))<div class="rounded-lg bg-red-50 p-3 text-sm text-red-700">{{ session('error') }}</div>@endif
+    @if($errors->any())<div class="rounded-lg bg-red-50 p-3 text-sm text-red-700">@foreach($errors->all() as $message)<div>{{ $message }}</div>@endforeach</div>@endif
 
     @if($me === null)
         <div class="rounded-lg bg-muted/30 p-4 text-sm text-muted-foreground">Your account is not linked to an employee record, so you cannot clock in. Ask HR to link it.</div>

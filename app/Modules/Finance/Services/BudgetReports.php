@@ -38,6 +38,7 @@ final class BudgetReports
             $sum = DB::connection('tenant')->table('fin_journal_lines as l')
                 ->join('fin_journals as j', 'j.id', '=', 'l.journal_id')
                 ->where('j.tenant_id', $budget->tenant_id)->where('l.account_id', $line->account_id)
+                ->where(fn ($inner) => $inner->whereNull('j.source_type')->orWhere('j.source_type', '!=', YearEndClose::SOURCE))
                 ->whereDate('j.date', '>=', $start->toDateString())->whereDate('j.date', '<=', $cutoff->toDateString())
                 ->when($line->fund_id !== null, fn ($query) => $query->where('l.fund_id', $line->fund_id))
                 ->selectRaw('COALESCE(SUM(l.debit - l.credit), 0) as net')->value('net');

@@ -65,6 +65,19 @@
         </div>
     </div>
 
+    <form method="POST" action="{{ route('finance.settings.close-year') }}" class="kt-card" onsubmit="return confirm('Close this financial year and lock the books up to that date?')">
+        @csrf
+        <div class="kt-card-header"><h3 class="kt-card-title">Close a financial year</h3></div>
+        <div class="kt-card-content flex flex-col gap-3">
+            <p class="text-xs text-muted-foreground">Moves the year's profit into retained earnings with one closing entry and locks the books up to the year end. Reports still show the closed year's profit. Last complete year: {{ $closePreview['from']->toInstitutionalDate() }} to {{ $closePreview['to']->toInstitutionalDate() }}, net profit {{ \App\Modules\Finance\Support\Money::format($closePreview['net_profit'], $settings->base_currency) }}{{ $closePreview['already_closed'] ? ' (already closed)' : '' }}.</p>
+            <div class="flex flex-col md:flex-row gap-2">
+                <input class="kt-input w-48" type="date" name="year_end" value="{{ $closePreview['to']->toDateString() }}" required>
+                <input class="kt-input w-48" name="confirm" placeholder="Type CLOSE" required>
+                <button class="kt-btn kt-btn-outline" type="submit">Close year</button>
+            </div>
+        </div>
+    </form>
+
     <div class="kt-card">
         <div class="kt-card-header"><h3 class="kt-card-title">Online payments (Paystack)</h3></div>
         <div class="kt-card-content flex flex-col gap-2 text-sm">

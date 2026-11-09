@@ -34,6 +34,7 @@ Route::post('/journals/{journal}/reverse', [JournalController::class, 'reverse']
 
 Route::get('/contacts', [ContactController::class, 'index'])->name('contacts.index');
 Route::post('/contacts', [ContactController::class, 'store'])->name('contacts.store');
+Route::get('/contacts/{contact}/statement', [ContactController::class, 'statement'])->name('contacts.statement');
 Route::put('/contacts/{contact}', [ContactController::class, 'update'])->name('contacts.update');
 Route::delete('/contacts/{contact}', [ContactController::class, 'destroy'])->name('contacts.destroy');
 
@@ -65,6 +66,7 @@ Route::get('/bills/{bill}', [BillController::class, 'show'])->name('bills.show')
 Route::get('/bills/{bill}/edit', [BillController::class, 'edit'])->name('bills.edit');
 Route::put('/bills/{bill}', [BillController::class, 'update'])->name('bills.update');
 Route::post('/bills/{bill}/approve', [BillController::class, 'approve'])->name('bills.approve');
+Route::post('/bills/{bill}/credit', [BillController::class, 'credit'])->name('bills.credit');
 Route::post('/bills/{bill}/void', [BillController::class, 'void'])->name('bills.void');
 Route::post('/bills/{bill}/pay', [BillController::class, 'pay'])->name('bills.pay');
 Route::post('/bill-payments/{payment}/void', [BillController::class, 'voidPayment'])->name('bills.payments.void');
@@ -79,6 +81,7 @@ Route::get('/bank/{bank}', [BankController::class, 'show'])->name('bank.show');
 Route::post('/bank/{bank}/import', [BankController::class, 'import'])->name('bank.import');
 Route::post('/bank/{bank}/auto-match', [BankController::class, 'autoMatch'])->name('bank.auto-match');
 Route::post('/bank-lines/{transaction}/match', [BankController::class, 'match'])->name('bank.match');
+Route::post('/bank-lines/{transaction}/match-many', [BankController::class, 'matchMany'])->name('bank.match-many');
 Route::post('/bank-lines/{transaction}/unmatch', [BankController::class, 'unmatch'])->name('bank.unmatch');
 Route::post('/bank-lines/{transaction}/exclude', [BankController::class, 'exclude'])->name('bank.exclude');
 Route::post('/bank-lines/{transaction}/restore', [BankController::class, 'restore'])->name('bank.restore');
@@ -105,6 +108,7 @@ Route::get('/reports/trial-balance', [ReportController::class, 'trialBalance'])-
 Route::get('/settings', [SettingsController::class, 'edit'])->name('settings.edit');
 Route::put('/settings', [SettingsController::class, 'update'])->name('settings.update');
 Route::post('/settings/funds', [SettingsController::class, 'storeFund'])->name('settings.funds.store');
+Route::post('/settings/close-year', [SettingsController::class, 'closeYear'])->name('settings.close-year');
 Route::post('/settings/accounts/ngo', [SettingsController::class, 'addNgoAccounts'])->name('settings.accounts.ngo');
 Route::post('/settings/taxes/ghana', [SettingsController::class, 'addGhanaTax'])->name('settings.taxes.ghana');
 Route::post('/settings/taxes/{tax}/toggle', [SettingsController::class, 'toggleTax'])->name('settings.taxes.toggle');

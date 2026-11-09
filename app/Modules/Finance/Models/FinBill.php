@@ -26,6 +26,12 @@ final class FinBill extends Model
 
     public const STATUS_VOID = 'void';
 
+    public const STATUS_APPLIED = 'applied';
+
+    public const TYPE_BILL = 'bill';
+
+    public const TYPE_CREDIT = 'credit';
+
     protected $table = 'fin_bills';
 
     /** @var list<string> */
@@ -33,12 +39,17 @@ final class FinBill extends Model
 
     public function balanceDue(): int
     {
-        return max(0, $this->total - $this->amount_paid);
+        return max(0, $this->total - $this->amount_paid - $this->credits_applied);
+    }
+
+    public function isCredit(): bool
+    {
+        return $this->type === self::TYPE_CREDIT;
     }
 
     public function isOpen(): bool
     {
-        return in_array($this->status, [self::STATUS_APPROVED, self::STATUS_PARTLY_PAID], true);
+        return ! $this->isCredit() && in_array($this->status, [self::STATUS_APPROVED, self::STATUS_PARTLY_PAID], true);
     }
 
     public function isOverdue(): bool
@@ -73,6 +84,7 @@ final class FinBill extends Model
             'voided_at' => 'datetime',
             'total' => 'integer',
             'amount_paid' => 'integer',
+            'credits_applied' => 'integer',
         ];
     }
 }

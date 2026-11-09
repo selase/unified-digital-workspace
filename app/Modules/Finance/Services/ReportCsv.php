@@ -150,6 +150,21 @@ final class ReportCsv
         return $rows;
     }
 
+    /**
+     * @param  array<string, mixed>  $report
+     * @return list<list<string|int|float|null>>
+     */
+    public function statement(array $report, string $currency): array
+    {
+        $rows = [['Statement of account', $report['contact']->name, $report['from']->toDateString().' to '.$report['to']->toDateString(), '', '', ''], ['Date', 'Type', 'Number', 'Charges ('.$currency.')', 'Credits', 'Balance'], ['', '', 'Opening balance', '', '', Money::input($report['opening'])]];
+        foreach ($report['lines'] as $line) {
+            $rows[] = [$line['date']->toDateString(), $line['type'], $line['number'], $line['debit'] ? Money::input($line['debit']) : '', $line['credit'] ? Money::input($line['credit']) : '', Money::input($line['balance'])];
+        }
+        $rows[] = ['', '', 'Closing balance (amount due)', '', '', Money::input($report['closing'])];
+
+        return $rows;
+    }
+
     /** Stops spreadsheet programs treating a text cell as a formula. */
     private function safe(string|int|float|null $cell): string
     {

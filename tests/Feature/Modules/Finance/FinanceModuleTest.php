@@ -1273,3 +1273,220 @@ describe('Finance alerts', function (): void {
         expect($checked)->toBe(1)->and($user->notifications()->count())->toBe(2);
     });
 });
+
+describe('Finance supplier credit notes', function (): void {
+    test('a partial credit reduces what is owed, can be undone, and blocks voiding the bill while applied', function (): void {
+        [, $tenant] = createFinanceContext();
+        app(ChartOfAccounts::class)->ensureSeeded($tenant->id);
+        $service = app(BillService::class);
+        $bank = app(ChartOfAccounts::class)->bySystemKey($tenant->id, ChartOfAccounts::BANK);
+        $bill = $service->approve(draftBill($tenant, financeSupplier($tenant), 100_000));
+
+        $credit = $service->createCredit($bill);
+        expect($credit->type)->toBe('credit')->and($credit->credit_for_id)->toBe($bill->id)->and($credit->total)->toBe(100_000);
+
+        $account = FinAccount::query()->where('tenant_id', $tenant->id)->where('code', '6200')->firstOrFail();
+        $credit = $service->saveDraft($tenant->id, $bill->contact, ['issue_date' => today()->toDateString()], [['description' => 'Faulty month', 'amount' => 30_000, 'account_id' => $account->id]], $credit);
+        $service->approve($credit);
+
+        expect($credit->fresh()->number)->toBe('VCN-00001')->and($credit->fresh()->status)->toBe('applied')
+            ->and($bill->fresh()->credits_applied)->toBe(30_000)->and($bill->fresh()->balanceDue())->toBe(70_000)
+            ->and(accountBalance($tenant, ChartOfAccounts::PAYABLE))->toBe(-70_000)->and(codeBalance($tenant, '6200'))->toBe(70_000)
+            ->and(fn () => $service->void($bill->fresh()))->toThrow(DomainException::class, 'credit notes applied')
+            ->and(fn () => $service->pay($credit->fresh(), 1, today(), $bank->id))->toThrow(DomainException::class);
+
+        $service->pay($bill->fresh(), 70_000, today(), $bank->id);
+        expect($bill->fresh()->status)->toBe('paid');
+
+        $trial = app(FinanceReports::class)->trialBalance($tenant->id);
+        expect($trial['debit'])->toBe($trial['credit']);
+
+        $service->voidPayment($bill->payments()->firstOrFail());
+        $service->void($credit->fresh());
+        expect($bill->fresh()->credits_applied)->toBe(0)->and($bill->fresh()->balanceDue())->toBe(100_000)->and(accountBalance($tenant, ChartOfAccounts::PAYABLE))->toBe(-100_000);
+    });
+
+    test('a credit larger than the balance is refused, a paid bill cannot be credited, and credits stay out of aged payables', function (): void {
+        [, $tenant] = createFinanceContext();
+        app(ChartOfAccounts::class)->ensureSeeded($tenant->id);
+        $service = app(BillService::class);
+        $bank = app(ChartOfAccounts::class)->bySystemKey($tenant->id, ChartOfAccounts::BANK);
+        $bill = $service->approve(draftBill($tenant, financeSupplier($tenant), 100_000));
+        $service->pay($bill, 80_000, today(), $bank->id);
+
+        $credit = $service->createCredit($bill->fresh());
+        expect(fn () => $service->approve($credit))->toThrow(DomainException::class, 'more than the amount still owed');
+
+        $service->pay($bill->fresh(), 20_000, today(), $bank->id);
+        expect(fn () => $service->createCredit($bill->fresh()))->toThrow(DomainException::class);
+
+        $other = $service->approve(draftBill($tenant, financeSupplier($tenant, 'Other'), 50_000));
+        $service->approve($service->createCredit($other));
+        $aged = app(FinanceReports::class)->agedPayables($tenant->id);
+        expect($aged['rows'])->toHaveCount(0)->and($aged['totals']['total'])->toBe(0);
+    });
+
+    test('the screen drafts a credit note from a bill', function (): void {
+        [$user, $tenant] = createFinanceContext();
+        app(ChartOfAccounts::class)->ensureSeeded($tenant->id);
+        $bill = app(BillService::class)->approve(draftBill($tenant, financeSupplier($tenant), 40_000));
+        $this->actingAs($user)->withSession(['active_tenant_id' => $tenant->id]);
+
+        $this->post(route('finance.bills.credit', $bill->uuid))->assertRedirect();
+        $credit = FinBill::query()->where('type', 'credit')->firstOrFail();
+        $this->get(route('finance.bills.edit', $credit->uuid))->assertOk()->assertSee('supplier credit note');
+        $this->get(route('finance.bills.index'))->assertOk()->assertSee('credit note');
+    });
+});
+
+describe('Finance split bank matching', function (): void {
+    test('one deposit can be matched to several ledger entries that add up to it', function (): void {
+        [, $tenant] = createFinanceContext();
+        $bank = bankFor($tenant);
+        $customer = financeCustomer($tenant);
+        $payments = app(PaymentService::class);
+        $one = issueInvoice($tenant, $customer, 60_000);
+        $two = issueInvoice($tenant, $customer, 40_000);
+        $three = issueInvoice($tenant, $customer, 25_000);
+        $payments->record($tenant->id, $customer, 60_000, today(), [$one->id => 60_000]);
+        $payments->record($tenant->id, $customer, 40_000, today(), [$two->id => 40_000]);
+        $payments->record($tenant->id, $customer, 25_000, today(), [$three->id => 25_000]);
+        importStatement($bank, "Date,Description,Amount\n".today()->toDateString().",Bulk deposit,1000.00\n");
+        $reconciliation = app(BankReconciliation::class);
+        $transaction = FinBankTransaction::query()->firstOrFail();
+        $lines = $reconciliation->unmatchedLedgerLines($bank)->orderBy('id')->get();
+
+        expect(fn () => $reconciliation->matchMany($transaction, [$lines[0]->id]))->toThrow(DomainException::class, 'at least two')
+            ->and(fn () => $reconciliation->matchMany($transaction, [$lines[0]->id, $lines[2]->id]))->toThrow(DomainException::class, 'add up to')
+            ->and($reconciliation->suggestions($bank))->toHaveCount(0);
+
+        $reconciliation->matchMany($transaction, [$lines[0]->id, $lines[1]->id]);
+        expect($transaction->fresh()->status)->toBe('matched')->and($transaction->fresh()->matchedLines()->count())->toBe(2)
+            ->and($reconciliation->unmatchedLedgerLines($bank)->count())->toBe(1)
+            ->and(fn () => $reconciliation->matchMany($transaction->fresh(), [$lines[0]->id, $lines[1]->id]))->toThrow(DomainException::class);
+
+        $reconciliation->unmatch($transaction->fresh());
+        expect($transaction->fresh()->status)->toBe('unmatched')->and($reconciliation->unmatchedLedgerLines($bank)->count())->toBe(3);
+
+        $reconciliation->matchMany($transaction->fresh(), [$lines[0]->id, $lines[1]->id]);
+        $summary = $reconciliation->summary($bank);
+        expect($summary['unmatched_statement'])->toBe(0)->and($summary['outstanding_ledger'])->toBe(1);
+    });
+
+    test('the screen matches several entries at once', function (): void {
+        [$user, $tenant] = createFinanceContext();
+        $bank = bankFor($tenant);
+        $customer = financeCustomer($tenant);
+        $payments = app(PaymentService::class);
+        $a = issueInvoice($tenant, $customer, 30_000);
+        $b = issueInvoice($tenant, $customer, 20_000);
+        $payments->record($tenant->id, $customer, 30_000, today(), [$a->id => 30_000]);
+        $payments->record($tenant->id, $customer, 20_000, today(), [$b->id => 20_000]);
+        importStatement($bank, "Date,Description,Amount\n".today()->toDateString().",Combined,500.00\n");
+        $lines = app(BankReconciliation::class)->unmatchedLedgerLines($bank)->pluck('id')->all();
+        $this->actingAs($user)->withSession(['active_tenant_id' => $tenant->id]);
+
+        $this->get(route('finance.bank.show', $bank->uuid))->assertOk()->assertSee('Match to several entries');
+        $this->post(route('finance.bank.match-many', FinBankTransaction::query()->firstOrFail()->uuid), ['journal_line_ids' => [$lines[0]]])->assertSessionHas('error');
+        $this->post(route('finance.bank.match-many', FinBankTransaction::query()->firstOrFail()->uuid), ['journal_line_ids' => $lines])->assertSessionHas('success');
+        expect(FinBankTransaction::query()->firstOrFail()->status)->toBe('matched');
+        $this->get(route('finance.bank.show', [$bank->uuid, 'show' => 'matched']))->assertOk()->assertSee('2 ledger entries');
+    });
+});
+
+describe('Finance year-end close', function (): void {
+    test('closing a year moves its profit to retained earnings, locks the books and keeps the profit visible in reports', function (): void {
+        [$tenant] = statementBooks();
+        $reports = app(StatementReports::class);
+        $close = app(App\Modules\Finance\Services\YearEndClose::class);
+        $yearEnd = $close->suggestedDate($tenant->id);
+        $yearStart = $reports->fiscalYearStart($tenant->id, $yearEnd);
+
+        expect($close->preview($tenant->id, $yearEnd)['net_profit'])->toBe(-100_000);
+
+        $journal = $close->close($tenant->id, $yearEnd);
+        expect($journal->source_type)->toBe('year_end_close')->and($journal->date->toDateString())->toBe($yearEnd->toDateString())
+            ->and($journal->number)->toStartWith('JNL-');
+
+        $retained = app(ChartOfAccounts::class)->bySystemKey($tenant->id, ChartOfAccounts::RETAINED_EARNINGS);
+        $row = DB::connection('tenant')->table('fin_journal_lines')->where('account_id', $retained->id)->selectRaw('COALESCE(SUM(debit - credit),0) as net')->first();
+        expect((int) $row->net)->toBe(100_000)
+            ->and($reports->profitAndLoss($tenant->id, $yearStart, $yearEnd)['net_profit'])->toBe(-100_000)
+            ->and(codeBalance($tenant, '6100'))->toBe(0)
+            ->and(app(FinanceSettings::class)->for($tenant->id)->lock_date->toDateString())->toBe($yearEnd->toDateString());
+
+        $sheet = $reports->balanceSheet($tenant->id, today());
+        $trial = app(FinanceReports::class)->trialBalance($tenant->id);
+        expect($sheet['balanced'])->toBeTrue()->and($sheet['current_year_profit'])->toBe(200_000)->and($sheet['prior_years_profit'])->toBe(0)
+            ->and($trial['debit'])->toBe($trial['credit'])
+            ->and($reports->profitAndLoss($tenant->id, $reports->fiscalYearStart($tenant->id, today()), today())['net_profit'])->toBe(200_000);
+
+        expect(fn () => $close->close($tenant->id, $yearEnd))->toThrow(DomainException::class, 'already been closed')
+            ->and(fn () => app(LedgerService::class)->post($tenant->id, $yearEnd, [['account_id' => $retained->id, 'debit' => 1], ['account_id' => $retained->id, 'credit' => 1]]))->toThrow(DomainException::class, 'locked');
+    });
+
+    test('only a finished financial year can be closed, on its last day, and an empty year has nothing to close', function (): void {
+        [, $tenant] = createFinanceContext();
+        app(ChartOfAccounts::class)->ensureSeeded($tenant->id);
+        $close = app(App\Modules\Finance\Services\YearEndClose::class);
+
+        expect(fn () => $close->close($tenant->id, today()->addDay()))->toThrow(DomainException::class, 'before it ends')
+            ->and(fn () => $close->close($tenant->id, today()->startOfYear()->subDays(5)))->toThrow(DomainException::class, 'last day')
+            ->and(fn () => $close->close($tenant->id, $close->suggestedDate($tenant->id)))->toThrow(DomainException::class, 'nothing to close');
+    });
+
+    test('the settings screen closes a year only after typing CLOSE', function (): void {
+        [$user, $tenant] = createFinanceContext();
+        $this->actingAs($user)->withSession(['active_tenant_id' => $tenant->id]);
+        $yearEnd = app(App\Modules\Finance\Services\YearEndClose::class)->suggestedDate($tenant->id)->toDateString();
+
+        $this->get(route('finance.settings.edit'))->assertOk()->assertSee('Close a financial year');
+        $this->post(route('finance.settings.close-year'), ['year_end' => $yearEnd, 'confirm' => 'yes'])->assertStatus(422);
+        $this->post(route('finance.settings.close-year'), ['year_end' => $yearEnd, 'confirm' => 'CLOSE'])->assertSessionHas('error');
+    });
+});
+
+describe('Finance customer statements', function (): void {
+    test('a statement shows charges, credits and payments with a running balance and opening balance', function (): void {
+        [, $tenant] = createFinanceContext();
+        $customer = financeCustomer($tenant);
+        $invoice = issueInvoice($tenant, $customer, 100_000);
+        app(PaymentService::class)->record($tenant->id, $customer, 40_000, today(), [$invoice->id => 40_000]);
+        app(InvoiceService::class)->send(partialCredit($tenant, $customer, $invoice, 10_000));
+        $statements = app(App\Modules\Finance\Services\CustomerStatement::class);
+
+        $report = $statements->build($customer, today()->subMonth(), today());
+        expect($report['opening'])->toBe(0)->and($report['closing'])->toBe(50_000)->and($report['lines'])->toHaveCount(3)
+            ->and(collect($report['lines'])->pluck('type')->sort()->values()->all())->toBe(['Credit note', 'Invoice', 'Payment'])
+            ->and($report['closing'])->toBe($invoice->fresh()->balanceDue());
+
+        $later = $statements->build($customer, today()->addDay(), today()->addMonth());
+        expect($later['opening'])->toBe(50_000)->and($later['lines'])->toBe([])->and($later['closing'])->toBe(50_000);
+    });
+
+    test('drafts and voided documents are left out, and another customer is never mixed in', function (): void {
+        [, $tenant] = createFinanceContext();
+        $one = financeCustomer($tenant, 'One', 'one@example.test');
+        $two = financeCustomer($tenant, 'Two', 'two@example.test');
+        issueInvoice($tenant, $one, 10_000);
+        $voided = issueInvoice($tenant, $one, 20_000);
+        app(InvoiceService::class)->void($voided);
+        issueInvoice($tenant, $two, 99_000);
+        app(InvoiceService::class)->saveDraft($tenant->id, $one, ['issue_date' => today()->toDateString()], [['description' => 'Draft', 'quantity' => 1, 'unit_price' => 5_000]]);
+
+        $report = app(App\Modules\Finance\Services\CustomerStatement::class)->build($one, today()->subMonth(), today());
+        expect($report['closing'])->toBe(10_000)->and($report['lines'])->toHaveCount(1);
+    });
+
+    test('the statement screen opens, downloads as CSV and is linked from the contacts list', function (): void {
+        [$user, $tenant] = createFinanceContext();
+        $customer = financeCustomer($tenant);
+        issueInvoice($tenant, $customer, 100_000);
+        $this->actingAs($user)->withSession(['active_tenant_id' => $tenant->id]);
+
+        $this->get(route('finance.contacts.index'))->assertOk()->assertSee('Statement');
+        $this->get(route('finance.contacts.statement', $customer->uuid))->assertOk()->assertSee('Statement of account')->assertSee('Amount due');
+        $csv = $this->get(route('finance.contacts.statement', [$customer->uuid, 'format' => 'csv']))->assertOk();
+        expect($csv->headers->get('Content-Type'))->toContain('text/csv')->and($csv->streamedContent())->toContain('Statement of account');
+    });
+});

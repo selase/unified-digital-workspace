@@ -16,6 +16,7 @@ final class FinanceSettings
         'journal' => 'JNL-',
         'bill' => 'BILL-',
         'bill_payment' => 'BPAY-',
+        'vendor_credit' => 'VCN-',
         'expense' => 'EXP-',
     ];
 
