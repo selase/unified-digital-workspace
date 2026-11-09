@@ -36,14 +36,20 @@ final class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        $resolvedTenant = app(\App\Services\Tenancy\TenantResolver::class)->resolve($request);
-        $tenantId = $resolvedTenant !== null ? $resolvedTenant->id : session('active_tenant_id');
-
         // Capture user before checking roles to avoid unnecessary queries
         $user = $request->user();
 
         // Superadmins should generally stay on the landlord domain unless they specifically logged in via a tenant domain
         $isSuperAdmin = $user && \Illuminate\Support\Facades\Gate::allows('access-superadmin-dashboard');
+
+        // Sessions are shared across subdomains, so a superadmin signing in on the platform host
+        // must not inherit a tenant remembered from an earlier visit.
+        if ($isSuperAdmin && $request->getHost() === parse_url((string) config('app.url'), PHP_URL_HOST)) {
+            $request->session()->forget('active_tenant_id');
+        }
+
+        $resolvedTenant = app(\App\Services\Tenancy\TenantResolver::class)->resolve($request);
+        $tenantId = $resolvedTenant !== null ? $resolvedTenant->id : session('active_tenant_id');
 
         if (! $tenantId && ! $isSuperAdmin) {
             $tenantId = $user?->tenants()->value('tenants.id');
