@@ -11,6 +11,7 @@ use App\Services\Tenancy\TenantContext;
 use Illuminate\Contracts\View\Factory;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Route;
+use Throwable;
 
 final class DashboardController extends Controller
 {
@@ -57,6 +58,55 @@ final class DashboardController extends Controller
                     ['label' => 'Pending Leaves', 'value' => $pendingLeaves],
                 ],
             ];
+        }
+
+        // Donations telemetry
+        if ($moduleManager->isEnabledForTenant('donations', $tenant) && auth()->user()?->can('donations.view')) {
+            try {
+                $to = \Carbon\CarbonImmutable::today();
+                $from = app(\App\Modules\Finance\Services\StatementReports::class)->fiscalYearStart((string) $tenant->id, $to);
+                $summary = app(\App\Modules\Donations\Services\DonationReports::class)->summary((string) $tenant->id, $from, $to);
+                $currency = app(\App\Modules\Finance\Services\FinanceSettings::class)->for((string) $tenant->id)->base_currency;
+                $pledgesDue = \App\Modules\Donations\Models\DonPledge::query()->where('tenant_id', $tenant->id)
+                    ->where('status', 'active')->whereDate('next_due_on', '<=', today()->toDateString())->count();
+
+                $moduleCards['donations'] = [
+                    'name' => 'Donations',
+                    'route' => Route::has('donations.index') ? route('donations.index') : '#',
+                    'icon' => 'ki-heart',
+                    'badge' => 'Active',
+                    'kpis' => [
+                        ['label' => 'Raised this year', 'value' => \App\Modules\Finance\Support\Money::format($summary['total'], $currency)],
+                        ['label' => 'Gifts', 'value' => $summary['count']],
+                        ['label' => 'Pledges due', 'value' => $pledgesDue],
+                    ],
+                ];
+            } catch (Throwable $error) {
+                report($error);
+            }
+        }
+
+        // Accounting telemetry
+        if ($moduleManager->isEnabledForTenant('finance', $tenant) && auth()->user()?->can('finance.view')) {
+            try {
+                $books = app(\App\Modules\Finance\Services\FinanceReports::class)->dashboard((string) $tenant->id);
+                $currency = app(\App\Modules\Finance\Services\FinanceSettings::class)->for((string) $tenant->id)->base_currency;
+                $payables = app(\App\Modules\Finance\Services\FinanceReports::class)->agedPayables((string) $tenant->id)['totals']['total'];
+
+                $moduleCards['finance'] = [
+                    'name' => 'Accounting',
+                    'route' => Route::has('finance.index') ? route('finance.index') : '#',
+                    'icon' => 'ki-wallet',
+                    'badge' => 'Active',
+                    'kpis' => [
+                        ['label' => 'Cash', 'value' => \App\Modules\Finance\Support\Money::format($books['cash'], $currency)],
+                        ['label' => 'Owed to you', 'value' => \App\Modules\Finance\Support\Money::format($books['receivables'], $currency)],
+                        ['label' => 'You owe', 'value' => \App\Modules\Finance\Support\Money::format($payables, $currency)],
+                    ],
+                ];
+            } catch (Throwable $error) {
+                report($error);
+            }
         }
 
         // Memos telemetry
