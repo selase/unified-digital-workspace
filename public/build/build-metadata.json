@@ -1,6 +1,6 @@
 {
     "version": 2,
-    "source_sha256": "b2a4b9a33de5aaf6a6fa25b66a15831a5cf12b21ca22f2b6ba4ac1c9f00bca02",
+    "source_sha256": "d6c0d28f2b385d856a30306028fa19020480a5afa1e2ec0eaeac8c09860bcf49",
     "source_files": {
         ".agent/rules/path-to-php.md": "c559a7b17fe39107f8e1a69a9b93fe720c8d11b947d9decaf6541ed429714359",
         ".agent/rules/testing.md": "8289cda546c31080a26018179a337bafa1f65c0967dd23d2d1561d6c9b0a9c1f",
@@ -530,7 +530,7 @@
         "app/Modules/Donations/Services/OnlineGivingService.php": "6341d5988f387d9e187bf3727bfc8fd60b75d9637ce719170d4bf6756e867c1c",
         "app/Modules/Donations/Services/PledgeService.php": "c1f681661ed6abf3e1cc0116f899160edf3dbd03fe3675d694f6e8b41655e0cb",
         "app/Modules/Donations/Views/campaigns/index.blade.php": "4875539b3e19d56d6bd901e69e19caf365464bcd76d8bd3f3e6fb7d743e7a4b6",
-        "app/Modules/Donations/Views/dashboard.blade.php": "52dc1f923b53ab4983864f1389ccaf01dd8406ca09bd8f5c0b7471a359fbbcdf",
+        "app/Modules/Donations/Views/dashboard.blade.php": "ca12ceb3bff55eca22d72a21f5012b6a0677230abc7950a5da9fd9f7ab2f835a",
         "app/Modules/Donations/Views/donations/index.blade.php": "3e7fa4ff2f65f85ed37880a910ccd24931181f50a5ed7e781b844420f3971763",
         "app/Modules/Donations/Views/donors/index.blade.php": "e884482f33ae0640dc1fd0beb4f3a14f1d9f0d58326013e5fdc416e932ac37a6",
         "app/Modules/Donations/Views/donors/show.blade.php": "15c85ad64589dc76ecb10947310a41625427e827e232f11bdf658b1da9198688",
@@ -6591,7 +6591,7 @@
         "resources/views/layouts/admin/partials/sidebar.blade.php": "b64b31faa6e9d01d64d5920949b20f6ed949fad5edefd5486aa9e938554ed31e",
         "resources/views/layouts/app.blade.php": "a41556ce5ff927aa96e59a79e283cb4b600899156d8f3188dbc3c369f99841f9",
         "resources/views/layouts/guest.blade.php": "b8beb673110d2bc4ef608db9c50a850e1995d95cc3b67a65beee346ba9ff8c4a",
-        "resources/views/layouts/metronic/app.blade.php": "47a3289591079e02b7612c71a392f42c299824da654f4ebf7f7c1519e1b2c599",
+        "resources/views/layouts/metronic/app.blade.php": "a2f723243c5c9146ea4b11b62b684e2d7f7f9bd4f17481e16c20107796c7497a",
         "resources/views/layouts/metronic/auth.blade.php": "c00984ea7e3de6322fa6c309124dab046d469a1266aead2efef900ea53c1e5ce",
         "resources/views/layouts/navigation.blade.php": "ac9b4fa5bf3c696f42790c7053c449e9005385ba5080a9438029be04da0d69f4",
         "resources/views/layouts/product.blade.php": "dbfcd422c966d716a532f3fe4cfd90151bdfcd777f6da5219f513897e5423d5d",
@@ -6957,8 +6957,8 @@
         "vite.config.js": "1bd7f75ae1df969c819e63114e9be5f0e2a69e399d4dcab4373aa680314a93d9"
     },
     "files": {
-        "assets/app-BGpM9dP-.css": "327c7ab9929e5f1a185817eb5a88d3666cad9f333fd4f683569aeabb8668b75d",
+        "assets/app-CahywLO7.css": "f599d6ce79025d3a50bc31cfcc791519a55834bd740bb81a364687d1745cf0e5",
         "assets/app-DZ7vsMlk.js": "9e50c4955507aaeebcd1314deed2cd1c97b55d9ac9c9388ab60cf33f0e6d510e",
-        "manifest.json": "d9d2899d597202a28c0d2a0852024d26e785407916c1eed102e3565e74b4321c"
+        "manifest.json": "f0202eed9ea327928b91fb5e2228642db2959d6b852181af59defb270f629a06"
     }
 }
