@@ -148,7 +148,7 @@
     }
 @endphp
 
-<div class="flex grow">
+<div class="flex grow min-w-0">
     <aside
         class="kt-sidebar bg-background border-e border-e-border fixed top-0 bottom-0 z-20 hidden lg:flex flex-col items-stretch shrink-0 [--kt-drawer-enable:true] lg:[--kt-drawer-enable:false]"
         data-kt-drawer="true"
@@ -311,7 +311,7 @@
         </div>
     </aside>
 
-    <div class="kt-wrapper flex grow flex-col">
+    <div class="kt-wrapper flex grow min-w-0 flex-col">
         <header class="kt-header fixed top-0 z-10 start-0 end-0 flex items-stretch shrink-0 bg-background" data-kt-sticky="true" data-kt-sticky-class="" data-kt-sticky-name="header" id="header">
             <div class="kt-container-fixed flex justify-between items-stretch lg:gap-4" id="headerContainer">
                 <div class="flex items-center gap-3 lg:gap-6">
@@ -499,7 +499,7 @@
             </div>
         </header>
 
-        <main class="grow pt-5" id="content" role="content">
+        <main class="grow min-w-0 pt-5" id="content" role="content">
             <div class="kt-container-fixed">
                 <x-metronic.module-help />
                 @yield('content')

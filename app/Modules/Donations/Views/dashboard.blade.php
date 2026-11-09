@@ -38,7 +38,7 @@
             <div class="flex items-end gap-2 h-40">
                 @foreach($summary['by_month'] as $month)
                     <div class="flex-1 flex flex-col items-center justify-end gap-1 h-full" title="{{ $month['month'] }}: {{ Money::format($month['total'], $currency) }}">
-                        <div class="w-full rounded-t bg-primary/80" style="height: {{ max(2, intdiv($month['total'] * 100, $peak)) }}%"></div>
+                        <div class="w-full rounded-t bg-primary" style="height: {{ max(2, intdiv($month['total'] * 100, $peak)) }}%"></div>
                         <div class="text-[10px] text-muted-foreground">{{ mb_substr($month['month'], 0, 3) }}</div>
                     </div>
                 @endforeach
