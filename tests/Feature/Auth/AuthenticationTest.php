@@ -93,3 +93,16 @@ test('login retains inherited access to a descendant tenant', function (): void 
     ])->assertRedirect('http://descendant.unified-digital-workspace.test/dashboard')
         ->assertSessionHas('active_tenant_id', $child->id);
 });
+
+test('a superadmin signing in on the platform host does not inherit a remembered tenant', function () {
+    $user = User::factory()->create();
+    $user->assignRole(Spatie\Permission\Models\Role::firstOrCreate(['name' => 'Superadmin', 'guard_name' => 'web'], ['uuid' => Illuminate\Support\Str::uuid()]));
+    $tenant = setActiveTenantForTest($user);
+
+    $response = $this->withSession(['active_tenant_id' => $tenant->id])
+        ->withoutMiddleware(App\Http\Middleware\VerifyCsrfToken::class)
+        ->post('/login', ['email' => $user->email, 'password' => 'password']);
+
+    $response->assertRedirect(App\Providers\RouteServiceProvider::HOME);
+    expect(session('active_tenant_id'))->toBeNull();
+});
