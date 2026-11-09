@@ -381,3 +381,25 @@ describe('Online giving', function (): void {
         expect($giving->recordVerified($tenant->id, 'r2'))->toBeNull()->and(DonDonation::query()->count())->toBe(0);
     });
 });
+
+describe('Tenant dashboard', function (): void {
+    test('shows donations and accounting cards with live figures, and hides them without the permission', function (): void {
+        [$user, $tenant] = createDonationsContext();
+        Permission::firstOrCreate(['name' => 'core.dashboard.access', 'guard_name' => 'web'], ['uuid' => (string) Str::uuid(), 'category' => 'dashboard']);
+        $user->givePermissionTo('core.dashboard.access');
+        grantOrganisationAdminAccess($user);
+        app(DonationService::class)->record($tenant->id, demoDonor($tenant), 125_000, today());
+        $url = route('tenant.dashboard', ['subdomain' => $tenant->slug]);
+
+        $cards = $this->actingAs($user)->withSession(['active_tenant_id' => $tenant->id])->get($url)->assertSuccessful()->viewData('moduleCards');
+        expect($cards)->toHaveKeys(['donations', 'finance'])
+            ->and($cards['donations']['kpis'][0]['value'])->toBe('GHS 1,250.00')
+            ->and($cards['donations']['kpis'][1]['value'])->toBe(1)
+            ->and($cards['finance']['kpis'][0]['value'])->toBe('GHS 1,250.00');
+
+        $user->revokePermissionTo(['donations.view', 'finance.view']);
+        app(Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+        $cards = $this->get($url)->assertSuccessful()->viewData('moduleCards');
+        expect($cards)->not->toHaveKeys(['donations', 'finance']);
+    });
+});
