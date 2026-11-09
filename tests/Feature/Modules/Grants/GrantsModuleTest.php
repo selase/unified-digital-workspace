@@ -218,3 +218,23 @@ describe('Grants demo seeder', function (): void {
         expect(GrtFunder::query()->count())->toBe(0);
     });
 });
+
+describe('Tenant dashboard', function (): void {
+    test('shows a grants card with live figures only to people who may see grants', function (): void {
+        [$user, $tenant] = createGrantsContext();
+        Permission::firstOrCreate(['name' => 'core.dashboard.access', 'guard_name' => 'web'], ['uuid' => (string) Str::uuid(), 'category' => 'dashboard']);
+        $user->givePermissionTo('core.dashboard.access');
+        grantOrganisationAdminAccess($user);
+        app(ChartOfAccounts::class)->ensureSeeded($tenant->id);
+        $service = app(GrantService::class);
+        $service->receive($service->addInstalment(awardedGrant($tenant, 800_000), 300_000, today()), today());
+        $url = route('tenant.dashboard', ['subdomain' => $tenant->slug]);
+
+        $cards = $this->actingAs($user)->withSession(['active_tenant_id' => $tenant->id])->get($url)->assertSuccessful()->viewData('moduleCards');
+        expect($cards['grants']['kpis'][0]['value'])->toBe('GHS 8,000.00')->and($cards['grants']['kpis'][1]['value'])->toBe('GHS 3,000.00');
+
+        $user->revokePermissionTo('grants.view');
+        app(Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+        expect($this->get($url)->assertSuccessful()->viewData('moduleCards'))->not->toHaveKey('grants');
+    });
+});

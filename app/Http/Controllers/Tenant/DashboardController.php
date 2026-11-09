@@ -86,6 +86,69 @@ final class DashboardController extends Controller
             }
         }
 
+        // Grants telemetry
+        if ($moduleManager->isEnabledForTenant('grants', $tenant) && auth()->user()?->can('grants.view')) {
+            try {
+                $open = \App\Modules\Grants\Models\GrtGrant::query()->where('tenant_id', $tenant->id)->whereIn('status', ['awarded', 'active']);
+                $received = (int) \App\Modules\Grants\Models\GrtInstalment::query()->where('tenant_id', $tenant->id)->where('status', 'received')->whereIn('grant_id', (clone $open)->select('id'))->sum('amount');
+                $currency = app(\App\Modules\Finance\Services\FinanceSettings::class)->for((string) $tenant->id)->base_currency;
+
+                $moduleCards['grants'] = [
+                    'name' => 'Grants',
+                    'route' => Route::has('grants.index') ? route('grants.index') : '#',
+                    'icon' => 'ki-award',
+                    'badge' => 'Active',
+                    'kpis' => [
+                        ['label' => 'Awarded', 'value' => \App\Modules\Finance\Support\Money::format((int) (clone $open)->sum('total_amount'), $currency)],
+                        ['label' => 'Received', 'value' => \App\Modules\Finance\Support\Money::format($received, $currency)],
+                        ['label' => 'Reports due', 'value' => \App\Modules\Grants\Models\GrtReport::query()->where('tenant_id', $tenant->id)->where('status', 'pending')->whereDate('due_on', '<=', today()->addDays(30)->toDateString())->count()],
+                    ],
+                ];
+            } catch (Throwable $error) {
+                report($error);
+            }
+        }
+
+        // Volunteers telemetry
+        if ($moduleManager->isEnabledForTenant('volunteers', $tenant) && auth()->user()?->can('volunteers.view')) {
+            try {
+                $moduleCards['volunteers'] = [
+                    'name' => 'Volunteers',
+                    'route' => Route::has('volunteers.index') ? route('volunteers.index') : '#',
+                    'icon' => 'ki-people',
+                    'badge' => 'Active',
+                    'kpis' => [
+                        ['label' => 'Active', 'value' => \App\Modules\Volunteers\Models\VolVolunteer::query()->where('tenant_id', $tenant->id)->where('status', 'active')->count()],
+                        ['label' => 'Hours this year', 'value' => number_format(((int) \App\Modules\Volunteers\Models\VolHour::query()->where('tenant_id', $tenant->id)->where('status', 'approved')->whereDate('worked_on', '>=', today()->startOfYear()->toDateString())->sum('minutes')) / 60, 1)],
+                        ['label' => 'To approve', 'value' => \App\Modules\Volunteers\Models\VolHour::query()->where('tenant_id', $tenant->id)->where('status', 'pending')->count() + \App\Modules\Volunteers\Models\VolVolunteer::query()->where('tenant_id', $tenant->id)->where('status', 'pending')->count()],
+                    ],
+                ];
+            } catch (Throwable $error) {
+                report($error);
+            }
+        }
+
+        // Beneficiaries telemetry (counts only, no personal details)
+        if ($moduleManager->isEnabledForTenant('beneficiaries', $tenant) && auth()->user()?->can('beneficiaries.view')) {
+            try {
+                $summary = app(\App\Modules\Beneficiaries\Services\BeneficiaryService::class)->summary((string) $tenant->id, today()->startOfYear());
+
+                $moduleCards['beneficiaries'] = [
+                    'name' => 'Beneficiaries',
+                    'route' => Route::has('beneficiaries.index') ? route('beneficiaries.index') : '#',
+                    'icon' => 'ki-user-square',
+                    'badge' => 'Active',
+                    'kpis' => [
+                        ['label' => 'In programme', 'value' => $summary['active']],
+                        ['label' => 'Reached this year', 'value' => $summary['reached_this_year']],
+                        ['label' => 'Open cases', 'value' => \App\Modules\Beneficiaries\Models\BenCase::query()->where('tenant_id', $tenant->id)->where('status', 'open')->count()],
+                    ],
+                ];
+            } catch (Throwable $error) {
+                report($error);
+            }
+        }
+
         // Accounting telemetry
         if ($moduleManager->isEnabledForTenant('finance', $tenant) && auth()->user()?->can('finance.view')) {
             try {
