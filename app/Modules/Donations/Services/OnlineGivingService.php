@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Donations\Services;
 
 use App\Models\Tenant;
+use App\Modules\Donations\Mail\DonationReceiptMail;
 use App\Modules\Donations\Models\DonCampaign;
 use App\Modules\Donations\Models\DonDonation;
 use App\Modules\Donations\Models\DonDonor;
@@ -12,6 +13,8 @@ use App\Modules\Finance\Contracts\FinancePaymentGateway;
 use App\Modules\Finance\Services\FinanceSettings;
 use App\Modules\Finance\Support\ActivateTenant;
 use DomainException;
+use Illuminate\Support\Facades\Mail;
+use Throwable;
 
 /** Lets the public give through the organisation's own payment gateway, and records the gift once it is confirmed. */
 final class OnlineGivingService
@@ -88,12 +91,32 @@ final class OnlineGivingService
             return null;
         }
 
-        return $this->donations->record($tenantId, $donor, $result['amount'], today(), array_filter([
+        $gift = $this->donations->record($tenantId, $donor, $result['amount'], today(), array_filter([
             'method' => 'card',
             'reference' => $result['reference'],
             'gateway' => $this->gateway->key(),
             'gateway_reference' => $result['reference'],
             'campaign_id' => isset($metadata['campaign_id']) ? (int) $metadata['campaign_id'] : null,
         ], fn ($value): bool => $value !== null));
+
+        $this->sendReceipt($gift, $donor);
+
+        return $gift;
+    }
+
+    /** Emails the receipt once. A mail problem must never undo a gift that has already been recorded. */
+    private function sendReceipt(DonDonation $gift, DonDonor $donor): void
+    {
+        if ($gift->receipt_sent_at !== null || ! $donor->email) {
+            return;
+        }
+
+        try {
+            $profile = $this->settings->for($gift->tenant_id);
+            Mail::to($donor->email)->send(new DonationReceiptMail($gift, $profile->legal_name ?: (string) config('app.name'), $profile->email));
+            $gift->forceFill(['receipt_sent_at' => now()])->save();
+        } catch (Throwable $error) {
+            report($error);
+        }
     }
 }
