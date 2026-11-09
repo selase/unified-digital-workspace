@@ -742,7 +742,6 @@ final class WorkspaceNavigation
                 'permission' => 'finance.view',
                 'home_route' => 'finance.index',
                 'sidebar' => [
-                    ['label' => 'Overview', 'route' => 'finance.index'],
                     ['label' => 'Invoices', 'route' => 'finance.invoices.index'],
                     ['label' => 'Payments', 'route' => 'finance.payments.index'],
                     ['label' => 'Bills', 'route' => 'finance.bills.index'],
@@ -777,7 +776,6 @@ final class WorkspaceNavigation
                 'permission' => 'donations.view',
                 'home_route' => 'donations.index',
                 'sidebar' => [
-                    ['label' => 'Overview', 'route' => 'donations.index'],
                     ['label' => 'Donations', 'route' => 'donations.donations.index'],
                     ['label' => 'Donors', 'route' => 'donations.donors.index'],
                     ['label' => 'Pledges', 'route' => 'donations.pledges.index'],
