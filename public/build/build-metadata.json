@@ -1,6 +1,6 @@
 {
     "version": 2,
-    "source_sha256": "e965c00f066358ba56dfa76217313a4c500661a1c707b7c6008e0f8f4459fabc",
+    "source_sha256": "da628409e6a841ad30ea262b9facae5ebc1c85a9c534fb7d027ee50788236ea6",
     "source_files": {
         ".agent/rules/path-to-php.md": "c559a7b17fe39107f8e1a69a9b93fe720c8d11b947d9decaf6541ed429714359",
         ".agent/rules/testing.md": "8289cda546c31080a26018179a337bafa1f65c0967dd23d2d1561d6c9b0a9c1f",
@@ -127,7 +127,7 @@
         "app/Http/Controllers/Admin/TenantDiscountController.php": "8fd0aef65e2c3dd9406ddfbaacd7c596224683cc44d706db162159f4374ff3f6",
         "app/Http/Controllers/Admin/TenantHealthController.php": "a0184c2c2256a75fca9aa6a3912005b93005ab575f29f65f9511ef22a8a99dc4",
         "app/Http/Controllers/Admin/UsersController.php": "7b89038dcb82b71a1062152a71ed9caedeec5e1a6562ce6fe7faac540fdafa0e",
-        "app/Http/Controllers/Auth/AuthenticatedSessionController.php": "94bc0ce8fb5122464c0ad2ea33b59b456d01a1d7103c07988c2914e4065076ac",
+        "app/Http/Controllers/Auth/AuthenticatedSessionController.php": "4902969a06097fc725c6d695341cf017ba6fd4e21d3a18bb38023e5f2e2f2ba7",
         "app/Http/Controllers/Auth/ConfirmablePasswordController.php": "95d6fbe8e574ce68d1207493dc6a3ab461e84119b74d468757e63c9929b8f784",
         "app/Http/Controllers/Auth/EmailVerificationNotificationController.php": "153d46ee8c3c475cbd02abd755c27d8e93a4a70c5ce4d950bc79b82da6285dee",
         "app/Http/Controllers/Auth/EmailVerificationPromptController.php": "3ca75667a4dda8171572470ea84d1ae9d8105ddec1a477afe0a800618d3aa40d",
@@ -6607,7 +6607,7 @@
         "tests/Feature/Admin/TenantTeamTest.php": "312fb479fe540b200d3f46575ab23571ca483caa68025a01b1f7af6d5bd5e24e",
         "tests/Feature/Admin/TenantUpdateTest.php": "f402b5678aa876127b6e2387fafb03dc31eae3ca84b626452e3601a3ad49f39e",
         "tests/Feature/Alerts/AlertRulesTest.php": "e082006dd7fb43860d5271bff7f119306c0ca9d7454691efec49fe8386c4ce23",
-        "tests/Feature/Auth/AuthenticationTest.php": "3ad6d81504660fb8851d3d6dec989bd4d5b1fe280e301bea0b4b8afe008f5192",
+        "tests/Feature/Auth/AuthenticationTest.php": "02f38bd99003d39259203ad35af55785183d4c3e2152cd477677a9277642e8c4",
         "tests/Feature/Auth/EmailVerificationTest.php": "781d502f494369b3f821dda11921889e78e190e0022cc12aea8e0c29952dc341",
         "tests/Feature/Auth/PasswordConfirmationTest.php": "5fdefcde021cce9819ca9469c5f578365f385ab8167da2180c8b50f1f4a11811",
         "tests/Feature/Auth/PasswordResetTest.php": "196173109b514002a9363fc6df3467129e98ebd5158dc80699887e8885ef3085",
