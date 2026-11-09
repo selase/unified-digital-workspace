@@ -6,6 +6,7 @@ use App\Modules\Donations\Http\Controllers\CampaignController;
 use App\Modules\Donations\Http\Controllers\DonationController;
 use App\Modules\Donations\Http\Controllers\DonationDashboardController;
 use App\Modules\Donations\Http\Controllers\DonorController;
+use App\Modules\Donations\Http\Controllers\PledgeController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [DonationDashboardController::class, 'index'])->name('index');
@@ -24,3 +25,8 @@ Route::post('/gifts', [DonationController::class, 'store'])->name('donations.sto
 Route::get('/gifts/{donation}/receipt', [DonationController::class, 'receipt'])->name('donations.receipt');
 Route::post('/gifts/{donation}/email', [DonationController::class, 'email'])->name('donations.email');
 Route::post('/gifts/{donation}/void', [DonationController::class, 'void'])->name('donations.void');
+
+Route::get('/pledges', [PledgeController::class, 'index'])->name('pledges.index');
+Route::post('/pledges', [PledgeController::class, 'store'])->name('pledges.store');
+Route::post('/pledges/{pledge}/receive', [PledgeController::class, 'receive'])->name('pledges.receive');
+Route::post('/pledges/{pledge}/status', [PledgeController::class, 'status'])->name('pledges.status');

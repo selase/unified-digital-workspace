@@ -155,6 +155,18 @@ final class WebhookController extends Controller
 
             return $this->paystackResponse($request, ['status' => 'finance_recorded'], 'finance_invoice');
         }
+        if (data_get($result, 'metadata.type') === 'donation' && is_string($donationTenantId = data_get($result, 'metadata.tenant_id'))) {
+            // A donor gave through the shared Paystack account; the Donations module records it.
+            try {
+                event(new \App\Modules\Finance\Events\GatewayChargeSucceeded($donationTenantId, $reference));
+            } catch (Throwable $error) {
+                report($error);
+
+                return $this->paystackResponse($request, ['error' => 'Donation not recorded'], 'donation_error', 500);
+            }
+
+            return $this->paystackResponse($request, ['status' => 'donation_recorded'], 'donation');
+        }
         $invoiceId = data_get($result, 'metadata.invoice_id');
         $application = data_get($result, 'metadata.application');
         if ($application !== null && $application !== 'udworkspace') {

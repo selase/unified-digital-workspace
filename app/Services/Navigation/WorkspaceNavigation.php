@@ -780,6 +780,7 @@ final class WorkspaceNavigation
                     ['label' => 'Overview', 'route' => 'donations.index'],
                     ['label' => 'Donations', 'route' => 'donations.donations.index'],
                     ['label' => 'Donors', 'route' => 'donations.donors.index'],
+                    ['label' => 'Pledges', 'route' => 'donations.pledges.index'],
                     ['label' => 'Campaigns', 'route' => 'donations.campaigns.index'],
                     ['label' => 'Fund Report', 'route' => 'finance.reports.funds', 'permission' => 'finance.view'],
                 ],

@@ -3,6 +3,7 @@
         'donations.index' => ['Overview', 'donations.index'],
         'donations.donations' => ['Donations', 'donations.donations.index'],
         'donations.donors' => ['Donors', 'donations.donors.index'],
+        'donations.pledges' => ['Pledges', 'donations.pledges.index'],
         'donations.campaigns' => ['Campaigns', 'donations.campaigns.index'],
     ];
     $current = request()->route()?->getName() ?? '';
