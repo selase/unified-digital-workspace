@@ -6,6 +6,7 @@ namespace App\Modules\Finance\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Modules\Finance\Contracts\FinancePaymentGateway;
+use App\Modules\Finance\Events\GatewayChargeSucceeded;
 use App\Modules\Finance\Services\OnlinePaymentService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -25,6 +26,7 @@ final class FinanceWebhookController extends Controller
             try {
                 if ($reference !== '') {
                     $online->recordVerified($tenant, $reference);
+                    event(new GatewayChargeSucceeded($tenant, $reference));
                 }
             } catch (Throwable $error) {
                 report($error);

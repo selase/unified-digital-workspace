@@ -4,13 +4,17 @@ declare(strict_types=1);
 
 use App\Models\Tenant;
 use App\Models\TenantFeature;
+use App\Models\TenantPaymentGateway;
 use App\Models\User;
 use App\Modules\Donations\Database\Seeders\DonationsDemoSeeder;
 use App\Modules\Donations\Models\DonCampaign;
 use App\Modules\Donations\Models\DonDonation;
 use App\Modules\Donations\Models\DonDonor;
+use App\Modules\Donations\Models\DonPledge;
 use App\Modules\Donations\Services\DonationReports;
 use App\Modules\Donations\Services\DonationService;
+use App\Modules\Donations\Services\OnlineGivingService;
+use App\Modules\Donations\Services\PledgeService;
 use App\Modules\Finance\Models\FinAccount;
 use App\Modules\Finance\Models\FinFund;
 use App\Modules\Finance\Models\FinJournal;
@@ -21,6 +25,7 @@ use App\Services\ModuleManager;
 use App\Services\Tenancy\TenantContext;
 use App\Services\Tenancy\TenantDatabaseManager;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Str;
@@ -230,7 +235,8 @@ describe('Donations demo seeder', function (): void {
 
         expect(DonDonor::query()->count())->toBe(8)->and(DonCampaign::query()->count())->toBe(3)
             ->and(DonDonation::query()->whereNotNull('voided_at')->count())->toBe(1)
-            ->and(DonDonation::query()->whereNull('voided_at')->count())->toBe(17);
+            ->and(DonDonation::query()->whereNull('voided_at')->count())->toBe(17)
+            ->and(DonPledge::query()->count())->toBe(4);
         $trial = app(FinanceReports::class)->trialBalance($tenant->id);
         expect($trial['debit'])->toBe($trial['credit']);
 
@@ -239,11 +245,139 @@ describe('Donations demo seeder', function (): void {
         expect(FinJournal::query()->count())->toBe($journals);
 
         DonDonation::query()->delete();
+        DonPledge::query()->delete();
         DonCampaign::query()->delete();
         DonDonor::query()->forceDelete();
         app()->detectEnvironment(fn (): string => 'production');
         (new DonationsDemoSeeder)->run();
         app()->detectEnvironment(fn (): string => 'testing');
         expect(DonDonor::query()->count())->toBe(0);
+    });
+});
+
+describe('Donation pledges', function (): void {
+    test('receiving instalments books gifts, moves the due date and completes the pledge', function (): void {
+        [, $tenant] = createDonationsContext();
+        $service = app(PledgeService::class);
+        $donor = demoDonor($tenant);
+        $pledge = $service->create($tenant->id, $donor, 20_000, ['frequency' => 'monthly', 'starts_on' => '2026-01-31', 'ends_on' => '2026-03-31']);
+
+        expect($pledge->next_due_on->toDateString())->toBe('2026-01-31');
+
+        $gift = $service->receiveInstalment($pledge, today());
+        expect($gift->pledge_id)->toBe($pledge->id)->and($pledge->fresh()->next_due_on->toDateString())->toBe('2026-02-28')
+            ->and(ledgerBalance($tenant, '1000'))->toBe(20_000);
+
+        $service->receiveInstalment($pledge->fresh(), today());
+        $service->receiveInstalment($pledge->fresh(), today());
+        expect($pledge->fresh()->status)->toBe('completed')->and($pledge->fresh()->next_due_on)->toBeNull()
+            ->and(fn () => $service->receiveInstalment($pledge->fresh(), today()))->toThrow(DomainException::class);
+        expect($pledge->donations()->count())->toBe(3);
+    });
+
+    test('a one-off pledge completes after one gift and a paused pledge cannot be received', function (): void {
+        [, $tenant] = createDonationsContext();
+        $service = app(PledgeService::class);
+        $once = $service->create($tenant->id, demoDonor($tenant), 5_000, ['frequency' => 'once', 'starts_on' => today()->toDateString()]);
+        $service->receiveInstalment($once, today());
+        expect($once->fresh()->status)->toBe('completed');
+
+        $monthly = $service->create($tenant->id, demoDonor($tenant, 'B'), 5_000, ['frequency' => 'monthly', 'starts_on' => today()->toDateString()]);
+        $service->setStatus($monthly, 'paused');
+        expect(fn () => $service->receiveInstalment($monthly->fresh(), today()))->toThrow(DomainException::class)
+            ->and(fn () => $service->create($tenant->id, demoDonor($tenant, 'C'), 0, ['frequency' => 'monthly', 'starts_on' => today()->toDateString()]))->toThrow(DomainException::class)
+            ->and(fn () => $service->setStatus($once->fresh(), 'active'))->toThrow(DomainException::class);
+        $service->setStatus($monthly->fresh(), 'active');
+        expect($monthly->fresh()->isDue())->toBeTrue();
+    });
+
+    test('the pledge screens create, receive and pause', function (): void {
+        [$user, $tenant] = createDonationsContext();
+        $donor = demoDonor($tenant);
+        $this->actingAs($user)->withSession(['active_tenant_id' => $tenant->id]);
+
+        $this->get(route('donations.pledges.index'))->assertOk();
+        $this->post(route('donations.pledges.store'), ['donor_id' => $donor->id, 'amount' => '100', 'frequency' => 'monthly', 'starts_on' => today()->toDateString()])->assertRedirect();
+        $pledge = DonPledge::query()->firstOrFail();
+        $this->get(route('donations.pledges.index'))->assertOk()->assertSee('Receive instalment');
+
+        $this->post(route('donations.pledges.receive', $pledge->uuid))->assertSessionHas('success');
+        expect(DonDonation::query()->count())->toBe(1);
+        $this->post(route('donations.pledges.status', $pledge->uuid), ['status' => 'paused'])->assertSessionHas('success');
+        expect($pledge->fresh()->status)->toBe('paused');
+    });
+});
+
+describe('Online giving', function (): void {
+    function connectGivingGateway(Tenant $tenant): void
+    {
+        TenantPaymentGateway::query()->withoutGlobalScopes()->create([
+            'tenant_id' => $tenant->id, 'provider' => 'paystack', 'api_key_encrypted' => 'sk_test_give', 'public_key_encrypted' => 'pk_test', 'is_active' => true,
+        ]);
+    }
+
+    test('the give page says online giving is off until Paystack is connected', function (): void {
+        [, $tenant] = createDonationsContext();
+
+        $this->get(route('donations.public.give', ['tenant' => $tenant->slug]))->assertOk()->assertSee('not switched on yet')->assertDontSee('Give securely');
+
+        connectGivingGateway($tenant);
+        $this->get(route('donations.public.give', ['tenant' => $tenant->slug]))->assertOk()->assertSee('Give securely');
+        $this->get(route('donations.public.give', ['tenant' => 'no-such-org']))->assertNotFound();
+    });
+
+    test('starting a gift creates the donor and sends the visitor to Paystack, and rejects bots and tiny amounts', function (): void {
+        [, $tenant] = createDonationsContext();
+        connectGivingGateway($tenant);
+        Http::fake(['api.paystack.co/transaction/initialize' => Http::response(['data' => ['authorization_url' => 'https://checkout.paystack.test/abc', 'reference' => 'ref_give']])]);
+        $url = route('donations.public.start', ['tenant' => $tenant->slug]);
+
+        $this->post($url, ['name' => 'Ama', 'email' => 'ama@example.test', 'amount' => '75'])->assertRedirect('https://checkout.paystack.test/abc');
+        expect(DonDonor::query()->where('email', 'ama@example.test')->count())->toBe(1);
+
+        $this->post($url, ['name' => 'Ama', 'email' => 'ama@example.test', 'amount' => '75'])->assertRedirect();
+        expect(DonDonor::query()->where('email', 'ama@example.test')->count())->toBe(1);
+
+        $this->post($url, ['name' => 'Bot', 'email' => 'bot@example.test', 'amount' => '75', 'website' => 'http://spam'])->assertSessionHasErrors('website');
+        $this->post($url, ['name' => 'Tiny', 'email' => 't@example.test', 'amount' => '0.5'])->assertSessionHasErrors('amount');
+    });
+
+    test('a confirmed online gift is recorded once into the clearing account, whether the donor returns or the webhook fires', function (): void {
+        [, $tenant] = createDonationsContext();
+        connectGivingGateway($tenant);
+        $donor = demoDonor($tenant);
+        $campaign = DonCampaign::query()->create(['tenant_id' => $tenant->id, 'name' => 'Appeal']);
+        Http::fake(['api.paystack.co/transaction/verify/*' => Http::response(['data' => [
+            'status' => 'success', 'amount' => 40_000, 'currency' => 'GHS', 'reference' => 'ref_don',
+            'metadata' => ['type' => 'donation', 'tenant_id' => $tenant->id, 'donor_id' => (string) $donor->id, 'campaign_id' => (string) $campaign->id],
+        ]])]);
+
+        $this->get(route('donations.public.thanks', ['tenant' => $tenant->slug, 'reference' => 'ref_don']))->assertOk()->assertSee('Thank you')->assertSee('RCT-00001');
+
+        $body = json_encode(['event' => 'charge.success', 'data' => ['reference' => 'ref_don']]);
+        $signature = hash_hmac('sha512', $body, 'sk_test_give');
+        $this->call('POST', route('finance.webhooks.paystack', ['tenant' => $tenant->id]), [], [], [], ['CONTENT_TYPE' => 'application/json', 'HTTP_X_PAYSTACK_SIGNATURE' => $signature], $body)->assertOk();
+
+        expect(DonDonation::query()->count())->toBe(1)->and(DonDonation::query()->first()->campaign_id)->toBe($campaign->id)
+            ->and(ledgerBalance($tenant, '1010'))->toBe(40_000)->and(ledgerBalance($tenant, '1000'))->toBe(0);
+    });
+
+    test('a charge for another organisation or a non-donation is ignored', function (): void {
+        [, $tenant] = createDonationsContext();
+        connectGivingGateway($tenant);
+        $donor = demoDonor($tenant);
+        $giving = app(OnlineGivingService::class);
+
+        Http::fake(['api.paystack.co/transaction/verify/*' => Http::response(['data' => [
+            'status' => 'success', 'amount' => 40_000, 'currency' => 'GHS', 'reference' => 'r1',
+            'metadata' => ['type' => 'donation', 'tenant_id' => 'someone-else', 'donor_id' => (string) $donor->id],
+        ]])]);
+        expect($giving->recordVerified($tenant->id, 'r1'))->toBeNull();
+
+        Http::fake(['api.paystack.co/transaction/verify/*' => Http::response(['data' => [
+            'status' => 'success', 'amount' => 40_000, 'currency' => 'GHS', 'reference' => 'r2',
+            'metadata' => ['type' => 'finance_invoice', 'tenant_id' => $tenant->id],
+        ]])]);
+        expect($giving->recordVerified($tenant->id, 'r2'))->toBeNull()->and(DonDonation::query()->count())->toBe(0);
     });
 });

@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Modules\Donations\Models\DonCampaign;
 use App\Modules\Donations\Models\DonDonor;
 use App\Modules\Donations\Services\DonationService;
+use App\Modules\Donations\Services\PledgeService;
 use App\Modules\Finance\Models\FinAccount;
 use App\Modules\Finance\Models\FinFund;
 use App\Modules\Finance\Services\ChartOfAccounts;
@@ -115,6 +116,13 @@ final class DonationsDemoSeeder extends Seeder
                 'reference' => 'DEMO-'.mb_str_pad((string) ($index + 1), 3, '0', STR_PAD_LEFT),
             ], $userId);
         }
+
+        // Regular givers: one is due today and one is overdue, so the pledges screen has something to act on.
+        $pledges = app(PledgeService::class);
+        $pledges->create($tenantId, $donors[0], 50_000, ['frequency' => 'monthly', 'starts_on' => today()->subDays(5)->toDateString(), 'campaign_id' => $campaigns['school']->id]);
+        $pledges->create($tenantId, $donors[3], 1_000_000, ['frequency' => 'quarterly', 'starts_on' => today()->addDays(40)->toDateString(), 'campaign_id' => $campaigns['clinic']->id]);
+        $pledges->create($tenantId, $donors[4], 30_000, ['frequency' => 'monthly', 'starts_on' => today()->toDateString(), 'fund_id' => $general->id]);
+        $pledges->create($tenantId, $donors[2], 500_000, ['frequency' => 'once', 'starts_on' => today()->addDays(14)->toDateString(), 'campaign_id' => $campaigns['school']->id]);
 
         // What the foundation spent, by programme, so the fund report and the profit and loss have both sides.
         $expenses = app(ExpenseService::class);

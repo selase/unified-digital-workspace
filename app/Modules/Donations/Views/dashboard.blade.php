@@ -15,11 +15,21 @@
 
     @include('donations::partials.nav')
 
-    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <div class="rounded-lg bg-muted/30 p-4"><div class="text-xs text-muted-foreground">Raised this year</div><div class="mt-1 text-lg font-semibold">{{ Money::format($summary['total'], $currency) }}</div></div>
         <div class="rounded-lg bg-muted/30 p-4"><div class="text-xs text-muted-foreground">Gifts</div><div class="mt-1 text-lg font-semibold">{{ $summary['count'] }}</div></div>
         <div class="rounded-lg bg-muted/30 p-4"><div class="text-xs text-muted-foreground">Donors who gave</div><div class="mt-1 text-lg font-semibold">{{ $summary['donors'] }}</div></div>
+        <div class="rounded-lg bg-muted/30 p-4"><div class="text-xs text-muted-foreground">Pledges due</div><div class="mt-1 text-lg font-semibold"><a class="text-primary" href="{{ route('donations.pledges.index') }}">{{ $pledgesDue }}</a></div></div>
         <div class="rounded-lg bg-muted/30 p-4"><div class="text-xs text-muted-foreground">Average gift</div><div class="mt-1 text-lg font-semibold">{{ Money::format($summary['average'], $currency) }}</div></div>
+    </div>
+
+    <div class="rounded-lg bg-muted/30 p-4 text-sm flex flex-col md:flex-row md:items-center gap-3" x-data="{ copied: false }">
+        <div class="flex-1">
+            <div class="font-medium text-foreground">Your public giving page</div>
+            <div class="text-xs text-muted-foreground">Share this link on your website, WhatsApp or social media. {{ $onlineGiving ? 'Online giving is on: gifts are recorded and receipted automatically.' : 'Online giving needs Paystack keys under Accounting settings; until then the page tells visitors to contact you.' }}</div>
+        </div>
+        <input class="kt-input md:w-96" readonly id="give-link" value="{{ $giveUrl }}" onclick="this.select()">
+        <button type="button" class="kt-btn kt-btn-outline" @click="navigator.clipboard.writeText(document.getElementById('give-link').value); copied = true"><span x-text="copied ? 'Copied' : 'Copy link'"></span></button>
     </div>
 
     <div class="kt-card">

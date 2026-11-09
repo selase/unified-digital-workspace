@@ -41,12 +41,20 @@ final class DonationService
     ) {}
 
     /**
-     * @param  array{method?: string, reference?: string|null, notes?: string|null, campaign_id?: int|null, fund_id?: int|null, deposit_account_id?: int|null}  $details
+     * @param  array{method?: string, reference?: string|null, notes?: string|null, campaign_id?: int|null, pledge_id?: int|null, gateway?: string|null, gateway_reference?: string|null, fund_id?: int|null, deposit_account_id?: int|null}  $details
      */
     public function record(string $tenantId, DonDonor $donor, int $amount, CarbonInterface $date, array $details = [], ?string $userId = null): DonDonation
     {
         if ($amount <= 0) {
             throw new DomainException('The donation amount must be greater than zero.');
+        }
+
+        if (isset($details['gateway'], $details['gateway_reference'])) {
+            $existing = DonDonation::query()->where('tenant_id', $tenantId)
+                ->where('gateway', $details['gateway'])->where('gateway_reference', $details['gateway_reference'])->first();
+            if ($existing instanceof DonDonation) {
+                return $existing;
+            }
         }
 
         $campaign = isset($details['campaign_id'])
@@ -57,7 +65,7 @@ final class DonationService
 
         $donation = DB::connection('tenant')->transaction(function () use ($tenantId, $donor, $amount, $date, $details, $userId, $campaign, $fund): DonDonation {
             $settings = $this->settings->for($tenantId);
-            $depositId = $details['deposit_account_id'] ?? $this->accounts->bySystemKey($tenantId, ChartOfAccounts::BANK)->id;
+            $depositId = $details['deposit_account_id'] ?? $this->accounts->bySystemKey($tenantId, isset($details['gateway']) ? ChartOfAccounts::GATEWAY_CLEARING : ChartOfAccounts::BANK)->id;
             $income = $this->incomeAccount($tenantId, $fund);
 
             $donation = DonDonation::query()->create([
@@ -66,6 +74,9 @@ final class DonationService
                 'receipt_number' => $this->numbers->next($tenantId, 'donation_receipt', 'RCT-'),
                 'donor_id' => $donor->id,
                 'campaign_id' => $campaign?->id,
+                'pledge_id' => $details['pledge_id'] ?? null,
+                'gateway' => $details['gateway'] ?? null,
+                'gateway_reference' => $details['gateway_reference'] ?? null,
                 'fund_id' => $fund?->id,
                 'date' => $date->toDateString(),
                 'amount' => $amount,

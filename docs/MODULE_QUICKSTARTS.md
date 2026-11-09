@@ -218,9 +218,11 @@ _Source: `app/Modules/Finance/Routes/web.php`; `Http/Controllers/*Controller.php
 2. Open Donations, then Donors, and add the people and organisations who give. Add an email address if you want to send receipts.
 3. Open Campaigns and create an appeal with a goal. Link it to a fund and every gift to that campaign lands in that fund.
 4. Open Donations and record each gift. It posts to the ledger at once: money into your bank, income against the fund. Gifts to restricted funds use a separate restricted income account.
-5. Open or email the receipt from the donations list. The Overview shows what you raised, your top donors and campaign progress; the Fund report under Accounting shows income and spending by fund.
+5. Open Pledges to record promises to give, one-off or regular. When the money arrives, choose Receive instalment; it becomes a donation with a receipt and the next due date moves on.
+6. Share your public giving page (the link on the Overview). Once Paystack keys are added under Accounting settings, visitors can give by card or mobile money and each confirmed gift is recorded and receipted automatically.
+7. Open or email the receipt from the donations list. The Overview shows what you raised, your top donors and campaign progress; the Fund report under Accounting shows income and spending by fund.
 
-**Limits:** gifts are recorded by staff; there is no public donation page, online card giving, recurring pledges, Gift Aid style tax claims or pledge tracking yet. Voiding a gift reverses its ledger entry and keeps the receipt number.
+**Limits:** pledges are reminders, not automatic charges (the donor is not billed on a schedule), and there are no tax-relief claims yet. Online giving needs the organisation's own Paystack keys. Voiding a gift reverses its ledger entry and keeps the receipt number.
 
 _Source: `app/Modules/Donations/Routes/web.php`; `Services/DonationService.php`; donations views._
 
