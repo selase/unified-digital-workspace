@@ -58,6 +58,20 @@ final class ChartOfAccounts
         ['6900', 'Depreciation', 'expense', null],
     ];
 
+    /**
+     * @var list<array{0: string, 1: string, 2: string}>
+     */
+    private const NGO_ACCOUNTS = [
+        ['3100', 'Net assets: unrestricted', 'equity'],
+        ['3200', 'Net assets: restricted', 'equity'],
+        ['4200', 'Donations: unrestricted', 'income'],
+        ['4210', 'Donations: restricted', 'income'],
+        ['4220', 'Grants received', 'income'],
+        ['5100', 'Programme expenses', 'expense'],
+        ['5200', 'Administration expenses', 'expense'],
+        ['5300', 'Fundraising expenses', 'expense'],
+    ];
+
     public function seed(string $tenantId): void
     {
         foreach (self::GENERAL_BUSINESS as [$code, $name, $type, $systemKey]) {
@@ -66,6 +80,24 @@ final class ChartOfAccounts
                 ['name' => $name, 'type' => $type, 'system_key' => $systemKey],
             );
         }
+    }
+
+    /**
+     * Adds the accounts a foundation or NGO needs on top of the general business chart: net assets,
+     * donation and grant income, and expenses split by programme, administration and fundraising.
+     * Safe to run more than once. Returns how many accounts were created.
+     */
+    public function addNgoAccounts(string $tenantId): int
+    {
+        $this->ensureSeeded($tenantId);
+        $created = 0;
+
+        foreach (self::NGO_ACCOUNTS as [$code, $name, $type]) {
+            $account = FinAccount::query()->firstOrCreate(['tenant_id' => $tenantId, 'code' => $code], ['name' => $name, 'type' => $type]);
+            $created += $account->wasRecentlyCreated ? 1 : 0;
+        }
+
+        return $created;
     }
 
     public function seedGhanaTax(string $tenantId): FinTax

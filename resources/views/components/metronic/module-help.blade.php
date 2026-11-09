@@ -10,6 +10,7 @@
         'quality-monitoring.index',
         'crm.index',
         'finance.index',
+        'donations.index',
         'vendor-marketplace.index',
         'real-estate.index',
         'facilities-management.index',

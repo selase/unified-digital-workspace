@@ -1153,3 +1153,123 @@ describe('Finance statements', function (): void {
         $this->from(route('finance.reports.cash-flow'))->get(route('finance.reports.cash-flow', ['from' => '2026-12-31', 'to' => '2026-01-01']))->assertSessionHasErrors('to');
     });
 });
+
+describe('Finance exports and general ledger', function (): void {
+    test('the general ledger lists postings with opening and running balances', function (): void {
+        [$tenant] = statementBooks();
+        $reports = app(StatementReports::class);
+        $bank = app(ChartOfAccounts::class)->bySystemKey($tenant->id, ChartOfAccounts::BANK);
+        $thisYear = $reports->fiscalYearStart($tenant->id, today());
+
+        $ledger = $reports->generalLedger($tenant->id, $bank, $thisYear, today());
+
+        expect($ledger['opening'])->toBe(900_000)->and($ledger['closing'])->toBe(1_000_000)
+            ->and($ledger['total_debit'] - $ledger['total_credit'])->toBe(100_000)
+            ->and(collect($ledger['lines'])->last()['balance'])->toBe($ledger['closing']);
+
+        $payable = app(ChartOfAccounts::class)->bySystemKey($tenant->id, ChartOfAccounts::PAYABLE);
+        $payables = $reports->generalLedger($tenant->id, $payable, $thisYear, today());
+        expect($payables['closing'])->toBe(50_000);
+    });
+
+    test('every report can be downloaded as CSV and risky cells are neutralised', function (): void {
+        [$tenant] = statementBooks();
+        $user = User::query()->latest('id')->first();
+        $bank = app(ChartOfAccounts::class)->bySystemKey($tenant->id, ChartOfAccounts::BANK);
+        $this->actingAs($user)->withSession(['active_tenant_id' => $tenant->id]);
+
+        foreach (['profit-and-loss', 'balance-sheet', 'cash-flow', 'funds', 'aged-receivables', 'aged-payables', 'trial-balance'] as $report) {
+            $response = $this->get(route('finance.reports.'.$report, ['format' => 'csv']))->assertOk();
+            expect($response->headers->get('Content-Type'))->toContain('text/csv');
+        }
+
+        $content = $this->get(route('finance.reports.profit-and-loss', ['format' => 'csv']))->streamedContent();
+        expect($content)->toContain('"Total income",3000.00')->and($content)->toContain('"Net profit",2000.00');
+
+        $this->get(route('finance.reports.general-ledger', ['format' => 'csv', 'account_id' => $bank->id]))->assertOk()->assertHeader('content-type', 'text/csv; charset=UTF-8');
+        $this->get(route('finance.reports.general-ledger'))->assertOk()->assertSee('Choose an account');
+        $this->get(route('finance.reports.general-ledger', ['account_id' => $bank->id]))->assertOk()->assertSee('Opening balance');
+
+        $rows = [['=HYPERLINK("http://x")', '+1', 'ok']];
+        $csv = app(App\Modules\Finance\Services\ReportCsv::class)->download('x.csv', $rows);
+        ob_start();
+        $csv->sendContent();
+        expect(ob_get_clean())->toContain("'=HYPERLINK")->and('')->toBe('');
+    });
+});
+
+describe('Finance budgets', function (): void {
+    test('budget against actual spreads the plan over the months and signs the variance for income and expense', function (): void {
+        [$tenant] = statementBooks();
+        $account = fn (string $code): FinAccount => FinAccount::query()->where('tenant_id', $tenant->id)->where('code', $code)->firstOrFail();
+        $start = today()->startOfYear();
+        $budget = App\Modules\Finance\Models\FinBudget::query()->create(['tenant_id' => $tenant->id, 'name' => 'Year', 'starts_on' => $start, 'ends_on' => $start->copy()->endOfYear()]);
+        $budget->lines()->create(['account_id' => $account('4000')->id, 'amount' => 1_200_000]);
+        $budget->lines()->create(['account_id' => $account('6200')->id, 'amount' => 120_000]);
+
+        $asOf = $start->copy()->addMonths(5)->endOfMonth();
+        $report = app(App\Modules\Finance\Services\BudgetReports::class)->compare($budget, $asOf);
+        $rows = collect($report['rows'])->keyBy(fn (array $row): string => $row['line']->account->code);
+
+        expect($report['total_months'])->toBe(12)->and($report['elapsed_months'])->toBe(6)
+            ->and($rows['4000']['to_date'])->toBe(600_000)
+            ->and($rows['6200']['to_date'])->toBe(60_000);
+
+        $now = app(App\Modules\Finance\Services\BudgetReports::class)->compare($budget, today()->endOfYear());
+        $now = collect($now['rows'])->keyBy(fn (array $row): string => $row['line']->account->code);
+        expect($now['4000']['actual'])->toBe(300_000)->and($now['4000']['variance'])->toBe(300_000 - 1_200_000)
+            ->and($now['6200']['actual'])->toBe(80_000)->and($now['6200']['variance'])->toBe(120_000 - 80_000);
+    });
+
+    test('the budget screens create, show and delete a budget and need the permission', function (): void {
+        [$user, $tenant] = createFinanceContext();
+        app(ChartOfAccounts::class)->ensureSeeded($tenant->id);
+        $account = FinAccount::query()->where('tenant_id', $tenant->id)->where('code', '6300')->firstOrFail();
+        $this->actingAs($user)->withSession(['active_tenant_id' => $tenant->id]);
+
+        $this->get(route('finance.budgets.index'))->assertOk();
+        $this->post(route('finance.budgets.store'), ['name' => 'Marketing', 'starts_on' => '2026-01-01', 'ends_on' => '2026-12-31', 'lines' => [['account_id' => $account->id, 'amount' => '1200.00']]])->assertRedirect();
+        $budget = App\Modules\Finance\Models\FinBudget::query()->firstOrFail();
+        expect($budget->lines()->first()->amount)->toBe(120_000);
+
+        $this->get(route('finance.budgets.show', $budget->uuid))->assertOk()->assertSee('Marketing');
+        $this->post(route('finance.budgets.store'), ['name' => 'Bad', 'starts_on' => '2026-06-01', 'ends_on' => '2026-01-01', 'lines' => []])->assertSessionHasErrors(['ends_on', 'lines']);
+
+        $user->revokePermissionTo('finance.budgets.manage');
+        app(Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+        $this->delete(route('finance.budgets.destroy', $budget->uuid))->assertForbidden();
+        $user->givePermissionTo('finance.budgets.manage');
+        app(Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+        $this->delete(route('finance.budgets.destroy', $budget->uuid))->assertRedirect(route('finance.budgets.index'));
+        expect(App\Modules\Finance\Models\FinBudget::query()->count())->toBe(0);
+    });
+});
+
+describe('Finance alerts', function (): void {
+    function financeAlertRule(Tenant $tenant, User $user, string $event): void
+    {
+        App\Models\AlertRule::query()->create([
+            'tenant_id' => $tenant->id, 'name' => $event, 'event' => $event, 'is_active' => true,
+            'channels' => ['database'], 'recipients' => [],
+        ]);
+    }
+
+    test('a recorded payment raises one alert and an overdue invoice is alerted once', function (): void {
+        [$user, $tenant] = createFinanceContext();
+        if (! Illuminate\Support\Facades\Schema::hasTable('alert_rules')) {
+            $this->markTestSkipped('Alert tables are not available in this environment.');
+        }
+        financeAlertRule($tenant, $user, App\Services\Alerts\AlertEvent::FINANCE_PAYMENT);
+        financeAlertRule($tenant, $user, App\Services\Alerts\AlertEvent::FINANCE_INVOICE_OVERDUE);
+        $customer = financeCustomer($tenant);
+        $invoice = issueInvoice($tenant, $customer, 100_000);
+        $invoice->update(['due_date' => today()->subDays(3)]);
+
+        app(PaymentService::class)->record($tenant->id, $customer, 40_000, today(), [$invoice->id => 40_000]);
+        expect($user->notifications()->count())->toBe(1);
+
+        $checked = app(App\Modules\Finance\Services\OverdueInvoiceAlerts::class)->run();
+        app(App\Modules\Finance\Services\OverdueInvoiceAlerts::class)->run();
+        expect($checked)->toBe(1)->and($user->notifications()->count())->toBe(2);
+    });
+});

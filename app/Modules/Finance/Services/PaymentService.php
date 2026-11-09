@@ -4,11 +4,15 @@ declare(strict_types=1);
 
 namespace App\Modules\Finance\Services;
 
+use App\Models\Tenant;
 use App\Modules\Finance\Models\FinContact;
 use App\Modules\Finance\Models\FinInvoice;
 use App\Modules\Finance\Models\FinJournal;
 use App\Modules\Finance\Models\FinPayment;
 use App\Modules\Finance\Models\FinPaymentAllocation;
+use App\Modules\Finance\Support\Money;
+use App\Services\Alerts\AlertDispatcher;
+use App\Services\Alerts\AlertEvent;
 use Carbon\CarbonInterface;
 use DomainException;
 use Illuminate\Support\Facades\DB;
@@ -55,7 +59,7 @@ final class PaymentService
             }
         }
 
-        return DB::connection('tenant')->transaction(function () use ($tenantId, $contact, $amount, $date, $allocations, $details, $userId, $gateway): FinPayment {
+        $payment = DB::connection('tenant')->transaction(function () use ($tenantId, $contact, $amount, $date, $allocations, $details, $userId, $gateway): FinPayment {
             $settings = $this->settings->for($tenantId);
 
             $targets = FinInvoice::query()
@@ -115,6 +119,10 @@ final class PaymentService
 
             return $payment;
         });
+
+        $this->alertPaymentReceived($tenantId, $contact, $payment);
+
+        return $payment;
     }
 
     /** Reverses the payment's journal and re-opens the invoices it settled. */
@@ -135,5 +143,22 @@ final class PaymentService
 
             $payment->delete();
         });
+    }
+
+    private function alertPaymentReceived(string $tenantId, FinContact $contact, FinPayment $payment): void
+    {
+        $tenant = Tenant::query()->find($tenantId);
+        if (! $tenant instanceof Tenant) {
+            return;
+        }
+
+        app(AlertDispatcher::class)->dispatchSafely(
+            $tenant,
+            AlertEvent::FINANCE_PAYMENT,
+            'Payment received',
+            $contact->name.' paid '.Money::format($payment->amount).' ('.$payment->number.').',
+            'finance-payment-'.$payment->id,
+            route('finance.payments.index', [], false),
+        );
     }
 }

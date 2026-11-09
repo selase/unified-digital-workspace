@@ -44,6 +44,7 @@
                 <p class="text-sm text-muted-foreground">No tax rates yet. Tax stays off until you are VAT-registered.</p>
             @endforelse
             <form method="POST" action="{{ route('finance.settings.taxes.ghana') }}">@csrf<button class="kt-btn kt-btn-sm kt-btn-outline" type="submit">Add Ghana VAT + NHIL + GETFund (20%)</button></form>
+            <form method="POST" action="{{ route('finance.settings.accounts.ngo') }}">@csrf<button class="kt-btn kt-btn-sm kt-btn-outline" type="submit">Add foundation / NGO accounts (net assets, donations, grants, programme costs)</button></form>
         </div>
     </div>
 

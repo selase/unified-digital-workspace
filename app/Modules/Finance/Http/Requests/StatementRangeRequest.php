@@ -26,6 +26,7 @@ final class StatementRangeRequest extends FormRequest
             'from' => ['nullable', 'date'],
             'to' => ['nullable', 'date', 'after_or_equal:from'],
             'as_of' => ['nullable', 'date'],
+            'account_id' => ['nullable', Rule::exists('fin_accounts', 'id')->where('tenant_id', $tenantId)],
             'fund_id' => ['nullable', Rule::exists('fin_funds', 'id')->where('tenant_id', $tenantId)],
         ];
     }

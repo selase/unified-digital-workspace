@@ -22,6 +22,12 @@ final class AlertEvent
 
     public const JOB_APPLICATION = 'hrms.application_received';
 
+    public const FINANCE_PAYMENT = 'finance.payment_received';
+
+    public const FINANCE_INVOICE_OVERDUE = 'finance.invoice_overdue';
+
+    public const DONATION_RECEIVED = 'donations.gift_received';
+
     /** @return array<string, array{label: string, description: string}> */
     public static function all(): array
     {
@@ -32,6 +38,9 @@ final class AlertEvent
             self::DOCUMENT_REVIEW_DUE => ['label' => 'Document review or expiry due', 'description' => 'A controlled document needs review or is about to expire.'],
             self::CREDITS_LOW => ['label' => 'Credit balance low', 'description' => 'Your SMS, email or AI credits are running out.'],
             self::JOB_APPLICATION => ['label' => 'Job application received', 'description' => 'Someone applies for a job on your careers page.'],
+            self::FINANCE_PAYMENT => ['label' => 'Customer payment received', 'description' => 'A customer pays one of your Finance invoices.'],
+            self::FINANCE_INVOICE_OVERDUE => ['label' => 'Customer invoice overdue', 'description' => 'An invoice you issued to a customer is past its due date.'],
+            self::DONATION_RECEIVED => ['label' => 'Donation received', 'description' => 'A donation is recorded or arrives.'],
         ];
     }
 
