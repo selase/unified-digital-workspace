@@ -134,6 +134,8 @@ _Source: `app/Modules/Intranet/Routes/web.php`; `Http/Controllers/Web/IntranetWe
 2. Save a draft and review the questions before publishing. Use the form's supplied response link for the intended audience; restricted forms remain subject to access checks.
 3. Open the form to inspect submissions, review individual responses and view results. Export CSV when permitted. Close submissions when collection ends.
 
+A "File upload" question lets people attach a PDF, image or Word file (up to 5 MB) on the public form; staff open it from the submission, and the CSV export shows the file name.
+
 **Limits:** only drafts can be edited or deleted. Published forms cannot be freely rewritten; prepare a new form when the questions need changing. A form labelled as an HR request does not itself perform the HRMS leave approval workflow. Poll response controls are not an identity-verification guarantee.
 
 _Source: `app/Modules/Forms/Routes/web.php`; `Http/Controllers/Web/FormsWebController.php`; `Views/{create,show}.blade.php`._

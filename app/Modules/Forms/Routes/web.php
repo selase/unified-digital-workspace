@@ -18,6 +18,7 @@ Route::delete('/{form}', [FormsWebController::class, 'destroy'])->name('destroy'
 Route::get('/{form}/results', [FormsWebController::class, 'results'])->name('results');
 Route::get('/{form}/export-csv', [FormsWebController::class, 'exportCsv'])->name('export-csv');
 Route::get('/{form}/submissions/{submission}', [FormsWebController::class, 'showSubmission'])->name('submissions.show');
+Route::get('/{form}/submissions/{submission}/files/{field}', [FormsWebController::class, 'downloadSubmissionFile'])->name('submissions.file');
 Route::post('/{form}/publish', [FormsWebController::class, 'publish'])->name('publish');
 Route::post('/{form}/close', [FormsWebController::class, 'close'])->name('close');
 Route::post('/{form}/submissions/{submission}/review', [FormsWebController::class, 'reviewSubmission'])->name('submissions.review');

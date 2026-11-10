@@ -66,7 +66,7 @@
                         </div>
                     @endif
                 @else
-                    <form action="{{ route('forms.public.submit', $form->slug) }}" method="POST" class="space-y-6">
+                    <form action="{{ route('forms.public.submit', $form->slug) }}" method="POST" enctype="multipart/form-data" class="space-y-6">
                         @csrf
 
                         @if($form->type === 'live_poll')
@@ -134,6 +134,15 @@
                                                 </label>
                                             @endforeach
                                         </div>
+                                    @elseif($field->field_type === 'file')
+                                        <input
+                                            type="file"
+                                            name="{{ $field->field_name }}"
+                                            accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                                            {{ $field->is_required ? 'required' : '' }}
+                                            class="w-full rounded-xl border border-slate-300 px-4 py-2.5 text-sm"
+                                        >
+                                        <p class="mt-1 text-xs text-slate-500">PDF, image or Word file, up to 5 MB.</p>
                                     @else
                                         <input
                                             type="{{ $field->field_type === 'number' ? 'number' : ($field->field_type === 'date' ? 'date' : 'text') }}"

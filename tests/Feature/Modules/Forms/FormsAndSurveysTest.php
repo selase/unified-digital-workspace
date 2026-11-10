@@ -810,3 +810,34 @@ describe('Phase 24: General Form Builder, HR Forms, Surveys & Live Polls (TRK-FO
             ->assertStatus(403);
     });
 });
+
+test('a file field accepts one allowed file, rejects others, and staff can open the attachment from the submission', function (): void {
+    [$user, $tenant] = createFormsTestContext();
+    Illuminate\Support\Facades\Storage::fake('tenant');
+
+    $form = FormDefinition::create(['tenant_id' => $tenant->id, 'title' => 'Grant application', 'slug' => 'grant-application', 'type' => 'general', 'target_audience' => 'public', 'status' => 'published', 'allow_anonymous' => true, 'single_response_per_user' => false, 'created_by' => (string) $user->uuid]);
+    FormField::create(['tenant_id' => $tenant->id, 'form_definition_id' => $form->id, 'label' => 'Applicant', 'field_name' => 'applicant', 'field_type' => 'text', 'is_required' => true, 'sort_order' => 1]);
+    FormField::create(['tenant_id' => $tenant->id, 'form_definition_id' => $form->id, 'label' => 'Proposal', 'field_name' => 'proposal', 'field_type' => 'file', 'is_required' => true, 'sort_order' => 2]);
+    $url = route('forms.public.submit', $form->slug);
+
+    $this->get(route('forms.public.show', $form->slug))->assertOk()->assertSee('type="file"', false)->assertSee('multipart/form-data', false);
+    $this->post($url, ['applicant' => 'Ama'])->assertSessionHasErrors('proposal');
+    $this->post($url, ['applicant' => 'Ama', 'proposal' => Illuminate\Http\UploadedFile::fake()->create('virus.exe', 10)])->assertSessionHasErrors('proposal');
+    $this->post($url, ['applicant' => 'Ama', 'proposal' => Illuminate\Http\UploadedFile::fake()->create('huge.pdf', 6000, 'application/pdf')])->assertSessionHasErrors('proposal');
+    expect(FormSubmission::query()->count())->toBe(0);
+
+    $this->post($url, ['applicant' => 'Ama', 'proposal' => Illuminate\Http\UploadedFile::fake()->create('proposal.pdf', 120, 'application/pdf')])->assertSessionHas('status', 'success');
+    $submission = FormSubmission::query()->firstOrFail();
+    expect($submission->responses_json['proposal']['file_name'])->toBe('proposal.pdf');
+
+    $this->actingAs($user)->withSession(['active_tenant_id' => $tenant->id]);
+    $this->get(route('forms.submissions.show', [$form, $submission]))->assertOk()->assertSee('proposal.pdf');
+    $this->get(route('forms.submissions.file', [$form, $submission, 'proposal']))->assertOk()->assertDownload('proposal.pdf');
+    $this->get(route('forms.submissions.file', [$form, $submission, 'applicant']))->assertNotFound();
+    $csv = $this->get(route('forms.export-csv', $form))->streamedContent();
+    expect($csv)->toContain('proposal.pdf')->not->toContain('forms/');
+
+    $user->syncPermissions([]);
+    app(Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+    $this->get(route('forms.submissions.file', [$form, $submission, 'proposal']))->assertForbidden();
+});

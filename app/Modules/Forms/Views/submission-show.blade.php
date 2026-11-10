@@ -121,6 +121,9 @@
                             <div class="mt-2 text-sm text-foreground font-medium">
                                 @if($answer === null || $answer === '')
                                     <span class="text-muted-foreground italic text-xs">No response provided</span>
+                                @elseif($field->field_type === 'file' && is_array($answer) && isset($answer['path']))
+                                    <a class="text-primary" href="{{ route('forms.submissions.file', [$form, $submission, $fieldName]) }}">{{ $answer['file_name'] ?? 'Attachment' }}</a>
+                                    <span class="text-xs text-muted-foreground">{{ number_format(($answer['size'] ?? 0) / 1024) }} KB</span>
                                 @elseif(is_array($answer))
                                     <div class="flex flex-wrap gap-1.5 mt-1">
                                         @foreach($answer as $item)

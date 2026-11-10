@@ -488,7 +488,7 @@ final class FormsWebController extends Controller
                     $responses = $sub->responses_json;
                     foreach ($fields as $field) {
                         $val = $responses[$field->field_name] ?? '';
-                        $row[] = is_array($val) ? implode(', ', $val) : (string) $val;
+                        $row[] = is_array($val) ? (isset($val['file_name']) ? (string) $val['file_name'] : implode(', ', $val)) : (string) $val;
                     }
 
                     fputcsv($handle, $row);
@@ -521,6 +521,24 @@ final class FormsWebController extends Controller
             'form' => $form,
             'submission' => $submission, 'billingOwnScope' => app(BillingAccessService::class)->isSelfService($request->user()),
         ]);
+    }
+
+    /** Opens a file someone attached to a submission. Only people who may view that submission can open it. */
+    public function downloadSubmissionFile(Request $request, FormDefinition $form, FormSubmission $submission, string $field): \Symfony\Component\HttpFoundation\Response
+    {
+        abort_if(! ($request->user()?->can('forms.view') || $request->user()?->can('forms.review')), 403);
+        abort_if((int) $submission->form_definition_id !== (int) $form->id, 404);
+        $this->authorizeAudience($request, $form);
+
+        if (app(BillingAccessService::class)->isSelfService($request->user())) {
+            abort_unless((string) $submission->user_id === (string) $request->user()->uuid, 403);
+        }
+
+        abort_unless($form->fields()->where('field_name', $field)->where('field_type', 'file')->exists(), 404);
+        $file = $submission->responses_json[$field] ?? null;
+        abort_unless(is_array($file) && isset($file['path']) && \Illuminate\Support\Facades\Storage::disk('tenant')->exists($file['path']), 404);
+
+        return \Illuminate\Support\Facades\Storage::disk('tenant')->download($file['path'], (string) ($file['file_name'] ?? 'attachment'));
     }
 
     public function publish(Request $request, FormDefinition $form): RedirectResponse
@@ -713,6 +731,8 @@ final class FormsWebController extends Controller
 
             if ($field->field_type === 'number') {
                 $fieldRules[] = 'numeric';
+            } elseif ($field->field_type === 'file') {
+                array_push($fieldRules, 'file', 'mimes:pdf,jpg,jpeg,png,doc,docx', 'max:5120');
             } elseif ($field->field_type === 'date') {
                 $fieldRules[] = 'date';
             } else {
@@ -722,7 +742,18 @@ final class FormsWebController extends Controller
             $rules[$field->field_name] = $fieldRules;
         }
 
-        $validatedData = $request->validate($rules);
+        $validatedData = $request->validate($rules, ['*.mimes' => 'Attach a PDF, image or Word file.', '*.max' => 'The file must be 5 MB or less.']);
+
+        foreach ($form->fields->where('field_type', 'file') as $fileField) {
+            $upload = $request->file($fileField->field_name);
+            $validatedData[$fileField->field_name] = $upload instanceof \Illuminate\Http\UploadedFile
+                ? [
+                    'file_name' => mb_substr(basename($upload->getClientOriginalName()), 0, 200),
+                    'path' => (string) \Illuminate\Support\Facades\Storage::disk('tenant')->putFileAs('forms/'.$form->tenant_id, $upload, (string) Str::uuid().'.'.mb_strtolower($upload->getClientOriginalExtension())),
+                    'size' => (int) $upload->getSize(),
+                ]
+                : null;
+        }
 
         $submission = FormSubmission::create([
             'tenant_id' => $form->tenant_id,
