@@ -2,20 +2,20 @@
 
 declare(strict_types=1);
 
-namespace App\Modules\MonitoringEvaluation\Providers;
+namespace App\Modules\ProgrammeResults\Providers;
 
 use App\Modules\Concerns\ModuleServiceProvider;
 
-final class MonitoringEvaluationServiceProvider extends ModuleServiceProvider
+final class ProgrammeResultsServiceProvider extends ModuleServiceProvider
 {
     public function getModuleSlug(): string
     {
-        return 'monitoring-evaluation';
+        return 'programme-results';
     }
 
     public function getModuleName(): string
     {
-        return 'MonitoringEvaluation';
+        return 'ProgrammeResults';
     }
 
     protected function bootModule(): void

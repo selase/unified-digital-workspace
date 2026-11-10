@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Modules\MonitoringEvaluation\Http\Requests;
+namespace App\Modules\ProgrammeResults\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
@@ -10,7 +10,7 @@ final class SaveIndicatorRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return (bool) $this->user()?->can('monitoring.manage');
+        return (bool) $this->user()?->can('results.manage');
     }
 
     /**

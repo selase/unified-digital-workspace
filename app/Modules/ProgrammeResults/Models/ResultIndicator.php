@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace App\Modules\MonitoringEvaluation\Models;
+namespace App\Modules\ProgrammeResults\Models;
 
 use App\Traits\BelongsToTenant;
 use App\Traits\HasUuid;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-final class MelIndicator extends Model
+final class ResultIndicator extends Model
 {
     use BelongsToTenant;
     use HasUuid;
@@ -24,7 +24,7 @@ final class MelIndicator extends Model
 
     public const STATUSES = ['active' => 'Active', 'archived' => 'Archived'];
 
-    protected $table = 'mel_indicators';
+    protected $table = 'pr_indicators';
 
     /** @var list<string> */
     protected $guarded = ['id'];
@@ -32,10 +32,10 @@ final class MelIndicator extends Model
     /** @var array<string, mixed> */
     protected $attributes = ['status' => 'active', 'source' => 'manual', 'baseline' => 0, 'unit' => 'people'];
 
-    /** @return HasMany<MelReading, $this> */
+    /** @return HasMany<ResultReading, $this> */
     public function readings(): HasMany
     {
-        return $this->hasMany(MelReading::class, 'indicator_id')->orderByDesc('recorded_on')->orderByDesc('id');
+        return $this->hasMany(ResultReading::class, 'indicator_id')->orderByDesc('recorded_on')->orderByDesc('id');
     }
 
     protected function casts(): array

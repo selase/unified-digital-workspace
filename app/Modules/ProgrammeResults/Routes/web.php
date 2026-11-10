@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use App\Modules\MonitoringEvaluation\Http\Controllers\IndicatorController;
+use App\Modules\ProgrammeResults\Http\Controllers\IndicatorController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [IndicatorController::class, 'index'])->name('index');

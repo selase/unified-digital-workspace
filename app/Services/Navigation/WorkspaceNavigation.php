@@ -837,20 +837,20 @@ final class WorkspaceNavigation
                     ],
                 ],
             ],
-            'monitoring-evaluation' => [
-                'label' => 'Monitoring & Evaluation',
+            'programme-results' => [
+                'label' => 'Programme Results',
                 'icon' => 'ki-filled ki-chart-line-up',
-                'permission' => 'monitoring.view',
-                'home_route' => 'monitoring-evaluation.index',
+                'permission' => 'results.view',
+                'home_route' => 'programme-results.index',
                 'sidebar' => [
-                    ['label' => 'Indicator report', 'route' => 'monitoring-evaluation.report'],
+                    ['label' => 'Indicator report', 'route' => 'programme-results.report'],
                 ],
                 'top_menu' => [
                     [
-                        'label' => 'Monitoring & Evaluation',
+                        'label' => 'Programme Results',
                         'items' => [
-                            ['label' => 'Indicators', 'route' => 'monitoring-evaluation.index'],
-                            ['label' => 'Indicator report', 'route' => 'monitoring-evaluation.report'],
+                            ['label' => 'Indicators', 'route' => 'programme-results.index'],
+                            ['label' => 'Indicator report', 'route' => 'programme-results.report'],
                         ],
                     ],
                 ],

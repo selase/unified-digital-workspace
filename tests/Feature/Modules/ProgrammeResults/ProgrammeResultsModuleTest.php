@@ -5,9 +5,9 @@ declare(strict_types=1);
 use App\Models\Tenant;
 use App\Models\TenantFeature;
 use App\Models\User;
-use App\Modules\MonitoringEvaluation\Database\Seeders\MonitoringDemoSeeder;
-use App\Modules\MonitoringEvaluation\Models\MelIndicator;
-use App\Modules\MonitoringEvaluation\Services\IndicatorService;
+use App\Modules\ProgrammeResults\Database\Seeders\ResultsDemoSeeder;
+use App\Modules\ProgrammeResults\Models\ResultIndicator;
+use App\Modules\ProgrammeResults\Services\IndicatorService;
 use App\Services\ModuleManager;
 use App\Services\Tenancy\TenantContext;
 use App\Services\Tenancy\TenantDatabaseManager;
@@ -30,21 +30,21 @@ function createMonitoringContext(): array
     setPermissionsTeamId($tenant->id);
     app(TenantContext::class)->setTenant($tenant);
 
-    $permissions = config('modules.monitoring-evaluation.permissions');
+    $permissions = config('modules.programme-results.permissions');
     foreach ($permissions as $permission) {
-        Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'web'], ['category' => 'monitoring', 'uuid' => (string) Str::uuid()]);
+        Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'web'], ['category' => 'results', 'uuid' => (string) Str::uuid()]);
     }
     $user->givePermissionTo($permissions);
 
     app(TenantDatabaseManager::class)->configure($tenant);
-    TenantFeature::query()->create(['tenant_id' => $tenant->id, 'feature_key' => 'module-monitoring-evaluation', 'enabled' => true, 'meta' => ['source' => 'complimentary']]);
-    app(ModuleManager::class)->enableForTenant('monitoring-evaluation', $tenant);
-    Artisan::call('migrate', ['--database' => 'tenant', '--path' => app_path('Modules/MonitoringEvaluation/Database/Migrations'), '--realpath' => true, '--force' => true]);
+    TenantFeature::query()->create(['tenant_id' => $tenant->id, 'feature_key' => 'module-programme-results', 'enabled' => true, 'meta' => ['source' => 'complimentary']]);
+    app(ModuleManager::class)->enableForTenant('programme-results', $tenant);
+    Artisan::call('migrate', ['--database' => 'tenant', '--path' => app_path('Modules/ProgrammeResults/Database/Migrations'), '--realpath' => true, '--force' => true]);
 
     return [$user, $tenant];
 }
 
-function indicator(Tenant $tenant, array $overrides = []): MelIndicator
+function indicator(Tenant $tenant, array $overrides = []): ResultIndicator
 {
     $start = $overrides['starts_on'] ?? CarbonImmutable::today()->subDays(100);
     $end = $overrides['ends_on'] ?? CarbonImmutable::today()->addDays(100);
@@ -148,55 +148,55 @@ describe('Indicator screens', function (): void {
         [$user, $tenant] = createMonitoringContext();
         $this->actingAs($user)->withSession(['active_tenant_id' => $tenant->id]);
 
-        $this->get(route('monitoring-evaluation.index'))->assertOk()->assertSee('Monitoring & Evaluation');
-        $this->post(route('monitoring-evaluation.indicators.store'), ['name' => 'Wells built', 'programme' => 'Water', 'unit' => 'wells', 'source' => 'manual', 'baseline' => 0, 'target' => 12, 'starts_on' => today()->startOfYear()->toDateString(), 'ends_on' => today()->endOfYear()->toDateString()])->assertRedirect();
-        $model = MelIndicator::query()->firstOrFail();
+        $this->get(route('programme-results.index'))->assertOk()->assertSee('Programme Results');
+        $this->post(route('programme-results.indicators.store'), ['name' => 'Wells built', 'programme' => 'Water', 'unit' => 'wells', 'source' => 'manual', 'baseline' => 0, 'target' => 12, 'starts_on' => today()->startOfYear()->toDateString(), 'ends_on' => today()->endOfYear()->toDateString()])->assertRedirect();
+        $model = ResultIndicator::query()->firstOrFail();
 
-        $this->get(route('monitoring-evaluation.indicators.show', $model->uuid))->assertOk()->assertSee('Wells built')->assertSee('Add a reading');
-        $this->post(route('monitoring-evaluation.indicators.readings.store', $model->uuid), ['value' => 3, 'recorded_on' => today()->toDateString(), 'note' => 'First three'])->assertSessionHas('success');
-        $this->get(route('monitoring-evaluation.index'))->assertSee('Wells built')->assertSee('25% of target');
+        $this->get(route('programme-results.indicators.show', $model->uuid))->assertOk()->assertSee('Wells built')->assertSee('Add a reading');
+        $this->post(route('programme-results.indicators.readings.store', $model->uuid), ['value' => 3, 'recorded_on' => today()->toDateString(), 'note' => 'First three'])->assertSessionHas('success');
+        $this->get(route('programme-results.index'))->assertSee('Wells built')->assertSee('25% of target');
 
-        $csv = $this->get(route('monitoring-evaluation.report'));
+        $csv = $this->get(route('programme-results.report'));
         $csv->assertOk()->assertDownload();
         expect($csv->streamedContent())->toContain('Wells built', 'Water');
-        $this->get(route('monitoring-evaluation.report', ['format' => 'pdf']))->assertOk()->assertHeader('Content-Type', 'application/pdf');
+        $this->get(route('programme-results.report', ['format' => 'pdf']))->assertOk()->assertHeader('Content-Type', 'application/pdf');
 
-        $this->post(route('monitoring-evaluation.indicators.toggle', $model->uuid))->assertSessionHas('success');
+        $this->post(route('programme-results.indicators.toggle', $model->uuid))->assertSessionHas('success');
         expect($model->fresh()->status)->toBe('archived');
-        $this->post(route('monitoring-evaluation.indicators.readings.store', $model->uuid), ['value' => 4, 'recorded_on' => today()->toDateString()])->assertSessionHas('error');
+        $this->post(route('programme-results.indicators.readings.store', $model->uuid), ['value' => 4, 'recorded_on' => today()->toDateString()])->assertSessionHas('error');
     });
 
     test('validation and permissions are enforced and one organisation cannot see another\'s indicators', function (): void {
         [$user, $tenant] = createMonitoringContext();
-        $foreign = MelIndicator::query()->create(['tenant_id' => (string) Tenant::factory()->create()->id, 'name' => 'Other org', 'target' => 10, 'starts_on' => today(), 'ends_on' => today()->addDay()]);
+        $foreign = ResultIndicator::query()->create(['tenant_id' => (string) Tenant::factory()->create()->id, 'name' => 'Other org', 'target' => 10, 'starts_on' => today(), 'ends_on' => today()->addDay()]);
         $this->actingAs($user)->withSession(['active_tenant_id' => $tenant->id]);
 
-        $this->post(route('monitoring-evaluation.indicators.store'), [])->assertSessionHasErrors(['name', 'target', 'starts_on', 'ends_on']);
-        $this->get(route('monitoring-evaluation.indicators.show', $foreign->uuid))->assertNotFound();
+        $this->post(route('programme-results.indicators.store'), [])->assertSessionHasErrors(['name', 'target', 'starts_on', 'ends_on']);
+        $this->get(route('programme-results.indicators.show', $foreign->uuid))->assertNotFound();
 
-        $user->revokePermissionTo('monitoring.manage');
+        $user->revokePermissionTo('results.manage');
         app(Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
-        $this->post(route('monitoring-evaluation.indicators.store'), ['name' => 'X', 'target' => 1, 'source' => 'manual', 'starts_on' => today()->toDateString(), 'ends_on' => today()->addDay()->toDateString()])->assertForbidden();
-        $this->get(route('monitoring-evaluation.index'))->assertOk();
+        $this->post(route('programme-results.indicators.store'), ['name' => 'X', 'target' => 1, 'source' => 'manual', 'starts_on' => today()->toDateString(), 'ends_on' => today()->addDay()->toDateString()])->assertForbidden();
+        $this->get(route('programme-results.index'))->assertOk();
 
-        $user->revokePermissionTo('monitoring.view');
+        $user->revokePermissionTo('results.view');
         app(Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
-        $this->get(route('monitoring-evaluation.index'))->assertForbidden();
+        $this->get(route('programme-results.index'))->assertForbidden();
     });
 
     test('the demo seeder creates indicators once and refuses production', function (): void {
         [, $tenant] = createMonitoringContext();
         config(['app.demo_tenant' => $tenant->slug]);
 
-        $this->seed(MonitoringDemoSeeder::class);
-        expect(MelIndicator::query()->count())->toBe(5);
-        $this->seed(MonitoringDemoSeeder::class);
-        expect(MelIndicator::query()->count())->toBe(5);
+        $this->seed(ResultsDemoSeeder::class);
+        expect(ResultIndicator::query()->count())->toBe(5);
+        $this->seed(ResultsDemoSeeder::class);
+        expect(ResultIndicator::query()->count())->toBe(5);
 
-        MelIndicator::query()->delete();
+        ResultIndicator::query()->delete();
         app()->detectEnvironment(fn (): string => 'production');
-        (new MonitoringDemoSeeder)->run();
+        (new ResultsDemoSeeder)->run();
         app()->detectEnvironment(fn (): string => 'testing');
-        expect(MelIndicator::query()->count())->toBe(0);
+        expect(ResultIndicator::query()->count())->toBe(0);
     });
 });

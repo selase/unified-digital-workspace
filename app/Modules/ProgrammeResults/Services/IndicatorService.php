@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace App\Modules\MonitoringEvaluation\Services;
+namespace App\Modules\ProgrammeResults\Services;
 
-use App\Modules\MonitoringEvaluation\Models\MelIndicator;
-use App\Modules\MonitoringEvaluation\Models\MelReading;
+use App\Modules\ProgrammeResults\Models\ResultIndicator;
+use App\Modules\ProgrammeResults\Models\ResultReading;
 use Carbon\CarbonInterface;
 use DomainException;
 use Illuminate\Support\Facades\DB;
@@ -20,13 +20,13 @@ final class IndicatorService
     /**
      * @param  array{description?: string|null, programme?: string|null, unit?: string|null, source?: string|null, baseline?: float|int|null, grant_id?: int|null}  $details
      */
-    public function create(string $tenantId, string $name, float $target, CarbonInterface $startsOn, CarbonInterface $endsOn, array $details = []): MelIndicator
+    public function create(string $tenantId, string $name, float $target, CarbonInterface $startsOn, CarbonInterface $endsOn, array $details = []): ResultIndicator
     {
         if ($endsOn->lt($startsOn)) {
             throw new DomainException('The indicator must end after it starts.');
         }
         $source = $details['source'] ?? 'manual';
-        if (! array_key_exists($source, MelIndicator::SOURCES)) {
+        if (! array_key_exists($source, ResultIndicator::SOURCES)) {
             throw new DomainException('Choose where the figure comes from.');
         }
         $baseline = (float) ($details['baseline'] ?? 0);
@@ -34,7 +34,7 @@ final class IndicatorService
             throw new DomainException('The target must be different from the starting figure.');
         }
 
-        return MelIndicator::query()->create([
+        return ResultIndicator::query()->create([
             'tenant_id' => $tenantId,
             'name' => $name,
             'description' => $details['description'] ?? null,
@@ -50,7 +50,7 @@ final class IndicatorService
         ]);
     }
 
-    public function record(MelIndicator $indicator, float $value, CarbonInterface $date, ?string $note, ?string $userId): MelReading
+    public function record(ResultIndicator $indicator, float $value, CarbonInterface $date, ?string $note, ?string $userId): ResultReading
     {
         if ($indicator->source !== 'manual') {
             throw new DomainException('This indicator is calculated from another module, so readings cannot be entered by hand.');
@@ -62,7 +62,7 @@ final class IndicatorService
             throw new DomainException('A reading cannot be dated in the future.');
         }
 
-        return MelReading::query()->create([
+        return ResultReading::query()->create([
             'tenant_id' => $indicator->tenant_id,
             'indicator_id' => $indicator->id,
             'recorded_on' => $date->toDateString(),
@@ -73,7 +73,7 @@ final class IndicatorService
     }
 
     /** The figure today: the latest reading, or the live number from another module counted within the indicator's dates. */
-    public function current(MelIndicator $indicator): float
+    public function current(ResultIndicator $indicator): float
     {
         $from = $indicator->starts_on->toDateString();
         $to = min($indicator->ends_on->toDateString(), today()->toDateString());
@@ -97,7 +97,7 @@ final class IndicatorService
      *
      * @return array{current: float, percent: int, time_percent: int, status: string}
      */
-    public function progress(MelIndicator $indicator): array
+    public function progress(ResultIndicator $indicator): array
     {
         $current = $this->current($indicator);
         $range = $indicator->target - $indicator->baseline;
@@ -126,7 +126,7 @@ final class IndicatorService
         $rows = [['Indicator report', 'As at '.today()->toDateString()], ['Indicator', 'Programme', 'Unit', 'Baseline', 'Target', 'Current', 'Progress %', 'Period', 'Status']];
         $labels = ['achieved' => 'Achieved', 'missed' => 'Missed', 'behind' => 'Behind', 'on_track' => 'On track'];
 
-        foreach (MelIndicator::query()->where('tenant_id', $tenantId)->where('status', 'active')->orderBy('programme')->orderBy('name')->get() as $indicator) {
+        foreach (ResultIndicator::query()->where('tenant_id', $tenantId)->where('status', 'active')->orderBy('programme')->orderBy('name')->get() as $indicator) {
             $progress = $this->progress($indicator);
             $rows[] = [$indicator->name, $indicator->programme, $indicator->unit, $indicator->baseline, $indicator->target, $progress['current'], $progress['percent'], $indicator->starts_on->toDateString().' to '.$indicator->ends_on->toDateString(), $labels[$progress['status']]];
         }

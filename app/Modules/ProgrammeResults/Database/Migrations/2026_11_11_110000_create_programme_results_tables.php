@@ -10,8 +10,8 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (! Schema::hasTable('mel_indicators')) {
-            Schema::create('mel_indicators', function (Blueprint $table): void {
+        if (! Schema::hasTable('pr_indicators')) {
+            Schema::create('pr_indicators', function (Blueprint $table): void {
                 $table->id();
                 $table->uuid('uuid')->unique();
                 $table->uuid('tenant_id')->index();
@@ -30,11 +30,11 @@ return new class extends Migration
             });
         }
 
-        if (! Schema::hasTable('mel_readings')) {
-            Schema::create('mel_readings', function (Blueprint $table): void {
+        if (! Schema::hasTable('pr_readings')) {
+            Schema::create('pr_readings', function (Blueprint $table): void {
                 $table->id();
                 $table->uuid('tenant_id')->index();
-                $table->foreignId('indicator_id')->constrained('mel_indicators')->cascadeOnDelete();
+                $table->foreignId('indicator_id')->constrained('pr_indicators')->cascadeOnDelete();
                 $table->date('recorded_on');
                 $table->decimal('value', 14, 2);
                 $table->string('note')->nullable();
@@ -48,7 +48,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('mel_readings');
-        Schema::dropIfExists('mel_indicators');
+        Schema::dropIfExists('pr_readings');
+        Schema::dropIfExists('pr_indicators');
     }
 };

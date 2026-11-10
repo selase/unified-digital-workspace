@@ -11,12 +11,12 @@
             <p class="text-xs text-muted-foreground">{{ $indicator->programme ?: 'No programme' }} · {{ $sources[$indicator->source] }} · {{ $indicator->starts_on->toInstitutionalDate() }} to {{ $indicator->ends_on->toInstitutionalDate() }}</p>
         </div>
         <div class="flex gap-2">
-            <a class="kt-btn kt-btn-sm kt-btn-outline" href="{{ route('monitoring-evaluation.index') }}">All indicators</a>
-            @can('monitoring.manage')<form method="POST" action="{{ route('monitoring-evaluation.indicators.toggle', $indicator->uuid) }}">@csrf<button class="kt-btn kt-btn-sm kt-btn-outline" type="submit">{{ $indicator->status === 'active' ? 'Archive' : 'Reactivate' }}</button></form>@endcan
+            <a class="kt-btn kt-btn-sm kt-btn-outline" href="{{ route('programme-results.index') }}">All indicators</a>
+            @can('results.manage')<form method="POST" action="{{ route('programme-results.indicators.toggle', $indicator->uuid) }}">@csrf<button class="kt-btn kt-btn-sm kt-btn-outline" type="submit">{{ $indicator->status === 'active' ? 'Archive' : 'Reactivate' }}</button></form>@endcan
         </div>
     </div>
 
-    @include('monitoring-evaluation::partials.flash')
+    @include('programme-results::partials.flash')
 
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div class="rounded-lg bg-muted/30 p-4"><div class="text-xs text-muted-foreground">Starting figure</div><div class="mt-1 text-lg font-semibold">{{ number_format($indicator->baseline, 0) }}</div></div>
@@ -28,8 +28,8 @@
     <p class="text-xs text-muted-foreground">{{ $progress['percent'] }}% of the way to the target with {{ $progress['time_percent'] }}% of the time used.@if($indicator->description) {{ $indicator->description }}@endif</p>
 
     @if($indicator->source === 'manual')
-    @can('monitoring.manage')
-    <form method="POST" action="{{ route('monitoring-evaluation.indicators.readings.store', $indicator->uuid) }}" class="kt-card">@csrf
+    @can('results.manage')
+    <form method="POST" action="{{ route('programme-results.indicators.readings.store', $indicator->uuid) }}" class="kt-card">@csrf
         <div class="kt-card-header"><h3 class="kt-card-title">Add a reading</h3></div>
         <div class="kt-card-content grid grid-cols-1 md:grid-cols-4 gap-3">
             <input class="kt-input" type="number" step="0.01" name="value" value="{{ old('value') }}" placeholder="Figure now" required>

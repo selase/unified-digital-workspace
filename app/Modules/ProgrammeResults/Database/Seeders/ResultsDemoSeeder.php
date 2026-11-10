@@ -2,31 +2,31 @@
 
 declare(strict_types=1);
 
-namespace App\Modules\MonitoringEvaluation\Database\Seeders;
+namespace App\Modules\ProgrammeResults\Database\Seeders;
 
 use App\Models\Tenant;
-use App\Modules\MonitoringEvaluation\Models\MelIndicator;
-use App\Modules\MonitoringEvaluation\Services\IndicatorService;
+use App\Modules\ProgrammeResults\Models\ResultIndicator;
+use App\Modules\ProgrammeResults\Services\IndicatorService;
 use App\Services\Tenancy\TenantContext;
 use App\Services\Tenancy\TenantDatabaseManager;
 use Illuminate\Database\Seeder;
 
 /** A few indicators in different states of progress. Runs once per tenant and never in production. Pick the tenant with DEMO_TENANT. */
-final class MonitoringDemoSeeder extends Seeder
+final class ResultsDemoSeeder extends Seeder
 {
     private const MARKER = 'Demo: Children given a school meal';
 
     public function run(): void
     {
         if (app()->isProduction()) {
-            $this->command?->error('MonitoringDemoSeeder: refusing to write demo indicators into production.');
+            $this->command?->error('ResultsDemoSeeder: refusing to write demo indicators into production.');
 
             return;
         }
 
         $tenant = Tenant::query()->where('slug', (string) config('app.demo_tenant'))->first();
         if (! $tenant instanceof Tenant) {
-            $this->command?->warn('MonitoringDemoSeeder: tenant not found, skipping.');
+            $this->command?->warn('ResultsDemoSeeder: tenant not found, skipping.');
 
             return;
         }
@@ -37,8 +37,8 @@ final class MonitoringDemoSeeder extends Seeder
         $tenant->requiresDedicatedDb() ? $databases->configure($tenant) : $databases->configureShared();
 
         $tenantId = (string) $tenant->id;
-        if (MelIndicator::query()->where('tenant_id', $tenantId)->where('name', self::MARKER)->exists()) {
-            $this->command?->info('MonitoringDemoSeeder: demo indicators already present, skipping.');
+        if (ResultIndicator::query()->where('tenant_id', $tenantId)->where('name', self::MARKER)->exists()) {
+            $this->command?->info('ResultsDemoSeeder: demo indicators already present, skipping.');
 
             return;
         }
@@ -60,6 +60,6 @@ final class MonitoringDemoSeeder extends Seeder
         $service->create($tenantId, 'Demo: Donations raised', 250000, $start, $end, ['programme' => 'Fundraising', 'unit' => 'GHS', 'source' => 'donations_total']);
         unset($reached);
 
-        $this->command?->info('MonitoringDemoSeeder: 5 indicators created.');
+        $this->command?->info('ResultsDemoSeeder: 5 indicators created.');
     }
 }

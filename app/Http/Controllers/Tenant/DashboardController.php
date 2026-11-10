@@ -109,14 +109,14 @@ final class DashboardController extends Controller
             }
         }
 
-        // Monitoring & Evaluation telemetry
-        if ($moduleManager->isEnabledForTenant('monitoring-evaluation', $tenant) && auth()->user()?->can('monitoring.view')) {
+        // Programme Results telemetry
+        if ($moduleManager->isEnabledForTenant('programme-results', $tenant) && auth()->user()?->can('results.view')) {
             try {
-                $melIndicators = app(\App\Modules\MonitoringEvaluation\Services\IndicatorService::class);
-                $melProgress = \App\Modules\MonitoringEvaluation\Models\MelIndicator::query()->where('tenant_id', $tenant->id)->where('status', 'active')->get()->map(fn ($indicator): string => $melIndicators->progress($indicator)['status']);
-                $moduleCards['monitoring-evaluation'] = [
-                    'name' => 'Monitoring & Evaluation',
-                    'route' => Route::has('monitoring-evaluation.index') ? route('monitoring-evaluation.index') : '#',
+                $melIndicators = app(\App\Modules\ProgrammeResults\Services\IndicatorService::class);
+                $melProgress = \App\Modules\ProgrammeResults\Models\ResultIndicator::query()->where('tenant_id', $tenant->id)->where('status', 'active')->get()->map(fn ($indicator): string => $melIndicators->progress($indicator)['status']);
+                $moduleCards['programme-results'] = [
+                    'name' => 'Programme Results',
+                    'route' => Route::has('programme-results.index') ? route('programme-results.index') : '#',
                     'icon' => 'ki-chart-line-up',
                     'badge' => 'Active',
                     'kpis' => [

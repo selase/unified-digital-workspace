@@ -55,7 +55,7 @@ return [
             'donations' => ['name' => 'Donations & Fundraising', 'GHS' => 500.00, 'USD' => 40.00, 'modules' => ['donations'], 'features' => []],
             'grants' => ['name' => 'Grants & Funders', 'GHS' => 500.00, 'USD' => 40.00, 'modules' => ['grants'], 'features' => []],
             'volunteers' => ['name' => 'Volunteers', 'GHS' => 300.00, 'USD' => 25.00, 'modules' => ['volunteers'], 'features' => []],
-            'monitoring' => ['name' => 'Monitoring & Evaluation', 'GHS' => 400.00, 'USD' => 30.00, 'modules' => ['monitoring-evaluation'], 'features' => []],
+            'programme_results' => ['name' => 'Programme Results', 'GHS' => 400.00, 'USD' => 30.00, 'modules' => ['programme-results'], 'features' => []],
             'memberships' => ['name' => 'Memberships', 'GHS' => 400.00, 'USD' => 30.00, 'modules' => ['memberships'], 'features' => []],
             'beneficiaries' => ['name' => 'Beneficiaries & Cases', 'GHS' => 600.00, 'USD' => 50.00, 'modules' => ['beneficiaries'], 'features' => []],
             'hr' => ['name' => 'HR Management', 'GHS' => 1000.00, 'USD' => 80.00, 'modules' => ['hrms-core'], 'features' => []],
