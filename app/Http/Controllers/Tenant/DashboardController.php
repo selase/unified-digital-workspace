@@ -109,6 +109,27 @@ final class DashboardController extends Controller
             }
         }
 
+        // Monitoring & Evaluation telemetry
+        if ($moduleManager->isEnabledForTenant('monitoring-evaluation', $tenant) && auth()->user()?->can('monitoring.view')) {
+            try {
+                $melIndicators = app(\App\Modules\MonitoringEvaluation\Services\IndicatorService::class);
+                $melProgress = \App\Modules\MonitoringEvaluation\Models\MelIndicator::query()->where('tenant_id', $tenant->id)->where('status', 'active')->get()->map(fn ($indicator): string => $melIndicators->progress($indicator)['status']);
+                $moduleCards['monitoring-evaluation'] = [
+                    'name' => 'Monitoring & Evaluation',
+                    'route' => Route::has('monitoring-evaluation.index') ? route('monitoring-evaluation.index') : '#',
+                    'icon' => 'ki-chart-line-up',
+                    'badge' => 'Active',
+                    'kpis' => [
+                        ['label' => 'Indicators', 'value' => $melProgress->count()],
+                        ['label' => 'Achieved / on track', 'value' => $melProgress->filter(fn (string $status): bool => in_array($status, ['achieved', 'on_track'], true))->count()],
+                        ['label' => 'Behind / missed', 'value' => $melProgress->filter(fn (string $status): bool => in_array($status, ['behind', 'missed'], true))->count()],
+                    ],
+                ];
+            } catch (Throwable $error) {
+                report($error);
+            }
+        }
+
         // Memberships telemetry
         if ($moduleManager->isEnabledForTenant('memberships', $tenant) && auth()->user()?->can('memberships.view')) {
             try {

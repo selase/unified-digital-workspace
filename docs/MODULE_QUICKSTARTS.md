@@ -270,7 +270,18 @@ _Source: `app/Modules/Volunteers/Routes/web.php`; `Services/VolunteerService.php
 
 _Source: `app/Modules/Memberships/Routes/web.php`; `Services/MembershipService.php`; memberships views._
 
-## 23. Beneficiaries: register, consent, cases and services (paid add-on)
+## 23. Monitoring & Evaluation: indicators, targets and progress (paid add-on)
+
+1. Open Monitoring & Evaluation and create an indicator: what you measure, its programme, the starting figure, the target, and the dates it is measured over.
+2. Choose where the figure comes from. "Enter readings by hand" lets you add a figure whenever you have one (for example after a field visit). The other choices are worked out live from People reached (Beneficiaries), approved Volunteer hours, or Donations raised, so nobody types the same number twice.
+3. The list shows each indicator's current figure, how far it is towards the target, and how much of the time has passed. It is marked Achieved, On track, Behind (more than 20 points behind the time used) or Missed (the period ended short of target).
+4. Download the indicator report as CSV or PDF for funders and board packs. Archive an indicator when it no longer applies.
+
+**Limits:** there are no disaggregated results (by gender or age), logical frameworks, or surveys; readings are single figures per date.
+
+_Source: `app/Modules/MonitoringEvaluation/Routes/web.php`; `Services/IndicatorService.php`; monitoring views._
+
+## 24. Beneficiaries: register, consent, cases and services (paid add-on)
 
 1. Open Beneficiaries, then Register, and register each person. They get a reference such as BEN-00001.
 2. Record their consent before anything else: what they agreed to and the date. Until then services and case work are locked.

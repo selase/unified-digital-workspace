@@ -837,6 +837,23 @@ final class WorkspaceNavigation
                     ],
                 ],
             ],
+            'monitoring-evaluation' => [
+                'label' => 'Monitoring & Evaluation',
+                'icon' => 'ki-filled ki-chart-line-up',
+                'permission' => 'monitoring.view',
+                'home_route' => 'monitoring-evaluation.index',
+                'sidebar' => [
+                    ['label' => 'Indicators', 'route' => 'monitoring-evaluation.index'],
+                ],
+                'top_menu' => [
+                    [
+                        'label' => 'Monitoring & Evaluation',
+                        'items' => [
+                            ['label' => 'Indicators', 'route' => 'monitoring-evaluation.index'],
+                        ],
+                    ],
+                ],
+            ],
             'memberships' => [
                 'label' => 'Memberships',
                 'icon' => 'ki-filled ki-profile-circle',
