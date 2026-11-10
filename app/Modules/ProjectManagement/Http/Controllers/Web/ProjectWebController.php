@@ -14,6 +14,7 @@ use App\Modules\ProjectManagement\Models\ProjectMember;
 use App\Modules\ProjectManagement\Models\ProjectRisk;
 use App\Modules\ProjectManagement\Models\Task;
 use App\Modules\ProjectManagement\Models\TaskAssignment;
+use App\Modules\ProjectManagement\Models\TaskComment;
 use App\Modules\ProjectManagement\Models\TimeEntry;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
@@ -94,6 +95,7 @@ final class ProjectWebController extends Controller
             'tasks' => fn ($q) => $q->with([
                 'milestone:id,name',
                 'assignments.user:id,uuid,first_name,last_name,email',
+                'comments' => fn ($c) => $c->with('user:id,uuid,first_name,last_name')->latest('id')->limit(20),
                 'timeEntries' => fn ($te) => $te->with('user:id,uuid,first_name,last_name,email')->latest('entry_date'),
             ])->orderBy('sort_order')->latest('id'),
             'allocations' => fn ($q) => $q->with('user:id,uuid,first_name,last_name,email'),
@@ -581,6 +583,45 @@ final class ProjectWebController extends Controller
             ->route('project-management.projects.show', $project->uuid)
             ->with('status', 'success')
             ->with('message', 'Time entry deleted.');
+    }
+
+    /** Takes someone off the project team. The owner cannot be removed, and their task assignments are left as history. */
+    public function removeMember(Request $request, Project $project, ProjectMember $member): RedirectResponse
+    {
+        abort_if(! $request->user()?->can('projects.members.manage') && ! $request->user()?->can('projects.update'), 403);
+        abort_if($member->project_id !== $project->id, 404);
+
+        if ($project->owner_id !== null && $member->user_id === $project->owner_id) {
+            return back()->with('status', 'error')->with('message', 'The project owner cannot be removed from the team.');
+        }
+
+        $member->delete();
+
+        return redirect()
+            ->route('project-management.projects.show', $project->uuid)
+            ->with('status', 'success')
+            ->with('message', 'Team member removed from project.');
+    }
+
+    /** A note on a task, visible to everyone who can see the project. */
+    public function storeTaskComment(Request $request, Project $project, Task $task): RedirectResponse
+    {
+        abort_if(! $request->user()?->can('projects.view'), 403);
+        abort_if($task->project_id !== $project->id, 404);
+
+        $validated = $request->validate(['body' => ['required', 'string', 'max:2000']], ['body.required' => 'Write a comment first.']);
+
+        TaskComment::query()->create([
+            'tenant_id' => $project->tenant_id,
+            'task_id' => $task->id,
+            'user_id' => (string) $request->user()->uuid,
+            'body' => $validated['body'],
+        ]);
+
+        return redirect()
+            ->route('project-management.projects.show', $project->uuid)
+            ->with('status', 'success')
+            ->with('message', 'Comment added.');
     }
 
     public function storeMember(Request $request, Project $project): RedirectResponse

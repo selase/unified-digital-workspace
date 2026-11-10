@@ -37,6 +37,8 @@ Route::post('/projects/{project:uuid}/time-entries', [ProjectWebController::clas
 Route::post('/projects/{project:uuid}/time-entries/{timeEntry}/delete', [ProjectWebController::class, 'destroyTimeEntry'])->name('projects.time-entries.destroy');
 
 Route::post('/projects/{project:uuid}/members', [ProjectWebController::class, 'storeMember'])->name('projects.members.store');
+Route::post('/projects/{project:uuid}/members/{member}/remove', [ProjectWebController::class, 'removeMember'])->name('projects.members.remove');
+Route::post('/projects/{project:uuid}/tasks/{task:uuid}/comments', [ProjectWebController::class, 'storeTaskComment'])->name('projects.tasks.comments.store');
 
 Route::get('/tasks', [TaskListController::class, 'index'])->name('tasks.index');
 Route::post('/tasks/{task:uuid}/status', [TaskListController::class, 'updateStatus'])->name('tasks.status');

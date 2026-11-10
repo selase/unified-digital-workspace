@@ -637,6 +637,20 @@
                                                             <button type="submit" class="kt-btn kt-btn-xs kt-btn-primary">Save Changes</button>
                                                         </div>
                                                     </form>
+                                                    <div class="mt-3 pt-3 space-y-2">
+                                                        <p class="font-semibold text-xs text-foreground">Comments ({{ $task->comments->count() }})</p>
+                                                        @foreach($task->comments as $comment)
+                                                            <div class="rounded-lg bg-muted/30 p-2 text-xs">
+                                                                <div>{{ $comment->body }}</div>
+                                                                <div class="text-[10px] text-muted-foreground">{{ $comment->user?->first_name }} {{ $comment->user?->last_name }} · {{ $comment->created_at->diffForHumans() }}</div>
+                                                            </div>
+                                                        @endforeach
+                                                        <form method="POST" action="{{ route('project-management.projects.tasks.comments.store', ['project' => $project->uuid, 'task' => $task->uuid]) }}" class="flex gap-1.5">
+                                                            @csrf
+                                                            <input type="text" name="body" required maxlength="2000" placeholder="Add a comment" class="kt-input w-full text-xs" />
+                                                            <button type="submit" class="kt-btn kt-btn-xs kt-btn-outline">Post</button>
+                                                        </form>
+                                                    </div>
                                                 </div>
                                             </details>
 
@@ -941,8 +955,11 @@
                                     <p class="font-medium text-foreground">{{ $member->user->first_name }} {{ $member->user->last_name }}</p>
                                     <p class="text-[10px] text-muted-foreground">{{ $member->role ?: 'Contributor' }}</p>
                                 </div>
-                                <span class="text-[10px] text-muted-foreground font-mono">
-                                    {{ $member->joined_at?->format('M Y') }}
+                                <span class="flex items-center gap-2">
+                                    <span class="text-[10px] text-muted-foreground font-mono">{{ $member->joined_at?->format('M Y') }}</span>
+                                    @canany(['projects.members.manage', 'projects.update'])
+                                        <form method="POST" action="{{ route('project-management.projects.members.remove', ['project' => $project->uuid, 'member' => $member->id]) }}" onsubmit="return confirm('Remove this person from the project team?')">@csrf<button type="submit" class="text-[10px] text-destructive">remove</button></form>
+                                    @endcanany
                                 </span>
                             </div>
                         @endif

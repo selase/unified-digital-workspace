@@ -381,3 +381,40 @@ it('denies access to unauthorized users without permissions', function (): void 
     $this->actingAs($unauthorizedUser)->get(route('project-management.projects.index'))->assertForbidden();
     $this->actingAs($unauthorizedUser)->get(route('project-management.projects.create'))->assertForbidden();
 });
+
+it('lets staff remove a team member but never the owner, and keeps removal inside the project', function (): void {
+    [$user, $tenant] = createProjectWebContext();
+    $project = Project::create(['tenant_id' => $tenant->id, 'name' => 'Team Test', 'slug' => 'team-test', 'status' => 'in-progress', 'priority' => 'medium', 'owner_id' => (string) $user->uuid]);
+    $other = Project::create(['tenant_id' => $tenant->id, 'name' => 'Other', 'slug' => 'other-team', 'status' => 'in-progress', 'priority' => 'medium']);
+    $colleague = User::factory()->create();
+    $colleagueMember = ProjectMember::create(['tenant_id' => $tenant->id, 'project_id' => $project->id, 'user_id' => (string) $colleague->uuid, 'role' => 'QA', 'joined_at' => now()]);
+    $ownerMember = ProjectMember::create(['tenant_id' => $tenant->id, 'project_id' => $project->id, 'user_id' => (string) $user->uuid, 'role' => 'Owner', 'joined_at' => now()]);
+    $foreignMember = ProjectMember::create(['tenant_id' => $tenant->id, 'project_id' => $other->id, 'user_id' => (string) $colleague->uuid, 'role' => 'QA', 'joined_at' => now()]);
+
+    $this->actingAs($user)->post(route('project-management.projects.members.remove', [$project->uuid, $ownerMember->id]))->assertSessionHas('message', 'The project owner cannot be removed from the team.');
+    $this->actingAs($user)->post(route('project-management.projects.members.remove', [$project->uuid, $foreignMember->id]))->assertNotFound();
+    $this->actingAs($user)->post(route('project-management.projects.members.remove', [$project->uuid, $colleagueMember->id]))->assertRedirect();
+
+    expect(ProjectMember::query()->whereKey($colleagueMember->id)->exists())->toBeFalse()
+        ->and(ProjectMember::query()->whereKey($ownerMember->id)->exists())->toBeTrue()
+        ->and(ProjectMember::query()->whereKey($foreignMember->id)->exists())->toBeTrue();
+
+    $user->revokePermissionTo(['projects.members.manage', 'projects.update']);
+    app(Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+    $this->actingAs($user)->post(route('project-management.projects.members.remove', [$project->uuid, $foreignMember->id]))->assertForbidden();
+});
+
+it('adds comments to a task, shows them on the project page, and validates them', function (): void {
+    [$user, $tenant] = createProjectWebContext();
+    $project = Project::create(['tenant_id' => $tenant->id, 'name' => 'Comment Test', 'slug' => 'comment-test', 'status' => 'in-progress', 'priority' => 'medium', 'owner_id' => (string) $user->uuid]);
+    $task = Task::create(['tenant_id' => $tenant->id, 'project_id' => $project->id, 'title' => 'Write spec', 'status' => 'todo']);
+    $foreign = Task::create(['tenant_id' => $tenant->id, 'project_id' => Project::create(['tenant_id' => $tenant->id, 'name' => 'Else', 'slug' => 'else-p', 'status' => 'planned', 'priority' => 'low'])->id, 'title' => 'Not ours', 'status' => 'todo']);
+    $url = fn (Task $t) => route('project-management.projects.tasks.comments.store', [$project->uuid, $t->uuid]);
+
+    $this->actingAs($user)->post($url($task), ['body' => 'Waiting on the funder to confirm the dates.'])->assertRedirect();
+    $this->actingAs($user)->post($url($task), ['body' => ''])->assertSessionHasErrors('body');
+    $this->actingAs($user)->post($url($foreign), ['body' => 'Wrong project'])->assertNotFound();
+
+    expect(App\Modules\ProjectManagement\Models\TaskComment::query()->count())->toBe(1);
+    $this->actingAs($user)->get(route('project-management.projects.show', $project->uuid))->assertOk()->assertSee('Waiting on the funder to confirm the dates.')->assertSee('Comments (1)');
+});
