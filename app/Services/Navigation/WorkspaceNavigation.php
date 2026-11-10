@@ -843,13 +843,14 @@ final class WorkspaceNavigation
                 'permission' => 'monitoring.view',
                 'home_route' => 'monitoring-evaluation.index',
                 'sidebar' => [
-                    ['label' => 'Indicators', 'route' => 'monitoring-evaluation.index'],
+                    ['label' => 'Indicator report', 'route' => 'monitoring-evaluation.report'],
                 ],
                 'top_menu' => [
                     [
                         'label' => 'Monitoring & Evaluation',
                         'items' => [
                             ['label' => 'Indicators', 'route' => 'monitoring-evaluation.index'],
+                            ['label' => 'Indicator report', 'route' => 'monitoring-evaluation.report'],
                         ],
                     ],
                 ],
