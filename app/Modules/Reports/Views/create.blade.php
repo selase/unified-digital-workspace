@@ -3,128 +3,82 @@
 @section('title', 'Create Custom Report')
 
 @section('content')
-<div class="d-flex flex-column gap-7" x-data="reportBuilder({{ Js::from($availableSources) }})">
-    {{-- Page Header --}}
-    <x-metronic.page-header
-        title="Custom Report Builder"
-        description="Select a module data source, pick attributes, define date ranges, and save your reporting template.">
-        <x-slot:actions>
-            <a href="{{ route('reports.index') }}" class="btn btn-sm btn-light">
-                <i class="ki-duotone ki-arrow-left fs-2"></i> Back to Reports
-            </a>
-        </x-slot:actions>
-    </x-metronic.page-header>
+<div class="flex flex-col gap-6" x-data="reportBuilder({{ Js::from($availableSources) }})">
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+            <h1 class="text-xl font-bold text-foreground">Custom Report Builder</h1>
+            <p class="text-xs text-muted-foreground">Pick a data source, choose the columns, set a date range, and save the report.</p>
+        </div>
+        <a href="{{ route('reports.index') }}" class="kt-btn kt-btn-sm kt-btn-outline">Back to reports</a>
+    </div>
 
     @if ($errors->any())
-        <div class="alert alert-danger p-5 mb-5">
-            <ul class="mb-0">
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
+        <div class="rounded-lg bg-red-50 p-3 text-sm text-red-700"><ul class="list-disc pl-5">@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>
     @endif
 
-    <form action="{{ route('reports.store') }}" method="POST">
+    <form action="{{ route('reports.store') }}" method="POST" class="flex flex-col gap-6">
         @csrf
 
-        <div class="row g-7">
-            {{-- General Info Card --}}
-            <div class="col-lg-6">
-                <x-metronic.card title="1. Report Details">
-                    <div class="mb-5">
-                        <label class="form-label required fw-bold">Report Name</label>
-                        <input type="text" name="name" class="form-control" placeholder="e.g. Q3 High Severity Incidents" required value="{{ old('name') }}">
-                    </div>
-
-                    <div class="mb-5">
-                        <label class="form-label fw-bold">Description (Optional)</label>
-                        <textarea name="description" class="form-control" rows="2" placeholder="Summary of this report's purpose...">{{ old('description') }}</textarea>
-                    </div>
-
-                    <div class="mb-5">
-                        <label class="form-label required fw-bold">Data Source</label>
-                        <select name="data_source" class="form-select" x-model="selectedSource" required>
-                            <option value="">-- Choose Data Source --</option>
-                            <template x-for="(source, key) in sources" :key="key">
-                                <option :value="key" x-text="source.label"></option>
-                            </template>
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="kt-card">
+                <div class="kt-card-header"><h3 class="kt-card-title">1. Report details</h3></div>
+                <div class="kt-card-content flex flex-col gap-4">
+                    <label class="flex flex-col gap-1 text-sm font-medium">Report name
+                        <input type="text" name="name" class="kt-input" placeholder="e.g. Q3 high severity incidents" required value="{{ old('name') }}">
+                    </label>
+                    <label class="flex flex-col gap-1 text-sm font-medium">Description (optional)
+                        <textarea name="description" class="kt-input" rows="2" placeholder="What this report is for">{{ old('description') }}</textarea>
+                    </label>
+                    <label class="flex flex-col gap-1 text-sm font-medium">Data source
+                        <select name="data_source" class="kt-select" x-model="selectedSource" required>
+                            <option value="">Choose a data source</option>
+                            <template x-for="(source, key) in sources" :key="key"><option :value="key" x-text="source.label"></option></template>
                         </select>
-                        <div class="form-text">Data sources are strictly allowlisted and protected by module RBAC permissions.</div>
-                    </div>
-
-                    <div class="form-check form-switch form-check-custom form-check-solid mb-3">
-                        <input class="form-check-input" type="checkbox" name="is_public" value="1" id="is_public" {{ old('is_public') ? 'checked' : '' }} />
-                        <label class="form-check-label fw-semibold text-gray-700" for="is_public">
-                            Share Report Template with all organization members
-                        </label>
-                    </div>
-                </x-metronic.card>
+                        <span class="text-xs font-normal text-muted-foreground">Only data sources you have permission to see are listed.</span>
+                    </label>
+                    <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="is_public" value="1" id="is_public" {{ old('is_public') ? 'checked' : '' }}> Share this report with everyone in the organisation</label>
+                </div>
             </div>
 
-            {{-- Date Filters Card --}}
-            <div class="col-lg-6">
-                <x-metronic.card title="2. Date Filtering">
-                    <div class="mb-5" x-show="selectedSource && sources[selectedSource]?.date_columns?.length > 0">
-                        <label class="form-label fw-bold">Date Column to Filter</label>
-                        <select name="date_column" class="form-select">
-                            <option value="">-- No Date Filter --</option>
-                            <template x-for="col in (sources[selectedSource]?.date_columns || [])" :key="col">
-                                <option :value="col" x-text="col"></option>
-                            </template>
+            <div class="kt-card">
+                <div class="kt-card-header"><h3 class="kt-card-title">2. Date filter</h3></div>
+                <div class="kt-card-content flex flex-col gap-4">
+                    <label class="flex flex-col gap-1 text-sm font-medium" x-show="selectedSource && sources[selectedSource]?.date_columns?.length > 0">Date column to filter
+                        <select name="date_column" class="kt-select">
+                            <option value="">No date filter</option>
+                            <template x-for="col in (sources[selectedSource]?.date_columns || [])" :key="col"><option :value="col" x-text="col"></option></template>
                         </select>
+                    </label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <label class="flex flex-col gap-1 text-sm font-medium">From<input type="date" name="from_date" class="kt-input" value="{{ old('from_date') }}"></label>
+                        <label class="flex flex-col gap-1 text-sm font-medium">To<input type="date" name="to_date" class="kt-input" value="{{ old('to_date') }}"></label>
                     </div>
-
-                    <div class="row g-4 mb-5">
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">From Date</label>
-                            <input type="date" name="from_date" class="form-control" value="{{ old('from_date') }}">
-                        </div>
-                        <div class="col-md-6">
-                            <label class="form-label fw-semibold">To Date</label>
-                            <input type="date" name="to_date" class="form-control" value="{{ old('to_date') }}">
-                        </div>
-                    </div>
-
-                    <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-4">
-                        <i class="ki-duotone ki-information-5 fs-2x text-primary me-3"></i>
-                        <div class="fs-7 text-gray-700">
-                            Reports stream directly to CSV formatted for spreadsheet software with UTF-8 BOM encoding for special characters and dates.
-                        </div>
-                    </div>
-                </x-metronic.card>
-            </div>
-
-            {{-- Column Picker Card --}}
-            <div class="col-12" x-show="selectedSource">
-                <x-metronic.card title="3. Select Columns to Include">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <span class="text-muted fs-7">Pick the fields to include in table previews and exported CSVs:</span>
-                        <div>
-                            <button type="button" class="btn btn-xs btn-light-primary me-2" @click="selectAllColumns()">Select All</button>
-                            <button type="button" class="btn btn-xs btn-light" @click="deselectAllColumns()">Deselect All</button>
-                        </div>
-                    </div>
-
-                    <div class="row g-3">
-                        <template x-for="(label, col) in (sources[selectedSource]?.columns || {})" :key="col">
-                            <div class="col-md-4 col-sm-6">
-                                <label class="form-check form-check-custom form-check-solid p-3 rounded border border-gray-200 cursor-pointer">
-                                    <input class="form-check-input" type="checkbox" name="selected_columns[]" :value="col" :checked="selectedColumns.includes(col)" @change="toggleColumn(col)" />
-                                    <span class="form-check-label fw-semibold text-gray-800" x-text="label"></span>
-                                </label>
-                            </div>
-                        </template>
-                    </div>
-                </x-metronic.card>
+                    <p class="rounded-lg bg-muted/30 p-3 text-xs text-muted-foreground">Exports download as CSV that opens cleanly in spreadsheet programs, with special characters and dates intact.</p>
+                </div>
             </div>
         </div>
 
-        <div class="d-flex justify-content-end gap-3 mt-7">
-            <a href="{{ route('reports.index') }}" class="btn btn-light">Cancel</a>
-            <button type="submit" class="btn btn-primary">
-                <i class="ki-duotone ki-check fs-2"></i> Save & Run Report
-            </button>
+        <div class="kt-card" x-show="selectedSource">
+            <div class="kt-card-header">
+                <h3 class="kt-card-title">3. Columns to include</h3>
+                <div class="flex gap-2">
+                    <button type="button" class="kt-btn kt-btn-xs kt-btn-outline" @click="selectAllColumns()">Select all</button>
+                    <button type="button" class="kt-btn kt-btn-xs kt-btn-outline" @click="deselectAllColumns()">Deselect all</button>
+                </div>
+            </div>
+            <div class="kt-card-content grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                <template x-for="(label, col) in (sources[selectedSource]?.columns || {})" :key="col">
+                    <label class="flex items-center gap-2 rounded-lg bg-muted/30 p-3 text-sm cursor-pointer">
+                        <input type="checkbox" name="selected_columns[]" :value="col" :checked="selectedColumns.includes(col)" @change="toggleColumn(col)">
+                        <span x-text="label"></span>
+                    </label>
+                </template>
+            </div>
+        </div>
+
+        <div class="flex justify-end gap-2">
+            <a href="{{ route('reports.index') }}" class="kt-btn kt-btn-outline">Cancel</a>
+            <button type="submit" class="kt-btn kt-btn-primary">Save & run report</button>
         </div>
     </form>
 </div>

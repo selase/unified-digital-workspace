@@ -3,133 +3,78 @@
 @section('title', 'Create Automation Rule')
 
 @section('content')
-<div class="d-flex flex-column gap-7">
-    {{-- Page Header --}}
-    <x-metronic.page-header
-        title="Create Automation Rule"
-        description="Set up an automated action triggered when specific events occur in the system.">
-        <x-slot:actions>
-            <a href="{{ route('workflow-automation.index') }}" class="btn btn-sm btn-light">
-                <i class="ki-duotone ki-arrow-left fs-2"></i> Back to Rules
-            </a>
-        </x-slot:actions>
-    </x-metronic.page-header>
+<div class="flex flex-col gap-6">
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+            <h1 class="text-xl font-bold text-foreground">Create Automation Rule</h1>
+            <p class="text-xs text-muted-foreground">Set up an automatic action for when something happens in the workspace.</p>
+        </div>
+        <div class="flex flex-wrap gap-2"><a href="{{ route('workflow-automation.index') }}" class="kt-btn kt-btn-sm kt-btn-outline">Back to rules</a></div>
+    </div>
 
     @if ($errors->any())
-        <div class="alert alert-danger p-5 mb-5">
-            <ul class="mb-0">
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
+        <div class="rounded-lg bg-red-50 p-3 text-sm text-red-700"><ul class="list-disc pl-5">@foreach ($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul></div>
     @endif
 
-    <form action="{{ route('workflow-automation.store') }}" method="POST">
+    <form action="{{ route('workflow-automation.store') }}" method="POST" class="flex flex-col gap-6">
         @csrf
-
-        <div class="row g-7">
-            {{-- 1. Trigger Event Card --}}
-            <div class="col-lg-6">
-                <x-metronic.card title="1. Trigger Event">
-                    <div class="mb-5">
-                        <label class="form-label required fw-bold">Rule Name</label>
-                        <input type="text" name="name" class="form-control" placeholder="e.g. Escalate Critical Incident to Directors" required value="{{ old('name') }}">
-                    </div>
-
-                    <div class="mb-5">
-                        <label class="form-label fw-bold">Description (Optional)</label>
-                        <textarea name="description" class="form-control" rows="2" placeholder="Explain what business process this automates...">{{ old('description') }}</textarea>
-                    </div>
-
-                    <div class="mb-5">
-                        <label class="form-label required fw-bold">When this Event occurs</label>
-                        <select name="trigger_event" class="form-select" required>
-                            <option value="">-- Choose System Event --</option>
-                            @foreach ($availableEvents as $evtKey => $evtLabel)
-                                <option value="{{ $evtKey }}" {{ old('trigger_event') === $evtKey ? 'selected' : '' }}>
-                                    {{ $evtLabel }} ({{ $evtKey }})
-                                </option>
-                            @endforeach
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="kt-card">
+                <div class="kt-card-header"><h3 class="kt-card-title">1. When this happens</h3></div>
+                <div class="kt-card-content flex flex-col gap-4">
+                    <label class="flex flex-col gap-1 text-sm font-medium">Rule name<input type="text" name="name" class="kt-input" placeholder="e.g. Escalate critical incident to directors" required value="{{ old('name') }}"></label>
+                    <label class="flex flex-col gap-1 text-sm font-medium">Description (optional)<textarea name="description" class="kt-input" rows="2" placeholder="What this automates">{{ old('description') }}</textarea></label>
+                    <label class="flex flex-col gap-1 text-sm font-medium">Event
+                        <select name="trigger_event" class="kt-select" required>
+                            <option value="">Choose an event</option>
+                            @foreach ($availableEvents as $evtKey => $evtLabel)<option value="{{ $evtKey }}" {{ old('trigger_event') === $evtKey ? 'selected' : '' }}>{{ $evtLabel }} ({{ $evtKey }})</option>@endforeach
                         </select>
-                    </div>
-
-                    <div class="notice d-flex bg-light-primary rounded border-primary border border-dashed p-4">
-                        <i class="ki-duotone ki-shield-tick fs-2x text-primary me-3"></i>
-                        <div class="fs-7 text-gray-700">
-                            <strong>Recursion Circuit Breaker:</strong> The workflow engine enforces a maximum cascading depth of 3 to guarantee infinite loops or cyclic event chains cannot crash the system.
-                        </div>
-                    </div>
-                </x-metronic.card>
+                    </label>
+                    <p class="rounded-lg bg-muted/30 p-3 text-xs text-muted-foreground">Safety limit: rules can trigger other rules only 3 levels deep, so a loop can never run away.</p>
+                </div>
             </div>
 
-            {{-- 2. Condition Evaluation Card --}}
-            <div class="col-lg-6">
-                <x-metronic.card title="2. If Conditions Match (Optional)">
-                    <p class="text-muted fs-7 mb-4">Leave blank to always execute whenever the event occurs.</p>
-
-                    <div class="mb-4">
-                        <label class="form-label fw-semibold">Payload Field</label>
-                        <input type="text" name="condition_field" class="form-control" placeholder="e.g. impact, status, amount_cents" value="{{ old('condition_field') }}">
-                    </div>
-
-                    <div class="mb-4">
-                        <label class="form-label fw-semibold">Comparison Operator</label>
-                        <select name="condition_operator" class="form-select">
+            <div class="kt-card">
+                <div class="kt-card-header"><h3 class="kt-card-title">2. Only if (optional)</h3></div>
+                <div class="kt-card-content flex flex-col gap-4">
+                    <p class="text-xs text-muted-foreground">Leave blank to run every time the event happens.</p>
+                    <label class="flex flex-col gap-1 text-sm font-medium">Field<input type="text" name="condition_field" class="kt-input" placeholder="e.g. impact, status, amount_cents" value="{{ old('condition_field') }}"></label>
+                    <label class="flex flex-col gap-1 text-sm font-medium">Comparison
+                        <select name="condition_operator" class="kt-select">
                             <option value="=" {{ old('condition_operator') === '=' ? 'selected' : '' }}>Equals (=)</option>
-                            <option value="!=" {{ old('condition_operator') === '!=' ? 'selected' : '' }}>Not Equals (!=)</option>
-                            <option value=">" {{ old('condition_operator') === '>' ? 'selected' : '' }}>Greater Than (&gt;)</option>
-                            <option value="<" {{ old('condition_operator') === '<' ? 'selected' : '' }}>Less Than (&lt;)</option>
+                            <option value="!=" {{ old('condition_operator') === '!=' ? 'selected' : '' }}>Not equals (!=)</option>
+                            <option value=">" {{ old('condition_operator') === '>' ? 'selected' : '' }}>Greater than (&gt;)</option>
+                            <option value="<" {{ old('condition_operator') === '<' ? 'selected' : '' }}>Less than (&lt;)</option>
                             <option value="contains" {{ old('condition_operator') === 'contains' ? 'selected' : '' }}>Contains (text)</option>
                         </select>
-                    </div>
-
-                    <div class="mb-4">
-                        <label class="form-label fw-semibold">Expected Value</label>
-                        <input type="text" name="condition_value" class="form-control" placeholder="e.g. critical, high, 1000" value="{{ old('condition_value') }}">
-                    </div>
-                </x-metronic.card>
-            </div>
-
-            {{-- 3. Action Execution Card --}}
-            <div class="col-12">
-                <x-metronic.card title="3. Then Execute Action">
-                    <div class="row g-5">
-                        <div class="col-md-4">
-                            <label class="form-label required fw-bold">Action Type</label>
-                            <select name="action_type" class="form-select" required>
-                                <option value="dispatch_notification">Dispatch Topbar In-App Notification</option>
-                                <option value="log_audit_alert">Log Institutional Audit Alert</option>
-                            </select>
-                        </div>
-
-                        <div class="col-md-4">
-                            <label class="form-label fw-bold">Target Role / Recipients</label>
-                            <input type="text" name="target_role" class="form-control" placeholder="e.g. Super Admin, Org Admin" value="{{ old('target_role', 'Super Admin') }}">
-                        </div>
-
-                        <div class="col-md-4">
-                            <label class="form-label fw-bold">Notification Title Template</label>
-                            <input type="text" name="title_template" class="form-control" placeholder="e.g. Critical Safety Alert: {title}" value="{{ old('title_template', 'Urgent Alert: {title}') }}">
-                        </div>
-
-                        <div class="col-12">
-                            <label class="form-label fw-bold">Message Body Template</label>
-                            <textarea name="body_template" class="form-control" rows="2" placeholder="e.g. A critical incident was logged with impact {impact}. Please review immediately.">{{ old('body_template', 'Automated workflow notification from {rule_name}') }}</textarea>
-                            <div class="form-text">Placeholders like <code>{field}</code>, <code>{rule_name}</code>, and <code>{event}</code> are dynamically replaced with event context.</div>
-                        </div>
-                    </div>
-                </x-metronic.card>
+                    </label>
+                    <label class="flex flex-col gap-1 text-sm font-medium">Value<input type="text" name="condition_value" class="kt-input" placeholder="e.g. critical, high, 1000" value="{{ old('condition_value') }}"></label>
+                </div>
             </div>
         </div>
 
-        <div class="d-flex justify-content-end gap-3 mt-7">
-            <a href="{{ route('workflow-automation.index') }}" class="btn btn-light">Cancel</a>
-            <button type="submit" class="btn btn-primary">
-                <i class="ki-duotone ki-check fs-2"></i> Save Automation Rule
-            </button>
+        <div class="kt-card">
+            <div class="kt-card-header"><h3 class="kt-card-title">3. Then do this</h3></div>
+            <div class="kt-card-content grid grid-cols-1 md:grid-cols-3 gap-4">
+                <label class="flex flex-col gap-1 text-sm font-medium">Action
+                    <select name="action_type" class="kt-select" required>
+                        <option value="dispatch_notification">Send an in-app notification</option>
+                        <option value="log_audit_alert">Log an audit alert</option>
+                    </select>
+                </label>
+                <label class="flex flex-col gap-1 text-sm font-medium">Who gets it (role)<input type="text" name="target_role" class="kt-input" placeholder="e.g. Super Admin, Org Admin" value="{{ old('target_role', 'Super Admin') }}"></label>
+                <label class="flex flex-col gap-1 text-sm font-medium">Title<input type="text" name="title_template" class="kt-input" placeholder="e.g. Critical safety alert: {title}" value="{{ old('title_template', 'Urgent Alert: {title}') }}"></label>
+                <label class="flex flex-col gap-1 text-sm font-medium md:col-span-3">Message
+                    <textarea name="body_template" class="kt-input" rows="2" placeholder="e.g. A critical incident was logged with impact {impact}.">{{ old('body_template', 'Automated workflow notification from {rule_name}') }}</textarea>
+                    <span class="text-xs font-normal text-muted-foreground">Placeholders like {field}, {rule_name} and {event} are replaced with details of the event.</span>
+                </label>
+            </div>
+        </div>
+
+        <div class="flex justify-end gap-2">
+            <a href="{{ route('workflow-automation.index') }}" class="kt-btn kt-btn-outline">Cancel</a>
+            <button type="submit" class="kt-btn kt-btn-primary">Save rule</button>
         </div>
     </form>
 </div>
 @endsection
-

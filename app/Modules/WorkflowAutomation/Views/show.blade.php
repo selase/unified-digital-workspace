@@ -3,155 +3,84 @@
 @section('title', 'Workflow Rule: ' . $rule->name)
 
 @section('content')
-<div class="d-flex flex-column gap-7">
-    {{-- Page Header --}}
-    <x-metronic.page-header
-        :title="$rule->name"
-        :description="'Trigger: ' . $rule->trigger_event . ' | Status: ' . ($rule->is_active ? 'Active' : 'Disabled')">
-        <x-slot:actions>
-            <a href="{{ route('workflow-automation.index') }}" class="btn btn-sm btn-light me-2">
-                <i class="ki-duotone ki-arrow-left fs-2"></i> Back to Rules
-            </a>
-            <form action="{{ route('workflow-automation.toggle', $rule) }}" method="POST" class="d-inline">
-                @csrf
-                <button type="submit" class="btn btn-sm btn-{{ $rule->is_active ? 'light-danger' : 'light-success' }} me-2">
-                    {{ $rule->is_active ? 'Deactivate Rule' : 'Activate Rule' }}
-                </button>
-            </form>
-        </x-slot:actions>
-    </x-metronic.page-header>
+<div class="flex flex-col gap-6">
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+            <h1 class="text-xl font-bold text-foreground">{{ $rule->name }}</h1>
+            <p class="text-xs text-muted-foreground">Trigger: {{ $rule->trigger_event }} · {{ $rule->is_active ? 'Active' : 'Disabled' }}</p>
+        </div>
+        <div class="flex flex-wrap gap-2"><a href="{{ route('workflow-automation.index') }}" class="kt-btn kt-btn-sm kt-btn-outline">All rules</a>
+            <form action="{{ route('workflow-automation.toggle', $rule) }}" method="POST">@csrf<button type="submit" class="kt-btn kt-btn-sm kt-btn-outline">{{ $rule->is_active ? 'Deactivate' : 'Activate' }}</button></form></div>
+    </div>
 
     @if (session('status'))
-        <div class="alert alert-{{ session('status') === 'success' ? 'success' : 'danger' }} d-flex align-items-center p-5 mb-5">
-            <i class="ki-duotone ki-information-5 fs-2hx text-{{ session('status') === 'success' ? 'success' : 'danger' }} me-4"></i>
-            <div class="d-flex flex-column">
-                <span>{{ session('message') }}</span>
-            </div>
-        </div>
+        <div class="rounded-lg p-3 text-sm {{ session('status') === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700' }}">{{ session('message') }}</div>
     @endif
 
-    {{-- Details & Test Card --}}
-    <div class="row g-7">
-        <div class="col-lg-6">
-            <x-metronic.card title="Rule Configuration">
-                <div class="mb-4">
-                    <span class="text-muted fs-7 d-block">Trigger Event</span>
-                    <span class="badge badge-light-primary fw-bold font-monospace mt-1">{{ $rule->trigger_event }}</span>
-                </div>
-
-                <div class="mb-4">
-                    <span class="text-muted fs-7 d-block">Conditions</span>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="kt-card">
+            <div class="kt-card-header"><h3 class="kt-card-title">Rule configuration</h3></div>
+            <div class="kt-card-content flex flex-col gap-4 text-sm">
+                <div><div class="text-xs text-muted-foreground">Trigger event</div><div class="font-mono">{{ $rule->trigger_event }}</div></div>
+                <div>
+                    <div class="text-xs text-muted-foreground">Conditions</div>
                     @if (empty($rule->conditions))
-                        <span class="badge badge-light mt-1">Always Execute (No conditions)</span>
+                        <div>Always run (no conditions)</div>
                     @else
-                        <div class="mt-2">
-                            @foreach ($rule->conditions as $cond)
-                                <div class="p-2 bg-light rounded border border-gray-200 fs-7 mb-2 font-monospace">
-                                    {{ $cond['field'] ?? '' }} {{ $cond['operator'] ?? '=' }} "{{ $cond['value'] ?? '' }}"
-                                </div>
-                            @endforeach
-                        </div>
+                        @foreach ($rule->conditions as $cond)<div class="mt-1 rounded-lg bg-muted/30 p-2 font-mono text-xs">{{ $cond['field'] ?? '' }} {{ $cond['operator'] ?? '=' }} "{{ $cond['value'] ?? '' }}"</div>@endforeach
                     @endif
                 </div>
-
-                <div class="mb-4">
-                    <span class="text-muted fs-7 d-block">Actions</span>
-                    <div class="mt-2">
-                        @foreach ($rule->actions as $act)
-                            <div class="p-3 bg-light rounded border border-gray-200 fs-7 mb-2">
-                                <span class="badge badge-light-success mb-1">{{ $act['type'] ?? 'action' }}</span>
-                                @if (isset($act['title_template']))
-                                    <div class="fw-bold">{{ $act['title_template'] }}</div>
-                                @endif
-                                <div class="text-gray-600 fs-8">{{ $act['body_template'] ?? ($act['message'] ?? '') }}</div>
-                            </div>
-                        @endforeach
-                    </div>
-                </div>
-
                 <div>
-                    <span class="text-muted fs-7 d-block">Total Successful Executions</span>
-                    <span class="fs-2 fw-bolder text-primary">{{ $rule->execution_count }}</span>
+                    <div class="text-xs text-muted-foreground">Actions</div>
+                    @foreach ($rule->actions as $act)
+                        <div class="mt-1 rounded-lg bg-muted/30 p-3 text-xs">
+                            <div class="font-medium">{{ $act['type'] ?? 'action' }}</div>
+                            @if (isset($act['title_template']))<div class="font-semibold">{{ $act['title_template'] }}</div>@endif
+                            <div class="text-muted-foreground">{{ $act['body_template'] ?? ($act['message'] ?? '') }}</div>
+                        </div>
+                    @endforeach
                 </div>
-            </x-metronic.card>
+                <div><div class="text-xs text-muted-foreground">Successful runs</div><div class="text-lg font-semibold">{{ $rule->execution_count }}</div></div>
+            </div>
         </div>
 
-        <div class="col-lg-6">
-            <x-metronic.card title="Test Run Simulation">
-                <p class="text-muted fs-7 mb-4">Trigger a test event in this organization to verify condition evaluation and action dispatching.</p>
-
-                <form action="{{ route('workflow-automation.test-run', $rule) }}" method="POST">
-                    @csrf
-                    <div class="mb-4">
-                        <label class="form-label fw-bold">Test Context Payload (JSON)</label>
-                        <textarea name="payload" class="form-control font-monospace fs-8" rows="6">{
+        <div class="kt-card">
+            <div class="kt-card-header"><h3 class="kt-card-title">Test run</h3></div>
+            <form action="{{ route('workflow-automation.test-run', $rule) }}" method="POST" class="kt-card-content flex flex-col gap-3">
+                @csrf
+                <p class="text-xs text-muted-foreground">Send a sample event through this rule to check its conditions and actions.</p>
+                <textarea name="payload" class="kt-input font-mono text-xs" rows="6">{
   "title": "Simulated Generator Overheat",
   "impact": "critical",
   "reported_via": "portal"
 }</textarea>
-                    </div>
-
-                    <button type="submit" class="btn btn-primary w-100">
-                        <i class="ki-duotone ki-triangle fs-2"></i> Run Test Simulation
-                    </button>
-                </form>
-            </x-metronic.card>
+                <div><button type="submit" class="kt-btn kt-btn-primary">Run test</button></div>
+            </form>
         </div>
     </div>
 
-    {{-- Execution Logs Card --}}
-    <x-metronic.card title="Execution Telemetry & Audit Logs ({{ $logs->total() }})">
-        <div class="table-responsive">
-            <table class="table align-middle table-row-dashed fs-6 gy-4">
-                <thead>
-                    <tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
-                        <th>Executed At</th>
-                        <th>Trigger Event</th>
-                        <th>Status</th>
-                        <th>Depth</th>
-                        <th>Actions Dispatched</th>
-                        <th>Payload Summary</th>
-                    </tr>
-                </thead>
-                <tbody class="fw-semibold text-gray-700">
+    <div class="kt-card">
+        <div class="kt-card-header"><h3 class="kt-card-title">Run history ({{ $logs->total() }})</h3></div>
+        <div class="kt-card-table kt-scrollable-x-auto">
+            <table class="kt-table table-auto kt-table-border">
+                <thead><tr><th>When</th><th>Event</th><th>Status</th><th>Depth</th><th>Actions</th><th>Payload</th></tr></thead>
+                <tbody>
                     @forelse ($logs as $log)
                         <tr>
                             <td>{{ $log->executed_at ? $log->executed_at->format('d/m/Y H:i:s') : '-' }}</td>
-                            <td><span class="badge badge-light-primary font-monospace">{{ $log->trigger_event }}</span></td>
-                            <td>
-                                <span class="badge badge-light-{{ $log->status === 'success' ? 'success' : ($log->status === 'loop_aborted' ? 'warning' : 'danger') }}">
-                                    {{ $log->status }}
-                                </span>
-                                @if ($log->error_message)
-                                    <div class="text-danger fs-8 mt-1">{{ $log->error_message }}</div>
-                                @endif
-                            </td>
-                            <td>
-                                <span class="badge badge-light-secondary">Depth {{ $log->execution_depth }}</span>
-                            </td>
-                            <td>
-                                <span class="badge badge-light-info">{{ count($log->actions_executed ?? []) }} action(s)</span>
-                            </td>
-                            <td>
-                                <div class="text-muted fs-8 font-monospace">{{ Str::limit(json_encode($log->context_payload), 50) }}</div>
-                            </td>
+                            <td class="font-mono text-xs">{{ $log->trigger_event }}</td>
+                            <td class="{{ $log->status === 'success' ? '' : 'text-destructive' }}">{{ $log->status }}@if ($log->error_message)<div class="text-xs">{{ $log->error_message }}</div>@endif</td>
+                            <td>{{ $log->execution_depth }}</td>
+                            <td>{{ count($log->actions_executed ?? []) }}</td>
+                            <td class="font-mono text-xs text-muted-foreground">{{ Str::limit(json_encode($log->context_payload), 50) }}</td>
                         </tr>
                     @empty
-                        <tr>
-                            <td colspan="6" class="text-center py-10 text-muted">
-                                <i class="ki-duotone ki-information fs-3x text-muted mb-3 d-block"></i>
-                                No executions recorded yet for this workflow rule.
-                            </td>
-                        </tr>
+                        <tr><td colspan="6" class="text-center text-muted-foreground py-6">Nothing has run yet.</td></tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
-
-        <div class="mt-4">
-            {{ $logs->links() }}
-        </div>
-    </x-metronic.card>
+    </div>
+    {{ $logs->links() }}
 </div>
 @endsection
-

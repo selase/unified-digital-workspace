@@ -37,6 +37,8 @@ _Source: `app/Modules/CmsCore/Routes/{web,public}.php`; `Http/Controllers/Web/{C
 2. Open the lead, log interactions and update its status. Convert a qualified lead to a client account when appropriate.
 3. Open Accounts to maintain client details and contacts. Create a deal, associate it with the account and use the pipeline or deal detail page to update its stage and activity history.
 
+On Leads, "Import leads" loads a CSV (name, email, phone, organisation; up to 1,000 rows, existing emails skipped) and the Export buttons download leads, accounts and deals as CSV.
+
 **Limits:** CRM records interactions and deal progress; a won deal is not proof that money has been received. Online inquiry capture depends on an implemented public form or integration.
 
 _Source: `app/Modules/Crm/Routes/web.php`; `Http/Controllers/Web/CrmWebController.php`; `Views/{index,leads/show,accounts/show,deals/show}.blade.php`._
@@ -87,6 +89,8 @@ _Source: `app/Modules/QualityMonitoring/Routes/web.php`; `Http/Controllers/Web/{
 1. Open Projects and create a project. Open its detail page to add members, milestones, tasks and risks.
 2. Assign deliverables and update their status. Record time entries and maintain the project's budget and actual spend using the available controls.
 3. Use stage-gate reviews when authorised. Review milestones, risk scores, logged hours and budget variance before progressing the project.
+
+Open a task's Edit panel to read and post comments, and use "remove" beside a team member to take them off the project (the owner cannot be removed).
 
 **Limits:** task dependencies, resource allocation, attachments and the interactive Gantt capability are API-only; there is no complete web workflow for them. Time entries and budget records do not run payroll or make payments.
 

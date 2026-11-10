@@ -3,94 +3,49 @@
 @section('title', 'Report: ' . $report->name)
 
 @section('content')
-<div class="d-flex flex-column gap-7">
-    {{-- Page Header --}}
-    <x-metronic.page-header
-        :title="$report->name"
-        :description="$report->description ?? 'Custom generated analytics report for ' . ucfirst(str_replace('_', ' ', $report->data_source))">
-        <x-slot:actions>
-            <a href="{{ route('reports.index') }}" class="btn btn-sm btn-light me-2">
-                <i class="ki-duotone ki-arrow-left fs-2"></i> All Reports
-            </a>
-            <a href="{{ route('reports.export.csv', $report) }}" class="btn btn-sm btn-success me-2">
-                <i class="ki-duotone ki-file-down fs-2"></i> Export CSV
-            </a>
-            <a href="{{ route('reports.export.pdf', $report) }}" class="btn btn-sm btn-danger">
-                <i class="ki-duotone ki-document fs-2"></i> Export PDF
-            </a>
-        </x-slot:actions>
-    </x-metronic.page-header>
-
-    @if (session('status'))
-        <div class="alert alert-{{ session('status') === 'success' ? 'success' : 'danger' }} d-flex align-items-center p-5 mb-5">
-            <i class="ki-duotone ki-information-5 fs-2hx text-{{ session('status') === 'success' ? 'success' : 'danger' }} me-4"></i>
-            <div class="d-flex flex-column">
-                <span>{{ session('message') }}</span>
-            </div>
+<div class="flex flex-col gap-6">
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+            <h1 class="text-xl font-bold text-foreground">{{ $report->name }}</h1>
+            <p class="text-xs text-muted-foreground">{{ $report->description ?? 'Custom report for '.ucfirst(str_replace('_', ' ', $report->data_source)) }}</p>
         </div>
-    @endif
-
-    {{-- Metadata Summary Cards --}}
-    <div class="row g-5">
-        <div class="col-md-3">
-            <div class="card card-flush py-4">
-                <div class="card-body py-2">
-                    <span class="text-gray-500 fs-7 fw-bold text-uppercase">Data Source</span>
-                    <div class="fs-4 fw-bolder text-gray-800 mt-1">{{ ucfirst(str_replace('_', ' ', $report->data_source)) }}</div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card card-flush py-4">
-                <div class="card-body py-2">
-                    <span class="text-gray-500 fs-7 fw-bold text-uppercase">Total Matches</span>
-                    <div class="fs-4 fw-bolder text-primary mt-1">{{ number_format($preview['total']) }} records</div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card card-flush py-4">
-                <div class="card-body py-2">
-                    <span class="text-gray-500 fs-7 fw-bold text-uppercase">Columns</span>
-                    <div class="fs-4 fw-bolder text-gray-800 mt-1">{{ count($preview['headers']) }} selected</div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card card-flush py-4">
-                <div class="card-body py-2">
-                    <span class="text-gray-500 fs-7 fw-bold text-uppercase">Created At</span>
-                    <div class="fs-4 fw-bolder text-gray-800 mt-1">{{ $report->created_at ? $report->created_at->format('d/m/Y') : '-' }}</div>
-                </div>
-            </div>
+        <div class="flex flex-wrap gap-2">
+            <a href="{{ route('reports.index') }}" class="kt-btn kt-btn-sm kt-btn-outline">All reports</a>
+            <a href="{{ route('reports.export.csv', $report) }}" class="kt-btn kt-btn-sm kt-btn-outline">Export CSV</a>
+            <a href="{{ route('reports.export.pdf', $report) }}" class="kt-btn kt-btn-sm kt-btn-primary">Export PDF</a>
         </div>
     </div>
 
-    {{-- Preview Table Card --}}
-    <x-metronic.card title="Report Preview (Showing first {{ count($preview['rows']) }} of {{ $preview['total'] }} records)">
-        <div class="table-responsive">
-            <table class="table align-middle table-row-dashed fs-6 gy-4">
-                <thead>
-                    <tr class="text-start text-gray-500 fw-bold fs-7 text-uppercase gs-0">
-                        @foreach ($preview['headers'] as $col => $label)
-                            <th>{{ $label }}</th>
-                        @endforeach
-                    </tr>
-                </thead>
-                <tbody class="fw-semibold text-gray-700">
+    @if (session('status'))
+        <div class="rounded-lg p-3 text-sm {{ session('status') === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700' }}">{{ session('message') }}</div>
+    @endif
+
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="rounded-lg bg-muted/30 p-4"><div class="text-xs text-muted-foreground">Data source</div><div class="mt-1 text-lg font-semibold">{{ ucfirst(str_replace('_', ' ', $report->data_source)) }}</div></div>
+        <div class="rounded-lg bg-muted/30 p-4"><div class="text-xs text-muted-foreground">Total matches</div><div class="mt-1 text-lg font-semibold">{{ number_format($preview['total']) }} records</div></div>
+        <div class="rounded-lg bg-muted/30 p-4"><div class="text-xs text-muted-foreground">Columns</div><div class="mt-1 text-lg font-semibold">{{ count($preview['headers']) }} selected</div></div>
+        <div class="rounded-lg bg-muted/30 p-4"><div class="text-xs text-muted-foreground">Created</div><div class="mt-1 text-lg font-semibold">{{ $report->created_at ? $report->created_at->format('d/m/Y') : '-' }}</div></div>
+    </div>
+
+    <div class="kt-card">
+        <div class="kt-card-header"><h3 class="kt-card-title">Preview (first {{ count($preview['rows']) }} of {{ $preview['total'] }} records)</h3></div>
+        <div class="kt-card-table kt-scrollable-x-auto">
+            <table class="kt-table table-auto kt-table-border">
+                <thead><tr>@foreach ($preview['headers'] as $col => $label)<th>{{ $label }}</th>@endforeach</tr></thead>
+                <tbody>
                     @forelse ($preview['rows'] as $row)
                         <tr>
                             @foreach ($preview['headers'] as $col => $label)
                                 <td>
                                     @php $val = $row[$col] ?? null; @endphp
                                     @if ($val === null || $val === '')
-                                        <span class="text-muted">-</span>
+                                        <span class="text-muted-foreground">-</span>
                                     @elseif (is_bool($val))
-                                        <span class="badge badge-light-{{ $val ? 'success' : 'secondary' }}">{{ $val ? 'Yes' : 'No' }}</span>
+                                        {{ $val ? 'Yes' : 'No' }}
                                     @elseif (str_contains($col, 'price') || str_contains($col, 'amount'))
-                                        <span class="fw-bold">GHS {{ number_format(((float) $val) / 100, 2) }}</span>
+                                        GHS {{ number_format(((float) $val) / 100, 2) }}
                                     @elseif (str_contains($col, 'status') || str_contains($col, 'severity'))
-                                        <span class="badge badge-light-primary">{{ ucfirst((string) $val) }}</span>
+                                        {{ ucfirst((string) $val) }}
                                     @else
                                         {{ (string) $val }}
                                     @endif
@@ -98,17 +53,11 @@
                             @endforeach
                         </tr>
                     @empty
-                        <tr>
-                            <td colspan="{{ max(1, count($preview['headers'])) }}" class="text-center py-10 text-muted">
-                                <i class="ki-duotone ki-information fs-3x text-muted mb-3 d-block"></i>
-                                No records matched the specified report filters for this organization.
-                            </td>
-                        </tr>
+                        <tr><td colspan="{{ max(1, count($preview['headers'])) }}" class="text-center text-muted-foreground py-6">No records matched the report filters for this organisation.</td></tr>
                     @endforelse
                 </tbody>
             </table>
         </div>
-    </x-metronic.card>
+    </div>
 </div>
 @endsection
-
