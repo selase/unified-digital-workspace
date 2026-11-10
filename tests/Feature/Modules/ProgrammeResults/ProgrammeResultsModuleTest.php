@@ -148,7 +148,7 @@ describe('Indicator screens', function (): void {
         [$user, $tenant] = createMonitoringContext();
         $this->actingAs($user)->withSession(['active_tenant_id' => $tenant->id]);
 
-        $this->get(route('programme-results.index'))->assertOk()->assertSee('Programme Results');
+        $this->get(route('programme-results.index'))->assertOk()->assertSee('NGO M&E');
         $this->post(route('programme-results.indicators.store'), ['name' => 'Wells built', 'programme' => 'Water', 'unit' => 'wells', 'source' => 'manual', 'baseline' => 0, 'target' => 12, 'starts_on' => today()->startOfYear()->toDateString(), 'ends_on' => today()->endOfYear()->toDateString()])->assertRedirect();
         $model = ResultIndicator::query()->firstOrFail();
 

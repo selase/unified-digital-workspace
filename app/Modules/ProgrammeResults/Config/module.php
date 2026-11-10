@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 return [
-    'name' => 'Programme Results',
+    'name' => 'NGO M&E',
     'slug' => 'programme-results',
     'version' => '1.0.0',
     'description' => 'A simple results tracker for NGOs and funders: indicators with baselines and targets, readings over time, figures worked out from Donations, Volunteers and Beneficiaries, and funder-ready reports. For workplans with approvals, use Quality Monitoring.',
@@ -16,7 +16,7 @@ return [
     'features' => [
         'programme-results.manage' => [
             'type' => 'boolean',
-            'name' => 'Programme Results',
+            'name' => 'NGO M&E',
             'description' => 'Indicators, targets and readings for programme results.',
         ],
     ],

@@ -109,13 +109,32 @@ final class DashboardController extends Controller
             }
         }
 
-        // Programme Results telemetry
+        // Governance telemetry
+        if ($moduleManager->isEnabledForTenant('governance', $tenant) && auth()->user()?->can('governance.view')) {
+            try {
+                $moduleCards['governance'] = [
+                    'name' => 'Board & Governance',
+                    'route' => Route::has('governance.index') ? route('governance.index') : '#',
+                    'icon' => 'ki-bank',
+                    'badge' => 'Active',
+                    'kpis' => [
+                        ['label' => 'Upcoming meetings', 'value' => \App\Modules\Governance\Models\GovMeeting::query()->where('tenant_id', $tenant->id)->where('status', 'scheduled')->where('meets_at', '>=', now()->startOfDay())->count()],
+                        ['label' => 'Minutes to approve', 'value' => \App\Modules\Governance\Models\GovMeeting::query()->where('tenant_id', $tenant->id)->where('status', 'held')->where('minutes_status', '!=', 'approved')->count()],
+                        ['label' => 'Overdue actions', 'value' => \App\Modules\Governance\Models\GovAction::query()->where('tenant_id', $tenant->id)->where('status', 'open')->whereDate('due_on', '<', today()->toDateString())->count()],
+                    ],
+                ];
+            } catch (Throwable $error) {
+                report($error);
+            }
+        }
+
+        // NGO M&E telemetry
         if ($moduleManager->isEnabledForTenant('programme-results', $tenant) && auth()->user()?->can('results.view')) {
             try {
                 $melIndicators = app(\App\Modules\ProgrammeResults\Services\IndicatorService::class);
                 $melProgress = \App\Modules\ProgrammeResults\Models\ResultIndicator::query()->where('tenant_id', $tenant->id)->where('status', 'active')->get()->map(fn ($indicator): string => $melIndicators->progress($indicator)['status']);
                 $moduleCards['programme-results'] = [
-                    'name' => 'Programme Results',
+                    'name' => 'NGO M&E',
                     'route' => Route::has('programme-results.index') ? route('programme-results.index') : '#',
                     'icon' => 'ki-chart-line-up',
                     'badge' => 'Active',

@@ -1,13 +1,13 @@
 @extends('layouts.metronic.app')
 
-@section('title', 'Programme Results')
+@section('title', 'NGO M&E')
 
 @section('content')
 @php $verdict = ['achieved' => 'Achieved', 'on_track' => 'On track', 'behind' => 'Behind', 'missed' => 'Missed']; @endphp
 <div class="flex flex-col gap-6">
     <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-            <h1 class="text-xl font-bold text-foreground">Programme Results</h1>
+            <h1 class="text-xl font-bold text-foreground">NGO M&E</h1>
             <p class="text-xs text-muted-foreground">Are our programmes delivering? Each indicator has a starting figure, a target and a period.</p>
         </div>
         <div class="flex gap-2">

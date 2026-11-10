@@ -838,7 +838,7 @@ final class WorkspaceNavigation
                 ],
             ],
             'programme-results' => [
-                'label' => 'Programme Results',
+                'label' => 'NGO M&E',
                 'icon' => 'ki-filled ki-chart-line-up',
                 'permission' => 'results.view',
                 'home_route' => 'programme-results.index',
@@ -847,10 +847,32 @@ final class WorkspaceNavigation
                 ],
                 'top_menu' => [
                     [
-                        'label' => 'Programme Results',
+                        'label' => 'NGO M&E',
                         'items' => [
                             ['label' => 'Indicators', 'route' => 'programme-results.index'],
                             ['label' => 'Indicator report', 'route' => 'programme-results.report'],
+                        ],
+                    ],
+                ],
+            ],
+            'governance' => [
+                'label' => 'Board & Governance',
+                'icon' => 'ki-filled ki-bank',
+                'permission' => 'governance.view',
+                'home_route' => 'governance.index',
+                'sidebar' => [
+                    ['label' => 'Meetings', 'route' => 'governance.meetings.index'],
+                    ['label' => 'Members', 'route' => 'governance.members.index'],
+                    ['label' => 'Actions', 'route' => 'governance.actions.index'],
+                ],
+                'top_menu' => [
+                    [
+                        'label' => 'Board & Governance',
+                        'items' => [
+                            ['label' => 'Overview', 'route' => 'governance.index'],
+                            ['label' => 'Meetings', 'route' => 'governance.meetings.index'],
+                            ['label' => 'Members', 'route' => 'governance.members.index'],
+                            ['label' => 'Actions', 'route' => 'governance.actions.index'],
                         ],
                     ],
                 ],

@@ -270,9 +270,9 @@ _Source: `app/Modules/Volunteers/Routes/web.php`; `Services/VolunteerService.php
 
 _Source: `app/Modules/Memberships/Routes/web.php`; `Services/MembershipService.php`; memberships views._
 
-## 23. Programme Results: indicators, targets and progress (paid add-on)
+## 23. NGO M&E: indicators, targets and progress (paid add-on)
 
-1. Open Programme Results and create an indicator: what you measure, its programme, the starting figure, the target, and the dates it is measured over.
+1. Open NGO M&E and create an indicator: what you measure, its programme, the starting figure, the target, and the dates it is measured over.
 2. Choose where the figure comes from. "Enter readings by hand" lets you add a figure whenever you have one (for example after a field visit). The other choices are worked out live from People reached (Beneficiaries), approved Volunteer hours, or Donations raised, so nobody types the same number twice.
 3. The list shows each indicator's current figure, how far it is towards the target, and how much of the time has passed. It is marked Achieved, On track, Behind (more than 20 points behind the time used) or Missed (the period ended short of target).
 4. Download the indicator report as CSV or PDF for funders and board packs. Archive an indicator when it no longer applies.
@@ -281,7 +281,20 @@ _Source: `app/Modules/Memberships/Routes/web.php`; `Services/MembershipService.p
 
 _Source: `app/Modules/ProgrammeResults/Routes/web.php`; `Services/IndicatorService.php`; monitoring views._
 
-## 24. Beneficiaries: register, consent, cases and services (paid add-on)
+## 24. Board & Governance: meetings, minutes, resolutions and actions (paid add-on)
+
+1. Open Board & Governance, then Members, and add the people on the board or committees with their position and term. Terms ending in the next 90 days are flagged on the Overview.
+2. Open Meetings and schedule a meeting with its body (Board, committee or AGM), date, venue, quorum and agenda.
+3. At the meeting, record attendance (present, apologies, absent). The page shows whether the quorum was met. Choose "Mark as held" once someone is recorded as present.
+4. Write the minutes (saved as a draft) and record resolutions, which get references such as R-2026-001. Someone with approval rights then approves the minutes; approved minutes are locked, so corrections are recorded as a resolution at the next meeting.
+5. Open Actions to record what people agreed to do, with an owner and a due date. Overdue actions show in red on the Overview.
+6. "Meeting pack (PDF)" prints the agenda, attendance, minutes, resolutions and actions together.
+
+**Limits:** there are no board papers or voting records per member, no e-signatures, and no automatic reminders. For policies that need review cycles and staff acknowledgement, use Document Management.
+
+_Source: `app/Modules/Governance/Routes/web.php`; `Services/GovernanceService.php`; governance views._
+
+## 25. Beneficiaries: register, consent, cases and services (paid add-on)
 
 1. Open Beneficiaries, then Register, and register each person. They get a reference such as BEN-00001.
 2. Record their consent before anything else: what they agreed to and the date. Until then services and case work are locked.

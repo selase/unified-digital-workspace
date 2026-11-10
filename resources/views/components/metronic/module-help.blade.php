@@ -14,6 +14,7 @@
         'grants.index',
         'volunteers.index',
         'memberships.index',
+        'governance.index',
         'programme-results.index',
         'beneficiaries.index',
         'vendor-marketplace.index',
