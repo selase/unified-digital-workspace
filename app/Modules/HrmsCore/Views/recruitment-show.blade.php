@@ -83,6 +83,9 @@
                             </div>
                             <div class="text-xs text-muted-foreground">
                                 {{ $application->candidate?->email }} • Ref: {{ $application->application_number ?: 'APP-' . $application->id }}
+                                @foreach($application->candidate?->documents?->where('application_id', $application->id) ?? [] as $document)
+                                    • <a class="text-primary" href="{{ route('hrms-core.recruitment.documents.download', $document->uuid) }}">{{ $document->name }}</a>
+                                @endforeach
                             </div>
                         </div>
                         <div class="flex items-center gap-2">

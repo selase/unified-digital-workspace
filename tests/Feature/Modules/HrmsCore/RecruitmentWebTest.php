@@ -15,6 +15,7 @@ use App\Modules\HrmsCore\Models\Organization\Department;
 use App\Modules\HrmsCore\Models\Organization\Grade;
 use App\Modules\HrmsCore\Models\Recruitment\Candidate;
 use App\Modules\HrmsCore\Models\Recruitment\CandidateApplication;
+use App\Modules\HrmsCore\Models\Recruitment\CandidateDocument;
 use App\Modules\HrmsCore\Models\Recruitment\Interview;
 use App\Modules\HrmsCore\Models\Recruitment\JobOffer;
 use App\Modules\HrmsCore\Models\Recruitment\JobPosting;
@@ -24,6 +25,7 @@ use App\Services\ModuleManager;
 use App\Services\Tenancy\TenantContext;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Storage;
 use Spatie\Permission\PermissionRegistrar;
 
 /**
@@ -720,5 +722,24 @@ describe('HRMS Recruitment Pipeline Writes (Sub-item 3)', function (): void {
                 'email' => 'unauth@example.com',
             ])
             ->assertForbidden();
+    });
+});
+
+describe('Candidate CV download', function (): void {
+    test('staff who can view applications open a CV, others and other organisations cannot', function (): void {
+        [$user, $tenant] = createRecruitmentWebContext();
+        Storage::fake('tenant');
+        $candidate = Candidate::query()->create(['tenant_id' => $tenant->id, 'first_name' => 'Ama', 'last_name' => 'Mensah', 'email' => 'ama@example.test', 'source' => 'careers_page', 'status' => 'active']);
+        $document = CandidateDocument::query()->create(['tenant_id' => $tenant->id, 'candidate_id' => $candidate->id, 'type' => 'resume', 'name' => 'ama-cv.pdf', 'file_path' => 'hrms/cv/test.pdf', 'mime_type' => 'application/pdf', 'file_size' => 9, 'is_primary' => true]);
+        $foreign = CandidateDocument::query()->create(['tenant_id' => (string) Tenant::factory()->create()->id, 'candidate_id' => $candidate->id, 'type' => 'resume', 'name' => 'x.pdf', 'file_path' => 'hrms/cv/test.pdf', 'is_primary' => false]);
+
+        $this->actingAs($user)->withSession(['active_tenant_id' => $tenant->id]);
+        $this->get(route('hrms-core.recruitment.documents.download', $document->uuid))->assertNotFound();
+        $this->get(route('hrms-core.recruitment.documents.download', $foreign->uuid))->assertNotFound();
+
+        $user->syncRoles([]);
+        $user->syncPermissions([]);
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        $this->get(route('hrms-core.recruitment.documents.download', $document->uuid))->assertForbidden();
     });
 });

@@ -63,7 +63,7 @@ final class HrmsPublicCareersController extends Controller
         }
 
         try {
-            $applications->apply($posting, $request->safe()->except(['website', 'form_token']));
+            $applications->apply($posting, $request->safe()->except(['website', 'form_token', 'cv']), $request->file('cv'));
         } catch (DomainException $error) {
             return back()->withInput()->withErrors(['email' => $error->getMessage()]);
         }

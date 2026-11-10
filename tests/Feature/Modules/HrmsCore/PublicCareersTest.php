@@ -7,12 +7,17 @@ use App\Models\User;
 use App\Modules\CmsCore\Support\EnquiryToken;
 use App\Modules\HrmsCore\Models\Organization\Department;
 use App\Modules\HrmsCore\Models\Recruitment\Candidate;
+use App\Modules\HrmsCore\Mail\ApplicationReceivedMail;
 use App\Modules\HrmsCore\Models\Recruitment\CandidateApplication;
+use App\Modules\HrmsCore\Models\Recruitment\CandidateDocument;
 use App\Modules\HrmsCore\Models\Recruitment\JobPosting;
 use App\Modules\HrmsCore\Models\Recruitment\JobRequisition;
 use App\Services\ModuleManager;
 use App\Services\Tenancy\TenantContext;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * @param  array<string, mixed>  $attributes
@@ -131,5 +136,33 @@ describe('Public careers page', function (): void {
         $posting->update(['closing_date' => now()->subDay()]);
         $this->post(route('hrms-core.public.careers.apply', 'backend-engineer'), applicationPayload())->assertNotFound();
         expect(CandidateApplication::query()->count())->toBe(0);
+    });
+});
+
+describe('Careers CV upload and acknowledgement', function (): void {
+    test('an applicant can attach a CV, gets a confirmation email, and only a PDF or Word file is accepted', function (): void {
+        [$tenant] = createCareersContext();
+        Storage::fake('tenant');
+        Mail::fake();
+        $url = route('hrms-core.public.careers.apply', 'backend-engineer');
+
+        $this->post($url, applicationPayload(['cv' => UploadedFile::fake()->create('cv.exe', 10)]))->assertSessionHasErrors('cv');
+        $this->post($url, applicationPayload(['cv' => UploadedFile::fake()->create('huge.pdf', 6000, 'application/pdf')]))->assertSessionHasErrors('cv');
+        expect(CandidateApplication::query()->count())->toBe(0);
+
+        $this->post($url, applicationPayload(['cv' => UploadedFile::fake()->create('ama-cv.pdf', 80, 'application/pdf')]))->assertRedirect()->assertSessionHas('applied');
+
+        $document = CandidateDocument::query()->firstOrFail();
+        expect($document->type)->toBe('resume')->and($document->name)->toBe('ama-cv.pdf')->and($document->application_id)->toBe(CandidateApplication::query()->value('id'));
+        Storage::disk('tenant')->assertExists($document->file_path);
+        Mail::assertSent(ApplicationReceivedMail::class, fn (ApplicationReceivedMail $mail): bool => $mail->hasTo('ama@example.test') && $mail->jobTitle === 'Backend Engineer');
+    });
+
+    test('an application without a CV still works, and a mail failure does not lose it', function (): void {
+        createCareersContext();
+        Mail::shouldReceive('to')->andThrow(new RuntimeException('smtp down'));
+
+        $this->post(route('hrms-core.public.careers.apply', 'backend-engineer'), applicationPayload())->assertRedirect()->assertSessionHas('applied');
+        expect(CandidateApplication::query()->count())->toBe(1)->and(CandidateDocument::query()->count())->toBe(0);
     });
 });

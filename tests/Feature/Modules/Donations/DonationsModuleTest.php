@@ -362,6 +362,37 @@ describe('Online giving', function (): void {
             ->and(ledgerBalance($tenant, '1010'))->toBe(40_000)->and(ledgerBalance($tenant, '1000'))->toBe(0);
     });
 
+    test('a pledge payment link opens checkout for the pledge amount and the confirmed payment advances the pledge once', function (): void {
+        [$user, $tenant] = createDonationsContext();
+        connectGivingGateway($tenant);
+        $donor = demoDonor($tenant);
+        $pledge = app(PledgeService::class)->create($tenant->id, $donor, 25_000, ['frequency' => 'monthly', 'starts_on' => '2026-01-31']);
+        Http::fake([
+            'api.paystack.co/transaction/initialize' => Http::response(['data' => ['authorization_url' => 'https://checkout.paystack.test/pledge', 'reference' => 'ref_pledge']]),
+            'api.paystack.co/transaction/verify/*' => Http::response(['data' => [
+                'status' => 'success', 'amount' => 25_000, 'currency' => 'GHS', 'reference' => 'ref_pledge',
+                'metadata' => ['type' => 'donation', 'tenant_id' => $tenant->id, 'donor_id' => (string) $donor->id, 'pledge_id' => (string) $pledge->id],
+            ]]),
+        ]);
+
+        $this->actingAs($user)->withSession(['active_tenant_id' => $tenant->id]);
+        $link = $this->post(route('donations.pledges.link', $pledge->uuid))->assertSessionHas('pledge_link')->getSession()->get('pledge_link')['url'];
+
+        $this->get(route('donations.public.pledge', ['tenant' => $tenant->slug, 'pledge' => $pledge->uuid]))->assertForbidden();
+        $this->get($link)->assertRedirect('https://checkout.paystack.test/pledge');
+        Http::assertSent(fn ($request): bool => str_contains($request->url(), 'initialize') && $request['amount'] === 25_000 && ($request['metadata']['pledge_id'] ?? null) === (string) $pledge->id);
+
+        $this->get(route('donations.public.thanks', ['tenant' => $tenant->slug, 'reference' => 'ref_pledge']))->assertOk();
+        $this->get(route('donations.public.thanks', ['tenant' => $tenant->slug, 'reference' => 'ref_pledge']))->assertOk();
+
+        expect(DonDonation::query()->count())->toBe(1)->and(DonDonation::query()->first()->pledge_id)->toBe($pledge->id)
+            ->and($pledge->fresh()->next_due_on->toDateString())->toBe('2026-02-28');
+
+        $pledge->forceFill(['status' => 'paused'])->save();
+        $this->post(route('donations.pledges.link', $pledge->uuid))->assertSessionHas('error');
+        $this->get($link)->assertRedirect(route('donations.public.give', ['tenant' => $tenant->slug]));
+    });
+
     test('the donor is emailed the receipt once, and a mail failure does not undo the gift', function (): void {
         Mail::fake();
         [, $tenant] = createDonationsContext();

@@ -25,12 +25,15 @@ use App\Modules\HrmsCore\Models\Recruitment\Candidate;
 use App\Modules\HrmsCore\Models\Recruitment\CandidateApplication;
 use App\Modules\HrmsCore\Models\Recruitment\Interview;
 use App\Modules\HrmsCore\Models\Recruitment\JobOffer;
+use App\Modules\HrmsCore\Models\Recruitment\CandidateDocument;
 use App\Modules\HrmsCore\Models\Recruitment\JobPosting;
 use App\Modules\HrmsCore\Models\Recruitment\JobRequisition;
 use App\Modules\HrmsCore\Models\Recruitment\OnboardingTask;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -118,7 +121,7 @@ final class HrmsRecruitmentController extends Controller
             'requisition.department:id,name',
             'requisition.grade:id,name',
             'applications' => function ($query): void {
-                $query->with(['candidate', 'interviews', 'offer.department:id,name', 'offer.grade:id,name'])
+                $query->with(['candidate.documents', 'interviews', 'offer.department:id,name', 'offer.grade:id,name'])
                     ->latest('id');
             },
         ]);
@@ -844,6 +847,18 @@ final class HrmsRecruitmentController extends Controller
                 ]
             );
         }
+    }
+
+    /** Opens a candidate's CV or other document, for staff who may view applications. */
+    public function downloadDocument(Request $request, string $document): StreamedResponse
+    {
+        $user = $request->user();
+        abort_if($user === null || ! $user->can('hrms.applications.view'), 403);
+        $model = CandidateDocument::query()->where('uuid', $document)->firstOrFail();
+        $this->assertTenantModel($model->tenant_id, $this->activeTenantId($request));
+        abort_unless(Storage::disk('tenant')->exists($model->file_path), 404);
+
+        return Storage::disk('tenant')->download($model->file_path, $model->name);
     }
 
     private function activeTenantId(Request $request): string

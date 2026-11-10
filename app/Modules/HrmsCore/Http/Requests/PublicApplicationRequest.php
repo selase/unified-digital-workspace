@@ -28,6 +28,7 @@ final class PublicApplicationRequest extends FormRequest
             'years_of_experience' => ['nullable', 'integer', 'min:0', 'max:60'],
             'highest_qualification' => ['nullable', 'string', 'max:150'],
             'cover_letter' => ['nullable', 'string', 'max:5000'],
+            'cv' => ['nullable', 'file', 'mimes:pdf,doc,docx', 'max:5120'],
             'website' => ['nullable', 'string', 'max:0'],
             'form_token' => ['required', 'string', 'max:200'],
         ];
@@ -43,6 +44,8 @@ final class PublicApplicationRequest extends FormRequest
             'last_name.required' => 'Enter your last name.',
             'email.required' => 'Enter your email address so we can reach you.',
             'email.email' => 'Enter a valid email address.',
+            'cv.mimes' => 'Attach your CV as a PDF or Word file.',
+            'cv.max' => 'Your CV must be 5 MB or less.',
             'form_token.required' => 'This form has expired. Please reload the page and try again.',
         ];
     }

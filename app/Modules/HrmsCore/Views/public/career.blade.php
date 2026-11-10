@@ -37,7 +37,7 @@
                     </div>
                 @endif
 
-                <form method="POST" action="{{ $careersUrl('careers.apply', ['slug' => $posting->slug]) }}" class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <form method="POST" action="{{ $careersUrl('careers.apply', ['slug' => $posting->slug]) }}" class="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2" enctype="multipart/form-data">
                     <input type="hidden" name="form_token" value="{{ $formToken }}">
                     <div class="hidden" aria-hidden="true"><label>Website <input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
 
@@ -67,6 +67,9 @@
                     </label>
                     <label class="text-sm text-gray-700 sm:col-span-2">Why are you a good fit?
                         <textarea class="mt-1 w-full rounded-lg bg-gray-50 px-3 py-2" rows="6" name="cover_letter" maxlength="5000">{{ old('cover_letter') }}</textarea>
+                    </label>
+                    <label class="text-sm text-gray-700 sm:col-span-2">Your CV (PDF or Word, up to 5 MB, optional)
+                        <input class="mt-1 w-full rounded-lg bg-gray-50 px-3 py-2" type="file" name="cv" accept=".pdf,.doc,.docx">
                     </label>
                     <div class="sm:col-span-2"><button type="submit" class="rounded-lg bg-gray-900 px-5 py-2.5 text-white hover:bg-gray-700">Submit application</button></div>
                 </form>

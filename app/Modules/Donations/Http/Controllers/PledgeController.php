@@ -9,7 +9,9 @@ use App\Modules\Donations\Http\Requests\SavePledgeRequest;
 use App\Modules\Donations\Models\DonCampaign;
 use App\Modules\Donations\Models\DonDonor;
 use App\Modules\Donations\Models\DonPledge;
+use App\Modules\Donations\Services\OnlineGivingService;
 use App\Modules\Donations\Services\PledgeService;
+use App\Models\Tenant;
 use App\Modules\Finance\Models\FinFund;
 use App\Modules\Finance\Services\FinanceSettings;
 use App\Modules\Finance\Support\Money;
@@ -72,6 +74,19 @@ final class PledgeController extends Controller
         }
 
         return back()->with('success', 'Instalment received as '.$gift->receipt_number.'.');
+    }
+
+    /** Makes a payment link for the donor's next instalment and shows it so staff can send it. */
+    public function link(Request $request, OnlineGivingService $giving, string $pledge): RedirectResponse
+    {
+        $tenantId = $this->allow($request, 'donations.record');
+        $model = DonPledge::query()->where('tenant_id', $tenantId)->where('uuid', $pledge)->with('donor')->firstOrFail();
+
+        if ($model->status !== DonPledge::STATUS_ACTIVE || ! $giving->isEnabled($tenantId) || ! $model->donor->email) {
+            return back()->with('error', 'A payment link needs an active pledge, a donor email address and online payments switched on.');
+        }
+
+        return back()->with('pledge_link', ['donor' => $model->donor->name, 'url' => $giving->pledgeLink($model, (string) Tenant::query()->whereKey($tenantId)->value('slug'))]);
     }
 
     public function status(Request $request, PledgeService $pledges, string $pledge): RedirectResponse

@@ -7,6 +7,7 @@ namespace App\Modules\Donations\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant;
 use App\Modules\Donations\Models\DonCampaign;
+use App\Modules\Donations\Models\DonPledge;
 use App\Modules\Donations\Services\OnlineGivingService;
 use App\Modules\Finance\Services\FinanceSettings;
 use App\Modules\Finance\Support\ActivateTenant;
@@ -63,6 +64,23 @@ final class PublicDonationController extends Controller
             report($error);
 
             return back()->withInput()->with('error', 'We could not start the payment. Please try again in a moment.');
+        }
+    }
+
+    /** The donor opens the signed link staff sent them and goes straight to paying their pledge. */
+    public function payPledge(string $tenant, string $pledge, OnlineGivingService $giving): RedirectResponse
+    {
+        $model = $this->tenant($tenant);
+        $record = DonPledge::query()->where('tenant_id', $model->id)->where('uuid', $pledge)->firstOrFail();
+
+        try {
+            return redirect()->away($giving->pledgeCheckout($record, route('donations.public.thanks', ['tenant' => $model->slug])));
+        } catch (DomainException $error) {
+            return redirect()->route('donations.public.give', ['tenant' => $model->slug])->with('error', $error->getMessage());
+        } catch (Throwable $error) {
+            report($error);
+
+            return redirect()->route('donations.public.give', ['tenant' => $model->slug])->with('error', 'We could not start the payment. Please try again in a moment.');
         }
     }
 

@@ -9,6 +9,7 @@ use App\Modules\Donations\Mail\DonationReceiptMail;
 use App\Modules\Donations\Models\DonCampaign;
 use App\Modules\Donations\Models\DonDonation;
 use App\Modules\Donations\Models\DonDonor;
+use App\Modules\Donations\Models\DonPledge;
 use App\Modules\Finance\Contracts\FinancePaymentGateway;
 use App\Modules\Finance\Services\FinanceSettings;
 use App\Modules\Finance\Support\ActivateTenant;
@@ -23,6 +24,7 @@ final class OnlineGivingService
         private readonly FinancePaymentGateway $gateway,
         private readonly DonationService $donations,
         private readonly FinanceSettings $settings,
+        private readonly PledgeService $pledges,
     ) {}
 
     public function isEnabled(string $tenantId): bool
@@ -70,6 +72,48 @@ final class OnlineGivingService
         return $session['url'];
     }
 
+    /** Starts a checkout for the pledge's usual amount and returns the gateway URL. Used from a payment link sent to the donor. */
+    public function pledgeCheckout(DonPledge $pledge, string $callbackUrl): string
+    {
+        if (! $this->isEnabled($pledge->tenant_id)) {
+            throw new DomainException('Online giving is not set up for this organisation yet.');
+        }
+        if ($pledge->status !== DonPledge::STATUS_ACTIVE) {
+            throw new DomainException('This pledge is not active.');
+        }
+
+        $pledge->loadMissing('donor');
+        if (! $pledge->donor->email) {
+            throw new DomainException('This donor has no email address on file, so online payment is unavailable.');
+        }
+
+        return $this->gateway->initialize(
+            $pledge->tenant_id,
+            $pledge->donor->email,
+            $pledge->amount,
+            $this->settings->for($pledge->tenant_id)->base_currency,
+            $callbackUrl,
+            array_filter([
+                'type' => 'donation',
+                'tenant_id' => $pledge->tenant_id,
+                'donor_id' => (string) $pledge->donor_id,
+                'campaign_id' => $pledge->campaign_id ? (string) $pledge->campaign_id : null,
+                'pledge_id' => (string) $pledge->id,
+            ]),
+        )['url'];
+    }
+
+    /** A link the donor can open to pay the next instalment. It stays valid for 30 days. */
+    public function pledgeLink(DonPledge $pledge, string $tenantSlug): string
+    {
+        $generator = clone app('url');
+        $root = mb_rtrim((string) config('app.url'), '/');
+        $generator->forceRootUrl($root);
+        $generator->forceScheme(parse_url($root, PHP_URL_SCHEME) ?: 'https');
+
+        return $generator->temporarySignedRoute('donations.public.pledge', now()->addDays(30), ['tenant' => $tenantSlug, 'pledge' => $pledge->uuid]);
+    }
+
     /** Confirms the charge with the gateway and records the gift once. Null when it is not a paid donation for this tenant. */
     public function recordVerified(string $tenantId, string $reference): ?DonDonation
     {
@@ -91,13 +135,23 @@ final class OnlineGivingService
             return null;
         }
 
+        $pledge = isset($metadata['pledge_id'])
+            ? DonPledge::query()->where('tenant_id', $tenantId)->where('donor_id', $donor->id)->find((int) $metadata['pledge_id'])
+            : null;
+
         $gift = $this->donations->record($tenantId, $donor, $result['amount'], today(), array_filter([
             'method' => 'card',
+            'pledge_id' => $pledge?->id,
+            'fund_id' => $pledge?->fund_id,
             'reference' => $result['reference'],
             'gateway' => $this->gateway->key(),
             'gateway_reference' => $result['reference'],
             'campaign_id' => isset($metadata['campaign_id']) ? (int) $metadata['campaign_id'] : null,
         ], fn ($value): bool => $value !== null));
+
+        if ($pledge instanceof DonPledge && $gift->wasRecentlyCreated && $pledge->status === DonPledge::STATUS_ACTIVE) {
+            $this->pledges->advanceSchedule($pledge);
+        }
 
         $this->sendReceipt($gift, $donor);
 

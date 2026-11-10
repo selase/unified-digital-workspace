@@ -29,4 +29,5 @@ Route::post('/gifts/{donation}/void', [DonationController::class, 'void'])->name
 Route::get('/pledges', [PledgeController::class, 'index'])->name('pledges.index');
 Route::post('/pledges', [PledgeController::class, 'store'])->name('pledges.store');
 Route::post('/pledges/{pledge}/receive', [PledgeController::class, 'receive'])->name('pledges.receive');
+Route::post('/pledges/{pledge}/link', [PledgeController::class, 'link'])->name('pledges.link');
 Route::post('/pledges/{pledge}/status', [PledgeController::class, 'status'])->name('pledges.status');

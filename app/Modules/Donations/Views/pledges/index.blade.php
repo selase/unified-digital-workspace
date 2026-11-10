@@ -12,6 +12,14 @@
 
     @include('donations::partials.nav')
 
+    @if(session('pledge_link'))
+    <div class="rounded-lg bg-muted/30 p-4 text-sm flex flex-col md:flex-row md:items-center gap-3" x-data="{ copied: false }">
+        <div class="flex-1"><div class="font-medium text-foreground">Payment link for {{ session('pledge_link')['donor'] }}</div><div class="text-xs text-muted-foreground">Send this to the donor. It opens the payment page for their usual amount and stays valid for 30 days.</div></div>
+        <input class="kt-input md:w-96" readonly id="pledge-link" value="{{ session('pledge_link')['url'] }}" onclick="this.select()">
+        <button type="button" class="kt-btn kt-btn-outline" @click="navigator.clipboard.writeText(document.getElementById('pledge-link').value); copied = true"><span x-text="copied ? 'Copied' : 'Copy link'"></span></button>
+    </div>
+    @endif
+
     @can('donations.record')
     <form method="POST" action="{{ route('donations.pledges.store') }}" class="kt-card">
         @csrf
@@ -45,6 +53,7 @@
                             @can('donations.record')
                             @if($pledge->status === 'active')
                                 <div class="flex justify-end gap-1">
+                                    <form method="POST" action="{{ route('donations.pledges.link', $pledge->uuid) }}">@csrf<button class="kt-btn kt-btn-xs kt-btn-outline" type="submit">Payment link</button></form>
                                     <form method="POST" action="{{ route('donations.pledges.receive', $pledge->uuid) }}">@csrf<button class="kt-btn kt-btn-xs kt-btn-primary" type="submit">Receive instalment</button></form>
                                     <form method="POST" action="{{ route('donations.pledges.status', $pledge->uuid) }}">@csrf<input type="hidden" name="status" value="paused"><button class="kt-btn kt-btn-xs kt-btn-outline" type="submit">Pause</button></form>
                                     <form method="POST" action="{{ route('donations.pledges.status', $pledge->uuid) }}" onsubmit="return confirm('Cancel this pledge?')">@csrf<input type="hidden" name="status" value="cancelled"><button class="kt-btn kt-btn-xs kt-btn-outline" type="submit">Cancel</button></form>

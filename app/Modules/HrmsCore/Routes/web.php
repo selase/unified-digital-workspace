@@ -91,6 +91,7 @@ Route::prefix('recruitment')->name('recruitment.')->group(function (): void {
     Route::delete('/postings/{posting}', [HrmsRecruitmentController::class, 'destroyPosting'])->name('postings.destroy');
 
     Route::post('/postings/{posting}/applications', [HrmsRecruitmentController::class, 'storeApplication'])->name('applications.store');
+    Route::get('/documents/{document}', [HrmsRecruitmentController::class, 'downloadDocument'])->name('documents.download');
     Route::put('/applications/{application}/status', [HrmsRecruitmentController::class, 'updateApplicationStatus'])->name('applications.status');
     Route::delete('/applications/{application}', [HrmsRecruitmentController::class, 'destroyApplication'])->name('applications.destroy');
 

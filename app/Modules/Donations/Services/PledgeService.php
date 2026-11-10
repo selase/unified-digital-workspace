@@ -69,21 +69,27 @@ final class PledgeService
                 $userId,
             );
 
-            $next = match ($pledge->frequency) {
-                'monthly' => $pledge->next_due_on->copy()->addMonthNoOverflow(),
-                'quarterly' => $pledge->next_due_on->copy()->addMonthsNoOverflow(3),
-                'yearly' => $pledge->next_due_on->copy()->addYearNoOverflow(),
-                default => null,
-            };
-
-            if ($next === null || ($pledge->ends_on !== null && $next->gt($pledge->ends_on))) {
-                $pledge->forceFill(['status' => DonPledge::STATUS_COMPLETED, 'next_due_on' => null])->save();
-            } else {
-                $pledge->forceFill(['next_due_on' => $next])->save();
-            }
+            $this->advanceSchedule($pledge);
 
             return $gift;
         });
+    }
+
+    /** Moves the next due date forward after an instalment arrives, or completes a one-off or ended pledge. */
+    public function advanceSchedule(DonPledge $pledge): void
+    {
+        $next = match ($pledge->frequency) {
+            'monthly' => $pledge->next_due_on->copy()->addMonthNoOverflow(),
+            'quarterly' => $pledge->next_due_on->copy()->addMonthsNoOverflow(3),
+            'yearly' => $pledge->next_due_on->copy()->addYearNoOverflow(),
+            default => null,
+        };
+
+        if ($next === null || ($pledge->ends_on !== null && $next->gt($pledge->ends_on))) {
+            $pledge->forceFill(['status' => DonPledge::STATUS_COMPLETED, 'next_due_on' => null])->save();
+        } else {
+            $pledge->forceFill(['next_due_on' => $next])->save();
+        }
     }
 
     public function setStatus(DonPledge $pledge, string $status): DonPledge
