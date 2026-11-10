@@ -25,5 +25,12 @@ interface FinancePaymentGateway
      */
     public function verify(string $tenantId, string $reference): array;
 
+    /**
+     * Payouts from the gateway to the organisation's bank, newest first.
+     *
+     * @return list<array{id: string, settled_on: string, gross: int, fees: int, net: int, status: string}>
+     */
+    public function settlements(string $tenantId): array;
+
     public function isValidWebhookSignature(string $tenantId, string $payload, ?string $signature): bool;
 }

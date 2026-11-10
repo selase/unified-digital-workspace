@@ -7,7 +7,6 @@ namespace App\Modules\Finance\Services;
 use App\Modules\Finance\Models\FinContact;
 use App\Modules\Finance\Models\FinInvoice;
 use App\Modules\Finance\Models\FinInvoiceLine;
-use App\Modules\Finance\Models\FinTax;
 use DomainException;
 use Illuminate\Support\Facades\DB;
 
@@ -18,6 +17,7 @@ final class InvoiceService
         private readonly NumberSequence $numbers,
         private readonly FinanceSettings $settings,
         private readonly ChartOfAccounts $accounts,
+        private readonly TaxCalculator $taxes,
     ) {}
 
     /**
@@ -59,8 +59,8 @@ final class InvoiceService
             foreach (array_values($lines) as $position => $line) {
                 $quantity = (int) round(((float) $line['quantity']) * 1000);
                 $lineTotal = (int) round($quantity * (int) $line['unit_price'] / 1000);
-                $taxId = isset($line['tax_id']) ? (int) $line['tax_id'] : null;
-                $taxAmount = $this->taxFor($tenantId, $settings->tax_enabled, $taxId, $lineTotal);
+                $tax = $this->taxes->resolve($tenantId, $settings->tax_enabled, isset($line['tax_id']) ? (int) $line['tax_id'] : null, $lineTotal);
+                $taxAmount = $tax['amount'];
 
                 FinInvoiceLine::query()->create([
                     'invoice_id' => $invoice->id,
@@ -70,7 +70,7 @@ final class InvoiceService
                     'quantity_thousandths' => $quantity,
                     'unit_price' => (int) $line['unit_price'],
                     'account_id' => $line['account_id'] ?? null,
-                    'tax_id' => $taxAmount > 0 ? $taxId : null,
+                    'tax_id' => $tax['tax_id'],
                     'fund_id' => $line['fund_id'] ?? null,
                     'line_total' => $lineTotal,
                     'tax_amount' => $taxAmount,
@@ -147,6 +147,7 @@ final class InvoiceService
             }
 
             $invoice->save();
+            app(EvatQueue::class)->markIssued($invoice, (bool) $settings->evat_enabled);
 
             return $invoice;
         });
@@ -332,16 +333,5 @@ final class InvoiceService
             ->where('tenant_id', $note->tenant_id)
             ->lockForUpdate()
             ->find($note->credit_for_id);
-    }
-
-    private function taxFor(string $tenantId, bool $taxEnabled, ?int $taxId, int $lineTotal): int
-    {
-        if (! $taxEnabled || $taxId === null) {
-            return 0;
-        }
-
-        $tax = FinTax::query()->where('tenant_id', $tenantId)->where('is_active', true)->find($taxId);
-
-        return $tax instanceof FinTax ? (int) round($lineTotal * $tax->rate_basis_points / 10000) : 0;
     }
 }

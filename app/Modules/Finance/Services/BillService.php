@@ -25,11 +25,12 @@ final class BillService
         private readonly NumberSequence $numbers,
         private readonly FinanceSettings $settings,
         private readonly ChartOfAccounts $accounts,
+        private readonly TaxCalculator $taxes,
     ) {}
 
     /**
      * @param  array{issue_date: string, due_date?: string|null, vendor_reference?: string|null, notes?: string|null, type?: string, credit_for_id?: int|null}  $data
-     * @param  list<array{description: string, amount: int, account_id: int, fund_id?: int|null}>  $lines
+     * @param  list<array{description: string, amount: int, account_id: int, fund_id?: int|null, tax_id?: int|null}>  $lines
      */
     public function saveDraft(string $tenantId, FinContact $vendor, array $data, array $lines, ?FinBill $bill = null, ?string $userId = null): FinBill
     {
@@ -55,11 +56,13 @@ final class BillService
                 'currency' => $settings->base_currency,
                 'type' => $data['type'] ?? ($bill->exists ? $bill->type : FinBill::TYPE_BILL),
                 'credit_for_id' => $data['credit_for_id'] ?? ($bill->exists ? $bill->credit_for_id : null),
-                'total' => array_sum(array_column($lines, 'amount')),
             ])->save();
 
             FinBillLine::query()->where('bill_id', $bill->id)->delete();
+            $subtotal = 0;
+            $taxTotal = 0;
             foreach (array_values($lines) as $position => $line) {
+                $tax = $this->taxes->resolve($tenantId, $settings->tax_enabled, isset($line['tax_id']) ? (int) $line['tax_id'] : null, (int) $line['amount']);
                 FinBillLine::query()->create([
                     'bill_id' => $bill->id,
                     'position' => $position,
@@ -67,8 +70,14 @@ final class BillService
                     'amount' => $line['amount'],
                     'account_id' => $line['account_id'],
                     'fund_id' => $line['fund_id'] ?? null,
+                    'tax_id' => $tax['tax_id'],
+                    'tax_amount' => $tax['amount'],
                 ]);
+                $subtotal += (int) $line['amount'];
+                $taxTotal += $tax['amount'];
             }
+
+            $bill->forceFill(['subtotal' => $subtotal, 'tax_total' => $taxTotal, 'total' => $subtotal + $taxTotal])->save();
 
             return $bill->load('lines');
         });
@@ -110,6 +119,14 @@ final class BillService
                 'fund_id' => $line->fund_id,
                 $side => $line->amount,
             ])->all();
+            if ($bill->tax_total > 0) {
+                $journalLines[] = [
+                    'account_id' => $this->accounts->inputTaxAccount($tenantId)->id,
+                    'memo' => 'Input tax '.$bill->number,
+                    'contact_id' => $bill->contact_id,
+                    $side => $bill->tax_total,
+                ];
+            }
             $journalLines[] = [
                 'account_id' => $this->accounts->bySystemKey($tenantId, ChartOfAccounts::PAYABLE)->id,
                 ($isCredit ? 'debit' : 'credit') => $bill->total,
@@ -144,7 +161,7 @@ final class BillService
             $bill->tenant_id,
             $bill->contact,
             ['issue_date' => today()->toDateString(), 'vendor_reference' => 'Credit for '.$bill->number, 'type' => FinBill::TYPE_CREDIT, 'credit_for_id' => $bill->id],
-            $bill->lines->map(fn (FinBillLine $line): array => ['description' => $line->description, 'amount' => $line->amount, 'account_id' => $line->account_id, 'fund_id' => $line->fund_id])->all(),
+            $bill->lines->map(fn (FinBillLine $line): array => ['description' => $line->description, 'amount' => $line->amount, 'account_id' => $line->account_id, 'fund_id' => $line->fund_id, 'tax_id' => $line->tax_id])->all(),
             null,
             $userId,
         );

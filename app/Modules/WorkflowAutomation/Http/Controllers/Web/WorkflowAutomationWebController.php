@@ -25,7 +25,7 @@ final class WorkflowAutomationWebController extends Controller
         abort_if(! $user?->can('workflows.view') && ! $user?->can('workflows.manage'), 403);
 
         $tenant = $request->attributes->get('tenant');
-        $tenantId = $tenant instanceof Tenant ? (string) $tenant->id : (string) $request->user()?->tenant_id;
+        $tenantId = $tenant instanceof Tenant ? (string) $tenant->id : (string) (app(\App\Services\Tenancy\TenantContext::class)->activeTenantId() ?? $request->user()?->tenant_id);
 
         $rules = WorkflowRule::where('tenant_id', $tenantId)
             ->with(['creator:uuid,first_name,last_name,email'])
@@ -70,7 +70,7 @@ final class WorkflowAutomationWebController extends Controller
         abort_if(! $user?->can('workflows.manage'), 403);
 
         $tenant = $request->attributes->get('tenant');
-        $tenantId = $tenant instanceof Tenant ? (string) $tenant->id : (string) $request->user()?->tenant_id;
+        $tenantId = $tenant instanceof Tenant ? (string) $tenant->id : (string) (app(\App\Services\Tenancy\TenantContext::class)->activeTenantId() ?? $request->user()?->tenant_id);
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -132,7 +132,7 @@ final class WorkflowAutomationWebController extends Controller
         abort_if(! $user?->can('workflows.view') && ! $user?->can('workflows.manage'), 403);
 
         $tenant = $request->attributes->get('tenant');
-        $tenantId = $tenant instanceof Tenant ? (string) $tenant->id : (string) $request->user()?->tenant_id;
+        $tenantId = $tenant instanceof Tenant ? (string) $tenant->id : (string) (app(\App\Services\Tenancy\TenantContext::class)->activeTenantId() ?? $request->user()?->tenant_id);
 
         if ($rule->tenant_id !== $tenantId) {
             abort(404, 'Workflow rule not found in this organization.');
@@ -151,7 +151,7 @@ final class WorkflowAutomationWebController extends Controller
         abort_if(! $user?->can('workflows.manage'), 403);
 
         $tenant = $request->attributes->get('tenant');
-        $tenantId = $tenant instanceof Tenant ? (string) $tenant->id : (string) $request->user()?->tenant_id;
+        $tenantId = $tenant instanceof Tenant ? (string) $tenant->id : (string) (app(\App\Services\Tenancy\TenantContext::class)->activeTenantId() ?? $request->user()?->tenant_id);
 
         if ($rule->tenant_id !== $tenantId) {
             abort(404, 'Workflow rule not found in this organization.');
@@ -172,7 +172,7 @@ final class WorkflowAutomationWebController extends Controller
         abort_if(! $user?->can('workflows.execute') && ! $user?->can('workflows.manage'), 403);
 
         $tenant = $request->attributes->get('tenant');
-        $tenantId = $tenant instanceof Tenant ? (string) $tenant->id : (string) $request->user()?->tenant_id;
+        $tenantId = $tenant instanceof Tenant ? (string) $tenant->id : (string) (app(\App\Services\Tenancy\TenantContext::class)->activeTenantId() ?? $request->user()?->tenant_id);
 
         if ($rule->tenant_id !== $tenantId) {
             abort(404, 'Workflow rule not found in this organization.');
@@ -199,7 +199,7 @@ final class WorkflowAutomationWebController extends Controller
         abort_if(! $user?->can('workflows.manage'), 403);
 
         $tenant = $request->attributes->get('tenant');
-        $tenantId = $tenant instanceof Tenant ? (string) $tenant->id : (string) $request->user()?->tenant_id;
+        $tenantId = $tenant instanceof Tenant ? (string) $tenant->id : (string) (app(\App\Services\Tenancy\TenantContext::class)->activeTenantId() ?? $request->user()?->tenant_id);
 
         if ($rule->tenant_id !== $tenantId) {
             abort(404, 'Workflow rule not found in this organization.');

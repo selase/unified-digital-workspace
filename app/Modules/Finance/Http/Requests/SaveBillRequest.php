@@ -32,6 +32,7 @@ final class SaveBillRequest extends FormRequest
             'lines.*.description' => ['required', 'string', 'max:255'],
             'lines.*.amount' => ['required', 'numeric', 'gt:0'],
             'lines.*.account_id' => ['required', Rule::exists('fin_accounts', 'id')->where('tenant_id', $tenantId)->whereIn('type', ['expense', 'asset'])],
+            'lines.*.tax_id' => ['nullable', Rule::exists('fin_taxes', 'id')->where('tenant_id', $tenantId)],
             'lines.*.fund_id' => ['nullable', Rule::exists('fin_funds', 'id')->where('tenant_id', $tenantId)],
         ];
     }

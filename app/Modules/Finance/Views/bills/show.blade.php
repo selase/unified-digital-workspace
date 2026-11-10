@@ -44,6 +44,10 @@
                 @endforeach
                 </tbody>
                 <tfoot>
+                    @if($bill->tax_total > 0)
+                    <tr><td colspan="2" class="text-end">Before tax</td><td class="text-end">{{ Money::format($bill->subtotal, $currency) }}</td></tr>
+                    <tr><td colspan="2" class="text-end">Input tax</td><td class="text-end">{{ Money::format($bill->tax_total, $currency) }}</td></tr>
+                    @endif
                     <tr><td colspan="2" class="text-end font-semibold">Total</td><td class="text-end font-semibold">{{ Money::format($bill->total, $currency) }}</td></tr>
                     <tr><td colspan="2" class="text-end">Paid</td><td class="text-end">{{ Money::format($bill->amount_paid, $currency) }}</td></tr>
                     @if($bill->credits_applied > 0)<tr><td colspan="2" class="text-end">Credit notes applied</td><td class="text-end">{{ Money::format($bill->credits_applied, $currency) }}</td></tr>@endif
@@ -51,6 +55,11 @@
                 </tfoot>
             </table>
         </div>
+    </div>
+
+    <div class="kt-card">
+        <div class="kt-card-header"><h3 class="kt-card-title">Documents</h3></div>
+        <div class="kt-card-content">@include('finance::partials.attachments', ['type' => 'bill', 'parentUuid' => $bill->uuid, 'files' => $files, 'permission' => 'finance.bills.manage'])</div>
     </div>
 
     @can('finance.bills.manage')

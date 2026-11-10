@@ -43,13 +43,13 @@ final class SettingsController extends Controller
     {
         $tenantId = $this->tenantId($request);
         $model = $settings->for($tenantId);
-        $data = $request->safe()->except(['tax_enabled', 'base_currency']);
+        $data = $request->safe()->except(['tax_enabled', 'evat_enabled', 'base_currency']);
 
         if (! FinJournal::query()->where('tenant_id', $tenantId)->exists()) {
             $data['base_currency'] = mb_strtoupper((string) $request->validated('base_currency'));
         }
 
-        $model->update([...$data, 'tax_enabled' => $request->boolean('tax_enabled')]);
+        $model->update([...$data, 'tax_enabled' => $request->boolean('tax_enabled'), 'evat_enabled' => $request->boolean('evat_enabled')]);
 
         return back()->with('success', 'Settings saved.');
     }
@@ -66,6 +66,15 @@ final class SettingsController extends Controller
         FinFund::query()->create([...$data, 'tenant_id' => $tenantId, 'is_restricted' => $request->boolean('is_restricted')]);
 
         return back()->with('success', 'Fund added.');
+    }
+
+    public function registerForVat(Request $request, ChartOfAccounts $accounts, FinanceSettings $settings): RedirectResponse
+    {
+        $tenantId = $this->allow($request, 'finance.settings.manage');
+        $accounts->activateGhanaVat($tenantId);
+        $settings->for($tenantId)->forceFill(['tax_enabled' => true])->save();
+
+        return back()->with('success', 'VAT switched on with the Ghana rates (20% combined, zero-rated and exempt). Pick a tax on invoice, bill and expense lines. Add your TIN above so it prints on invoices.');
     }
 
     public function closeYear(Request $request, YearEndClose $close): RedirectResponse

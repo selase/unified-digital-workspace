@@ -17,6 +17,7 @@
         <input class="kt-input w-44" type="date" name="to" value="{{ $report['to']->toDateString() }}">
         <button class="kt-btn kt-btn-outline" type="submit">Show</button>
         <a class="kt-btn kt-btn-ghost" href="{{ request()->fullUrlWithQuery(['format' => 'csv']) }}">Download CSV</a>
+        <a class="kt-btn kt-btn-ghost" target="_blank" href="{{ request()->fullUrlWithQuery(['format' => 'pdf']) }}">Download PDF</a>
         <button type="button" class="kt-btn kt-btn-ghost" onclick="window.print()">Print / save as PDF</button>
     </form>
 

@@ -18,7 +18,7 @@
         <div class="kt-card-header"><h3 class="kt-card-title">Record an expense</h3></div>
         <div class="kt-card-content grid grid-cols-1 md:grid-cols-4 gap-3">
             <input class="kt-input" type="date" name="date" value="{{ old('date', today()->toDateString()) }}" required>
-            <input class="kt-input" type="number" step="0.01" min="0.01" name="amount" value="{{ old('amount') }}" placeholder="Amount" required>
+            <input class="kt-input" type="number" step="0.01" min="0.01" name="amount" value="{{ old('amount') }}" placeholder="Amount (before tax if you pick a tax)" required>
             <select class="kt-select" name="account_id" required>
                 <option value="">Expense account</option>
                 @foreach($expenseAccounts as $account)<option value="{{ $account->id }}" @selected((int) old('account_id') === $account->id)>{{ $account->code }} {{ $account->name }}</option>@endforeach
@@ -31,6 +31,9 @@
                 <option value="">Supplier (optional)</option>
                 @foreach($vendors as $vendor)<option value="{{ $vendor->id }}" @selected((int) old('contact_id') === $vendor->id)>{{ $vendor->name }}</option>@endforeach
             </select>
+            @if($taxes->isNotEmpty())
+            <select class="kt-select" name="tax_id"><option value="">No tax (amount is the total)</option>@foreach($taxes as $tax)<option value="{{ $tax->id }}">Add {{ $tax->name }}</option>@endforeach</select>
+            @endif
             @if($funds->isNotEmpty())
             <select class="kt-select" name="fund_id">
                 <option value="">No fund</option>
@@ -47,7 +50,7 @@
     <div class="kt-card">
         <div class="kt-card-table kt-scrollable-x-auto">
             <table class="kt-table table-auto kt-table-border">
-                <thead><tr><th>Number</th><th>Date</th><th>Account</th><th>Paid from</th><th>Supplier</th><th>Details</th><th class="text-end">Amount</th><th></th></tr></thead>
+                <thead><tr><th>Number</th><th>Date</th><th>Account</th><th>Paid from</th><th>Supplier</th><th>Details</th><th>Receipts</th><th class="text-end">Amount</th><th></th></tr></thead>
                 <tbody>
                 @forelse($expenses as $expense)
                     <tr class="{{ $expense->voided_at ? 'text-muted-foreground line-through' : '' }}">
@@ -57,6 +60,7 @@
                         <td>{{ $expense->paidFrom->name }}</td>
                         <td>{{ $expense->contact?->name }}</td>
                         <td>{{ $expense->description }} {{ $expense->reference ? '('.$expense->reference.')' : '' }}</td>
+                        <td>@include('finance::partials.attachments', ['type' => 'expense', 'parentUuid' => $expense->uuid, 'files' => $files->get($expense->id, collect()), 'permission' => 'finance.expenses.manage'])</td>
                         <td class="text-end">{{ Money::format($expense->amount, $currency) }}</td>
                         <td class="text-end">
                             @can('finance.expenses.manage')
@@ -67,7 +71,7 @@
                         </td>
                     </tr>
                 @empty
-                    <tr><td colspan="8" class="text-center text-muted-foreground py-6">No expenses yet.</td></tr>
+                    <tr><td colspan="9" class="text-center text-muted-foreground py-6">No expenses yet.</td></tr>
                 @endforelse
                 </tbody>
             </table>

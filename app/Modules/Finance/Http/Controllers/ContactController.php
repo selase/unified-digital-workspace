@@ -11,6 +11,7 @@ use App\Modules\Finance\Models\FinContact;
 use App\Modules\Finance\Services\CustomerStatement;
 use App\Modules\Finance\Services\FinanceSettings;
 use App\Modules\Finance\Services\ReportCsv;
+use App\Modules\Finance\Services\ReportPdf;
 use App\Modules\Finance\Support\ResolvesFinanceTenant;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
@@ -40,7 +41,7 @@ final class ContactController extends Controller
         ]);
     }
 
-    public function statement(StatementRangeRequest $request, CustomerStatement $statements, FinanceSettings $settings, ReportCsv $csv, string $contact): View|StreamedResponse
+    public function statement(StatementRangeRequest $request, CustomerStatement $statements, FinanceSettings $settings, ReportCsv $csv, string $contact): View|StreamedResponse|\Illuminate\Http\Response
     {
         $tenantId = $this->allow($request, 'finance.view');
         $model = FinContact::query()->where('tenant_id', $tenantId)->where('uuid', $contact)->firstOrFail();
@@ -49,8 +50,11 @@ final class ContactController extends Controller
         $report = $statements->build($model, $from, $to);
         $currency = $settings->for($tenantId)->base_currency;
 
-        if ($request->query('format') === 'csv') {
-            return $csv->download('statement-'.Str::slug($model->name).'.csv', $csv->statement($report, $currency));
+        if (in_array($request->query('format'), ['csv', 'pdf'], true)) {
+            $rows = $csv->statement($report, $currency);
+            $name = 'statement-'.Str::slug($model->name);
+
+            return $request->query('format') === 'pdf' ? app(ReportPdf::class)->download($tenantId, $name, $rows) : $csv->download($name.'.csv', $rows);
         }
 
         return view('finance::contacts.statement', ['report' => $report, 'currency' => $currency, 'profile' => $settings->for($tenantId)]);

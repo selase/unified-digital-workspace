@@ -1490,3 +1490,327 @@ describe('Finance customer statements', function (): void {
         expect($csv->headers->get('Content-Type'))->toContain('text/csv')->and($csv->streamedContent())->toContain('Statement of account');
     });
 });
+
+function vatBooks(): array
+{
+    [$user, $tenant] = createFinanceContext();
+    app(ChartOfAccounts::class)->ensureSeeded($tenant->id);
+    [$standard, $zero, $exempt] = app(ChartOfAccounts::class)->activateGhanaVat($tenant->id);
+    app(FinanceSettings::class)->for($tenant->id)->forceFill(['tax_enabled' => true])->save();
+
+    return [$user, $tenant, $standard, $zero, $exempt];
+}
+
+describe('Finance VAT', function (): void {
+    test('registering for VAT adds the Ghana codes and the input tax account, and is safe to repeat', function (): void {
+        [, $tenant, $standard, $zero, $exempt] = vatBooks();
+        $chart = app(ChartOfAccounts::class);
+        $chart->activateGhanaVat($tenant->id);
+
+        expect(FinTax::query()->where('tenant_id', $tenant->id)->count())->toBe(3)
+            ->and([$standard->category, $zero->category, $exempt->category])->toBe(['standard', 'zero_rated', 'exempt'])
+            ->and($standard->fresh()->rate_basis_points)->toBe(2000)->and($zero->fresh()->rate_basis_points)->toBe(0)
+            ->and($chart->inputTaxAccount($tenant->id)->system_key)->toBe('input_tax')
+            ->and(FinAccount::query()->where('tenant_id', $tenant->id)->where('code', '1300')->count())->toBe(1);
+    });
+
+    test('a bill with tax posts the net to expense, the tax to input VAT and the gross to payables', function (): void {
+        [, $tenant, $standard] = vatBooks();
+        $service = app(BillService::class);
+        $account = FinAccount::query()->where('tenant_id', $tenant->id)->where('code', '6200')->firstOrFail();
+        $bank = app(ChartOfAccounts::class)->bySystemKey($tenant->id, ChartOfAccounts::BANK);
+        $supplier = financeSupplier($tenant);
+
+        $bill = $service->saveDraft($tenant->id, $supplier, ['issue_date' => today()->toDateString()], [['description' => 'Hosting', 'amount' => 50_000, 'account_id' => $account->id, 'tax_id' => $standard->id]]);
+        expect($bill->subtotal)->toBe(50_000)->and($bill->tax_total)->toBe(10_000)->and($bill->total)->toBe(60_000);
+
+        $service->approve($bill);
+        expect(codeBalance($tenant, '6200'))->toBe(50_000)->and(codeBalance($tenant, '1300'))->toBe(10_000)->and(accountBalance($tenant, ChartOfAccounts::PAYABLE))->toBe(-60_000);
+
+        $service->pay($bill->fresh(), 60_000, today(), $bank->id);
+        expect($bill->fresh()->status)->toBe('paid');
+
+        $credit = $service->createCredit(tap($service->approve($service->saveDraft($tenant->id, $supplier, ['issue_date' => today()->toDateString()], [['description' => 'Other', 'amount' => 20_000, 'account_id' => $account->id, 'tax_id' => $standard->id]])), fn () => null));
+        $service->approve($credit);
+        expect(codeBalance($tenant, '1300'))->toBe(10_000 + 4_000 - 4_000)->and(codeBalance($tenant, '6200'))->toBe(50_000);
+
+        $trial = app(FinanceReports::class)->trialBalance($tenant->id);
+        expect($trial['debit'])->toBe($trial['credit']);
+    });
+
+    test('tax stays off for a bill when VAT is not switched on', function (): void {
+        [, $tenant] = createFinanceContext();
+        app(ChartOfAccounts::class)->ensureSeeded($tenant->id);
+        $standard = app(ChartOfAccounts::class)->activateGhanaVat($tenant->id)[0];
+        $account = FinAccount::query()->where('tenant_id', $tenant->id)->where('code', '6200')->firstOrFail();
+
+        $bill = app(BillService::class)->saveDraft($tenant->id, financeSupplier($tenant), ['issue_date' => today()->toDateString()], [['description' => 'x', 'amount' => 10_000, 'account_id' => $account->id, 'tax_id' => $standard->id]]);
+        expect($bill->tax_total)->toBe(0)->and($bill->total)->toBe(10_000);
+    });
+
+    test('an expense with tax records the gross paid and the tax recoverable', function (): void {
+        [, $tenant, $standard] = vatBooks();
+        $account = FinAccount::query()->where('tenant_id', $tenant->id)->where('code', '6300')->firstOrFail();
+        $bank = app(ChartOfAccounts::class)->bySystemKey($tenant->id, ChartOfAccounts::BANK);
+
+        $expense = app(ExpenseService::class)->record($tenant->id, 10_000, today(), $account->id, $bank->id, null, ['tax_id' => $standard->id]);
+        expect($expense->amount)->toBe(12_000)->and($expense->tax_amount)->toBe(2_000)
+            ->and(codeBalance($tenant, '6300'))->toBe(10_000)->and(codeBalance($tenant, '1300'))->toBe(2_000)->and(accountBalance($tenant, ChartOfAccounts::BANK))->toBe(-12_000);
+
+        app(ExpenseService::class)->void($expense);
+        expect(codeBalance($tenant, '1300'))->toBe(0)->and(accountBalance($tenant, ChartOfAccounts::BANK))->toBe(0);
+    });
+
+    test('zero-rated and exempt sales keep their code so they appear on the VAT summary', function (): void {
+        [, $tenant, $standard, $zero, $exempt] = vatBooks();
+        $customer = financeCustomer($tenant);
+
+        $invoice = app(InvoiceService::class)->saveDraft($tenant->id, $customer, ['issue_date' => today()->toDateString()], [
+            ['description' => 'Standard', 'quantity' => 1, 'unit_price' => 100_000, 'tax_id' => $standard->id],
+            ['description' => 'Export', 'quantity' => 1, 'unit_price' => 40_000, 'tax_id' => $zero->id],
+            ['description' => 'Medical', 'quantity' => 1, 'unit_price' => 30_000, 'tax_id' => $exempt->id],
+        ]);
+        expect($invoice->tax_total)->toBe(20_000)->and($invoice->lines->pluck('tax_id')->all())->toBe([$standard->id, $zero->id, $exempt->id]);
+    });
+
+    test('the VAT summary splits output and input tax by component, nets credits and reconciles with the ledger', function (): void {
+        [, $tenant, $standard, $zero] = vatBooks();
+        $customer = financeCustomer($tenant);
+        $invoices = app(InvoiceService::class);
+        $account = FinAccount::query()->where('tenant_id', $tenant->id)->where('code', '6200')->firstOrFail();
+        $bank = app(ChartOfAccounts::class)->bySystemKey($tenant->id, ChartOfAccounts::BANK);
+
+        $invoices->send($invoices->saveDraft($tenant->id, $customer, ['issue_date' => today()->toDateString()], [
+            ['description' => 'Standard', 'quantity' => 1, 'unit_price' => 100_000, 'tax_id' => $standard->id],
+            ['description' => 'Export', 'quantity' => 1, 'unit_price' => 40_000, 'tax_id' => $zero->id],
+        ]));
+        $bills = app(BillService::class);
+        $bills->approve($bills->saveDraft($tenant->id, financeSupplier($tenant), ['issue_date' => today()->toDateString()], [['description' => 'Hosting', 'amount' => 50_000, 'account_id' => $account->id, 'tax_id' => $standard->id]]));
+        app(ExpenseService::class)->record($tenant->id, 10_000, today(), $account->id, $bank->id, null, ['tax_id' => $standard->id]);
+
+        $report = app(App\Modules\Finance\Services\VatReport::class)->summary($tenant->id, today()->startOfYear(), today());
+
+        expect($report['sales'])->toBe(['standard' => 100_000, 'zero_rated' => 40_000, 'exempt' => 0, 'uncoded' => 0])
+            ->and($report['purchases']['standard'])->toBe(60_000)
+            ->and($report['output']['total'])->toBe(20_000)->and($report['output']['components'])->toBe(['VAT' => 15_000, 'NHIL' => 2_500, 'GETFund' => 2_500])
+            ->and($report['input']['total'])->toBe(12_000)->and($report['input']['components'])->toBe(['VAT' => 9_000, 'NHIL' => 1_500, 'GETFund' => 1_500])
+            ->and($report['net_payable'])->toBe(8_000)->and($report['reconciled'])->toBeTrue()
+            ->and(array_sum($report['input']['components']))->toBe($report['input']['total']);
+
+        app(LedgerService::class)->post($tenant->id, today(), [
+            ['account_id' => app(ChartOfAccounts::class)->bySystemKey($tenant->id, ChartOfAccounts::TAX_PAYABLE)->id, 'credit' => 500],
+            ['account_id' => $bank->id, 'debit' => 500],
+        ], 'Manual tax adjustment');
+        expect(app(App\Modules\Finance\Services\VatReport::class)->summary($tenant->id, today()->startOfYear(), today())['reconciled'])->toBeFalse();
+    });
+
+    test('a customer credit note reduces output tax on the summary', function (): void {
+        [, $tenant, $standard] = vatBooks();
+        $customer = financeCustomer($tenant);
+        $invoice = issueInvoice($tenant, $customer, 100_000, 1, ['tax_id' => $standard->id]);
+        $service = app(InvoiceService::class);
+        $service->send($service->createCreditNote($invoice->fresh()));
+
+        $report = app(App\Modules\Finance\Services\VatReport::class)->summary($tenant->id, today()->startOfYear(), today());
+        expect($report['output']['total'])->toBe(0)->and($report['sales']['standard'])->toBe(0)->and($report['reconciled'])->toBeTrue();
+    });
+
+    test('the VAT screens: switch on, report, CSV and form fields', function (): void {
+        [$user, $tenant] = createFinanceContext();
+        app(ChartOfAccounts::class)->ensureSeeded($tenant->id);
+        $this->actingAs($user)->withSession(['active_tenant_id' => $tenant->id]);
+
+        $this->get(route('finance.settings.edit'))->assertOk()->assertSee('Switch on VAT');
+        $this->get(route('finance.reports.vat'))->assertOk()->assertSee('VAT is switched off');
+        $this->post(route('finance.settings.register-vat'))->assertSessionHas('success');
+        expect(app(FinanceSettings::class)->for($tenant->id)->tax_enabled)->toBeTrue();
+
+        $this->get(route('finance.reports.vat'))->assertOk()->assertSee('Output tax')->assertDontSee('VAT is switched off');
+        $csv = $this->get(route('finance.reports.vat', ['format' => 'csv']))->assertOk();
+        expect($csv->streamedContent())->toContain('VAT summary');
+        $this->get(route('finance.bills.create'))->assertOk()->assertSee('No tax');
+        $this->get(route('finance.expenses.index'))->assertOk()->assertSee('Add VAT');
+    });
+});
+
+describe('Finance e-VAT readiness', function (): void {
+    test('with e-VAT off nothing changes, and with it on a taxed invoice waits for submission', function (): void {
+        [, $tenant, $standard] = vatBooks();
+        $customer = financeCustomer($tenant);
+
+        $plain = issueInvoice($tenant, $customer, 100_000, 1, ['tax_id' => $standard->id]);
+        expect($plain->fresh()->evat_status)->toBe('not_required');
+
+        app(FinanceSettings::class)->for($tenant->id)->forceFill(['evat_enabled' => true])->save();
+        $taxed = issueInvoice($tenant, $customer, 100_000, 1, ['tax_id' => $standard->id]);
+        $untaxed = issueInvoice($tenant, $customer, 50_000);
+
+        expect($taxed->fresh()->evat_status)->toBe('pending')->and($taxed->fresh()->evat_message)->toContain('No e-VAT connection')
+            ->and($untaxed->fresh()->evat_status)->toBe('not_required');
+    });
+
+    test('a connected provider submits and records the reference, a failing one is retried later', function (): void {
+        [$user, $tenant, $standard] = vatBooks();
+        app(FinanceSettings::class)->for($tenant->id)->forceFill(['evat_enabled' => true])->save();
+        $customer = financeCustomer($tenant);
+        $state = new ArrayObject(['calls' => 0]);
+        app()->bind(App\Modules\Finance\Contracts\EvatProvider::class, fn () => new class($state) implements App\Modules\Finance\Contracts\EvatProvider
+        {
+            public function __construct(private ArrayObject $state) {}
+
+            public function isConfigured(): bool
+            {
+                return true;
+            }
+
+            public function submit(FinInvoice $invoice): array
+            {
+                $this->state['calls'] = $this->state['calls'] + 1;
+
+                return $this->state['calls'] === 1 ? ['status' => 'failed', 'reference' => null, 'message' => 'Timeout'] : ['status' => 'submitted', 'reference' => 'GRA-'.$invoice->number, 'message' => null];
+            }
+        });
+
+        $invoice = issueInvoice($tenant, $customer, 100_000, 1, ['tax_id' => $standard->id]);
+        expect($invoice->fresh()->evat_status)->toBe('failed');
+
+        expect(app(App\Modules\Finance\Services\EvatQueue::class)->retryPending($tenant->id))->toBe(1)
+            ->and($invoice->fresh()->evat_status)->toBe('submitted')->and($invoice->fresh()->evat_reference)->toBe('GRA-'.$invoice->number)
+            ->and($invoice->fresh()->evat_submitted_at)->not->toBeNull();
+
+        $this->actingAs($user)->withSession(['active_tenant_id' => $tenant->id])->get(route('finance.invoices.show', $invoice->uuid))->assertOk()->assertSee('GRA-'.$invoice->number);
+    });
+
+    test('the setting is saved from the settings screen', function (): void {
+        [$user, $tenant] = createFinanceContext();
+        app(ChartOfAccounts::class)->ensureSeeded($tenant->id);
+        $this->actingAs($user)->withSession(['active_tenant_id' => $tenant->id]);
+
+        $this->put(route('finance.settings.update'), ['base_currency' => 'GHS', 'fiscal_year_start_month' => 1, 'default_payment_terms_days' => 14, 'evat_enabled' => '1'])->assertSessionHas('success');
+        expect(app(FinanceSettings::class)->for($tenant->id)->evat_enabled)->toBeTrue();
+        $this->get(route('finance.settings.edit'))->assertOk()->assertSee('Prepare invoices for GRA e-VAT');
+    });
+});
+
+describe('Finance gateway payouts', function (): void {
+    test('importing finds new successful payouts once and posting moves clearing to bank and fees to charges', function (): void {
+        [, $tenant] = createFinanceContext();
+        connectPaystack($tenant);
+        app(ChartOfAccounts::class)->ensureSeeded($tenant->id);
+        $customer = financeCustomer($tenant);
+        $invoice = issueInvoice($tenant, $customer, 100_000);
+        app(PaymentService::class)->record($tenant->id, $customer, 100_000, today(), [$invoice->id => 100_000], ['gateway' => 'paystack', 'gateway_reference' => 'ref_pay']);
+        expect(accountBalance($tenant, ChartOfAccounts::GATEWAY_CLEARING))->toBe(100_000);
+
+        Http::fake(['api.paystack.co/settlement*' => Http::response(['data' => [
+            ['id' => 5501, 'total_amount' => 100_000, 'total_fees' => 1_950, 'total_processed' => 98_050, 'settlement_date' => today()->toDateString().'T00:00:00.000Z', 'status' => 'success'],
+            ['id' => 5502, 'total_amount' => 40_000, 'total_fees' => 600, 'total_processed' => 39_400, 'settlement_date' => today()->toDateString().'T00:00:00.000Z', 'status' => 'pending'],
+        ]])]);
+        $service = app(App\Modules\Finance\Services\SettlementService::class);
+
+        expect($service->import($tenant->id))->toBe(1)->and($service->import($tenant->id))->toBe(0);
+
+        $settlement = App\Modules\Finance\Models\FinSettlement::query()->firstOrFail();
+        expect($settlement->external_id)->toBe('5501')->and($settlement->net)->toBe(98_050);
+
+        $service->post($settlement);
+        expect(accountBalance($tenant, ChartOfAccounts::GATEWAY_CLEARING))->toBe(0)->and(accountBalance($tenant, ChartOfAccounts::BANK))->toBe(98_050)
+            ->and(codeBalance($tenant, '6400'))->toBe(1_950)->and($settlement->fresh()->status)->toBe('posted')
+            ->and(fn () => $service->post($settlement->fresh()))->toThrow(DomainException::class, 'already in the books');
+
+        $trial = app(FinanceReports::class)->trialBalance($tenant->id);
+        expect($trial['debit'])->toBe($trial['credit']);
+    });
+
+    test('a payout that does not add up is refused and importing needs a connected gateway', function (): void {
+        [, $tenant] = createFinanceContext();
+        app(ChartOfAccounts::class)->ensureSeeded($tenant->id);
+        $service = app(App\Modules\Finance\Services\SettlementService::class);
+
+        expect(fn () => $service->import($tenant->id))->toThrow(DomainException::class, 'not set up');
+
+        $bad = App\Modules\Finance\Models\FinSettlement::query()->create(['tenant_id' => $tenant->id, 'gateway' => 'paystack', 'external_id' => '9', 'settled_on' => today(), 'gross' => 1_000, 'fees' => 100, 'net' => 950, 'status' => 'imported']);
+        expect(fn () => $service->post($bad))->toThrow(DomainException::class, 'does not add up');
+    });
+
+    test('the payouts screen lists, fetches and records, and needs the bank permission to act', function (): void {
+        [$user, $tenant] = createFinanceContext();
+        connectPaystack($tenant);
+        app(ChartOfAccounts::class)->ensureSeeded($tenant->id);
+        Http::fake(['api.paystack.co/settlement*' => Http::response(['data' => [['id' => 7, 'total_amount' => 50_000, 'total_fees' => 750, 'total_processed' => 49_250, 'settlement_date' => today()->toDateString(), 'status' => 'success']]])]);
+        $this->actingAs($user)->withSession(['active_tenant_id' => $tenant->id]);
+
+        $this->get(route('finance.settlements.index'))->assertOk()->assertSee('Fetch payouts');
+        $this->post(route('finance.settlements.import'))->assertSessionHas('success');
+        $settlement = App\Modules\Finance\Models\FinSettlement::query()->firstOrFail();
+        $this->get(route('finance.settlements.index'))->assertOk()->assertSee('Record payout');
+        $this->post(route('finance.settlements.post', $settlement->uuid))->assertSessionHas('success');
+
+        $user->revokePermissionTo('finance.bank.manage');
+        app(Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+        $this->post(route('finance.settlements.import'))->assertForbidden();
+    });
+});
+
+describe('Finance attachments', function (): void {
+    test('a receipt can be attached to a bill and an expense, downloaded and removed', function (): void {
+        Illuminate\Support\Facades\Storage::fake('tenant');
+        [$user, $tenant] = createFinanceContext();
+        app(ChartOfAccounts::class)->ensureSeeded($tenant->id);
+        $bill = app(BillService::class)->approve(draftBill($tenant, financeSupplier($tenant), 10_000));
+        $account = FinAccount::query()->where('tenant_id', $tenant->id)->where('code', '6300')->firstOrFail();
+        $bank = app(ChartOfAccounts::class)->bySystemKey($tenant->id, ChartOfAccounts::BANK);
+        $expense = app(ExpenseService::class)->record($tenant->id, 5_000, today(), $account->id, $bank->id);
+        $this->actingAs($user)->withSession(['active_tenant_id' => $tenant->id]);
+
+        $this->post(route('finance.attachments.store', ['bill', $bill->uuid]), ['file' => Illuminate\Http\UploadedFile::fake()->create('invoice.pdf', 100, 'application/pdf')])->assertSessionHas('success');
+        $this->post(route('finance.attachments.store', ['expense', $expense->uuid]), ['file' => Illuminate\Http\UploadedFile::fake()->image('receipt.jpg')])->assertSessionHas('success');
+        expect(App\Modules\Finance\Models\FinAttachment::query()->count())->toBe(2);
+
+        $file = App\Modules\Finance\Models\FinAttachment::query()->where('attachable_type', 'bill')->firstOrFail();
+        Illuminate\Support\Facades\Storage::disk('tenant')->assertExists($file->path);
+        $this->get(route('finance.bills.show', $bill->uuid))->assertOk()->assertSee('invoice.pdf');
+        $this->get(route('finance.expenses.index'))->assertOk()->assertSee('receipt.jpg');
+        $this->get(route('finance.attachments.download', $file->uuid))->assertOk()->assertHeader('content-type', 'application/pdf');
+
+        $this->delete(route('finance.attachments.destroy', $file->uuid))->assertSessionHas('success');
+        Illuminate\Support\Facades\Storage::disk('tenant')->assertMissing($file->path);
+        expect(App\Modules\Finance\Models\FinAttachment::query()->count())->toBe(1);
+    });
+
+    test('unsafe or oversized files are refused and attachments stay private to the organisation', function (): void {
+        Illuminate\Support\Facades\Storage::fake('tenant');
+        [$user, $tenant] = createFinanceContext();
+        app(ChartOfAccounts::class)->ensureSeeded($tenant->id);
+        $bill = app(BillService::class)->approve(draftBill($tenant, financeSupplier($tenant), 10_000));
+        $this->actingAs($user)->withSession(['active_tenant_id' => $tenant->id]);
+        $url = route('finance.attachments.store', ['bill', $bill->uuid]);
+
+        $this->post($url, ['file' => Illuminate\Http\UploadedFile::fake()->create('virus.exe', 10)])->assertSessionHas('error');
+        $this->post($url, ['file' => Illuminate\Http\UploadedFile::fake()->create('huge.pdf', 6_000, 'application/pdf')])->assertSessionHasErrors('file');
+        $this->post(route('finance.attachments.store', ['invoice', $bill->uuid]), ['file' => Illuminate\Http\UploadedFile::fake()->create('a.pdf', 10)])->assertClientError();
+        expect(App\Modules\Finance\Models\FinAttachment::query()->count())->toBe(0);
+
+        $foreign = App\Modules\Finance\Models\FinAttachment::query()->create(['tenant_id' => (string) Str::uuid(), 'attachable_type' => 'bill', 'attachable_id' => 1, 'name' => 'x.pdf', 'path' => 'p', 'mime' => 'application/pdf', 'size' => 1]);
+        $this->get(route('finance.attachments.download', $foreign->uuid))->assertNotFound();
+    });
+});
+
+describe('Finance PDF exports', function (): void {
+    test('every report and the customer statement can be downloaded as a PDF', function (): void {
+        [$tenant] = statementBooks();
+        $user = User::query()->latest('id')->first();
+        $customer = financeCustomer($tenant);
+        issueInvoice($tenant, $customer, 10_000);
+        $this->actingAs($user)->withSession(['active_tenant_id' => $tenant->id]);
+
+        foreach (['profit-and-loss', 'balance-sheet', 'cash-flow', 'funds', 'vat', 'aged-receivables', 'aged-payables', 'trial-balance'] as $report) {
+            $response = $this->get(route('finance.reports.'.$report, ['format' => 'pdf']))->assertOk();
+            expect($response->headers->get('Content-Type'))->toContain('application/pdf')->and(mb_substr($response->getContent(), 0, 4))->toBe('%PDF');
+        }
+
+        $statement = $this->get(route('finance.contacts.statement', [$customer->uuid, 'format' => 'pdf']))->assertOk();
+        expect(mb_substr($statement->getContent(), 0, 4))->toBe('%PDF');
+        $this->get(route('finance.reports.profit-and-loss'))->assertOk()->assertSee('Download PDF');
+    });
+});

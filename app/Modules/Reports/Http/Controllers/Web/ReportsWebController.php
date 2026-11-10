@@ -28,7 +28,7 @@ final class ReportsWebController extends Controller
         abort_if(! $user?->can('reports.view') && ! $user?->can('reports.manage'), 403);
 
         $tenant = $request->attributes->get('tenant');
-        $tenantId = $tenant instanceof Tenant ? (string) $tenant->id : (string) $request->user()?->tenant_id;
+        $tenantId = $tenant instanceof Tenant ? (string) $tenant->id : (string) (app(\App\Services\Tenancy\TenantContext::class)->activeTenantId() ?? $request->user()?->tenant_id);
 
         $reports = ReportDefinition::where('tenant_id', $tenantId)
             ->with(['creator:uuid,first_name,last_name,email'])
@@ -56,7 +56,7 @@ final class ReportsWebController extends Controller
         abort_if(! ($user?->can('reports.create') || $user?->can('reports.manage')), 403);
 
         $tenant = $request->attributes->get('tenant');
-        $tenantId = $tenant instanceof Tenant ? (string) $tenant->id : (string) $request->user()?->tenant_id;
+        $tenantId = $tenant instanceof Tenant ? (string) $tenant->id : (string) (app(\App\Services\Tenancy\TenantContext::class)->activeTenantId() ?? $request->user()?->tenant_id);
 
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
@@ -109,7 +109,7 @@ final class ReportsWebController extends Controller
         abort_if(! $user?->can('reports.view') && ! $user?->can('reports.manage'), 403);
 
         $tenant = $request->attributes->get('tenant');
-        $tenantId = $tenant instanceof Tenant ? (string) $tenant->id : (string) $user->tenant_id;
+        $tenantId = $tenant instanceof Tenant ? (string) $tenant->id : (string) (app(\App\Services\Tenancy\TenantContext::class)->activeTenantId() ?? $user->tenant_id);
 
         if ($report->tenant_id !== $tenantId) {
             abort(404, 'Report not found in this tenant.');
@@ -135,7 +135,7 @@ final class ReportsWebController extends Controller
         abort_if(! $user?->can('reports.view') && ! $user?->can('reports.manage'), 403);
 
         $tenant = $request->attributes->get('tenant');
-        $tenantId = $tenant instanceof Tenant ? (string) $tenant->id : (string) $user->tenant_id;
+        $tenantId = $tenant instanceof Tenant ? (string) $tenant->id : (string) (app(\App\Services\Tenancy\TenantContext::class)->activeTenantId() ?? $user->tenant_id);
 
         if ($report->tenant_id !== $tenantId) {
             abort(404, 'Report not found in this tenant.');
@@ -159,7 +159,7 @@ final class ReportsWebController extends Controller
         abort_if(! $user?->can('reports.view') && ! $user?->can('reports.manage'), 403);
 
         $tenant = $request->attributes->get('tenant');
-        $tenantId = $tenant instanceof Tenant ? (string) $tenant->id : (string) $user->tenant_id;
+        $tenantId = $tenant instanceof Tenant ? (string) $tenant->id : (string) (app(\App\Services\Tenancy\TenantContext::class)->activeTenantId() ?? $user->tenant_id);
 
         if ($report->tenant_id !== $tenantId) {
             abort(404, 'Report not found in this tenant.');
@@ -181,7 +181,7 @@ final class ReportsWebController extends Controller
     {
         $user = $request->user();
         $tenant = $request->attributes->get('tenant');
-        $tenantId = $tenant instanceof Tenant ? (string) $tenant->id : (string) $request->user()?->tenant_id;
+        $tenantId = $tenant instanceof Tenant ? (string) $tenant->id : (string) (app(\App\Services\Tenancy\TenantContext::class)->activeTenantId() ?? $request->user()?->tenant_id);
 
         if ($report->tenant_id !== $tenantId) {
             abort(404, 'Report not found in this tenant.');

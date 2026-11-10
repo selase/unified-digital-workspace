@@ -8,10 +8,12 @@ use App\Http\Controllers\Controller;
 use App\Modules\Finance\Http\Requests\RecordBillPaymentRequest;
 use App\Modules\Finance\Http\Requests\SaveBillRequest;
 use App\Modules\Finance\Models\FinAccount;
+use App\Modules\Finance\Models\FinAttachment;
 use App\Modules\Finance\Models\FinBill;
 use App\Modules\Finance\Models\FinBillPayment;
 use App\Modules\Finance\Models\FinContact;
 use App\Modules\Finance\Models\FinFund;
+use App\Modules\Finance\Models\FinTax;
 use App\Modules\Finance\Services\BillService;
 use App\Modules\Finance\Services\FinanceSettings;
 use App\Modules\Finance\Support\Money;
@@ -68,6 +70,7 @@ final class BillController extends Controller
         return view('finance::bills.show', [
             'bill' => $model,
             'currency' => $settings->for($tenantId)->base_currency,
+            'files' => FinAttachment::query()->where('tenant_id', $tenantId)->where('attachable_type', 'bill')->where('attachable_id', $model->id)->get(),
             'paymentAccounts' => FinAccount::query()->where('tenant_id', $tenantId)->where('type', 'asset')->where('is_active', true)->orderBy('code')->get(),
         ]);
     }
@@ -204,6 +207,7 @@ final class BillController extends Controller
             'amount' => Money::toMinor($line['amount']),
             'account_id' => (int) $line['account_id'],
             'fund_id' => isset($line['fund_id']) && $line['fund_id'] !== '' ? (int) $line['fund_id'] : null,
+            'tax_id' => isset($line['tax_id']) && $line['tax_id'] !== '' ? (int) $line['tax_id'] : null,
         ])->values()->all();
     }
 
@@ -218,6 +222,7 @@ final class BillController extends Controller
             'vendors' => FinContact::query()->where('tenant_id', $tenantId)->where('is_vendor', true)->where('is_active', true)->orderBy('name')->get(),
             'expenseAccounts' => FinAccount::query()->where('tenant_id', $tenantId)->whereIn('type', ['expense', 'asset'])->where('is_active', true)->orderBy('code')->get(),
             'funds' => FinFund::query()->where('tenant_id', $tenantId)->where('is_active', true)->orderBy('name')->get(),
+            'taxes' => $settings->for($tenantId)->tax_enabled ? FinTax::query()->where('tenant_id', $tenantId)->where('is_active', true)->orderBy('name')->get() : collect(),
         ];
     }
 }

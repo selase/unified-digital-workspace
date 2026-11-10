@@ -208,7 +208,11 @@ _Source: `app/Modules/Store/Routes/web.php`; `Http/Controllers/Web/StoreWebContr
 3. Share the payment link or email the invoice. When the customer pays through Paystack the payment is recorded automatically; otherwise open Payments and record a bank, cash or mobile money payment and apply it to the invoice.
 4. Mark suppliers in Contacts, then record what you owe under Bills (approve to post it, then pay it) and small purchases under Expenses. Under Banking, add your bank account, import its CSV statement and match each line to the books. Reports has profit and loss, balance sheet, cash flow, fund report, aged receivables and payables, and the trial balance; Recurring schedules repeat invoices.
 
-**Limits:** posted entries cannot be edited; correct them by voiding or reversing. Online payment needs the organisation's own Paystack keys. Tax stays off until the organisation is VAT-registered and switches it on in Settings. Supplier credit notes, receipt attachments, budgets, report export and VAT returns are not part of this release.
+5. Not sure about VAT yet? Under Settings choose "Switch on VAT" to plan as if you are registered: it adds the Ghana tax codes, lets you pick a tax on invoice, bill and expense lines, and fills Reports, VAT (output tax on sales less input tax on purchases, split by VAT, NHIL and GETFund). You can switch it off again.
+6. Attach receipts and supplier documents to bills and expenses. Under Payouts, fetch Paystack payouts and record each one: the money moves from the Paystack clearing account to the bank and Paystack's fees are booked as a charge.
+7. Every report downloads as CSV or PDF. Customer statements are on the Contacts list. At year end, Settings has a guided "Close a financial year" that moves profit to retained earnings and locks the books.
+
+**Limits:** posted entries cannot be edited; correct them by voiding or reversing. Online payment needs the organisation's own Paystack keys. The VAT report prepares the figures for a return but does not file one. GRA e-VAT: you can switch on "prepare invoices for e-VAT", which marks each taxed invoice as waiting; there is no certified GRA connection yet, so nothing is submitted until one is set up. Multi-currency, inventory and billing from timesheets are not included.
 
 _Source: `app/Modules/Finance/Routes/web.php`; `Http/Controllers/*Controller.php`; `Services/{LedgerService,InvoiceService,PaymentService}.php`; finance views._
 
