@@ -1,6 +1,6 @@
 {
     "version": 2,
-    "source_sha256": "fd18b5dd1723dda85950ecd43458f693d84a5efcfc6a7ec40327eb0dc22bb3aa",
+    "source_sha256": "77ee9cd8397923e8625ba2a178015547b1652a2bbcc805ceadd30bbba0421eae",
     "source_files": {
         ".agent/rules/path-to-php.md": "c559a7b17fe39107f8e1a69a9b93fe720c8d11b947d9decaf6541ed429714359",
         ".agent/rules/testing.md": "8289cda546c31080a26018179a337bafa1f65c0967dd23d2d1561d6c9b0a9c1f",
@@ -1631,7 +1631,7 @@
         "app/Services/Billing/SubscriptionProvisioningService.php": "b24eb520117c1becbc88ffeb823d697e69a2f578f074dfa33d5edd9ef2fc1b89",
         "app/Services/Llm/LlmUsageService.php": "36dea63b421b4b4011e32069781c957164492783a76c52dc357aa8d8961a69fb",
         "app/Services/ModuleManager.php": "072a1b1305853e6d70867a5987a94a5acfb6a971de9f4a053da919fcc8ea9975",
-        "app/Services/Navigation/WorkspaceNavigation.php": "1aca3c15d014c98ce314d2b43685764ce35d247bfa7898b85b7c8d9e3f783cac",
+        "app/Services/Navigation/WorkspaceNavigation.php": "6da941284f0693bb0e0c02f413b6ce5391d03e3a04c21a8ef14d7f2fd17bd7e9",
         "app/Services/Payment/PaystackGateway.php": "5c3708c291f2aecd26d8dfe095a1634afc6e53aacef09f0bdf3ff5d54ecc7936",
         "app/Services/Payment/StripeGateway.php": "9fc201f169b7eed1b9c4cdfa118ffb951b56cda7c8339f3f5670622001f942b4",
         "app/Services/Search/SearchResult.php": "9875da0b8356f228d098f7eb471a583c7d477091b226cdf6be727032338a0e5d",
