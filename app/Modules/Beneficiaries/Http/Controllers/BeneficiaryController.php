@@ -5,14 +5,19 @@ declare(strict_types=1);
 namespace App\Modules\Beneficiaries\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Modules\Beneficiaries\Http\Requests\AddDocumentRequest;
 use App\Modules\Beneficiaries\Http\Requests\AddNoteRequest;
 use App\Modules\Beneficiaries\Http\Requests\OpenCaseRequest;
 use App\Modules\Beneficiaries\Http\Requests\RecordConsentRequest;
 use App\Modules\Beneficiaries\Http\Requests\RecordServiceRequest;
+use App\Modules\Beneficiaries\Http\Requests\ReferRequest;
 use App\Modules\Beneficiaries\Http\Requests\SaveBeneficiaryRequest;
+use App\Modules\Beneficiaries\Http\Requests\UpdateReferralRequest;
 use App\Modules\Beneficiaries\Models\BenAccessLog;
 use App\Modules\Beneficiaries\Models\BenBeneficiary;
 use App\Modules\Beneficiaries\Models\BenCase;
+use App\Modules\Beneficiaries\Models\BenDocument;
+use App\Modules\Beneficiaries\Models\BenReferral;
 use App\Modules\Beneficiaries\Services\BeneficiaryService;
 use App\Modules\Finance\Support\Money;
 use App\Modules\Finance\Support\ResolvesFinanceTenant;
@@ -21,6 +26,8 @@ use DomainException;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class BeneficiaryController extends Controller
 {
@@ -78,6 +85,8 @@ final class BeneficiaryController extends Controller
             'beneficiary' => $model,
             'cases' => $cases,
             'services' => $model->services()->latest('delivered_on')->limit(50)->get(),
+            'documents' => $mayViewPersonal ? $model->documents()->latest()->get() : collect(),
+            'referrals' => $model->referrals()->latest('referred_on')->get(),
             'mayViewPersonal' => $mayViewPersonal,
         ]);
     }
@@ -183,6 +192,70 @@ final class BeneficiaryController extends Controller
         }
 
         return back()->with('success', 'Note added.');
+    }
+
+    public function addDocument(AddDocumentRequest $request, BeneficiaryService $service, string $beneficiary): RedirectResponse
+    {
+        try {
+            $service->attachDocument($this->find($this->tenantId($request), $beneficiary), (string) $request->validated('kind'), $request->file('file'), $this->actorId($request));
+        } catch (DomainException $error) {
+            return back()->with('error', $error->getMessage());
+        }
+
+        return back()->with('success', 'Document attached.');
+    }
+
+    /** Only staff who may see personal details can open a document, and each opening is logged. */
+    public function downloadDocument(Request $request, BeneficiaryService $service, string $document): StreamedResponse
+    {
+        $tenantId = $this->allow($request, 'beneficiaries.confidential.view');
+        $model = BenDocument::query()->where('tenant_id', $tenantId)->where('uuid', $document)->with('beneficiary')->firstOrFail();
+        abort_unless(Storage::disk('tenant')->exists($model->path), 404);
+        $service->log($tenantId, $this->actorId($request), 'document_viewed', $model->beneficiary, $model->kind);
+
+        return Storage::disk('tenant')->download($model->path, $model->name, ['Content-Type' => $model->mime]);
+    }
+
+    public function removeDocument(Request $request, BeneficiaryService $service, string $document): RedirectResponse
+    {
+        $tenantId = $this->allow($request, 'beneficiaries.manage');
+        $service->removeDocument(BenDocument::query()->where('tenant_id', $tenantId)->where('uuid', $document)->firstOrFail(), $this->actorId($request));
+
+        return back()->with('success', 'Document removed.');
+    }
+
+    public function refer(ReferRequest $request, BeneficiaryService $service, string $beneficiary): RedirectResponse
+    {
+        $tenantId = $this->tenantId($request);
+        $case = $request->validated('case_id') ? BenCase::query()->where('tenant_id', $tenantId)->find((int) $request->validated('case_id')) : null;
+
+        try {
+            $service->refer(
+                $this->find($tenantId, $beneficiary),
+                (string) $request->validated('referred_to'),
+                $request->validated('reason'),
+                $case,
+                $request->validated('follow_up_on') ? Carbon::parse($request->validated('follow_up_on')) : null,
+                $this->actorId($request),
+            );
+        } catch (DomainException $error) {
+            return back()->withInput()->with('error', $error->getMessage());
+        }
+
+        return back()->with('success', 'Referral recorded.');
+    }
+
+    public function updateReferral(UpdateReferralRequest $request, BeneficiaryService $service, string $referral): RedirectResponse
+    {
+        $model = BenReferral::query()->where('tenant_id', $this->tenantId($request))->where('uuid', $referral)->firstOrFail();
+
+        try {
+            $service->updateReferral($model, (string) $request->validated('status'), $request->validated('outcome'), $this->actorId($request));
+        } catch (DomainException $error) {
+            return back()->with('error', $error->getMessage());
+        }
+
+        return back()->with('success', 'Referral updated.');
     }
 
     public function recordService(RecordServiceRequest $request, BeneficiaryService $service, string $beneficiary): RedirectResponse

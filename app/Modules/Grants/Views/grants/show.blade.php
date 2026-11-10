@@ -32,6 +32,36 @@
     <p class="text-xs text-muted-foreground">Spending is every expense booked to this grant's fund{{ $grant->starts_on ? ' between '.$grant->starts_on->toInstitutionalDate().' and '.($grant->ends_on?->toInstitutionalDate() ?? 'today') : '' }}. Tag bills and expenses with the fund "{{ $grant->fund?->name }}" to count them here.</p>
 
     <div class="kt-card">
+        <div class="kt-card-header"><h3 class="kt-card-title">Budget against spending</h3>
+            <div class="flex gap-2"><a class="kt-btn kt-btn-sm kt-btn-outline" href="{{ route('grants.grants.report', $grant->uuid) }}">Funder report (CSV)</a><a class="kt-btn kt-btn-sm kt-btn-outline" href="{{ route('grants.grants.report', [$grant->uuid, 'format' => 'pdf']) }}">Funder report (PDF)</a></div>
+        </div>
+        <div class="kt-card-table kt-scrollable-x-auto"><table class="kt-table table-auto kt-table-border">
+            <thead><tr><th>Expense account</th><th class="text-end">Budget</th><th class="text-end">Spent</th><th class="text-end">Left</th><th></th></tr></thead>
+            <tbody>
+            @forelse($plan['rows'] as $row)
+                <tr class="{{ $row['remaining'] < 0 ? 'text-destructive' : '' }}">
+                    <td>{{ $row['account']->code }} {{ $row['account']->name }}@if(! $row['line']) <span class="text-xs text-muted-foreground">(not budgeted)</span>@endif</td>
+                    <td class="text-end">{{ Money::format($row['budget'], $currency) }}</td>
+                    <td class="text-end">{{ Money::format($row['actual'], $currency) }}</td>
+                    <td class="text-end">{{ Money::format($row['remaining'], $currency) }}</td>
+                    <td class="text-end">@can('grants.manage')@if($row['line'])<form method="POST" action="{{ route('grants.grants.budget.remove', [$grant->uuid, $row['account']->id]) }}">@csrf<button class="kt-btn kt-btn-xs kt-btn-outline" type="submit">Remove</button></form>@endif @endcan</td>
+                </tr>
+            @empty
+                <tr><td colspan="5" class="text-center text-muted-foreground py-6">No budget lines yet. Add the expense accounts this grant pays for.</td></tr>
+            @endforelse
+            </tbody>
+            @if($plan['rows'])<tfoot><tr><td class="font-semibold">Total</td><td class="text-end font-semibold">{{ Money::format($plan['budget'], $currency) }}</td><td class="text-end font-semibold">{{ Money::format($plan['actual'], $currency) }}</td><td></td><td></td></tr></tfoot>@endif
+        </table></div>
+        @can('grants.manage')
+        <form method="POST" action="{{ route('grants.grants.budget.store', $grant->uuid) }}" class="kt-card-content flex flex-wrap gap-2">@csrf
+            <select class="kt-select w-64" name="account_id" required><option value="">Expense account…</option>@foreach($expenseAccounts as $account)<option value="{{ $account->id }}">{{ $account->code }} {{ $account->name }}</option>@endforeach</select>
+            <input class="kt-input w-44" type="number" step="0.01" min="0.01" name="amount" placeholder="Budget" required>
+            <button class="kt-btn kt-btn-outline" type="submit">Save budget line</button>
+        </form>
+        @endcan
+    </div>
+
+    <div class="kt-card">
         <div class="kt-card-header"><h3 class="kt-card-title">Instalments</h3></div>
         <div class="kt-card-table kt-scrollable-x-auto"><table class="kt-table table-auto kt-table-border">
             <thead><tr><th>Expected</th><th>Status</th><th>Received</th><th class="text-end">Amount</th><th></th></tr></thead>

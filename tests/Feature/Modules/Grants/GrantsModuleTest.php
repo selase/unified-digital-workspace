@@ -144,6 +144,58 @@ describe('Grants ledger', function (): void {
     });
 });
 
+describe('Grant budget and funder report', function (): void {
+    test('budget lines are compared with fund spending, cap at the grant total, and show unbudgeted spending', function (): void {
+        [, $tenant] = createGrantsContext();
+        app(ChartOfAccounts::class)->ensureSeeded($tenant->id);
+        $grant = awardedGrant($tenant, 1_000_000);
+        $service = app(GrantService::class);
+        $marketing = FinAccount::query()->where('tenant_id', $tenant->id)->where('code', '6300')->firstOrFail();
+        $rent = FinAccount::query()->where('tenant_id', $tenant->id)->where('code', '6100')->firstOrFail();
+        $bank = app(ChartOfAccounts::class)->bySystemKey($tenant->id, ChartOfAccounts::BANK);
+
+        $service->setBudgetLine($grant, $marketing, 300_000);
+        expect(fn () => $service->setBudgetLine($grant, $rent, 800_000))->toThrow(DomainException::class, 'more than the grant')
+            ->and(fn () => $service->setBudgetLine($grant, $rent, 0))->toThrow(DomainException::class)
+            ->and(fn () => $service->setBudgetLine($grant, $bank, 100))->toThrow(DomainException::class, 'expense accounts');
+
+        $expenses = app(ExpenseService::class);
+        $expenses->record($tenant->id, 120_000, Carbon\Carbon::parse('2026-03-10'), $marketing->id, $bank->id, null, ['fund_id' => $grant->fund_id]);
+        $expenses->record($tenant->id, 50_000, Carbon\Carbon::parse('2026-03-11'), $rent->id, $bank->id, null, ['fund_id' => $grant->fund_id]);
+
+        $plan = $service->budgetVsActual($grant->fresh());
+        expect($plan['budget'])->toBe(300_000)->and($plan['actual'])->toBe(170_000)->and($plan['rows'])->toHaveCount(2)
+            ->and($plan['rows'][0]['remaining'])->toBe(180_000)->and($plan['rows'][1]['budget'])->toBe(0)->and($plan['rows'][1]['line'])->toBeNull();
+
+        $service->setBudgetLine($grant, $marketing, 400_000);
+        expect($grant->budgetLines()->count())->toBe(1)->and($grant->budgetLines()->first()->amount)->toBe(400_000);
+
+        $report = $service->funderReport($grant->fresh());
+        expect($report[0][0])->toContain('Clean water')->and(collect($report)->pluck(0)->all())->toContain('Awarded', 'Unspent', 'Total');
+    });
+
+    test('the screens save and remove budget lines and download the funder report', function (): void {
+        [$user, $tenant] = createGrantsContext();
+        app(ChartOfAccounts::class)->ensureSeeded($tenant->id);
+        $grant = awardedGrant($tenant, 1_000_000);
+        $account = FinAccount::query()->where('tenant_id', $tenant->id)->where('code', '6300')->firstOrFail();
+        $this->actingAs($user)->withSession(['active_tenant_id' => $tenant->id]);
+
+        $this->post(route('grants.grants.budget.store', $grant->uuid), ['account_id' => $account->id, 'amount' => '2500.00'])->assertSessionHas('success');
+        $this->get(route('grants.grants.show', $grant->uuid))->assertOk()->assertSee('Budget against spending')->assertSee('Marketing');
+        $this->post(route('grants.grants.budget.store', $grant->uuid), ['account_id' => $account->id, 'amount' => '99999999'])->assertSessionHas('error');
+        $this->post(route('grants.grants.budget.store', $grant->uuid), [])->assertSessionHasErrors(['account_id', 'amount']);
+
+        $csv = $this->get(route('grants.grants.report', $grant->uuid));
+        $csv->assertOk()->assertDownload();
+        expect($csv->streamedContent())->toContain('Funder report: Clean water', '6300 Marketing');
+        $this->get(route('grants.grants.report', [$grant->uuid, 'format' => 'pdf']))->assertOk()->assertHeader('Content-Type', 'application/pdf');
+
+        $this->post(route('grants.grants.budget.remove', [$grant->uuid, $account->id]))->assertSessionHas('success');
+        expect($grant->budgetLines()->count())->toBe(0);
+    });
+});
+
 describe('Grants screens', function (): void {
     test('the screens add a funder and grant, plan and receive an instalment, and track a report', function (): void {
         [$user, $tenant] = createGrantsContext();

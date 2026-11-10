@@ -176,6 +176,31 @@ describe('Volunteer screens', function (): void {
     });
 });
 
+describe('Volunteer certificate and roster', function (): void {
+    test('a certificate needs approved hours, and the roster lists who signed up', function (): void {
+        [$user, $tenant] = createVolunteersContext();
+        $service = app(VolunteerService::class);
+        $volunteer = activeVolunteer($tenant, 'Efua Mensah', 'efua@example.test');
+        $opportunity = VolOpportunity::query()->create(['tenant_id' => $tenant->id, 'title' => 'Clinic day', 'starts_on' => today()->addDay(), 'spots' => 0, 'status' => 'open']);
+        $service->signUp($opportunity, $volunteer);
+        $this->actingAs($user)->withSession(['active_tenant_id' => $tenant->id]);
+
+        $this->get(route('volunteers.volunteers.certificate', $volunteer->uuid))->assertRedirect()->assertSessionHas('error');
+        $service->review($service->logHours($volunteer, today(), 4, 'Shift'), true, null);
+        $service->logHours($volunteer, today()->subDay(), 9, 'Waiting');
+
+        $pdf = $this->get(route('volunteers.volunteers.certificate', $volunteer->uuid));
+        $pdf->assertOk()->assertHeader('Content-Type', 'application/pdf');
+        expect(mb_substr($pdf->getContent(), 0, 4))->toBe('%PDF');
+        $this->get(route('volunteers.volunteers.show', $volunteer->uuid))->assertSee('Certificate');
+
+        $csv = $this->get(route('volunteers.opportunities.roster', $opportunity->uuid));
+        $csv->assertOk()->assertDownload();
+        expect($csv->streamedContent())->toContain('Roster: Clinic day', 'Efua Mensah');
+        $this->get(route('volunteers.opportunities.roster', [$opportunity->uuid, 'format' => 'pdf']))->assertOk()->assertHeader('Content-Type', 'application/pdf');
+    });
+});
+
 describe('Public volunteer sign-up', function (): void {
     test('a sign-up is saved as pending, a repeat looks identical, and bots and bad input are rejected', function (): void {
         [, $tenant] = createVolunteersContext();

@@ -31,7 +31,7 @@
                 <td>{{ $op->title }}{{ $op->status === 'closed' ? ' (closed)' : '' }}<div class="text-xs text-muted-foreground">{{ $op->location }} {{ $op->description }}</div></td>
                 <td>{{ $op->volunteers->pluck('name')->implode(', ') ?: '—' }}</td>
                 <td class="text-end">{{ $op->volunteers_count }}{{ $op->spots > 0 ? ' / '.$op->spots : '' }}</td>
-                <td class="text-end">@can('volunteers.manage')<form method="POST" action="{{ route('volunteers.opportunities.toggle', $op->uuid) }}">@csrf<button class="kt-btn kt-btn-xs kt-btn-outline" type="submit">{{ $op->status === 'open' ? 'Close' : 'Reopen' }}</button></form>@endcan</td>
+                <td class="text-end"><a class="kt-btn kt-btn-xs kt-btn-outline" href="{{ route('volunteers.opportunities.roster', [$op->uuid, 'format' => 'pdf']) }}">Roster</a> @can('volunteers.manage')<form method="POST" action="{{ route('volunteers.opportunities.toggle', $op->uuid) }}">@csrf<button class="kt-btn kt-btn-xs kt-btn-outline" type="submit">{{ $op->status === 'open' ? 'Close' : 'Reopen' }}</button></form>@endcan</td>
             </tr>
         @empty
             <tr><td colspan="5" class="text-center text-muted-foreground py-6">No opportunities yet.</td></tr>

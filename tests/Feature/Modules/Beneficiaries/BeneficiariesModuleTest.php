@@ -10,12 +10,16 @@ use App\Modules\Beneficiaries\Models\BenAccessLog;
 use App\Modules\Beneficiaries\Models\BenBeneficiary;
 use App\Modules\Beneficiaries\Models\BenCase;
 use App\Modules\Beneficiaries\Models\BenCaseNote;
+use App\Modules\Beneficiaries\Models\BenDocument;
+use App\Modules\Beneficiaries\Models\BenReferral;
 use App\Modules\Beneficiaries\Models\BenService;
 use App\Modules\Beneficiaries\Services\BeneficiaryService;
 use App\Services\ModuleManager;
 use App\Services\Tenancy\TenantContext;
 use App\Services\Tenancy\TenantDatabaseManager;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Str;
 use Spatie\Permission\Models\Permission;
@@ -143,6 +147,71 @@ describe('Beneficiary privacy rules', function (): void {
         $service->anonymise($person, $actor);
 
         expect(BenAccessLog::query()->pluck('action')->all())->toBe(['registered', 'consent_recorded', 'service_recorded', 'case_opened', 'note_added', 'anonymised']);
+    });
+});
+
+describe('Beneficiary documents and referrals', function (): void {
+    test('documents and referrals need consent, and anonymising deletes the files', function (): void {
+        [, $tenant] = createBeneficiariesContext();
+        Storage::fake('tenant');
+        $service = app(BeneficiaryService::class);
+        $stranger = $service->register($tenant->id, 'No Consent', [], null);
+        $person = consentedPerson($tenant);
+
+        expect(fn () => $service->attachDocument($stranger, 'photo', UploadedFile::fake()->image('a.jpg'), null))->toThrow(DomainException::class, 'consent')
+            ->and(fn () => $service->refer($stranger, 'Clinic', null, null, null, null))->toThrow(DomainException::class, 'consent')
+            ->and(fn () => $service->attachDocument($person, 'photo', UploadedFile::fake()->create('a.pdf', 10, 'application/pdf'), null))->toThrow(DomainException::class, 'photo must be an image')
+            ->and(fn () => $service->attachDocument($person, 'other', UploadedFile::fake()->create('a.exe', 10), null))->toThrow(DomainException::class, 'PDF or image')
+            ->and(fn () => $service->attachDocument($person, 'other', UploadedFile::fake()->create('big.pdf', 6000, 'application/pdf'), null))->toThrow(DomainException::class, '5 MB')
+            ->and(fn () => $service->attachDocument($person, 'bogus', UploadedFile::fake()->image('a.jpg'), null))->toThrow(DomainException::class, 'kind of document');
+
+        $document = $service->attachDocument($person, 'photo', UploadedFile::fake()->image('face.jpg'), null);
+        Storage::disk('tenant')->assertExists($document->path);
+
+        $otherCase = $service->openCase(consentedPerson($tenant, 'Kofi Other'), 'Other case', 'general', 'normal', null);
+        expect(fn () => $service->refer($person, 'Clinic', null, $otherCase, null, null))->toThrow(DomainException::class, 'belongs to someone else')
+            ->and(fn () => $service->refer($person, 'Clinic', null, null, today()->subDay(), null))->toThrow(DomainException::class, 'past');
+
+        $referral = $service->refer($person, 'Ho Teaching Hospital', 'Eye test', null, today()->addDays(7), null);
+        expect($referral->status)->toBe('made')->and($referral->isOpen())->toBeTrue()
+            ->and(fn () => $service->updateReferral($referral, 'made', null, null))->toThrow(DomainException::class);
+        $service->updateReferral($referral, 'completed', 'Glasses given', null);
+        expect($referral->fresh()->status)->toBe('completed')->and(fn () => $service->updateReferral($referral->fresh(), 'declined', null, null))->toThrow(DomainException::class, 'finished');
+
+        $service->anonymise($person->fresh(), null);
+        Storage::disk('tenant')->assertMissing($document->path);
+        expect(BenDocument::query()->where('beneficiary_id', $person->id)->count())->toBe(0)
+            ->and($referral->fresh()->referred_to)->toBe('Anonymised')->and($referral->fresh()->outcome)->toBeNull();
+    });
+
+    test('the screens attach, open and remove documents (logged) and manage referrals; staff without confidential access see none', function (): void {
+        [$user, $tenant] = createBeneficiariesContext();
+        Storage::fake('tenant');
+        $person = consentedPerson($tenant);
+        $this->actingAs($user)->withSession(['active_tenant_id' => $tenant->id]);
+
+        $this->post(route('beneficiaries.beneficiaries.documents.store', $person->uuid), ['kind' => 'id', 'file' => UploadedFile::fake()->create('ghana-card.pdf', 40, 'application/pdf')])->assertSessionHas('success');
+        $document = BenDocument::query()->firstOrFail();
+        $this->get(route('beneficiaries.beneficiaries.show', $person->uuid))->assertOk()->assertSee('ghana-card.pdf')->assertSee('Referrals');
+        $this->get(route('beneficiaries.beneficiaries.documents.download', $document->uuid))->assertOk();
+        expect(BenAccessLog::query()->where('action', 'document_viewed')->count())->toBe(1);
+        $this->post(route('beneficiaries.beneficiaries.documents.store', $person->uuid), ['kind' => 'id'])->assertSessionHasErrors('file');
+
+        $this->post(route('beneficiaries.beneficiaries.referrals.store', $person->uuid), ['referred_to' => 'Social Welfare', 'follow_up_on' => today()->addDays(3)->toDateString()])->assertSessionHas('success');
+        $referral = BenReferral::query()->firstOrFail();
+        $this->post(route('beneficiaries.beneficiaries.referrals.store', $person->uuid), [])->assertSessionHasErrors('referred_to');
+        $this->post(route('beneficiaries.beneficiaries.referrals.update', $referral->uuid), ['status' => 'accepted', 'outcome' => 'Seen'])->assertSessionHas('success');
+        expect($referral->fresh()->status)->toBe('accepted');
+
+        $this->delete(route('beneficiaries.beneficiaries.documents.destroy', $document->uuid))->assertSessionHas('success');
+        expect(BenDocument::query()->count())->toBe(0);
+
+        [$limited, $limitedTenant] = createBeneficiariesContext(['beneficiaries.view']);
+        $other = consentedPerson($limitedTenant);
+        $kept = app(BeneficiaryService::class)->attachDocument($other, 'photo', UploadedFile::fake()->image('p.jpg'), null);
+        $this->actingAs($limited)->withSession(['active_tenant_id' => $limitedTenant->id]);
+        $this->get(route('beneficiaries.beneficiaries.show', $other->uuid))->assertOk()->assertDontSee('Photos and documents');
+        $this->get(route('beneficiaries.beneficiaries.documents.download', $kept->uuid))->assertForbidden();
     });
 });
 

@@ -7,12 +7,13 @@
 <div class="flex flex-col gap-6">
     <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div><h1 class="text-xl font-bold text-foreground">{{ $volunteer->name }}</h1><p class="text-xs text-muted-foreground">{{ VolVolunteer::STATUSES[$volunteer->status] }} · {{ $volunteer->email ?: 'no email' }} · {{ $volunteer->phone }}</p></div>
-        @can('volunteers.manage')
         <div class="flex gap-2">
+            @if($approvedMinutes > 0)<a class="kt-btn kt-btn-outline" href="{{ route('volunteers.volunteers.certificate', $volunteer->uuid) }}">Certificate</a>@endif
+        @can('volunteers.manage')
             @if($volunteer->status !== 'active')<form method="POST" action="{{ route('volunteers.volunteers.status', $volunteer->uuid) }}">@csrf<input type="hidden" name="status" value="active"><button class="kt-btn kt-btn-primary" type="submit">{{ $volunteer->status === 'pending' ? 'Approve' : 'Reactivate' }}</button></form>@endif
             @if($volunteer->status === 'active')<form method="POST" action="{{ route('volunteers.volunteers.status', $volunteer->uuid) }}">@csrf<input type="hidden" name="status" value="inactive"><button class="kt-btn kt-btn-outline" type="submit">Make inactive</button></form>@endif
-        </div>
         @endcan
+        </div>
     </div>
 
     @include('volunteers::partials.nav')

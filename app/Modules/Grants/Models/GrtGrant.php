@@ -47,6 +47,12 @@ final class GrtGrant extends Model
         return $this->hasMany(GrtInstalment::class, 'grant_id')->orderBy('expected_on');
     }
 
+    /** @return HasMany<GrtBudgetLine, $this> */
+    public function budgetLines(): HasMany
+    {
+        return $this->hasMany(GrtBudgetLine::class, 'grant_id');
+    }
+
     /** @return HasMany<GrtReport, $this> */
     public function reports(): HasMany
     {

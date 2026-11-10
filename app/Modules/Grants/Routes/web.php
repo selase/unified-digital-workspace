@@ -17,6 +17,9 @@ Route::post('/agreements', [GrantController::class, 'store'])->name('grants.stor
 Route::get('/agreements/{grant}', [GrantController::class, 'show'])->name('grants.show');
 Route::post('/agreements/{grant}/status', [GrantController::class, 'status'])->name('grants.status');
 Route::post('/agreements/{grant}/instalments', [GrantController::class, 'addInstalment'])->name('grants.instalments.store');
+Route::post('/agreements/{grant}/budget', [GrantController::class, 'saveBudgetLine'])->name('grants.budget.store');
+Route::post('/agreements/{grant}/budget/{account}/remove', [GrantController::class, 'removeBudgetLine'])->name('grants.budget.remove');
+Route::get('/agreements/{grant}/report', [GrantController::class, 'funderReport'])->name('grants.report');
 Route::post('/agreements/{grant}/reports', [GrantController::class, 'addReport'])->name('grants.reports.store');
 Route::post('/instalments/{instalment}/receive', [GrantController::class, 'receiveInstalment'])->name('grants.instalments.receive');
 Route::post('/instalments/{instalment}/void', [GrantController::class, 'voidInstalment'])->name('grants.instalments.void');

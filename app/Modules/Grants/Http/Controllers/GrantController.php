@@ -9,10 +9,14 @@ use App\Modules\Finance\Models\FinAccount;
 use App\Modules\Finance\Services\FinanceSettings;
 use App\Modules\Finance\Support\Money;
 use App\Modules\Finance\Support\ResolvesFinanceTenant;
+use App\Modules\Finance\Services\ReportCsv;
+use App\Modules\Finance\Services\ReportPdf;
 use App\Modules\Grants\Http\Requests\ReceiveInstalmentRequest;
+use App\Modules\Grants\Http\Requests\SaveBudgetLineRequest;
 use App\Modules\Grants\Http\Requests\SaveGrantRequest;
 use App\Modules\Grants\Http\Requests\SaveInstalmentRequest;
 use App\Modules\Grants\Http\Requests\SaveReportDeadlineRequest;
+use App\Modules\Grants\Models\GrtBudgetLine;
 use App\Modules\Grants\Models\GrtFunder;
 use App\Modules\Grants\Models\GrtGrant;
 use App\Modules\Grants\Models\GrtInstalment;
@@ -23,6 +27,8 @@ use DomainException;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class GrantController extends Controller
 {
@@ -76,6 +82,8 @@ final class GrantController extends Controller
         return view('grants::grants.show', [
             'grant' => $model,
             'position' => $grants->position($model),
+            'plan' => $grants->budgetVsActual($model),
+            'expenseAccounts' => FinAccount::query()->where('tenant_id', $tenantId)->where('type', 'expense')->where('is_active', true)->orderBy('code')->get(),
             'depositAccounts' => FinAccount::query()->where('tenant_id', $tenantId)->where('type', 'asset')->where('is_active', true)->orderBy('code')->get(),
             'currency' => $settings->for($tenantId)->base_currency,
         ]);
@@ -127,6 +135,40 @@ final class GrantController extends Controller
         }
 
         return back()->with('success', 'Instalment voided and its entry reversed.');
+    }
+
+    public function saveBudgetLine(SaveBudgetLineRequest $request, GrantService $grants, string $grant): RedirectResponse
+    {
+        $tenantId = $this->tenantId($request);
+        $account = FinAccount::query()->where('tenant_id', $tenantId)->findOrFail((int) $request->validated('account_id'));
+
+        try {
+            $grants->setBudgetLine($this->find($tenantId, $grant), $account, Money::toMinor($request->validated('amount')));
+        } catch (DomainException $error) {
+            return back()->withInput()->with('error', $error->getMessage());
+        }
+
+        return back()->with('success', 'Budget line saved.');
+    }
+
+    public function removeBudgetLine(Request $request, GrantService $grants, string $grant, int $account): RedirectResponse
+    {
+        $tenantId = $this->allow($request, 'grants.manage');
+        $line = GrtBudgetLine::query()->where('tenant_id', $tenantId)->where('grant_id', $this->find($tenantId, $grant)->id)->where('account_id', $account)->firstOrFail();
+        $grants->removeBudgetLine($line);
+
+        return back()->with('success', 'Budget line removed.');
+    }
+
+    /** Downloads the funder report as CSV (default) or PDF. */
+    public function funderReport(Request $request, GrantService $grants, ReportCsv $csv, ReportPdf $pdf, string $grant): StreamedResponse|\Illuminate\Http\Response
+    {
+        $tenantId = $this->allow($request, 'grants.view');
+        $model = $this->find($tenantId, $grant);
+        $rows = $grants->funderReport($model);
+        $name = 'funder-report-'.Str::slug($model->title);
+
+        return $request->query('format') === 'pdf' ? $pdf->download($tenantId, $name, $rows) : $csv->download($name.'.csv', $rows);
     }
 
     public function addReport(SaveReportDeadlineRequest $request, string $grant): RedirectResponse

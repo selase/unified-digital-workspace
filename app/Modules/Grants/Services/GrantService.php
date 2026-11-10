@@ -9,6 +9,8 @@ use App\Modules\Finance\Models\FinFund;
 use App\Modules\Finance\Models\FinJournal;
 use App\Modules\Finance\Services\ChartOfAccounts;
 use App\Modules\Finance\Services\LedgerService;
+use App\Modules\Finance\Support\Money;
+use App\Modules\Grants\Models\GrtBudgetLine;
 use App\Modules\Grants\Models\GrtFunder;
 use App\Modules\Grants\Models\GrtGrant;
 use App\Modules\Grants\Models\GrtInstalment;
@@ -162,13 +164,7 @@ final class GrantService
         $received = (int) $grant->instalments()->where('status', 'received')->sum('amount');
         $expected = (int) $grant->instalments()->where('status', 'expected')->sum('amount');
 
-        $spent = $grant->fund_id === null ? 0 : (int) DB::connection('tenant')->table('fin_journal_lines as l')
-            ->join('fin_journals as j', 'j.id', '=', 'l.journal_id')
-            ->join('fin_accounts as a', 'a.id', '=', 'l.account_id')
-            ->where('j.tenant_id', $grant->tenant_id)->where('l.fund_id', $grant->fund_id)->where('a.type', 'expense')
-            ->when($grant->starts_on, fn ($query) => $query->whereDate('j.date', '>=', $grant->starts_on->toDateString()))
-            ->when($grant->ends_on, fn ($query) => $query->whereDate('j.date', '<=', $grant->ends_on->toDateString()))
-            ->selectRaw('COALESCE(SUM(l.debit - l.credit), 0) as total')->value('total');
+        $spent = (int) $this->spendByAccount($grant)->sum();
 
         return [
             'awarded' => $grant->total_amount,
@@ -179,5 +175,113 @@ final class GrantService
             'remaining' => $grant->total_amount - $spent,
             'spent_percent' => $grant->total_amount > 0 ? min(100, intdiv($spent * 100, $grant->total_amount)) : 0,
         ];
+    }
+
+    /**
+     * Spending on the grant's fund inside its dates, per expense account id.
+     *
+     * @return \Illuminate\Support\Collection<int, int>
+     */
+    public function spendByAccount(GrtGrant $grant): \Illuminate\Support\Collection
+    {
+        if ($grant->fund_id === null) {
+            return collect();
+        }
+
+        return DB::connection('tenant')->table('fin_journal_lines as l')
+            ->join('fin_journals as j', 'j.id', '=', 'l.journal_id')
+            ->join('fin_accounts as a', 'a.id', '=', 'l.account_id')
+            ->where('j.tenant_id', $grant->tenant_id)->where('l.fund_id', $grant->fund_id)->where('a.type', 'expense')
+            ->when($grant->starts_on, fn ($query) => $query->whereDate('j.date', '>=', $grant->starts_on->toDateString()))
+            ->when($grant->ends_on, fn ($query) => $query->whereDate('j.date', '<=', $grant->ends_on->toDateString()))
+            ->groupBy('l.account_id')->selectRaw('l.account_id, COALESCE(SUM(l.debit - l.credit), 0) as total')
+            ->pluck('total', 'account_id')->map(fn ($total): int => (int) $total);
+    }
+
+    /** Sets (or changes) the planned amount for an expense account. The plan cannot be larger than the grant. */
+    public function setBudgetLine(GrtGrant $grant, FinAccount $account, int $amount): GrtBudgetLine
+    {
+        if ($account->type !== 'expense' || $account->tenant_id !== $grant->tenant_id) {
+            throw new DomainException('Budget lines are for expense accounts.');
+        }
+        if ($amount <= 0) {
+            throw new DomainException('The budget amount must be greater than zero.');
+        }
+
+        $others = (int) $grant->budgetLines()->where('account_id', '!=', $account->id)->sum('amount');
+        if ($others + $amount > $grant->total_amount) {
+            throw new DomainException('The budget lines would add up to more than the grant.');
+        }
+
+        return GrtBudgetLine::query()->updateOrCreate(
+            ['grant_id' => $grant->id, 'account_id' => $account->id],
+            ['tenant_id' => $grant->tenant_id, 'amount' => $amount],
+        );
+    }
+
+    public function removeBudgetLine(GrtBudgetLine $line): void
+    {
+        $line->delete();
+    }
+
+    /**
+     * Each budget line against actual spending, plus spending on accounts that were never budgeted.
+     *
+     * @return array{rows: list<array{account: FinAccount, budget: int, actual: int, remaining: int, line: GrtBudgetLine|null}>, budget: int, actual: int}
+     */
+    public function budgetVsActual(GrtGrant $grant): array
+    {
+        $actual = $this->spendByAccount($grant);
+        $lines = $grant->budgetLines()->with('account')->get()->sortBy(fn (GrtBudgetLine $line): string => $line->account->code);
+        $rows = [];
+
+        foreach ($lines as $line) {
+            $spent = (int) ($actual[$line->account_id] ?? 0);
+            $rows[] = ['account' => $line->account, 'budget' => $line->amount, 'actual' => $spent, 'remaining' => $line->amount - $spent, 'line' => $line];
+        }
+
+        $unbudgeted = $actual->except($lines->pluck('account_id')->all())->filter(fn (int $total): bool => $total !== 0);
+        foreach (FinAccount::query()->where('tenant_id', $grant->tenant_id)->whereIn('id', $unbudgeted->keys())->orderBy('code')->get() as $account) {
+            $rows[] = ['account' => $account, 'budget' => 0, 'actual' => $unbudgeted[$account->id], 'remaining' => -$unbudgeted[$account->id], 'line' => null];
+        }
+
+        return ['rows' => $rows, 'budget' => (int) $lines->sum('amount'), 'actual' => (int) $actual->sum()];
+    }
+
+    /**
+     * The report a funder usually asks for: the money in, the money spent against the plan, and what is left.
+     * Rows are shared by the CSV and PDF downloads.
+     *
+     * @return list<list<string|int|float|null>>
+     */
+    public function funderReport(GrtGrant $grant): array
+    {
+        $grant->loadMissing(['funder', 'instalments']);
+        $position = $this->position($grant);
+        $plan = $this->budgetVsActual($grant);
+        $period = ($grant->starts_on?->toDateString() ?? 'start').' to '.($grant->ends_on?->toDateString() ?? today()->toDateString());
+
+        $rows = [
+            ['Funder report: '.$grant->title, $grant->funder->name.($grant->reference ? ' · '.$grant->reference : ''), $period],
+            ['Item', 'Amount ('.$grant->currency.')', 'Notes'],
+            ['Awarded', Money::input($position['awarded']), ''],
+            ['Received so far', Money::input($position['received']), ''],
+            ['Still to receive', Money::input($position['outstanding']), ''],
+            ['Spent', Money::input($position['spent']), ''],
+            ['Unspent', Money::input($position['remaining']), ''],
+            ['', '', ''],
+            ['Budget line', 'Budget', 'Spent'],
+        ];
+        foreach ($plan['rows'] as $row) {
+            $rows[] = [$row['account']->code.' '.$row['account']->name, Money::input($row['budget']), Money::input($row['actual'])];
+        }
+        $rows[] = ['Total', Money::input($plan['budget']), Money::input($plan['actual'])];
+        $rows[] = ['', '', ''];
+        $rows[] = ['Instalment', 'Amount', 'Date received'];
+        foreach ($grant->instalments->where('status', 'received') as $instalment) {
+            $rows[] = [$instalment->reference ?: 'Instalment', Money::input($instalment->amount), $instalment->received_on?->toDateString()];
+        }
+
+        return $rows;
     }
 }

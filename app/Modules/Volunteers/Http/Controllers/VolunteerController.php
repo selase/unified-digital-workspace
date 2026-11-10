@@ -11,12 +11,14 @@ use App\Modules\Volunteers\Http\Requests\SaveVolunteerRequest;
 use App\Modules\Volunteers\Models\VolHour;
 use App\Modules\Volunteers\Models\VolOpportunity;
 use App\Modules\Volunteers\Models\VolVolunteer;
+use App\Modules\Volunteers\Services\VolunteerCertificatePdf;
 use App\Modules\Volunteers\Services\VolunteerService;
 use Carbon\CarbonImmutable;
 use DomainException;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 
 final class VolunteerController extends Controller
 {
@@ -100,6 +102,20 @@ final class VolunteerController extends Controller
         }
 
         return back()->with('success', 'Status updated.');
+    }
+
+    public function certificate(Request $request, VolunteerCertificatePdf $certificates, string $volunteer): Response|RedirectResponse
+    {
+        $tenantId = $this->allow($request, 'volunteers.view');
+        $model = VolVolunteer::query()->where('tenant_id', $tenantId)->where('uuid', $volunteer)->firstOrFail();
+
+        try {
+            $output = $certificates->output($model);
+        } catch (DomainException $error) {
+            return back()->with('error', $error->getMessage());
+        }
+
+        return response($output, 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline; filename="'.$certificates->filename($model).'"']);
     }
 
     public function signup(Request $request, VolunteerService $volunteers, string $volunteer): RedirectResponse

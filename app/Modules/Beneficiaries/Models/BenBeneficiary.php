@@ -55,6 +55,18 @@ final class BenBeneficiary extends Model
         return $this->hasMany(BenCase::class, 'beneficiary_id');
     }
 
+    /** @return HasMany<BenDocument, $this> */
+    public function documents(): HasMany
+    {
+        return $this->hasMany(BenDocument::class, 'beneficiary_id');
+    }
+
+    /** @return HasMany<BenReferral, $this> */
+    public function referrals(): HasMany
+    {
+        return $this->hasMany(BenReferral::class, 'beneficiary_id');
+    }
+
     /** @return HasMany<BenService, $this> */
     public function services(): HasMany
     {

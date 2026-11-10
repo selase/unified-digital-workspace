@@ -120,6 +120,67 @@
         </div>
     </div>
 
+    <div class="kt-card">
+        <div class="kt-card-header"><h3 class="kt-card-title">Referrals</h3></div>
+        @can('beneficiaries.cases.manage')
+        @unless($locked)
+        <form method="POST" action="{{ route('beneficiaries.beneficiaries.referrals.store', $beneficiary->uuid) }}" class="kt-card-content grid grid-cols-1 md:grid-cols-5 gap-2">@csrf
+            <input class="kt-input" name="referred_to" placeholder="Referred to (clinic, school…)" required>
+            <input class="kt-input md:col-span-2" name="reason" placeholder="Reason">
+            <input class="kt-input" type="date" name="follow_up_on" min="{{ today()->toDateString() }}" title="Follow up by">
+            <div><button class="kt-btn kt-btn-outline" type="submit">Refer</button></div>
+        </form>
+        @endunless
+        @endcan
+        <div class="kt-card-table kt-scrollable-x-auto"><table class="kt-table table-auto kt-table-border">
+            <thead><tr><th>Date</th><th>Referred to</th><th>Status</th><th>Follow up</th><th></th></tr></thead>
+            <tbody>
+            @forelse($referrals as $referral)
+                <tr>
+                    <td>{{ $referral->referred_on->toInstitutionalDate() }}</td>
+                    <td>{{ $referral->referred_to }}<div class="text-xs text-muted-foreground">{{ $referral->reason }}{{ $referral->outcome ? ' · '.$referral->outcome : '' }}</div></td>
+                    <td>{{ \App\Modules\Beneficiaries\Models\BenReferral::STATUSES[$referral->status] }}</td>
+                    <td class="{{ $referral->isOverdueForFollowUp() ? 'text-destructive' : '' }}">{{ $referral->follow_up_on?->toInstitutionalDate() }}</td>
+                    <td class="text-end">@can('beneficiaries.cases.manage')@if($referral->isOpen())
+                        <form method="POST" action="{{ route('beneficiaries.beneficiaries.referrals.update', $referral->uuid) }}" class="flex justify-end gap-1">@csrf
+                            <select class="kt-select w-32" name="status"><option value="accepted">Accepted</option><option value="completed">Completed</option><option value="declined">Declined</option></select>
+                            <input class="kt-input w-40" name="outcome" placeholder="Outcome">
+                            <button class="kt-btn kt-btn-xs kt-btn-outline" type="submit">Update</button>
+                        </form>@endif @endcan</td>
+                </tr>
+            @empty
+                <tr><td colspan="5" class="text-center text-muted-foreground py-6">No referrals.</td></tr>
+            @endforelse
+            </tbody>
+        </table></div>
+    </div>
+
+    @if($mayViewPersonal)
+    <div class="kt-card">
+        <div class="kt-card-header"><h3 class="kt-card-title">Photos and documents</h3></div>
+        @can('beneficiaries.manage')
+        @unless($locked)
+        <form method="POST" action="{{ route('beneficiaries.beneficiaries.documents.store', $beneficiary->uuid) }}" enctype="multipart/form-data" class="kt-card-content flex flex-wrap gap-2">@csrf
+            <select class="kt-select w-56" name="kind">@foreach(\App\Modules\Beneficiaries\Models\BenDocument::KINDS as $key => $label)<option value="{{ $key }}">{{ $label }}</option>@endforeach</select>
+            <input type="file" name="file" accept=".pdf,.jpg,.jpeg,.png,.webp" required class="text-sm">
+            <button class="kt-btn kt-btn-outline" type="submit">Attach</button>
+        </form>
+        @endunless
+        @endcan
+        <div class="kt-card-content flex flex-col gap-2 text-sm">
+            @forelse($documents as $document)
+                <div class="flex items-center gap-3">
+                    <a class="text-primary" href="{{ route('beneficiaries.beneficiaries.documents.download', $document->uuid) }}">{{ $document->name }}</a>
+                    <span class="text-xs text-muted-foreground">{{ \App\Modules\Beneficiaries\Models\BenDocument::KINDS[$document->kind] ?? $document->kind }} · {{ number_format($document->size / 1024) }} KB</span>
+                    @can('beneficiaries.manage')<form method="POST" action="{{ route('beneficiaries.beneficiaries.documents.destroy', $document->uuid) }}" onsubmit="return confirm('Remove this document?')">@csrf @method('DELETE')<button class="text-destructive text-xs" type="submit">remove</button></form>@endcan
+                </div>
+            @empty
+                <span class="text-muted-foreground">Nothing attached.</span>
+            @endforelse
+        </div>
+    </div>
+    @endif
+
     @can('beneficiaries.manage')
     @if($beneficiary->status === 'active')
     <form method="POST" action="{{ route('beneficiaries.beneficiaries.exit', $beneficiary->uuid) }}" class="kt-card">@csrf

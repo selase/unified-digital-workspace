@@ -17,6 +17,11 @@ Route::post('/register/{beneficiary}/exit', [BeneficiaryController::class, 'exit
 Route::post('/register/{beneficiary}/anonymise', [BeneficiaryController::class, 'anonymise'])->name('beneficiaries.anonymise');
 Route::post('/register/{beneficiary}/cases', [BeneficiaryController::class, 'openCase'])->name('beneficiaries.cases.store');
 Route::post('/register/{beneficiary}/services', [BeneficiaryController::class, 'recordService'])->name('beneficiaries.services.store');
+Route::post('/register/{beneficiary}/documents', [BeneficiaryController::class, 'addDocument'])->name('beneficiaries.documents.store');
+Route::get('/documents/{document}', [BeneficiaryController::class, 'downloadDocument'])->name('beneficiaries.documents.download');
+Route::delete('/documents/{document}', [BeneficiaryController::class, 'removeDocument'])->name('beneficiaries.documents.destroy');
+Route::post('/register/{beneficiary}/referrals', [BeneficiaryController::class, 'refer'])->name('beneficiaries.referrals.store');
+Route::post('/referrals/{referral}', [BeneficiaryController::class, 'updateReferral'])->name('beneficiaries.referrals.update');
 Route::post('/cases/{case}/close', [BeneficiaryController::class, 'closeCase'])->name('beneficiaries.cases.close');
 Route::post('/cases/{case}/notes', [BeneficiaryController::class, 'addNote'])->name('beneficiaries.cases.notes');
 Route::get('/access-log', [BeneficiaryController::class, 'auditLog'])->name('audit');
