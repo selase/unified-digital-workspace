@@ -36,6 +36,7 @@
             <button type="submit" class="btn">Offer to volunteer</button>
         </form>
     @endif
+    <p class="muted" style="margin-top:18px;">Already volunteering? <a href="{{ route('volunteers.portal.login', ['tenant' => $tenant->slug]) }}">Sign in to see your hours</a>.</p>
 </div>
 </body>
 </html>

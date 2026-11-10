@@ -257,7 +257,9 @@ _Source: `app/Modules/Grants/Routes/web.php`; `Services/GrantService.php`; grant
 3. Open Hours and log time a volunteer gave. Someone with approval rights then approves or rejects it. Only approved hours count in the totals.
 4. The Overview shows active volunteers, hours this year, who is waiting for approval, and the most hours given.
 
-**Limits:** volunteers do not log in themselves; staff log and approve hours. On a volunteer's page, Certificate prints a certificate of service from approved hours; on Opportunities, Roster prints the sign-up list. There are no background-check records or shift scheduling yet.
+Volunteers can sign in without a password at the link at the bottom of your public sign-up page (`/volunteer/<org>/portal`): they enter their email, get a one-time link, and can then see their hours, log new hours for approval, sign up for opportunities and download their certificate.
+
+**Limits:** staff still approve hours before they count; the portal is for active volunteers only. On a volunteer's page, Certificate prints a certificate of service from approved hours; on Opportunities, Roster prints the sign-up list. There are no background-check records or shift scheduling yet.
 
 _Source: `app/Modules/Volunteers/Routes/web.php`; `Services/VolunteerService.php`; volunteers views._
 
@@ -268,7 +270,9 @@ _Source: `app/Modules/Volunteers/Routes/web.php`; `Services/VolunteerService.php
 3. A member becomes active when the dues invoice is paid, and stays active until the end of the paid period. The member page shows the payment link, dues history and actions: invoice dues, activate without an invoice (honorary), cancel, reinstate.
 4. Each morning the system applies paid dues, expires lapsed members and invoices renewals 30 days ahead for types set to auto-renew. You get an alert for each renewal invoice raised.
 
-**Limits:** members do not log in; there are no membership cards, certificates, voting or family and group memberships yet. Dues are income account 4230 in Finance.
+Members can sign in the same way at `/join/<org>/portal` to see their status, pay or renew their dues online, and check their dues history.
+
+**Limits:** there are no membership cards, certificates, voting or family and group memberships yet. Dues are income account 4230 in Finance.
 
 _Source: `app/Modules/Memberships/Routes/web.php`; `Services/MembershipService.php`; memberships views._
 

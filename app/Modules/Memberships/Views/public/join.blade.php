@@ -36,6 +36,7 @@
             <button type="submit" class="btn">Apply for membership</button>
         </form>
     @endif
+    <p class="muted" style="margin-top:18px;">Already a member? <a href="{{ route('memberships.portal.login', ['tenant' => $tenant->slug]) }}">Sign in to see your membership</a>.</p>
 </div>
 </body>
 </html>

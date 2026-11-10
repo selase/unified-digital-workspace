@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Mail\Portal\PortalLinkMail;
 use App\Models\Tenant;
 use App\Models\TenantFeature;
 use App\Models\User;
@@ -17,6 +18,7 @@ use App\Services\ModuleManager;
 use App\Services\Tenancy\TenantContext;
 use App\Services\Tenancy\TenantDatabaseManager;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Str;
 use Spatie\Permission\Models\Permission;
@@ -265,5 +267,81 @@ describe('Memberships demo seeder', function (): void {
         $count = MemMember::query()->count();
         $this->seed(MembershipsDemoSeeder::class);
         expect(MemMember::query()->count())->toBe($count);
+    });
+});
+
+describe('Member portal', function (): void {
+    function memberPortalLink(Tenant $tenant, string $email): string
+    {
+        Mail::fake();
+        test()->post(route('memberships.portal.send', ['tenant' => $tenant->slug]), ['email' => $email])->assertOk()->assertSee('on its way');
+        $url = null;
+        Mail::assertSent(PortalLinkMail::class, function (PortalLinkMail $mail) use (&$url): bool {
+            $url = $mail->url;
+
+            return true;
+        });
+
+        return (string) $url;
+    }
+
+    test('a link goes only to a current member, strangers and cancelled members get the same page, and a link works once', function (): void {
+        [, $tenant] = createMembershipsContext();
+        $service = app(MembershipService::class);
+        $service->join($tenant->id, memberType($tenant), 'Ama', ['email' => 'ama@example.test']);
+        $cancelled = $service->join($tenant->id, memberType($tenant, 'Other'), 'Gone', ['email' => 'gone@example.test']);
+        $service->cancel($cancelled->load(['type', 'contact']));
+
+        Mail::fake();
+        foreach (['stranger@example.test', 'gone@example.test'] as $email) {
+            $this->post(route('memberships.portal.send', ['tenant' => $tenant->slug]), ['email' => $email])->assertOk()->assertSee('on its way');
+        }
+        Mail::assertNothingSent();
+
+        $url = memberPortalLink($tenant, 'ama@example.test');
+        $this->get(route('memberships.portal.me', ['tenant' => $tenant->slug]))->assertRedirect(route('memberships.portal.login', ['tenant' => $tenant->slug]));
+        $this->get($url)->assertRedirect(route('memberships.portal.me', ['tenant' => $tenant->slug]));
+        $this->get(route('memberships.portal.me', ['tenant' => $tenant->slug]))->assertOk()->assertSee('Hello, Ama')->assertSee('Dues to pay');
+        $this->flushSession();
+        $this->get($url)->assertForbidden()->assertSee('already been used');
+    });
+
+    test('a member sees paid status, renews to get a new invoice, and cannot see anyone else', function (): void {
+        [, $tenant] = createMembershipsContext();
+        $service = app(MembershipService::class);
+        $ama = $service->join($tenant->id, memberType($tenant), 'Ama', ['email' => 'ama@example.test']);
+        $service->join($tenant->id, memberType($tenant, 'Other', 5000), 'Kofi Private', ['email' => 'kofi@example.test']);
+        payDues($tenant, $ama);
+
+        $this->get(memberPortalLink($tenant, 'ama@example.test'));
+        $base = ['tenant' => $tenant->slug];
+        $page = $this->get(route('memberships.portal.me', $base))->assertOk()->assertSee('Active')->assertSee('Renew my membership')->assertDontSee('Kofi Private');
+        expect($ama->fresh()->status)->toBe('active');
+
+        $this->post(route('memberships.portal.renew', $base))->assertSessionHas('success');
+        $this->post(route('memberships.portal.renew', $base))->assertSessionHas('error');
+        expect($ama->renewals()->where('status', 'billed')->count())->toBe(1);
+        $this->get(route('memberships.portal.me', $base))->assertOk()->assertSee('Dues to pay');
+
+        $this->post(route('memberships.portal.logout', $base))->assertRedirect();
+        $this->post(route('memberships.portal.renew', $base))->assertForbidden();
+    });
+
+    test('the portal does not exist for organisations without the module', function (): void {
+        [, $tenant] = createMembershipsContext(false);
+
+        $this->get(route('memberships.portal.login', ['tenant' => $tenant->slug]))->assertNotFound();
+    });
+
+    test('link requests are limited to five a minute per visitor', function (): void {
+        [, $tenant] = createMembershipsContext();
+        app(MembershipService::class)->join($tenant->id, memberType($tenant), 'Ama', ['email' => 'ama@example.test']);
+        Mail::fake();
+
+        foreach (range(1, 7) as $attempt) {
+            $this->post(route('memberships.portal.send', ['tenant' => $tenant->slug]), ['email' => 'ama@example.test'])->assertOk();
+        }
+
+        Mail::assertSent(PortalLinkMail::class, 5);
     });
 });

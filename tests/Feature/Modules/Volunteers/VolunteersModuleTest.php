@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Mail\Portal\PortalLinkMail;
 use App\Models\Tenant;
 use App\Models\TenantFeature;
 use App\Models\User;
@@ -14,6 +15,7 @@ use App\Services\ModuleManager;
 use App\Services\Tenancy\TenantContext;
 use App\Services\Tenancy\TenantDatabaseManager;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Str;
 use Spatie\Permission\Models\Permission;
@@ -247,5 +249,91 @@ describe('Volunteers demo seeder', function (): void {
         (new VolunteersDemoSeeder)->run();
         app()->detectEnvironment(fn (): string => 'testing');
         expect(VolVolunteer::query()->count())->toBe(0);
+    });
+});
+
+describe('Volunteer portal', function (): void {
+    function portalLinkFor(Tenant $tenant, string $email): string
+    {
+        Mail::fake();
+        test()->post(route('volunteers.portal.send', ['tenant' => $tenant->slug]), ['email' => $email])->assertOk()->assertSee('on its way');
+        $url = null;
+        Mail::assertSent(PortalLinkMail::class, function (PortalLinkMail $mail) use (&$url): bool {
+            $url = $mail->url;
+
+            return true;
+        });
+
+        return (string) $url;
+    }
+
+    test('a link is only emailed to an active volunteer, looks the same for strangers, and works once', function (): void {
+        [, $tenant] = createVolunteersContext();
+        $volunteer = activeVolunteer($tenant, 'Ama', 'ama@example.test');
+        app(VolunteerService::class)->register($tenant->id, 'Pending Pat', ['email' => 'pat@example.test'], false);
+
+        Mail::fake();
+        foreach (['stranger@example.test', 'pat@example.test'] as $email) {
+            $this->post(route('volunteers.portal.send', ['tenant' => $tenant->slug]), ['email' => $email])->assertOk()->assertSee('on its way');
+        }
+        Mail::assertNothingSent();
+        $this->post(route('volunteers.portal.send', ['tenant' => $tenant->slug]), ['email' => 'x', 'website' => 'spam'])->assertSessionHasErrors();
+
+        $url = portalLinkFor($tenant, 'AMA@example.test');
+        $this->get(route('volunteers.portal.me', ['tenant' => $tenant->slug]))->assertRedirect(route('volunteers.portal.login', ['tenant' => $tenant->slug]));
+        $this->get($url.'x')->assertForbidden();
+        $this->get($url)->assertRedirect(route('volunteers.portal.me', ['tenant' => $tenant->slug]));
+        $this->get(route('volunteers.portal.me', ['tenant' => $tenant->slug]))->assertOk()->assertSee('Hello, Ama');
+
+        $this->flushSession();
+        $this->get($url)->assertForbidden()->assertSee('already been used');
+        expect($volunteer->fresh()->status)->toBe('active');
+    });
+
+    test('a signed-in volunteer logs hours for approval, signs up, prints a certificate and signs out, seeing only their own data', function (): void {
+        [, $tenant] = createVolunteersContext();
+        $service = app(VolunteerService::class);
+        $ama = activeVolunteer($tenant, 'Ama', 'ama@example.test');
+        $kofi = activeVolunteer($tenant, 'Kofi', 'kofi@example.test');
+        $service->review($service->logHours($kofi, today(), 6, 'Kofi secret shift'), true, null);
+        $opportunity = VolOpportunity::query()->create(['tenant_id' => $tenant->id, 'title' => 'Clinic day', 'starts_on' => today()->addDays(3), 'spots' => 1, 'status' => 'open']);
+
+        $this->get(portalLinkFor($tenant, 'ama@example.test'));
+        $base = ['tenant' => $tenant->slug];
+        $this->get(route('volunteers.portal.me', $base))->assertOk()->assertSee('Clinic day')->assertDontSee('Kofi secret shift');
+
+        $this->post(route('volunteers.portal.hours', $base), ['worked_on' => today()->toDateString(), 'hours' => 30])->assertSessionHasErrors('hours');
+        $this->post(route('volunteers.portal.hours', $base), ['worked_on' => today()->addDay()->toDateString(), 'hours' => 2])->assertSessionHas('error');
+        $this->post(route('volunteers.portal.hours', $base), ['worked_on' => today()->toDateString(), 'hours' => 2.5, 'activity' => 'Packing'])->assertSessionHas('success');
+        expect(VolHour::query()->where('volunteer_id', $ama->id)->first()->status)->toBe('pending')->and(VolHour::query()->where('volunteer_id', $ama->id)->first()->minutes)->toBe(150);
+
+        $this->get(route('volunteers.portal.certificate', $base))->assertRedirect()->assertSessionHas('error');
+        $service->review(VolHour::query()->where('volunteer_id', $ama->id)->firstOrFail(), true, null);
+        $this->get(route('volunteers.portal.certificate', $base))->assertOk()->assertHeader('Content-Type', 'application/pdf');
+
+        $this->post(route('volunteers.portal.signup', $base + ['opportunity' => $opportunity->id]))->assertSessionHas('success');
+        $this->post(route('volunteers.portal.signup', $base + ['opportunity' => $opportunity->id]))->assertSessionHas('error');
+
+        $this->post(route('volunteers.portal.logout', $base))->assertRedirect();
+        $this->get(route('volunteers.portal.me', $base))->assertRedirect();
+        $this->post(route('volunteers.portal.hours', $base), ['worked_on' => today()->toDateString(), 'hours' => 1])->assertForbidden();
+    });
+
+    test('the portal does not exist for organisations without the module', function (): void {
+        [, $tenant] = createVolunteersContext(false);
+
+        $this->get(route('volunteers.portal.login', ['tenant' => $tenant->slug]))->assertNotFound();
+    });
+
+    test('link requests are limited to five a minute per visitor', function (): void {
+        [, $tenant] = createVolunteersContext();
+        activeVolunteer($tenant, 'Ama', 'ama@example.test');
+        Mail::fake();
+
+        foreach (range(1, 7) as $attempt) {
+            $this->post(route('volunteers.portal.send', ['tenant' => $tenant->slug]), ['email' => 'ama@example.test'])->assertOk();
+        }
+
+        Mail::assertSent(PortalLinkMail::class, 5);
     });
 });

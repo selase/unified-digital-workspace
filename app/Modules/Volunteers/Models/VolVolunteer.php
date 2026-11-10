@@ -7,6 +7,7 @@ namespace App\Modules\Volunteers\Models;
 use App\Traits\BelongsToTenant;
 use App\Traits\HasUuid;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
@@ -22,6 +23,12 @@ final class VolVolunteer extends Model
 
     /** @var list<string> */
     protected $guarded = ['id'];
+
+    /** @return BelongsToMany<VolOpportunity, $this> */
+    public function opportunities(): BelongsToMany
+    {
+        return $this->belongsToMany(VolOpportunity::class, 'vol_signups', 'volunteer_id', 'opportunity_id');
+    }
 
     /** @return HasMany<VolHour, $this> */
     public function hours(): HasMany
