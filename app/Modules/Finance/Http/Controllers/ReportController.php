@@ -11,7 +11,9 @@ use App\Modules\Finance\Models\FinFund;
 use App\Modules\Finance\Services\FinanceReports;
 use App\Modules\Finance\Services\FinanceSettings;
 use App\Modules\Finance\Services\ReportCsv;
+use App\Modules\Finance\Services\ReportPdf;
 use App\Modules\Finance\Services\StatementReports;
+use App\Modules\Finance\Services\VatReport;
 use App\Modules\Finance\Support\ResolvesFinanceTenant;
 use Carbon\CarbonImmutable;
 use Illuminate\Contracts\View\View;
@@ -22,11 +24,11 @@ final class ReportController extends Controller
 {
     use ResolvesFinanceTenant;
 
-    public function agedReceivables(Request $request, FinanceReports $reports, FinanceSettings $settings, ReportCsv $csv): View|StreamedResponse
+    public function agedReceivables(Request $request, FinanceReports $reports, FinanceSettings $settings, ReportCsv $csv): View|StreamedResponse|\Illuminate\Http\Response
     {
         $tenantId = $this->allow($request, 'finance.view');
-        if ($request->query('format') === 'csv') {
-            return $csv->download('aged-receivables.csv', $csv->aged($reports->agedReceivables($tenantId), 'receivables', $settings->for($tenantId)->base_currency));
+        if (in_array($request->query('format'), ['csv', 'pdf'], true)) {
+            return $this->export($request, $csv, $tenantId, 'aged-receivables', $csv->aged($reports->agedReceivables($tenantId), 'receivables', $settings->for($tenantId)->base_currency));
         }
 
         return view('finance::reports.aged-receivables', [
@@ -35,11 +37,25 @@ final class ReportController extends Controller
         ]);
     }
 
-    public function agedPayables(Request $request, FinanceReports $reports, FinanceSettings $settings, ReportCsv $csv): View|StreamedResponse
+    public function vat(StatementRangeRequest $request, StatementReports $statements, FinanceSettings $settings, VatReport $vat, ReportCsv $csv): View|StreamedResponse|\Illuminate\Http\Response
     {
         $tenantId = $this->allow($request, 'finance.view');
-        if ($request->query('format') === 'csv') {
-            return $csv->download('aged-payables.csv', $csv->aged($reports->agedPayables($tenantId), 'payables', $settings->for($tenantId)->base_currency));
+        [$from, $to] = $this->period($request, $statements, $tenantId);
+        $report = $vat->summary($tenantId, $from, $to);
+        $profile = $settings->for($tenantId);
+
+        if (in_array($request->query('format'), ['csv', 'pdf'], true)) {
+            return $this->export($request, $csv, $tenantId, 'vat-summary', $csv->vat($report, $profile->base_currency));
+        }
+
+        return view('finance::reports.vat', ['report' => $report, 'currency' => $profile->base_currency, 'profile' => $profile]);
+    }
+
+    public function agedPayables(Request $request, FinanceReports $reports, FinanceSettings $settings, ReportCsv $csv): View|StreamedResponse|\Illuminate\Http\Response
+    {
+        $tenantId = $this->allow($request, 'finance.view');
+        if (in_array($request->query('format'), ['csv', 'pdf'], true)) {
+            return $this->export($request, $csv, $tenantId, 'aged-payables', $csv->aged($reports->agedPayables($tenantId), 'payables', $settings->for($tenantId)->base_currency));
         }
 
         return view('finance::reports.aged-payables', [
@@ -48,12 +64,12 @@ final class ReportController extends Controller
         ]);
     }
 
-    public function trialBalance(Request $request, FinanceReports $reports, FinanceSettings $settings, ReportCsv $csv): View|StreamedResponse
+    public function trialBalance(Request $request, FinanceReports $reports, FinanceSettings $settings, ReportCsv $csv): View|StreamedResponse|\Illuminate\Http\Response
     {
         $tenantId = $this->allow($request, 'finance.view');
         $asOf = $request->query('as_of');
-        if ($request->query('format') === 'csv') {
-            return $csv->download('trial-balance.csv', $csv->trialBalance($reports->trialBalance($tenantId, is_string($asOf) && $asOf !== '' ? $asOf : null), is_string($asOf) && $asOf !== '' ? $asOf : null, $settings->for($tenantId)->base_currency));
+        if (in_array($request->query('format'), ['csv', 'pdf'], true)) {
+            return $this->export($request, $csv, $tenantId, 'trial-balance', $csv->trialBalance($reports->trialBalance($tenantId, is_string($asOf) && $asOf !== '' ? $asOf : null), is_string($asOf) && $asOf !== '' ? $asOf : null, $settings->for($tenantId)->base_currency));
         }
 
         return view('finance::reports.trial-balance', [
@@ -63,13 +79,13 @@ final class ReportController extends Controller
         ]);
     }
 
-    public function profitAndLoss(StatementRangeRequest $request, StatementReports $statements, FinanceSettings $settings, ReportCsv $csv): View|StreamedResponse
+    public function profitAndLoss(StatementRangeRequest $request, StatementReports $statements, FinanceSettings $settings, ReportCsv $csv): View|StreamedResponse|\Illuminate\Http\Response
     {
         $tenantId = $this->allow($request, 'finance.view');
         [$from, $to] = $this->period($request, $statements, $tenantId);
         $fundId = $request->filled('fund_id') ? (int) $request->validated('fund_id') : null;
-        if ($request->query('format') === 'csv') {
-            return $csv->download('profit-and-loss.csv', $csv->profitAndLoss($statements->profitAndLoss($tenantId, $from, $to, $fundId), $from, $to, $settings->for($tenantId)->base_currency));
+        if (in_array($request->query('format'), ['csv', 'pdf'], true)) {
+            return $this->export($request, $csv, $tenantId, 'profit-and-loss', $csv->profitAndLoss($statements->profitAndLoss($tenantId, $from, $to, $fundId), $from, $to, $settings->for($tenantId)->base_currency));
         }
 
         return view('finance::reports.profit-and-loss', [
@@ -82,12 +98,12 @@ final class ReportController extends Controller
         ]);
     }
 
-    public function balanceSheet(StatementRangeRequest $request, StatementReports $statements, FinanceSettings $settings, ReportCsv $csv): View|StreamedResponse
+    public function balanceSheet(StatementRangeRequest $request, StatementReports $statements, FinanceSettings $settings, ReportCsv $csv): View|StreamedResponse|\Illuminate\Http\Response
     {
         $tenantId = $this->allow($request, 'finance.view');
         $asOf = $request->filled('as_of') ? CarbonImmutable::parse((string) $request->validated('as_of')) : today();
-        if ($request->query('format') === 'csv') {
-            return $csv->download('balance-sheet.csv', $csv->balanceSheet($statements->balanceSheet($tenantId, $asOf), $asOf, $settings->for($tenantId)->base_currency));
+        if (in_array($request->query('format'), ['csv', 'pdf'], true)) {
+            return $this->export($request, $csv, $tenantId, 'balance-sheet', $csv->balanceSheet($statements->balanceSheet($tenantId, $asOf), $asOf, $settings->for($tenantId)->base_currency));
         }
 
         return view('finance::reports.balance-sheet', [
@@ -97,12 +113,12 @@ final class ReportController extends Controller
         ]);
     }
 
-    public function cashFlow(StatementRangeRequest $request, StatementReports $statements, FinanceSettings $settings, ReportCsv $csv): View|StreamedResponse
+    public function cashFlow(StatementRangeRequest $request, StatementReports $statements, FinanceSettings $settings, ReportCsv $csv): View|StreamedResponse|\Illuminate\Http\Response
     {
         $tenantId = $this->allow($request, 'finance.view');
         [$from, $to] = $this->period($request, $statements, $tenantId);
-        if ($request->query('format') === 'csv') {
-            return $csv->download('cash-flow.csv', $csv->cashFlow($statements->cashFlow($tenantId, $from, $to), $from, $to, $settings->for($tenantId)->base_currency));
+        if (in_array($request->query('format'), ['csv', 'pdf'], true)) {
+            return $this->export($request, $csv, $tenantId, 'cash-flow', $csv->cashFlow($statements->cashFlow($tenantId, $from, $to), $from, $to, $settings->for($tenantId)->base_currency));
         }
 
         return view('finance::reports.cash-flow', [
@@ -113,12 +129,12 @@ final class ReportController extends Controller
         ]);
     }
 
-    public function funds(StatementRangeRequest $request, StatementReports $statements, FinanceSettings $settings, ReportCsv $csv): View|StreamedResponse
+    public function funds(StatementRangeRequest $request, StatementReports $statements, FinanceSettings $settings, ReportCsv $csv): View|StreamedResponse|\Illuminate\Http\Response
     {
         $tenantId = $this->allow($request, 'finance.view');
         [$from, $to] = $this->period($request, $statements, $tenantId);
-        if ($request->query('format') === 'csv') {
-            return $csv->download('fund-report.csv', $csv->funds($statements->fundReport($tenantId, $from, $to), $from, $to, $settings->for($tenantId)->base_currency));
+        if (in_array($request->query('format'), ['csv', 'pdf'], true)) {
+            return $this->export($request, $csv, $tenantId, 'fund-report', $csv->funds($statements->fundReport($tenantId, $from, $to), $from, $to, $settings->for($tenantId)->base_currency));
         }
 
         return view('finance::reports.funds', [
@@ -129,7 +145,7 @@ final class ReportController extends Controller
         ]);
     }
 
-    public function generalLedger(StatementRangeRequest $request, StatementReports $statements, FinanceSettings $settings, ReportCsv $csv): View|StreamedResponse
+    public function generalLedger(StatementRangeRequest $request, StatementReports $statements, FinanceSettings $settings, ReportCsv $csv): View|StreamedResponse|\Illuminate\Http\Response
     {
         $tenantId = $this->allow($request, 'finance.view');
         [$from, $to] = $this->period($request, $statements, $tenantId);
@@ -138,8 +154,8 @@ final class ReportController extends Controller
         $currency = $settings->for($tenantId)->base_currency;
         $report = $account instanceof FinAccount ? $statements->generalLedger($tenantId, $account, $from, $to) : null;
 
-        if ($report !== null && $request->query('format') === 'csv') {
-            return $csv->download('general-ledger-'.$account->code.'.csv', $csv->generalLedger($report, $currency));
+        if ($report !== null && in_array($request->query('format'), ['csv', 'pdf'], true)) {
+            return $this->export($request, $csv, $tenantId, 'general-ledger-'.$account->code, $csv->generalLedger($report, $currency));
         }
 
         return view('finance::reports.general-ledger', ['report' => $report, 'accounts' => $accounts, 'accountId' => $account?->id, 'from' => $from, 'to' => $to, 'currency' => $currency]);
@@ -156,5 +172,15 @@ final class ReportController extends Controller
         $from = $request->filled('from') ? CarbonImmutable::parse((string) $request->validated('from')) : $statements->fiscalYearStart($tenantId, $to);
 
         return [$from, $to];
+    }
+
+    /**
+     * @param  list<list<string|int|float|null>>  $rows
+     */
+    private function export(Request $request, ReportCsv $csv, string $tenantId, string $name, array $rows): StreamedResponse|\Illuminate\Http\Response
+    {
+        return $request->query('format') === 'pdf'
+            ? app(ReportPdf::class)->download($tenantId, $name, $rows)
+            : $csv->download($name.'.csv', $rows);
     }
 }

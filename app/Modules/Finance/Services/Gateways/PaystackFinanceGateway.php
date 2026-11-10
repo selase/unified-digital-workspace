@@ -62,6 +62,32 @@ final class PaystackFinanceGateway implements FinancePaymentGateway
         ];
     }
 
+    public function settlements(string $tenantId): array
+    {
+        $response = Http::withToken($this->requireSecret($tenantId))->timeout(20)->get(self::BASE_URL.'/settlement', ['perPage' => 100])->throw();
+
+        $rows = [];
+        foreach ((array) $response->json('data', []) as $item) {
+            $gross = (int) ($item['total_amount'] ?? 0);
+            $fees = (int) ($item['total_fees'] ?? 0);
+            $date = (string) ($item['settlement_date'] ?? $item['settled_at'] ?? '');
+            if (! isset($item['id']) || $date === '') {
+                continue;
+            }
+
+            $rows[] = [
+                'id' => (string) $item['id'],
+                'settled_on' => mb_substr($date, 0, 10),
+                'gross' => $gross,
+                'fees' => $fees,
+                'net' => (int) ($item['total_processed'] ?? $gross - $fees),
+                'status' => (string) ($item['status'] ?? 'pending'),
+            ];
+        }
+
+        return $rows;
+    }
+
     public function isValidWebhookSignature(string $tenantId, string $payload, ?string $signature): bool
     {
         $secret = $this->secret($tenantId);

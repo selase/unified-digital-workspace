@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Modules\Finance\Http\Controllers\AccountController;
+use App\Modules\Finance\Http\Controllers\AttachmentController;
 use App\Modules\Finance\Http\Controllers\BankController;
 use App\Modules\Finance\Http\Controllers\BillController;
 use App\Modules\Finance\Http\Controllers\BudgetController;
@@ -16,6 +17,7 @@ use App\Modules\Finance\Http\Controllers\PaymentController;
 use App\Modules\Finance\Http\Controllers\RecurringInvoiceController;
 use App\Modules\Finance\Http\Controllers\ReportController;
 use App\Modules\Finance\Http\Controllers\SettingsController;
+use App\Modules\Finance\Http\Controllers\SettlementController;
 use Illuminate\Support\Facades\Route;
 
 // '/finance' itself belongs to the tenant revenue page, so the module home lives at /finance/overview.
@@ -92,11 +94,20 @@ Route::post('/budgets', [BudgetController::class, 'store'])->name('budgets.store
 Route::get('/budgets/{budget}', [BudgetController::class, 'show'])->name('budgets.show');
 Route::delete('/budgets/{budget}', [BudgetController::class, 'destroy'])->name('budgets.destroy');
 
+Route::get('/payouts', [SettlementController::class, 'index'])->name('settlements.index');
+Route::post('/payouts/import', [SettlementController::class, 'import'])->name('settlements.import');
+Route::post('/payouts/{settlement}/post', [SettlementController::class, 'post'])->name('settlements.post');
+
+Route::post('/attachments/{type}/{uuid}', [AttachmentController::class, 'store'])->whereIn('type', ['bill', 'expense'])->name('attachments.store');
+Route::get('/attachments/{attachment}', [AttachmentController::class, 'download'])->name('attachments.download');
+Route::delete('/attachments/{attachment}', [AttachmentController::class, 'destroy'])->name('attachments.destroy');
+
 Route::get('/recurring', [RecurringInvoiceController::class, 'index'])->name('recurring.index');
 Route::post('/recurring', [RecurringInvoiceController::class, 'store'])->name('recurring.store');
 Route::post('/recurring/{recurring}/toggle', [RecurringInvoiceController::class, 'toggle'])->name('recurring.toggle');
 
 Route::get('/reports/aged-receivables', [ReportController::class, 'agedReceivables'])->name('reports.aged-receivables');
+Route::get('/reports/vat', [ReportController::class, 'vat'])->name('reports.vat');
 Route::get('/reports/aged-payables', [ReportController::class, 'agedPayables'])->name('reports.aged-payables');
 Route::get('/reports/profit-and-loss', [ReportController::class, 'profitAndLoss'])->name('reports.profit-and-loss');
 Route::get('/reports/balance-sheet', [ReportController::class, 'balanceSheet'])->name('reports.balance-sheet');
@@ -108,6 +119,7 @@ Route::get('/reports/trial-balance', [ReportController::class, 'trialBalance'])-
 Route::get('/settings', [SettingsController::class, 'edit'])->name('settings.edit');
 Route::put('/settings', [SettingsController::class, 'update'])->name('settings.update');
 Route::post('/settings/funds', [SettingsController::class, 'storeFund'])->name('settings.funds.store');
+Route::post('/settings/register-vat', [SettingsController::class, 'registerForVat'])->name('settings.register-vat');
 Route::post('/settings/close-year', [SettingsController::class, 'closeYear'])->name('settings.close-year');
 Route::post('/settings/accounts/ngo', [SettingsController::class, 'addNgoAccounts'])->name('settings.accounts.ngo');
 Route::post('/settings/taxes/ghana', [SettingsController::class, 'addGhanaTax'])->name('settings.taxes.ghana');

@@ -47,6 +47,12 @@
                         <option value="">Expense account</option>
                         @foreach($expenseAccounts as $account)<option value="{{ $account->id }}">{{ $account->code }} {{ $account->name }}</option>@endforeach
                     </select>
+                    @if($taxes->isNotEmpty())
+                    <select class="kt-select md:col-span-2" :name="`lines[${index}][tax_id]`" x-model="line.tax_id">
+                        <option value="">No tax</option>
+                        @foreach($taxes as $tax)<option value="{{ $tax->id }}">{{ $tax->name }}</option>@endforeach
+                    </select>
+                    @endif
                     @if($funds->isNotEmpty())
                     <select class="kt-select md:col-span-2" :name="`lines[${index}][fund_id]`" x-model="line.fund_id">
                         <option value="">No fund</option>
@@ -58,8 +64,8 @@
             </template>
 
             <div class="flex items-center justify-between">
-                <button type="button" class="kt-btn kt-btn-sm kt-btn-outline" @click="lines.push({description: '', amount: '', account_id: '', fund_id: ''})">Add line</button>
-                <div class="text-sm font-semibold">Total {{ $currency }} <span x-text="total().toFixed(2)"></span></div>
+                <button type="button" class="kt-btn kt-btn-sm kt-btn-outline" @click="lines.push({description: '', amount: '', account_id: '', fund_id: '', tax_id: ''})">Add line</button>
+                <div class="text-sm font-semibold">Before tax {{ $currency }} <span x-text="total().toFixed(2)"></span></div>
             </div>
 
             <textarea class="kt-input" name="notes" rows="2" placeholder="Notes">{{ old('notes', $bill->notes) }}</textarea>

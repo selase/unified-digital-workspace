@@ -165,6 +165,34 @@ final class ReportCsv
         return $rows;
     }
 
+    /**
+     * @param  array<string, mixed>  $report
+     * @return list<list<string|int|float|null>>
+     */
+    public function vat(array $report, string $currency): array
+    {
+        $labels = ['standard' => 'Standard-rated', 'zero_rated' => 'Zero-rated', 'exempt' => 'Exempt', 'uncoded' => 'No tax code'];
+        $rows = [['VAT summary', $report['from']->toDateString().' to '.$report['to']->toDateString(), ''], ['', 'Amount ('.$currency.')', ''], ['Sales (before tax)', '', '']];
+        foreach ($labels as $key => $label) {
+            $rows[] = [$label, Money::input($report['sales'][$key]), ''];
+        }
+        $rows[] = ['Output tax', Money::input($report['output']['total']), ''];
+        foreach ($report['output']['components'] as $name => $amount) {
+            $rows[] = ['  '.$name, Money::input($amount), ''];
+        }
+        $rows[] = ['Purchases (before tax)', '', ''];
+        foreach ($labels as $key => $label) {
+            $rows[] = [$label, Money::input($report['purchases'][$key]), ''];
+        }
+        $rows[] = ['Input tax', Money::input($report['input']['total']), ''];
+        foreach ($report['input']['components'] as $name => $amount) {
+            $rows[] = ['  '.$name, Money::input($amount), ''];
+        }
+        $rows[] = [$report['net_payable'] >= 0 ? 'Net tax payable' : 'Net tax refundable', Money::input(abs($report['net_payable'])), ''];
+
+        return $rows;
+    }
+
     /** Stops spreadsheet programs treating a text cell as a formula. */
     private function safe(string|int|float|null $cell): string
     {

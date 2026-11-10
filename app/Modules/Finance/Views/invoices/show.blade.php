@@ -40,6 +40,10 @@
 
     @include('finance::partials.nav')
 
+    @if($document->evat_status !== 'not_required')
+        <div class="rounded-lg bg-muted/30 p-3 text-sm">e-VAT: <strong>{{ str_replace('_', ' ', ucfirst($document->evat_status)) }}</strong>{{ $document->evat_reference ? ' · reference '.$document->evat_reference : '' }}{{ $document->evat_message ? ' · '.$document->evat_message : '' }}</div>
+    @endif
+
     @if($payLink)
         <div class="rounded-lg bg-muted/30 p-4 text-sm" x-data="{ copied: false }">
             <div class="font-medium text-foreground">Payment link</div>

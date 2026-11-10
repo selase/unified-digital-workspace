@@ -18,10 +18,12 @@ final class ExpenseService
         private readonly LedgerService $ledger,
         private readonly NumberSequence $numbers,
         private readonly FinanceSettings $settings,
+        private readonly TaxCalculator $taxes,
+        private readonly ChartOfAccounts $accounts,
     ) {}
 
     /**
-     * @param  array{description?: string|null, reference?: string|null, fund_id?: int|null}  $details
+     * @param  array{description?: string|null, reference?: string|null, fund_id?: int|null, tax_id?: int|null}  $details
      */
     public function record(string $tenantId, int $amount, CarbonInterface $date, int $expenseAccountId, int $paidFromAccountId, ?FinContact $vendor = null, array $details = [], ?string $userId = null): FinExpense
     {
@@ -31,6 +33,8 @@ final class ExpenseService
 
         return DB::connection('tenant')->transaction(function () use ($tenantId, $amount, $date, $expenseAccountId, $paidFromAccountId, $vendor, $details, $userId): FinExpense {
             $settings = $this->settings->for($tenantId);
+            $tax = $this->taxes->resolve($tenantId, $settings->tax_enabled, isset($details['tax_id']) ? (int) $details['tax_id'] : null, $amount);
+            $gross = $amount + $tax['amount'];
 
             $expense = FinExpense::query()->create([
                 'tenant_id' => $tenantId,
@@ -40,7 +44,9 @@ final class ExpenseService
                 'account_id' => $expenseAccountId,
                 'paid_from_account_id' => $paidFromAccountId,
                 'fund_id' => $details['fund_id'] ?? null,
-                'amount' => $amount,
+                'amount' => $gross,
+                'tax_id' => $tax['tax_id'],
+                'tax_amount' => $tax['amount'],
                 'description' => $details['description'] ?? null,
                 'reference' => $details['reference'] ?? null,
                 'created_by' => $userId,
@@ -49,10 +55,11 @@ final class ExpenseService
             $journal = $this->ledger->post(
                 $tenantId,
                 $date,
-                [
+                array_values(array_filter([
                     ['account_id' => $expenseAccountId, 'debit' => $amount, 'memo' => $details['description'] ?? $expense->number, 'contact_id' => $vendor?->id, 'fund_id' => $details['fund_id'] ?? null],
-                    ['account_id' => $paidFromAccountId, 'credit' => $amount, 'memo' => $expense->number, 'contact_id' => $vendor?->id],
-                ],
+                    $tax['amount'] > 0 ? ['account_id' => $this->accounts->inputTaxAccount($tenantId)->id, 'debit' => $tax['amount'], 'memo' => 'Input tax '.$expense->number, 'contact_id' => $vendor?->id] : null,
+                    ['account_id' => $paidFromAccountId, 'credit' => $gross, 'memo' => $expense->number, 'contact_id' => $vendor?->id],
+                ])),
                 'Expense '.$expense->number,
                 'expense',
                 $expense->id,

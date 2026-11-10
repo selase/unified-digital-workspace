@@ -28,6 +28,7 @@ final class SaveExpenseRequest extends FormRequest
             'account_id' => ['required', Rule::exists('fin_accounts', 'id')->where('tenant_id', $tenantId)->where('type', 'expense')],
             'paid_from_account_id' => ['required', Rule::exists('fin_accounts', 'id')->where('tenant_id', $tenantId)->where('type', 'asset')],
             'contact_id' => ['nullable', Rule::exists('fin_contacts', 'id')->where('tenant_id', $tenantId)],
+            'tax_id' => ['nullable', Rule::exists('fin_taxes', 'id')->where('tenant_id', $tenantId)],
             'fund_id' => ['nullable', Rule::exists('fin_funds', 'id')->where('tenant_id', $tenantId)],
             'description' => ['nullable', 'string', 'max:255'],
             'reference' => ['nullable', 'string', 'max:255'],

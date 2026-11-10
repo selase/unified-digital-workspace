@@ -7,7 +7,10 @@ namespace App\Modules\Finance\Providers;
 use App\Modules\Concerns\ModuleServiceProvider;
 use App\Modules\Finance\Console\AlertOverdueInvoices;
 use App\Modules\Finance\Console\RunRecurringInvoices;
+use App\Modules\Finance\Console\SubmitEvatInvoices;
+use App\Modules\Finance\Contracts\EvatProvider;
 use App\Modules\Finance\Contracts\FinancePaymentGateway;
+use App\Modules\Finance\Services\Evat\NullEvatProvider;
 use App\Modules\Finance\Services\Gateways\PaystackFinanceGateway;
 use Illuminate\Support\Facades\Route;
 
@@ -26,6 +29,7 @@ final class FinanceServiceProvider extends ModuleServiceProvider
     protected function registerBindings(): void
     {
         $this->app->bind(FinancePaymentGateway::class, PaystackFinanceGateway::class);
+        $this->app->bind(EvatProvider::class, NullEvatProvider::class);
     }
 
     protected function bootModule(): void
@@ -38,6 +42,6 @@ final class FinanceServiceProvider extends ModuleServiceProvider
 
     protected function registerCommands(): void
     {
-        $this->commands([RunRecurringInvoices::class, AlertOverdueInvoices::class]);
+        $this->commands([RunRecurringInvoices::class, AlertOverdueInvoices::class, SubmitEvatInvoices::class]);
     }
 }

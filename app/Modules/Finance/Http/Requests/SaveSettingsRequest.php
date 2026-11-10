@@ -33,6 +33,7 @@ final class SaveSettingsRequest extends FormRequest
             'default_payment_terms_days' => ['required', 'integer', 'min:0', 'max:365'],
             'lock_date' => ['nullable', 'date'],
             'tax_enabled' => ['sometimes', 'boolean'],
+            'evat_enabled' => ['sometimes', 'boolean'],
             'invoice_footer' => ['nullable', 'string', 'max:1000'],
         ];
     }

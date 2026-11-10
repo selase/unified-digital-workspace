@@ -28,6 +28,8 @@ final class ChartOfAccounts
 
     public const RETAINED_EARNINGS = 'retained_earnings';
 
+    public const INPUT_TAX = 'input_tax';
+
     /**
      * @var list<array{0: string, 1: string, 2: string, 3: string|null}>
      */
@@ -37,6 +39,7 @@ final class ChartOfAccounts
         ['1020', 'Mobile money', 'asset', null],
         ['1100', 'Accounts receivable', 'asset', self::RECEIVABLE],
         ['1200', 'Prepaid expenses', 'asset', null],
+        ['1300', 'VAT recoverable (input tax)', 'asset', self::INPUT_TAX],
         ['1500', 'Equipment', 'asset', null],
         ['1590', 'Accumulated depreciation', 'asset', null],
         ['2000', 'Accounts payable', 'liability', self::PAYABLE],
@@ -98,6 +101,43 @@ final class ChartOfAccounts
         }
 
         return $created;
+    }
+
+    /** The account input tax is held in until it is set against output tax. Created on demand for books set up before VAT existed. */
+    public function inputTaxAccount(string $tenantId): FinAccount
+    {
+        $this->ensureSeeded($tenantId);
+
+        return FinAccount::query()->firstOrCreate(
+            ['tenant_id' => $tenantId, 'code' => '1300'],
+            ['name' => 'VAT recoverable (input tax)', 'type' => 'asset', 'system_key' => self::INPUT_TAX],
+        );
+    }
+
+    /**
+     * Ghana tax codes for a VAT-registered business: the combined 20% rate (VAT 15%, NHIL 2.5%, GETFund 2.5%),
+     * plus zero-rated and exempt codes so such sales still show on the return. Returns the codes switched on.
+     *
+     * @return list<FinTax>
+     */
+    public function activateGhanaVat(string $tenantId): array
+    {
+        $standard = $this->seedGhanaTax($tenantId);
+        $standard->update(['is_active' => true, 'category' => 'standard']);
+
+        $codes = [$standard];
+        foreach ([['Zero-rated (0%)', 'zero_rated'], ['Exempt (0%)', 'exempt']] as [$name, $category]) {
+            $code = FinTax::query()->firstOrCreate(
+                ['tenant_id' => $tenantId, 'name' => $name],
+                ['components' => [], 'rate_basis_points' => 0, 'is_active' => true, 'category' => $category],
+            );
+            $code->update(['is_active' => true, 'category' => $category]);
+            $codes[] = $code;
+        }
+
+        $this->inputTaxAccount($tenantId);
+
+        return $codes;
     }
 
     public function seedGhanaTax(string $tenantId): FinTax

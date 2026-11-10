@@ -26,6 +26,7 @@
             <input class="kt-input" type="number" min="0" max="365" name="default_payment_terms_days" value="{{ old('default_payment_terms_days', $settings->default_payment_terms_days) }}" title="Default days until an invoice is due" required>
             <input class="kt-input" type="date" name="lock_date" value="{{ old('lock_date', $settings->lock_date?->toDateString()) }}" title="Nothing can be posted on or before this date">
             <label class="flex items-center gap-2 text-sm"><input type="checkbox" class="kt-checkbox" name="tax_enabled" value="1" @checked(old('tax_enabled', $settings->tax_enabled))> Charge tax on invoices (VAT-registered)</label>
+            <label class="flex items-center gap-2 text-sm md:col-span-2"><input type="checkbox" class="kt-checkbox" name="evat_enabled" value="1" @checked(old('evat_enabled', $settings->evat_enabled))> Prepare invoices for GRA e-VAT (each taxed invoice is marked as waiting to be submitted)</label>
             <textarea class="kt-input md:col-span-3" name="address" rows="2" placeholder="Address">{{ old('address', $settings->address) }}</textarea>
             <textarea class="kt-input md:col-span-3" name="invoice_footer" rows="2" placeholder="Default terms shown on invoices">{{ old('invoice_footer', $settings->invoice_footer) }}</textarea>
             <div><button class="kt-btn kt-btn-primary" type="submit">Save settings</button></div>
@@ -64,6 +65,15 @@
             </form>
         </div>
     </div>
+
+    <form method="POST" action="{{ route('finance.settings.register-vat') }}" class="kt-card">
+        @csrf
+        <div class="kt-card-header"><h3 class="kt-card-title">VAT</h3></div>
+        <div class="kt-card-content flex flex-col md:flex-row md:items-center gap-3">
+            <p class="text-xs text-muted-foreground flex-1">Not sure yet whether you are VAT-registered? Switch VAT on to plan as if you are: it adds the Ghana tax codes (VAT 15% + NHIL 2.5% + GETFund 2.5%, zero-rated and exempt), lets you choose a tax on invoices, bills and expenses, and fills the VAT report. Switch it off any time by unticking "Charge tax on invoices" in Business and invoicing. Status: {{ $settings->tax_enabled ? 'on' : 'off' }}{{ $settings->tax_number ? '' : '. TIN not entered yet' }}.</p>
+            <button class="kt-btn kt-btn-outline" type="submit">{{ $settings->tax_enabled ? 'Re-apply Ghana VAT codes' : 'Switch on VAT' }}</button>
+        </div>
+    </form>
 
     <form method="POST" action="{{ route('finance.settings.close-year') }}" class="kt-card" onsubmit="return confirm('Close this financial year and lock the books up to that date?')">
         @csrf
