@@ -10,10 +10,22 @@
             <p class="text-xs text-muted-foreground">Comprehensive search, lifecycle management, and conversion of client prospects.</p>
         </div>
         <div class="flex items-center gap-2">
+            <a href="{{ route('crm.export', 'leads') }}" class="kt-btn kt-btn-sm kt-btn-outline">Export CSV</a>
+            <a href="{{ route('crm.export', 'accounts') }}" class="kt-btn kt-btn-sm kt-btn-outline">Export accounts</a>
+            <a href="{{ route('crm.export', 'deals') }}" class="kt-btn kt-btn-sm kt-btn-outline">Export deals</a>
             <a href="{{ route('crm.index') }}" class="kt-btn kt-btn-sm kt-btn-outline">CRM Hub</a>
             <a href="{{ route('crm.pipeline') }}" class="kt-btn kt-btn-sm kt-btn-primary">Kanban Pipeline</a>
         </div>
     </div>
+
+    @can('crm.leads.manage')
+    <form method="POST" action="{{ route('crm.leads.import') }}" enctype="multipart/form-data" class="rounded-lg bg-muted/30 p-4 flex flex-wrap items-center gap-3 text-sm">
+        @csrf
+        <div class="flex-1 min-w-48"><div class="font-medium text-foreground">Import leads from a spreadsheet</div><div class="text-xs text-muted-foreground">Save as CSV with a header row: name, email, phone, organisation. Up to 1,000 rows; emails already in your list are skipped.</div></div>
+        <input type="file" name="file" accept=".csv,.txt" required class="text-sm">
+        <button class="kt-btn kt-btn-sm kt-btn-outline" type="submit">Import</button>
+    </form>
+    @endcan
 
     {{-- Filter & Search Bar --}}
     <div class="kt-card p-4">

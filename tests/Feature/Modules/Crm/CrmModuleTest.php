@@ -748,3 +748,42 @@ describe('Phase 18: Enterprise CRM Module & Lead-to-Client Conversion', function
             ->assertForbidden();
     });
 });
+
+it('exports leads, accounts and deals as CSV and neutralises spreadsheet formulas', function (): void {
+    [$user, $tenant] = createCrmTestContext();
+    $this->actingAs($user)->withSession(['active_tenant_id' => $tenant->id]);
+    CrmLead::create(['tenant_id' => $tenant->id, 'reference_code' => 'LEAD-EXP001', 'source' => 'direct', 'full_name' => '=HYPERLINK("evil")', 'email' => 'x@example.test', 'status' => 'new']);
+    $account = CrmAccount::create(['tenant_id' => $tenant->id, 'name' => 'Acme Ltd', 'code' => 'ACC-1', 'account_type' => 'corporate', 'status' => 'active']);
+    CrmDeal::create(['tenant_id' => $tenant->id, 'account_id' => $account->id, 'title' => 'Big contract', 'stage' => 'proposal', 'currency' => 'GHS', 'value_pesewas' => 1234500, 'probability' => 50]);
+
+    $leads = $this->get(route('crm.export', 'leads'));
+    $leads->assertOk()->assertDownload();
+    expect($leads->streamedContent())->toContain('LEAD-EXP001', "'=HYPERLINK");
+    expect($this->get(route('crm.export', 'accounts'))->streamedContent())->toContain('Acme Ltd');
+    expect($this->get(route('crm.export', 'deals'))->streamedContent())->toContain('Big contract', '12345.00');
+    $this->get(route('crm.export', 'nonsense'))->assertNotFound();
+
+    $user->revokePermissionTo('crm.view');
+    app(Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+    $this->get(route('crm.export', 'leads'))->assertForbidden();
+});
+
+it('imports leads from a CSV, skipping blank names, bad and duplicate emails, and refusing files without a name column', function (): void {
+    [$user, $tenant] = createCrmTestContext();
+    $this->actingAs($user)->withSession(['active_tenant_id' => $tenant->id]);
+    CrmLead::create(['tenant_id' => $tenant->id, 'reference_code' => 'LEAD-OLD001', 'source' => 'direct', 'full_name' => 'Existing', 'email' => 'dup@example.test', 'status' => 'new']);
+
+    $csv = "Name,Email,Phone,Organisation\nAma Mensah,ama@example.test,0244000000,Hope Org\n,blank@example.test,,\nBad Email,not-an-email,,\nDuplicate,DUP@example.test,,\nNo Email,,0200000000,\n";
+    $this->post(route('crm.leads.import'), ['file' => Illuminate\Http\UploadedFile::fake()->createWithContent('leads.csv', $csv)])->assertRedirect(route('crm.leads.index'))->assertSessionHas('message', 'Imported 2 lead(s); skipped 3 (blank name, bad or duplicate email).');
+
+    expect(CrmLead::query()->where('tenant_id', $tenant->id)->count())->toBe(3)
+        ->and(CrmLead::query()->where('email', 'ama@example.test')->first()->organisation)->toBe('Hope Org')
+        ->and(CrmLead::query()->where('full_name', 'No Email')->first()->email)->toBeNull();
+
+    $this->post(route('crm.leads.import'), ['file' => Illuminate\Http\UploadedFile::fake()->createWithContent('bad.csv', "Email\nx@example.test\n")])->assertSessionHas('status', 'error');
+    $this->post(route('crm.leads.import'), [])->assertSessionHasErrors('file');
+
+    $user->revokePermissionTo('crm.leads.manage');
+    app(Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+    $this->post(route('crm.leads.import'), ['file' => Illuminate\Http\UploadedFile::fake()->createWithContent('leads.csv', $csv)])->assertForbidden();
+});

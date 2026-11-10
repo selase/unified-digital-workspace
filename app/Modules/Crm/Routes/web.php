@@ -2,10 +2,13 @@
 
 declare(strict_types=1);
 
+use App\Modules\Crm\Http\Controllers\Web\CrmDataController;
 use App\Modules\Crm\Http\Controllers\Web\CrmWebController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [CrmWebController::class, 'index'])->name('index');
+Route::get('/export/{type}', [CrmDataController::class, 'export'])->name('export');
+Route::post('/leads/import', [CrmDataController::class, 'importLeads'])->name('leads.import');
 Route::get('/pipeline', [CrmWebController::class, 'pipeline'])->name('pipeline');
 
 // Leads CRUD & Lifecycle
