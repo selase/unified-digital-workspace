@@ -109,6 +109,25 @@ final class DashboardController extends Controller
             }
         }
 
+        // Memberships telemetry
+        if ($moduleManager->isEnabledForTenant('memberships', $tenant) && auth()->user()?->can('memberships.view')) {
+            try {
+                $moduleCards['memberships'] = [
+                    'name' => 'Memberships',
+                    'route' => Route::has('memberships.index') ? route('memberships.index') : '#',
+                    'icon' => 'ki-profile-circle',
+                    'badge' => 'Active',
+                    'kpis' => [
+                        ['label' => 'Active', 'value' => \App\Modules\Memberships\Models\MemMember::query()->where('tenant_id', $tenant->id)->where('status', 'active')->count()],
+                        ['label' => 'Renewing in 60 days', 'value' => \App\Modules\Memberships\Models\MemMember::query()->where('tenant_id', $tenant->id)->where('status', 'active')->whereDate('expires_on', '<=', today()->addDays(60)->toDateString())->count()],
+                        ['label' => 'Awaiting payment', 'value' => \App\Modules\Memberships\Models\MemMember::query()->where('tenant_id', $tenant->id)->where('status', 'pending')->count()],
+                    ],
+                ];
+            } catch (Throwable $error) {
+                report($error);
+            }
+        }
+
         // Volunteers telemetry
         if ($moduleManager->isEnabledForTenant('volunteers', $tenant) && auth()->user()?->can('volunteers.view')) {
             try {

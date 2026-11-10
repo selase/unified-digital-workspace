@@ -253,7 +253,18 @@ _Source: `app/Modules/Grants/Routes/web.php`; `Services/GrantService.php`; grant
 
 _Source: `app/Modules/Volunteers/Routes/web.php`; `Services/VolunteerService.php`; volunteers views._
 
-## 22. Beneficiaries: register, consent, cases and services (paid add-on)
+## 22. Memberships: types, members, dues and renewals (paid add-on)
+
+1. Open Memberships, then Membership types, and create the kinds of membership you offer with a fee and how many months one payment lasts. A fee of 0 is a free or honorary type.
+2. Add members on the Members page, or share the public join link from the Overview. A paid type raises the dues invoice in Finance straight away; a public applicant is sent to pay it online when your payment account is connected.
+3. A member becomes active when the dues invoice is paid, and stays active until the end of the paid period. The member page shows the payment link, dues history and actions: invoice dues, activate without an invoice (honorary), cancel, reinstate.
+4. Each morning the system applies paid dues, expires lapsed members and invoices renewals 30 days ahead for types set to auto-renew. You get an alert for each renewal invoice raised.
+
+**Limits:** members do not log in; there are no membership cards, certificates, voting or family and group memberships yet. Dues are income account 4230 in Finance.
+
+_Source: `app/Modules/Memberships/Routes/web.php`; `Services/MembershipService.php`; memberships views._
+
+## 23. Beneficiaries: register, consent, cases and services (paid add-on)
 
 1. Open Beneficiaries, then Register, and register each person. They get a reference such as BEN-00001.
 2. Record their consent before anything else: what they agreed to and the date. Until then services and case work are locked.

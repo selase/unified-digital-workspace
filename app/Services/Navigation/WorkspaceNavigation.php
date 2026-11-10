@@ -837,6 +837,26 @@ final class WorkspaceNavigation
                     ],
                 ],
             ],
+            'memberships' => [
+                'label' => 'Memberships',
+                'icon' => 'ki-filled ki-profile-circle',
+                'permission' => 'memberships.view',
+                'home_route' => 'memberships.index',
+                'sidebar' => [
+                    ['label' => 'Members', 'route' => 'memberships.members.index'],
+                    ['label' => 'Membership types', 'route' => 'memberships.types.index'],
+                ],
+                'top_menu' => [
+                    [
+                        'label' => 'Memberships',
+                        'items' => [
+                            ['label' => 'Overview', 'route' => 'memberships.index'],
+                            ['label' => 'Members', 'route' => 'memberships.members.index'],
+                            ['label' => 'Membership types', 'route' => 'memberships.types.index'],
+                        ],
+                    ],
+                ],
+            ],
             'beneficiaries' => [
                 'label' => 'Beneficiaries',
                 'icon' => 'ki-filled ki-user-square',
