@@ -18,6 +18,7 @@ use App\Modules\Finance\Http\Controllers\RecurringInvoiceController;
 use App\Modules\Finance\Http\Controllers\ReportController;
 use App\Modules\Finance\Http\Controllers\SettingsController;
 use App\Modules\Finance\Http\Controllers\SettlementController;
+use App\Modules\Finance\Http\Controllers\TimeBillingController;
 use Illuminate\Support\Facades\Route;
 
 // '/finance' itself belongs to the tenant revenue page, so the module home lives at /finance/overview.
@@ -102,6 +103,8 @@ Route::post('/attachments/{type}/{uuid}', [AttachmentController::class, 'store']
 Route::get('/attachments/{attachment}', [AttachmentController::class, 'download'])->name('attachments.download');
 Route::delete('/attachments/{attachment}', [AttachmentController::class, 'destroy'])->name('attachments.destroy');
 
+Route::get('/time-billing', [TimeBillingController::class, 'index'])->name('time-billing.index');
+Route::post('/time-billing', [TimeBillingController::class, 'store'])->name('time-billing.store');
 Route::get('/recurring', [RecurringInvoiceController::class, 'index'])->name('recurring.index');
 Route::post('/recurring', [RecurringInvoiceController::class, 'store'])->name('recurring.store');
 Route::post('/recurring/{recurring}/toggle', [RecurringInvoiceController::class, 'toggle'])->name('recurring.toggle');

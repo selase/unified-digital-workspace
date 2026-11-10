@@ -11,6 +11,9 @@
             <p class="text-xs text-muted-foreground">{{ $type === 'quote' ? 'Offers sent to customers. Convert an accepted quote into an invoice.' : ($type === 'credit_note' ? 'Reduce what a customer owes. Raise one from an invoice.' : 'Invoices post to the ledger when they are issued.') }}</p>
         </div>
         @can('finance.invoices.manage')
+            @if($type === 'invoice' && app(\App\Services\ModuleManager::class)->isEnabledForTenant('project-management', \App\Models\Tenant::find(app(\App\Services\Tenancy\TenantContext::class)->activeTenantId())))
+                <a href="{{ route('finance.time-billing.index') }}" class="kt-btn kt-btn-sm kt-btn-outline">Bill project time</a>
+            @endif
             @if($type !== 'credit_note')
                 <a href="{{ route('finance.invoices.create', ['type' => $type]) }}" class="kt-btn kt-btn-sm kt-btn-primary">New {{ $type === 'quote' ? 'quote' : 'invoice' }}</a>
             @endif

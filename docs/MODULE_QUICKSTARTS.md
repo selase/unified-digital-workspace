@@ -100,7 +100,7 @@ _Source: `app/Modules/ProjectManagement/Routes/{web,api}.php`; `Http/Controllers
 4. Set up appraisal periods, templates and rating scales, then create appraisals and complete the available goals, competencies and reviews. Access depends on the participant's role and relationship to the appraisal.
 5. HR staff maintain salary levels, steps and allowances, assign compensation, and submit promotions for supervisor and HR review.
 
-**Limits:** there is no payroll processing, attendance tracking or public recruitment/careers application page. Marking a candidate hired creates onboarding tasks, but does not automatically create their employee record; HR must create it separately. Salary structures are records, not a payroll run.
+**Limits:** there is no payroll processing. Attendance tracking and a public careers page (applicants can attach a CV and get a confirmation email) are included. Marking a candidate hired creates onboarding tasks, but does not automatically create their employee record; HR must create it separately. Salary structures are records, not a payroll run.
 
 _Source: `app/Modules/HrmsCore/Routes/web.php`; `Http/Controllers/Web/Hrms{EmployeeDirectory,EmployeeDossierWeb,DepartmentDirectory,LeaveRequest,Recruitment,AppraisalWeb,SalaryWeb,PromotionWeb}Controller.php`; corresponding employee, recruitment, appraisal and salary views; `conductor/tracks.md`._
 
@@ -212,7 +212,7 @@ _Source: `app/Modules/Store/Routes/web.php`; `Http/Controllers/Web/StoreWebContr
 6. Attach receipts and supplier documents to bills and expenses. Under Payouts, fetch Paystack payouts and record each one: the money moves from the Paystack clearing account to the bank and Paystack's fees are booked as a charge.
 7. Every report downloads as CSV or PDF. Customer statements are on the Contacts list. At year end, Settings has a guided "Close a financial year" that moves profit to retained earnings and locks the books.
 
-**Limits:** posted entries cannot be edited; correct them by voiding or reversing. Online payment needs the organisation's own Paystack keys. The VAT report prepares the figures for a return but does not file one. GRA e-VAT: you can switch on "prepare invoices for e-VAT", which marks each taxed invoice as waiting; there is no certified GRA connection yet, so nothing is submitted until one is set up. Multi-currency, inventory and billing from timesheets are not included.
+**Limits:** posted entries cannot be edited; correct them by voiding or reversing. Online payment needs the organisation's own Paystack keys. The VAT report prepares the figures for a return but does not file one. GRA e-VAT: you can switch on "prepare invoices for e-VAT", which marks each taxed invoice as waiting; there is no certified GRA connection yet, so nothing is submitted until one is set up. Multi-currency and inventory are not included. If you also use Project Management, Invoices shows "Bill project time": pick a project and period, enter an hourly rate, and a draft invoice is created with a line per task; those hours are marked billed until the invoice is voided.
 
 _Source: `app/Modules/Finance/Routes/web.php`; `Http/Controllers/*Controller.php`; `Services/{LedgerService,InvoiceService,PaymentService}.php`; finance views._
 
@@ -226,7 +226,9 @@ _Source: `app/Modules/Finance/Routes/web.php`; `Http/Controllers/*Controller.php
 6. Share your public giving page (the link on the Overview). Once Paystack keys are added under Accounting settings, visitors can give by card or mobile money and each confirmed gift is recorded and receipted automatically.
 7. Open or email the receipt from the donations list. The Overview shows what you raised, your top donors and campaign progress; the Fund report under Accounting shows income and spending by fund.
 
-**Limits:** pledges are reminders, not automatic charges (the donor is not billed on a schedule), and there are no tax-relief claims yet. Online giving needs the organisation's own Paystack keys. Voiding a gift reverses its ledger entry and keeps the receipt number.
+On a pledge, "Payment link" makes a link you can send the donor; paying it books the instalment, receipts it and moves the due date on.
+
+**Limits:** pledges are not charged automatically (the donor pays when they use the link or you receive the instalment yourself), and there are no tax-relief claims yet. Online giving needs the organisation's own Paystack keys. Voiding a gift reverses its ledger entry and keeps the receipt number.
 
 _Source: `app/Modules/Donations/Routes/web.php`; `Services/DonationService.php`; donations views._
 
@@ -238,7 +240,7 @@ _Source: `app/Modules/Donations/Routes/web.php`; `Services/DonationService.php`;
 4. Tag bills and expenses with the grant's fund so the grant page can show how much has been spent and what is left.
 5. Add the reports the funder expects with their due dates, and mark each submitted. The Overview lists overdue instalments and reports.
 
-**Limits:** spending counts expenses tagged to the grant's fund inside the grant's dates; there are no funder-specific report templates, multi-currency grants, or budget lines per grant yet.
+**Limits:** spending counts expenses tagged to the grant's fund inside the grant's dates; on each grant you can set budget lines per expense account and see budget against spending, and download a funder report (CSV or PDF). There are no funder-specific report templates or multi-currency grants yet.
 
 _Source: `app/Modules/Grants/Routes/web.php`; `Services/GrantService.php`; grants views._
 
@@ -249,7 +251,7 @@ _Source: `app/Modules/Grants/Routes/web.php`; `Services/GrantService.php`; grant
 3. Open Hours and log time a volunteer gave. Someone with approval rights then approves or rejects it. Only approved hours count in the totals.
 4. The Overview shows active volunteers, hours this year, who is waiting for approval, and the most hours given.
 
-**Limits:** volunteers do not log in themselves; staff log and approve hours. There are no certificates, background-check records or shift rosters yet.
+**Limits:** volunteers do not log in themselves; staff log and approve hours. On a volunteer's page, Certificate prints a certificate of service from approved hours; on Opportunities, Roster prints the sign-up list. There are no background-check records or shift scheduling yet.
 
 _Source: `app/Modules/Volunteers/Routes/web.php`; `Services/VolunteerService.php`; volunteers views._
 
@@ -272,7 +274,7 @@ _Source: `app/Modules/Memberships/Routes/web.php`; `Services/MembershipService.p
 4. If someone withdraws consent, choose Withdraw consent: no new services or case work can be recorded. If someone asks to be forgotten, choose Erase personal details: their name, phone, birth date and notes are deleted for good and only anonymous counts remain.
 5. Staff without the "confidential" permission see references and initials only. The Access log lists who opened or changed each record. The Overview shows counts by programme, gender and region, with no personal details.
 
-**Limits:** there are no photos, document uploads, referrals between organisations or offline field entry yet. The access log records views and changes inside the application, not database-level access.
+**Limits:** you can attach photos and documents (only people who may see personal details can open them, and each opening is logged) and record referrals to other services with a follow-up date. Anonymising a person deletes their files. There is no offline field entry yet. The access log records views and changes inside the application, not database-level access.
 
 _Source: `app/Modules/Beneficiaries/Routes/web.php`; `Services/BeneficiaryService.php`; beneficiaries views._
 
