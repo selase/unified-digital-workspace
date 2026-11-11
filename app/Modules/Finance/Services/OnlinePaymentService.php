@@ -26,6 +26,7 @@ final class OnlinePaymentService
     public function canCollect(FinInvoice $invoice): bool
     {
         return $invoice->type === FinInvoice::TYPE_INVOICE
+            && (float) $invoice->exchange_rate === 1.0
             && in_array($invoice->status, [FinInvoice::STATUS_SENT, FinInvoice::STATUS_PARTLY_PAID], true)
             && $invoice->balanceDue() > 0
             && $this->gateway->isConfigured($invoice->tenant_id);

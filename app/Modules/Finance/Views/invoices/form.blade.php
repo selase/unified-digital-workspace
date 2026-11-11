@@ -51,6 +51,16 @@
                 <input class="kt-input" type="date" name="due_date" value="{{ old('due_date', $document->due_date?->toDateString()) }}" title="Due date (defaults to the payment terms)">
             </div>
 
+            @php $baseCurrency = $settings->base_currency ?? 'GHS'; $currentCurrency = old('currency', $document->currency ?: $baseCurrency); @endphp
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3" x-data="{ currency: '{{ $currentCurrency }}' }">
+                <select class="kt-select" name="currency" x-model="currency" title="Currency of this document">
+                    <option value="{{ $baseCurrency }}">{{ $baseCurrency }} (your currency)</option>
+                    @foreach(\App\Modules\Finance\Models\FinInvoice::FOREIGN_CURRENCIES as $code => $name)@if($code !== $baseCurrency)<option value="{{ $code }}">{{ $code }} · {{ $name }}</option>@endif @endforeach
+                </select>
+                <input class="kt-input" type="number" step="0.000001" min="0.000001" name="exchange_rate" value="{{ old('exchange_rate', $document->exists && (float) $document->exchange_rate !== 1.0 ? $document->exchange_rate : '') }}" x-show="currency !== '{{ $baseCurrency }}'" :required="currency !== '{{ $baseCurrency }}'" placeholder="1 {{ '' }}unit of this currency = ? {{ $baseCurrency }}" x-cloak>
+                <p class="text-xs text-muted-foreground self-center" x-show="currency !== '{{ $baseCurrency }}'" x-cloak>The document is in this currency; the books record it in {{ $baseCurrency }} at this rate. Tax is not added to foreign-currency documents, and customers cannot pay them online.</p>
+            </div>
+
             <div>
                 <select class="kt-select md:w-72" @change="addItem($event)">
                     <option value="">Add from saved items…</option>

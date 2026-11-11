@@ -22,7 +22,7 @@ final class InvoiceService
     ) {}
 
     /**
-     * @param  array{type?: string, issue_date: string, due_date?: string|null, notes?: string|null, terms?: string|null, recurring_id?: int|null}  $data
+     * @param  array{type?: string, issue_date: string, due_date?: string|null, notes?: string|null, terms?: string|null, recurring_id?: int|null, currency?: string|null, exchange_rate?: float|string|null}  $data
      * @param  list<array{description: string, quantity: float|int|string, unit_price: int, item_id?: int|null, account_id?: int|null, tax_id?: int|null, fund_id?: int|null}>  $lines
      */
     public function saveDraft(string $tenantId, FinContact $contact, array $data, array $lines, ?FinInvoice $invoice = null, ?string $userId = null): FinInvoice
@@ -36,8 +36,9 @@ final class InvoiceService
         }
 
         $settings = $this->settings->for($tenantId);
+        [$currency, $rate] = $this->currencyAndRate($settings->base_currency, $data, $invoice);
 
-        return DB::connection('tenant')->transaction(function () use ($tenantId, $contact, $data, $lines, $invoice, $userId, $settings): FinInvoice {
+        return DB::connection('tenant')->transaction(function () use ($tenantId, $contact, $data, $lines, $invoice, $userId, $settings, $currency, $rate): FinInvoice {
             $invoice ??= new FinInvoice(['tenant_id' => $tenantId, 'status' => FinInvoice::STATUS_DRAFT, 'created_by' => $userId]);
 
             $invoice->fill([
@@ -45,7 +46,8 @@ final class InvoiceService
                 'contact_id' => $contact->id,
                 'issue_date' => $data['issue_date'],
                 'due_date' => $data['due_date'] ?? null,
-                'currency' => $settings->base_currency,
+                'currency' => $currency,
+                'exchange_rate' => $rate,
                 'notes' => $data['notes'] ?? null,
                 'terms' => $data['terms'] ?? null,
                 'recurring_id' => $data['recurring_id'] ?? ($invoice->exists ? $invoice->recurring_id : null),
@@ -60,7 +62,9 @@ final class InvoiceService
             foreach (array_values($lines) as $position => $line) {
                 $quantity = (int) round(((float) $line['quantity']) * 1000);
                 $lineTotal = (int) round($quantity * (int) $line['unit_price'] / 1000);
-                $tax = $this->taxes->resolve($tenantId, $settings->tax_enabled, isset($line['tax_id']) ? (int) $line['tax_id'] : null, $lineTotal);
+                $tax = $currency === $settings->base_currency
+                    ? $this->taxes->resolve($tenantId, $settings->tax_enabled, isset($line['tax_id']) ? (int) $line['tax_id'] : null, $lineTotal)
+                    : ['tax_id' => null, 'amount' => 0];
                 $taxAmount = $tax['amount'];
 
                 FinInvoiceLine::query()->create([
@@ -171,6 +175,8 @@ final class InvoiceService
                 [
                     'type' => FinInvoice::TYPE_INVOICE,
                     'issue_date' => today()->toDateString(),
+                    'currency' => $quote->currency,
+                    'exchange_rate' => $quote->exchange_rate,
                     'notes' => $quote->notes,
                     'terms' => $quote->terms,
                 ],
@@ -236,7 +242,7 @@ final class InvoiceService
             $note = $this->saveDraft(
                 $invoice->tenant_id,
                 $invoice->contact,
-                ['type' => FinInvoice::TYPE_CREDIT_NOTE, 'issue_date' => today()->toDateString(), 'notes' => 'Credit for '.$invoice->number],
+                ['type' => FinInvoice::TYPE_CREDIT_NOTE, 'issue_date' => today()->toDateString(), 'notes' => 'Credit for '.$invoice->number, 'currency' => $invoice->currency, 'exchange_rate' => $invoice->exchange_rate],
                 $invoice->lines->map(fn (FinInvoiceLine $line): array => [
                     'description' => $line->description,
                     'quantity' => $line->quantity_thousandths / 1000,
@@ -277,6 +283,29 @@ final class InvoiceService
     /**
      * @return list<array{account_id: int, debit?: int, credit?: int, memo?: string|null, contact_id?: int|null, fund_id?: int|null}>
      */
+    /**
+     * A document is in the base currency unless a foreign one is asked for, in which case a rate to the base currency is required.
+     *
+     * @param  array<string, mixed>  $data
+     * @return array{0: string, 1: float}
+     */
+    private function currencyAndRate(string $base, array $data, ?FinInvoice $existing): array
+    {
+        $currency = mb_strtoupper((string) ($data['currency'] ?? ($existing?->currency ?? $base)));
+        if ($currency === $base) {
+            return [$base, 1.0];
+        }
+        if (! array_key_exists($currency, FinInvoice::FOREIGN_CURRENCIES)) {
+            throw new DomainException('That currency is not supported.');
+        }
+        $rate = (float) ($data['exchange_rate'] ?? ($existing?->exchange_rate ?? 0));
+        if ($rate <= 0) {
+            throw new DomainException('Enter the exchange rate: how many '.$base.' one '.$currency.' is worth.');
+        }
+
+        return [$currency, round($rate, 6)];
+    }
+
     private function journalLines(FinInvoice $invoice, bool $isCredit = false): array
     {
         $tenantId = $invoice->tenant_id;
@@ -285,7 +314,7 @@ final class InvoiceService
 
         $lines = [[
             'account_id' => $receivable->id,
-            'debit' => $invoice->total,
+            'debit' => $invoice->baseTotal(),
             'memo' => $invoice->number,
             'contact_id' => $invoice->contact_id,
         ]];
@@ -298,10 +327,18 @@ final class InvoiceService
             $income[$key]['credit'] += $line->line_total;
         }
 
+        $income = array_values(array_filter($income, fn (array $row): bool => $row['credit'] > 0));
+        foreach ($income as $index => $row) {
+            $income[$index]['credit'] = $invoice->toBase($row['credit']);
+        }
+        if ($income !== [] && $invoice->tax_total === 0) {
+            // Converting each line can differ from converting the total by a few minor units; the biggest line absorbs it.
+            $difference = $invoice->baseTotal() - array_sum(array_column($income, 'credit'));
+            $biggest = array_search(max(array_column($income, 'credit')), array_column($income, 'credit'), true);
+            $income[$biggest]['credit'] += $difference;
+        }
         foreach ($income as $row) {
-            if ($row['credit'] > 0) {
-                $lines[] = $row;
-            }
+            $lines[] = $row;
         }
 
         if ($invoice->tax_total > 0) {

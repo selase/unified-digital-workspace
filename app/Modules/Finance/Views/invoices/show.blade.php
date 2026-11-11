@@ -81,6 +81,7 @@
                     <tr><td colspan="4" class="text-end text-muted-foreground">Subtotal</td><td class="text-end">{{ Money::format($document->subtotal, $document->currency) }}</td></tr>
                     @if($document->tax_total)<tr><td colspan="4" class="text-end text-muted-foreground">Tax</td><td class="text-end">{{ Money::format($document->tax_total, $document->currency) }}</td></tr>@endif
                     <tr><td colspan="4" class="text-end font-semibold">Total</td><td class="text-end font-semibold">{{ Money::format($document->total, $document->currency) }}</td></tr>
+                    @if((float) $document->exchange_rate !== 1.0)<tr><td colspan="4" class="text-end text-muted-foreground">Booked at {{ rtrim(rtrim(number_format((float) $document->exchange_rate, 6), '0'), '.') }} = {{ Money::format($document->baseTotal(), $settings->base_currency) }}</td><td></td></tr>@endif
                     @unless($isQuote || $isCredit)
                     <tr><td colspan="4" class="text-end text-muted-foreground">Paid</td><td class="text-end">{{ Money::format($document->amount_paid, $document->currency) }}</td></tr>
                     @if($document->credits_applied)<tr><td colspan="4" class="text-end text-muted-foreground">Credit notes</td><td class="text-end">{{ Money::format($document->credits_applied, $document->currency) }}</td></tr>@endif

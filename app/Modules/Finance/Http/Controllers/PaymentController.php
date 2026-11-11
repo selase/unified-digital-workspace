@@ -53,7 +53,7 @@ final class PaymentController extends Controller
                 Money::toMinor($request->validated('amount')),
                 Carbon::parse($request->validated('date')),
                 $request->allocationAmounts(),
-                $request->safe()->only(['method', 'reference', 'deposit_account_id', 'notes']),
+                $request->safe()->only(['method', 'reference', 'deposit_account_id', 'notes', 'currency', 'exchange_rate']),
                 $this->actorId($request),
             );
         } catch (DomainException $error) {

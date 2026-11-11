@@ -32,7 +32,7 @@ final class PaymentService
      * credit receivables. Anything not allocated stays as customer credit.
      *
      * @param  array<int, int>  $allocations  invoice id => amount
-     * @param  array{method?: string, reference?: string|null, gateway?: string|null, gateway_reference?: string|null, deposit_account_id?: int|null, notes?: string|null}  $details
+     * @param  array{method?: string, reference?: string|null, gateway?: string|null, gateway_reference?: string|null, deposit_account_id?: int|null, notes?: string|null, currency?: string|null, exchange_rate?: float|string|null}  $details
      */
     public function record(string $tenantId, FinContact $contact, int $amount, CarbonInterface $date, array $allocations, array $details = [], ?string $userId = null): FinPayment
     {
@@ -80,6 +80,8 @@ final class PaymentService
                 }
             }
 
+            [$currency, $rate, $baseAmount, $receivableCredit] = $this->currencyFigures($settings->base_currency, $amount, $allocations, $targets, $details);
+
             $depositKey = $gateway !== null ? ChartOfAccounts::GATEWAY_CLEARING : ChartOfAccounts::BANK;
             $depositAccountId = $details['deposit_account_id'] ?? $this->accounts->bySystemKey($tenantId, $depositKey)->id;
 
@@ -89,6 +91,9 @@ final class PaymentService
                 'contact_id' => $contact->id,
                 'date' => $date->toDateString(),
                 'amount' => $amount,
+                'currency' => $currency,
+                'exchange_rate' => $rate,
+                'base_amount' => $baseAmount,
                 'method' => $details['method'] ?? 'bank_transfer',
                 'reference' => $details['reference'] ?? null,
                 'gateway' => $gateway,
@@ -98,13 +103,20 @@ final class PaymentService
                 'created_by' => $userId,
             ]);
 
+            $journalLines = [
+                ['account_id' => $depositAccountId, 'debit' => $baseAmount, 'memo' => $payment->number, 'contact_id' => $contact->id],
+                ['account_id' => $this->accounts->bySystemKey($tenantId, ChartOfAccounts::RECEIVABLE)->id, 'credit' => $receivableCredit, 'memo' => $payment->number, 'contact_id' => $contact->id],
+            ];
+            if ($baseAmount !== $receivableCredit) {
+                // Money arrived at a different rate than the invoices were booked at: the difference is a gain (credit) or a loss (debit).
+                $difference = $baseAmount - $receivableCredit;
+                $journalLines[] = ['account_id' => $this->accounts->fxAccount($tenantId)->id, 'credit' => max($difference, 0), 'debit' => max(-$difference, 0), 'memo' => 'Exchange difference '.$payment->number];
+            }
+
             $journal = $this->ledger->post(
                 $tenantId,
                 $date,
-                [
-                    ['account_id' => $depositAccountId, 'debit' => $amount, 'memo' => $payment->number, 'contact_id' => $contact->id],
-                    ['account_id' => $this->accounts->bySystemKey($tenantId, ChartOfAccounts::RECEIVABLE)->id, 'credit' => $amount, 'memo' => $payment->number, 'contact_id' => $contact->id],
-                ],
+                $journalLines,
                 'Payment '.$payment->number,
                 'payment',
                 $payment->id,
@@ -143,6 +155,52 @@ final class PaymentService
 
             $payment->delete();
         });
+    }
+
+    /**
+     * Works out what to book. A payment in the base currency is booked as is. A foreign-currency payment must settle
+     * invoices in that same currency in full (no unallocated credit); the receivable is cleared at the rate each invoice was
+     * booked at, and the difference from what arrived becomes an exchange gain or loss.
+     *
+     * @param  array<int, int>  $allocations
+     * @param  \Illuminate\Support\Collection<int, FinInvoice>  $targets
+     * @param  array<string, mixed>  $details
+     * @return array{0: string|null, 1: float, 2: int, 3: int} currency (null for base), rate, base amount, receivable credit
+     */
+    private function currencyFigures(string $base, int $amount, array $allocations, \Illuminate\Support\Collection $targets, array $details): array
+    {
+        $currencies = $targets->pluck('currency')->unique()->values();
+        $foreign = $currencies->contains(fn (string $code): bool => $code !== $base);
+        $requested = mb_strtoupper((string) ($details['currency'] ?? ''));
+
+        if (! $foreign) {
+            if ($requested !== '' && $requested !== $base) {
+                throw new DomainException('A payment in '.$requested.' must be applied to invoices in '.$requested.'.');
+            }
+
+            return [null, 1.0, $amount, $amount];
+        }
+        if ($currencies->count() > 1) {
+            throw new DomainException('One payment can only settle invoices in a single currency.');
+        }
+        $currency = (string) $currencies->first();
+        if ($requested !== '' && $requested !== $currency) {
+            throw new DomainException('The payment currency must match the invoices ('.$currency.').');
+        }
+        $rate = (float) ($details['exchange_rate'] ?? 0);
+        if ($rate <= 0) {
+            throw new DomainException('Enter the exchange rate the payment was received at.');
+        }
+        if (array_sum($allocations) !== $amount) {
+            throw new DomainException('A foreign-currency payment must be allocated in full to invoices.');
+        }
+
+        $receivable = 0;
+        foreach ($allocations as $invoiceId => $allocated) {
+            $receivable += $targets->get($invoiceId)->toBase($allocated);
+        }
+
+        return [$currency, round($rate, 6), (int) round($amount * $rate), $receivable];
     }
 
     private function alertPaymentReceived(string $tenantId, FinContact $contact, FinPayment $payment): void

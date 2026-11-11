@@ -29,6 +29,8 @@ final class RecordPaymentRequest extends FormRequest
             'date' => ['required', 'date'],
             'amount' => ['required', 'numeric', 'gt:0'],
             'method' => ['required', Rule::in(['bank_transfer', 'cash', 'cheque', 'mobile_money', 'card', 'other'])],
+            'currency' => ['nullable', 'string', 'size:3'],
+            'exchange_rate' => ['nullable', 'numeric', 'gt:0', 'max:1000000'],
             'reference' => ['nullable', 'string', 'max:255'],
             'deposit_account_id' => ['nullable', Rule::exists('fin_accounts', 'id')->where('tenant_id', $tenantId)->where('type', 'asset')],
             'notes' => ['nullable', 'string', 'max:1000'],

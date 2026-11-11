@@ -29,7 +29,7 @@ final class VatReport
             ->join('fin_invoices as i', 'i.id', '=', 'l.invoice_id')
             ->where('i.tenant_id', $tenantId)->whereIn('i.type', ['invoice', 'credit_note'])->whereNotIn('i.status', ['draft', 'void'])
             ->whereDate('i.issue_date', '>=', $start)->whereDate('i.issue_date', '<=', $end)
-            ->selectRaw("l.tax_id, CASE WHEN i.type = 'credit_note' THEN -1 ELSE 1 END as sign, l.line_total as net, l.tax_amount as tax")->get();
+            ->selectRaw("l.tax_id, CASE WHEN i.type = 'credit_note' THEN -1 ELSE 1 END as sign, CAST(ROUND(l.line_total * i.exchange_rate) AS BIGINT) as net, l.tax_amount as tax")->get();
 
         $billRows = DB::connection('tenant')->table('fin_bill_lines as l')
             ->join('fin_bills as b', 'b.id', '=', 'l.bill_id')

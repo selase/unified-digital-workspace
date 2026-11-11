@@ -29,6 +29,8 @@ final class SaveInvoiceRequest extends FormRequest
             'contact_id' => ['required', Rule::exists('fin_contacts', 'id')->where('tenant_id', $tenantId)],
             'issue_date' => ['required', 'date'],
             'due_date' => ['nullable', 'date', 'after_or_equal:issue_date'],
+            'currency' => ['nullable', 'string', 'size:3'],
+            'exchange_rate' => ['nullable', 'numeric', 'gt:0', 'max:1000000'],
             'notes' => ['nullable', 'string', 'max:2000'],
             'terms' => ['nullable', 'string', 'max:2000'],
             'lines' => ['required', 'array', 'min:1'],

@@ -30,6 +30,8 @@ final class ChartOfAccounts
 
     public const INPUT_TAX = 'input_tax';
 
+    public const FX_GAIN_LOSS = 'fx_gain_loss';
+
     /**
      * @var list<array{0: string, 1: string, 2: string, 3: string|null}>
      */
@@ -101,6 +103,17 @@ final class ChartOfAccounts
         }
 
         return $created;
+    }
+
+    /** Where the difference between the rate an invoice was booked at and the rate its payment arrived at is recorded. Created when first needed. */
+    public function fxAccount(string $tenantId): FinAccount
+    {
+        $this->ensureSeeded($tenantId);
+
+        return FinAccount::query()->firstOrCreate(
+            ['tenant_id' => $tenantId, 'code' => '4900'],
+            ['name' => 'Exchange gains and losses', 'type' => 'income', 'system_key' => self::FX_GAIN_LOSS],
+        );
     }
 
     /** The account input tax is held in until it is set against output tax. Created on demand for books set up before VAT existed. */

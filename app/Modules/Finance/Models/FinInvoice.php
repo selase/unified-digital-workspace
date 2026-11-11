@@ -37,10 +37,28 @@ final class FinInvoice extends Model
 
     public const STATUS_APPLIED = 'applied';
 
+    public const FOREIGN_CURRENCIES = ['USD' => 'US dollar', 'EUR' => 'Euro', 'GBP' => 'British pound', 'NGN' => 'Nigerian naira', 'XOF' => 'West African CFA franc'];
+
     protected $table = 'fin_invoices';
 
     /** @var list<string> */
     protected $guarded = ['id'];
+
+    /** The amount as booked in the organisation's own currency. A document in the base currency has a rate of 1. */
+    public function toBase(int $amount): int
+    {
+        return (int) round($amount * (float) $this->exchange_rate);
+    }
+
+    public function baseTotal(): int
+    {
+        return $this->toBase($this->total);
+    }
+
+    public function baseBalanceDue(): int
+    {
+        return $this->toBase($this->balanceDue());
+    }
 
     public function balanceDue(): int
     {

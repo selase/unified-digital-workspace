@@ -63,7 +63,7 @@ final class InvoiceController extends Controller
             $invoice = $invoices->saveDraft(
                 $tenantId,
                 $this->contact($tenantId, (int) $request->validated('contact_id')),
-                $request->safe()->only(['type', 'issue_date', 'due_date', 'notes', 'terms']),
+                $request->safe()->only(['type', 'issue_date', 'due_date', 'notes', 'terms', 'currency', 'exchange_rate']),
                 $request->lineItems(),
                 null,
                 $this->actorId($request),
@@ -108,7 +108,7 @@ final class InvoiceController extends Controller
             $invoices->saveDraft(
                 $tenantId,
                 $this->contact($tenantId, (int) $request->validated('contact_id')),
-                $request->safe()->only(['type', 'issue_date', 'due_date', 'notes', 'terms']),
+                $request->safe()->only(['type', 'issue_date', 'due_date', 'notes', 'terms', 'currency', 'exchange_rate']),
                 $request->lineItems(),
                 $model,
             );

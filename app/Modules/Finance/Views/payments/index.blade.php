@@ -36,6 +36,7 @@
                 </select>
                 <input class="kt-input" type="date" name="date" value="{{ old('date', today()->toDateString()) }}" required>
                 <input class="kt-input" type="number" step="0.01" min="0.01" name="amount" x-model="amount" placeholder="Amount" required>
+                <input class="kt-input" type="number" step="0.000001" min="0.000001" name="exchange_rate" value="{{ old('exchange_rate') }}" placeholder="Exchange rate (foreign-currency invoices only)" title="How much of your own currency one unit of the invoice currency was worth when the money arrived">
                 <select class="kt-select" name="method" required>
                     @foreach(['bank_transfer' => 'Bank transfer', 'mobile_money' => 'Mobile money', 'cash' => 'Cash', 'cheque' => 'Cheque', 'card' => 'Card', 'other' => 'Other'] as $key => $label)
                         <option value="{{ $key }}" @selected(old('method') === $key)>{{ $label }}</option>
@@ -79,7 +80,7 @@
                         <td>{{ $payment->contact->name }}</td>
                         <td>{{ str_replace('_', ' ', ucfirst($payment->method)) }}</td>
                         <td>{{ $payment->reference }}</td>
-                        <td class="text-end">{{ Money::format($payment->amount, '') }}</td>
+                        <td class="text-end">{{ Money::format($payment->amount, '') }}{{ $payment->currency ? ' '.$payment->currency : '' }}@if($payment->currency)<div class="text-xs text-muted-foreground">at {{ rtrim(rtrim(number_format((float) $payment->exchange_rate, 6), '0'), '.') }} = {{ Money::format((int) $payment->base_amount, '') }}</div>@endif</td>
                         <td class="text-end">
                             @can('finance.payments.manage')
                             <form method="POST" action="{{ route('finance.payments.void', $payment->uuid) }}" onsubmit="return confirm('Void this payment? The invoices it paid will be re-opened.')">

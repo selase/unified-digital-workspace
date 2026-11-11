@@ -67,9 +67,9 @@ final class FinanceReports
                 $daysLate <= 90 => '61_90',
                 default => '90_plus',
             };
-            $buckets[$bucket] += $invoice->balanceDue();
+            $buckets[$bucket] += $invoice->baseBalanceDue();
 
-            return ['invoice' => $invoice, 'bucket' => $bucket, 'days_late' => max($daysLate, 0), 'balance' => $invoice->balanceDue()];
+            return ['invoice' => $invoice, 'bucket' => $bucket, 'days_late' => max($daysLate, 0), 'balance' => $invoice->baseBalanceDue()];
         });
 
         return ['rows' => $rows, 'totals' => $buckets + ['total' => array_sum($buckets)]];
