@@ -58,9 +58,9 @@ final class VolunteersSection implements DemoSection
     {
         $remover = new RowRemover;
 
-        return $remover->rows('vol_hours', $tenant, $since)
-            + $remover->children('vol_signups', 'volunteer_id', 'vol_volunteers', $tenant, $since)
-            + $remover->children('vol_signups', 'opportunity_id', 'vol_opportunities', $tenant, $since)
-            + $remover->rows('vol_opportunities', $tenant, $since) + $remover->rows('vol_volunteers', $tenant, $since);
+        return $remover->children('vol_hours', 'volunteer_id', 'vol_volunteers', $tenant, $since, 'name')
+            + $remover->children('vol_signups', 'volunteer_id', 'vol_volunteers', $tenant, $since, 'name')
+            + $remover->children('vol_signups', 'opportunity_id', 'vol_opportunities', $tenant, $since, 'title')
+            + $remover->rows('vol_opportunities', $tenant, $since, 'title') + $remover->rows('vol_volunteers', $tenant, $since, 'name');
     }
 }

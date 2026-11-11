@@ -107,6 +107,37 @@ describe('Demo data across all eight modules', function (): void {
         Http::assertNothingSent();
     });
 
+    test('removal still works after the nightly jobs have run', function (): void {
+        $tenant = tgfNgoTenant();
+        $before = tgfAllRowCounts($tenant);
+        Artisan::call('tgf:demo-seed', ['--confirm' => true]);
+
+        foreach (['finance:run-recurring', 'finance:alert-overdue', 'memberships:sync', 'donations:charge-pledges'] as $command) {
+            Artisan::call($command);
+        }
+        $code = Artisan::call('tgf:demo-remove', ['--confirm' => true]);
+
+        expect($code)->toBe(0)->and(tgfAllRowCounts($tenant))->toBe($before);
+    });
+
+    test('removal keeps volunteers, beneficiaries and board members registered for real during the demo window', function (): void {
+        $tenant = tgfNgoTenant();
+        Artisan::call('tgf:demo-seed', ['--confirm' => true]);
+        app(App\Modules\Volunteers\Services\VolunteerService::class)->register($tenant->id, 'Real Volunteer', ['email' => 'real.volunteer@example.com'], false);
+        app(App\Modules\Beneficiaries\Services\BeneficiaryService::class)->register($tenant->id, 'Real Person', ['gender' => 'female', 'programme' => 'Screening camps'], null);
+        app(App\Modules\Governance\Services\GovernanceService::class)->addMember($tenant->id, 'Real Trustee', ['position' => 'Member', 'term_starts_on' => today()->toDateString(), 'term_ends_on' => today()->addYear()->toDateString()]);
+
+        $code = Artisan::call('tgf:demo-remove', ['--confirm' => true]);
+
+        $connection = DB::connection('tenant');
+        expect($code)->toBe(0)
+            ->and($connection->table('vol_volunteers')->where('tenant_id', $tenant->id)->pluck('name')->all())->toBe(['Real Volunteer'])
+            ->and($connection->table('ben_beneficiaries')->where('tenant_id', $tenant->id)->pluck('full_name')->all())->toBe(['Real Person'])
+            ->and($connection->table('gov_members')->where('tenant_id', $tenant->id)->pluck('name')->all())->toBe(['Real Trustee'])
+            ->and($connection->table('vol_hours')->where('tenant_id', $tenant->id)->count())->toBe(0)
+            ->and($connection->table('ben_services')->where('tenant_id', $tenant->id)->count())->toBe(0);
+    });
+
     test('seeding and removing twice leaves the same state', function (): void {
         $tenant = tgfNgoTenant();
         $before = tgfAllRowCounts($tenant);

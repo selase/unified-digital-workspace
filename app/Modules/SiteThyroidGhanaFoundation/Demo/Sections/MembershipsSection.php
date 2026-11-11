@@ -59,13 +59,13 @@ final class MembershipsSection implements DemoSection
 
         $renewing = $service->join($tenantId, $entry, 'Demo: Naana Boadu', ['email' => 'member7@example.test']);
         $pay($renewing);
-        $renewing->forceFill(['expires_on' => today()->addDays(14)])->save();
+        $renewing->forceFill(['expires_on' => today()->addDays(MembershipService::RENEWAL_LEAD_DAYS + 15)])->save();
     }
 
     public function remove(Tenant $tenant, CarbonImmutable $since): int
     {
         $remover = new RowRemover;
 
-        return $remover->rows('mem_renewals', $tenant, $since) + $remover->rows('mem_members', $tenant, $since);
+        return $remover->children('mem_renewals', 'member_id', 'mem_members', $tenant, $since, 'name') + $remover->rows('mem_members', $tenant, $since, 'name');
     }
 }

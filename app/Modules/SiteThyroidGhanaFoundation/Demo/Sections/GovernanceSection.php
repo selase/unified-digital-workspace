@@ -47,10 +47,13 @@ final class GovernanceSection implements DemoSection
     public function remove(Tenant $tenant, CarbonImmutable $since): int
     {
         $remover = new RowRemover;
+        $removed = 0;
 
-        return $remover->children('gov_attendance', 'meeting_id', 'gov_meetings', $tenant, $since)
-            + $remover->children('gov_attendance', 'member_id', 'gov_members', $tenant, $since)
-            + $remover->rows('gov_actions', $tenant, $since) + $remover->rows('gov_resolutions', $tenant, $since)
-            + $remover->rows('gov_meetings', $tenant, $since) + $remover->rows('gov_members', $tenant, $since);
+        foreach (['gov_attendance', 'gov_actions', 'gov_resolutions'] as $child) {
+            $removed += $remover->children($child, 'meeting_id', 'gov_meetings', $tenant, $since, 'title');
+        }
+        $removed += $remover->children('gov_attendance', 'member_id', 'gov_members', $tenant, $since, 'name');
+
+        return $removed + $remover->rows('gov_meetings', $tenant, $since, 'title') + $remover->rows('gov_members', $tenant, $since, 'name');
     }
 }

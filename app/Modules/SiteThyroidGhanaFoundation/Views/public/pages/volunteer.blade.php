@@ -69,7 +69,7 @@
                         <div class="absolute -left-[9999px]" aria-hidden="true"><label>Leave this empty<input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
                         <button type="submit" class="tgf-btn-accent w-full text-center">Sign up to volunteer</button>
                     </div>
-                    <p class="mt-5 text-sm" style="color: var(--tgf-muted);">Already volunteering? <a href="{{ url('/volunteer/'.$tenantSlug.'/portal') }}" class="font-semibold underline" style="color: var(--tgf-primary-dark);">Sign in</a> to see your hours.</p>
+                    <p class="mt-5 text-sm" style="color: var(--tgf-muted);">Already volunteering? <a href="{{ mb_rtrim((string) config('app.url'), '/') }}/volunteer/{{ $tenantSlug }}/portal" class="font-semibold underline" style="color: var(--tgf-primary-dark);">Sign in</a> to see your hours.</p>
                 </form>
             </div>
         </section>

@@ -41,7 +41,7 @@ final class DonatePageController extends PublicPageController
                 'email' => $request->validated('email'),
                 'amount' => Money::toMinor($request->validated('amount')),
                 'campaign_id' => $this->campaigns($tenant)->firstWhere('id', (int) $request->validated('campaign_id'))?->id,
-            ], route('donations.public.thanks', ['tenant' => $tenant->slug]));
+            ], mb_rtrim((string) config('app.url'), '/').route('donations.public.thanks', ['tenant' => $tenant->slug], false));
 
             return redirect()->away($url);
         } catch (DomainException $error) {

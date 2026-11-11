@@ -41,7 +41,8 @@ describe('Membership page', function (): void {
         $type = MemType::query()->where('tenant_id', $tenant->id)->where('name', 'Individual Member')->firstOrFail();
         $payload = ['name' => 'Ama Visitor', 'email' => 'ama.visitor@example.com', 'phone' => '0240000000', 'type_id' => $type->id];
 
-        $this->post(TGF_SITE.'/membership', $payload)->assertOk()->assertSee('Thank you');
+        $this->post(TGF_SITE.'/membership', $payload)->assertOk()->assertSee('Thank you')->assertDontSee('email you');
+        $this->get(TGF_SITE.'/membership')->assertOk()->assertDontSee('email you');
         $this->post(TGF_SITE.'/membership', $payload)->assertOk()->assertSee('Thank you');
 
         expect(MemMember::query()->where('tenant_id', $tenant->id)->where('email', 'ama.visitor@example.com')->count())->toBe(1)
@@ -98,6 +99,8 @@ describe('Donate page', function (): void {
 
         $this->get(TGF_SITE.'/donate')->assertOk()->assertSee('name="amount"', false);
         $this->post(TGF_SITE.'/donate', ['name' => 'Kind Donor', 'email' => 'donor@example.com', 'amount' => 100])->assertRedirect('https://checkout.paystack.test/abc');
+
+        Http::assertSent(fn ($request): bool => str_contains((string) json_encode($request->data(), JSON_UNESCAPED_SLASHES), mb_rtrim((string) config('app.url'), '/').'/give/thyroid-ghana-foundation/thanks'));
     });
 });
 
@@ -134,6 +137,8 @@ describe('Partner page and sign-in links', function (): void {
 
         $html = $this->get(TGF_SITE.'/membership')->assertOk()->getContent();
 
-        expect($html)->toContain('/join/thyroid-ghana-foundation/portal')->toContain('/volunteer/thyroid-ghana-foundation/portal');
+        $root = mb_rtrim((string) config('app.url'), '/');
+
+        expect($html)->toContain($root.'/join/thyroid-ghana-foundation/portal')->toContain($root.'/volunteer/thyroid-ghana-foundation/portal');
     });
 });

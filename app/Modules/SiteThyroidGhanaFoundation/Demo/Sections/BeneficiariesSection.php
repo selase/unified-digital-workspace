@@ -67,9 +67,15 @@ final class BeneficiariesSection implements DemoSection
     public function remove(Tenant $tenant, CarbonImmutable $since): int
     {
         $remover = new RowRemover;
+        $removed = 0;
 
-        return $remover->rows('ben_access_log', $tenant, $since) + $remover->rows('ben_documents', $tenant, $since) + $remover->rows('ben_referrals', $tenant, $since)
-            + $remover->children('ben_case_notes', 'case_id', 'ben_cases', $tenant, $since) + $remover->rows('ben_cases', $tenant, $since)
-            + $remover->rows('ben_services', $tenant, $since) + $remover->rows('ben_beneficiaries', $tenant, $since);
+        $cases = $remover->idsBelongingTo('ben_cases', 'beneficiary_id', $remover->demoIds('ben_beneficiaries', $tenant, $since, 'full_name'));
+        $removed += $remover->deleteWhereIn('ben_case_notes', 'case_id', $cases);
+
+        foreach (['ben_access_log', 'ben_documents', 'ben_referrals', 'ben_cases', 'ben_services'] as $child) {
+            $removed += $remover->children($child, 'beneficiary_id', 'ben_beneficiaries', $tenant, $since, 'full_name');
+        }
+
+        return $removed + $remover->rows('ben_beneficiaries', $tenant, $since, 'full_name');
     }
 }

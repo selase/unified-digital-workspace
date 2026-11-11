@@ -63,8 +63,12 @@ final class GrantsSection implements DemoSection
     public function remove(Tenant $tenant, CarbonImmutable $since): int
     {
         $remover = new RowRemover;
+        $removed = 0;
 
-        return $remover->rows('grt_budget_lines', $tenant, $since) + $remover->rows('grt_reports', $tenant, $since)
-            + $remover->rows('grt_instalments', $tenant, $since) + $remover->rows('grt_grants', $tenant, $since) + $remover->rows('grt_funders', $tenant, $since);
+        foreach (['grt_budget_lines', 'grt_reports', 'grt_instalments'] as $child) {
+            $removed += $remover->children($child, 'grant_id', 'grt_grants', $tenant, $since, 'title');
+        }
+
+        return $removed + $remover->rows('grt_grants', $tenant, $since, 'title') + $remover->rows('grt_funders', $tenant, $since, 'name');
     }
 }

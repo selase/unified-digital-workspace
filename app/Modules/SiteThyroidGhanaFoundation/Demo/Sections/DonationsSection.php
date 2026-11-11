@@ -111,7 +111,8 @@ final class DonationsSection implements DemoSection
     {
         $remover = new RowRemover;
 
-        return $remover->rows('don_pledges', $tenant, $since) + $remover->rows('don_donations', $tenant, $since)
-            + $remover->rows('don_campaigns', $tenant, $since) + $remover->rows('don_donors', $tenant, $since);
+        return $remover->children('don_pledges', 'donor_id', 'don_donors', $tenant, $since, 'name')
+            + $remover->children('don_donations', 'donor_id', 'don_donors', $tenant, $since, 'name')
+            + $remover->rows('don_campaigns', $tenant, $since, 'name') + $remover->rows('don_donors', $tenant, $since, 'name');
     }
 }

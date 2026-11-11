@@ -42,6 +42,6 @@ final class ResultsSection implements DemoSection
     {
         $remover = new RowRemover;
 
-        return $remover->rows('pr_readings', $tenant, $since) + $remover->rows('pr_indicators', $tenant, $since);
+        return $remover->children('pr_readings', 'indicator_id', 'pr_indicators', $tenant, $since, 'name') + $remover->rows('pr_indicators', $tenant, $since, 'name');
     }
 }

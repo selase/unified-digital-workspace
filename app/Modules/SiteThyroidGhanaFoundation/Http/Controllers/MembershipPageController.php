@@ -73,7 +73,7 @@ final class MembershipPageController extends PublicPageController
             'theme' => $this->theme,
             'crumb' => 'Membership',
             'heading' => 'Thank you for applying',
-            'message' => 'We have your application. If a dues payment is needed we will email you the details, and we will be in touch about your membership.',
+            'message' => 'We have your application and will be in touch about your membership.',
         ]);
     }
 }

@@ -226,10 +226,10 @@
                             $tgfModules = app(\App\Services\ModuleManager::class);
                         @endphp
                         @if($tgfTenant && $tgfModules->isEnabledForTenant('memberships', $tgfTenant))
-                            <li><a href="{{ url('/join/'.$tgfTenant->slug.'/portal') }}" class="transition hover:text-white">Member sign-in</a></li>
+                            <li><a href="{{ mb_rtrim((string) config('app.url'), '/') }}/join/{{ $tgfTenant->slug }}/portal" class="transition hover:text-white">Member sign-in</a></li>
                         @endif
                         @if($tgfTenant && $tgfModules->isEnabledForTenant('volunteers', $tgfTenant))
-                            <li><a href="{{ url('/volunteer/'.$tgfTenant->slug.'/portal') }}" class="transition hover:text-white">Volunteer sign-in</a></li>
+                            <li><a href="{{ mb_rtrim((string) config('app.url'), '/') }}/volunteer/{{ $tgfTenant->slug }}/portal" class="transition hover:text-white">Volunteer sign-in</a></li>
                         @endif
                     </ul>
                 </div>

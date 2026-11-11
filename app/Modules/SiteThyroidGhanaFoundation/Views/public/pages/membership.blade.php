@@ -63,7 +63,7 @@
                         @endforeach
                     </ul>
                     @if($portalOn)
-                        <p class="mt-8 text-sm" style="color: var(--tgf-muted);">Already a member? <a href="{{ url('/join/'.$tenantSlug.'/portal') }}" class="font-semibold underline" style="color: var(--tgf-primary-dark);">Sign in</a> to see or renew your membership.</p>
+                        <p class="mt-8 text-sm" style="color: var(--tgf-muted);">Already a member? <a href="{{ mb_rtrim((string) config('app.url'), '/') }}/join/{{ $tenantSlug }}/portal" class="font-semibold underline" style="color: var(--tgf-primary-dark);">Sign in</a> to see or renew your membership.</p>
                     @endif
                 </div>
 
@@ -71,7 +71,7 @@
                     <form method="POST" action="{{ route($cmsUrl->isWebsiteMode() ? 'site-thyroid-ghana-foundation.website.membership.store' : 'site-thyroid-ghana-foundation.public.membership.store') }}" class="rounded-2xl bg-white p-6 shadow-sm sm:p-8">
                         @csrf
                         <h3 class="text-xl font-bold" style="color: var(--tgf-dark);">Apply for membership</h3>
-                        <p class="mt-1 text-sm" style="color: var(--tgf-muted);">If dues are due we will email you how to pay.</p>
+                        <p class="mt-1 text-sm" style="color: var(--tgf-muted);">We will contact you about your membership.</p>
                         <div class="mt-6">@include('site-thyroid-ghana-foundation::public.pages._errors')</div>
 
                         <div class="space-y-5">
