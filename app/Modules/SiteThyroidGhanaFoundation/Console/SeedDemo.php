@@ -7,6 +7,7 @@ namespace App\Modules\SiteThyroidGhanaFoundation\Console;
 use App\Modules\SiteThyroidGhanaFoundation\Demo\DemoManifest;
 use App\Modules\SiteThyroidGhanaFoundation\Demo\DemoSections;
 use App\Modules\SiteThyroidGhanaFoundation\Demo\FinanceGuard;
+use App\Modules\SiteThyroidGhanaFoundation\Demo\Sections\MembershipTiersSection;
 use Throwable;
 
 final class SeedDemo extends DemoCommand
@@ -15,7 +16,7 @@ final class SeedDemo extends DemoCommand
 
     protected $description = 'Seed removable demo data for the Thyroid Ghana Foundation presentation';
 
-    public function handle(DemoManifest $manifest, DemoSections $sections, FinanceGuard $guard): int
+    public function handle(DemoManifest $manifest, DemoSections $sections, FinanceGuard $guard, MembershipTiersSection $tiers): int
     {
         $tenant = $this->demoTenant();
         if ($tenant === null) {
@@ -29,6 +30,7 @@ final class SeedDemo extends DemoCommand
         }
 
         $manifest->begin($tenant);
+        $manifest->rememberTierIds($tenant, $tiers->ensure($tenant));
         $counts = [];
 
         foreach ($sections->all() as $section) {

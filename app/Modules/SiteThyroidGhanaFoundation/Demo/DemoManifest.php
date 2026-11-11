@@ -19,7 +19,7 @@ final class DemoManifest
     public function begin(Tenant $tenant): CarbonImmutable
     {
         $since = CarbonImmutable::now()->startOfSecond();
-        $this->save($tenant, ['started_at' => $since->toIso8601String(), 'counters' => $this->currentCounters($tenant), 'counts' => [], 'tier_ids' => []]);
+        $this->save($tenant, ['started_at' => $since->toIso8601String(), 'counters' => $this->currentCounters($tenant), 'counts' => [], 'tier_ids' => $this->proposedTierIds($tenant)]);
 
         return $since;
     }
@@ -68,9 +68,18 @@ final class DemoManifest
         }
     }
 
+    /** Forgets the seed but keeps the proposed tier ids, so the tiers can still be removed later. */
     public function clear(Tenant $tenant): void
     {
-        Setting::query()->where('tenant_id', $tenant->id)->where('group', self::GROUP)->where('key', self::KEY)->delete();
+        $tiers = $this->proposedTierIds($tenant);
+        $tiers === [] ? $this->delete($tenant) : $this->save($tenant, ['tier_ids' => $tiers]);
+    }
+
+    public function forgetTierIds(Tenant $tenant): void
+    {
+        $manifest = $this->load($tenant);
+
+        isset($manifest['started_at']) ? $this->save($tenant, [...$manifest, 'tier_ids' => []]) : $this->delete($tenant);
     }
 
     /** @return list<int> */
@@ -82,7 +91,7 @@ final class DemoManifest
     /** @param  list<int>  $ids */
     public function rememberTierIds(Tenant $tenant, array $ids): void
     {
-        $this->save($tenant, [...$this->load($tenant), 'tier_ids' => $ids]);
+        $this->save($tenant, [...$this->load($tenant), 'tier_ids' => array_values(array_unique([...$this->proposedTierIds($tenant), ...$ids]))]);
     }
 
     /** @return array<string, int> */
@@ -99,6 +108,11 @@ final class DemoManifest
     private function load(Tenant $tenant): array
     {
         return Setting::query()->where('tenant_id', $tenant->id)->where('group', self::GROUP)->where('key', self::KEY)->first()?->value ?? [];
+    }
+
+    private function delete(Tenant $tenant): void
+    {
+        Setting::query()->where('tenant_id', $tenant->id)->where('group', self::GROUP)->where('key', self::KEY)->delete();
     }
 
     /** @param  array<string, mixed>  $value */

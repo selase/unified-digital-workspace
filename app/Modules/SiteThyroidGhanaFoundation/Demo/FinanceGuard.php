@@ -33,7 +33,11 @@ final class FinanceGuard
     {
         $this->assertNoRealRows($tenant, $since);
 
-        if ($seeded !== [] && $this->signature($tenant) !== $seeded) {
+        $current = $this->signature($tenant);
+        ksort($current);
+        ksort($seeded);
+
+        if ($seeded !== [] && $current !== $seeded) {
             throw new DemoRemovalBlocked('Finance records changed after the demo was seeded, so they cannot be told apart from demo data. Nothing was removed.');
         }
     }
