@@ -2,6 +2,10 @@
 
 declare(strict_types=1);
 
+use App\Modules\SiteThyroidGhanaFoundation\Http\Controllers\DonatePageController;
+use App\Modules\SiteThyroidGhanaFoundation\Http\Controllers\MembershipPageController;
+use App\Modules\SiteThyroidGhanaFoundation\Http\Controllers\PartnerPageController;
+use App\Modules\SiteThyroidGhanaFoundation\Http\Controllers\VolunteerPageController;
 use Illuminate\Support\Facades\Route;
 
 // Define custom public routes here.
@@ -11,3 +15,11 @@ use Illuminate\Support\Facades\Route;
 // Example:
 // Route::get('/contact', [ContactController::class, 'show'])->name('contact');
 // Route::post('/contact', [ContactController::class, 'submit'])->name('contact.submit');
+
+Route::get('/membership', [MembershipPageController::class, 'show'])->name('membership.show');
+Route::post('/membership', [MembershipPageController::class, 'store'])->middleware('throttle:10,1')->name('membership.store');
+Route::get('/donate', [DonatePageController::class, 'show'])->name('donate.show');
+Route::post('/donate', [DonatePageController::class, 'store'])->middleware('throttle:10,1')->name('donate.store');
+Route::get('/volunteer', [VolunteerPageController::class, 'show'])->name('volunteer.show');
+Route::post('/volunteer', [VolunteerPageController::class, 'store'])->middleware('throttle:10,1')->name('volunteer.store');
+Route::get('/partner-us', [PartnerPageController::class, 'show'])->name('partner.show');

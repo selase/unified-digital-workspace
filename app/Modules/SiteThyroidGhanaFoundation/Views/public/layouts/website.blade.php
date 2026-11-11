@@ -212,6 +212,16 @@
                         <li><a href="{{ $cmsUrl->route('pages.show', 'volunteer') }}" class="transition hover:text-white">Volunteer</a></li>
                         <li><a href="{{ $cmsUrl->route('pages.show', 'partner-us') }}" class="transition hover:text-white">Partner With Us</a></li>
                         <li><a href="{{ $cmsUrl->route('pages.show', 'membership') }}" class="transition hover:text-white">Membership</a></li>
+                        @php
+                            $tgfTenant = app(\App\Services\Tenancy\TenantContext::class)->getTenant();
+                            $tgfModules = app(\App\Services\ModuleManager::class);
+                        @endphp
+                        @if($tgfTenant && $tgfModules->isEnabledForTenant('memberships', $tgfTenant))
+                            <li><a href="{{ url('/join/'.$tgfTenant->slug.'/portal') }}" class="transition hover:text-white">Member sign-in</a></li>
+                        @endif
+                        @if($tgfTenant && $tgfModules->isEnabledForTenant('volunteers', $tgfTenant))
+                            <li><a href="{{ url('/volunteer/'.$tgfTenant->slug.'/portal') }}" class="transition hover:text-white">Volunteer sign-in</a></li>
+                        @endif
                     </ul>
                 </div>
                 <div>
