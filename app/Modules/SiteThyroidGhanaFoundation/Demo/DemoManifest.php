@@ -37,10 +37,19 @@ final class DemoManifest
         return $this->load($tenant)['counters'] ?? [];
     }
 
-    /** @param  array<string, mixed>  $counts */
-    public function finish(Tenant $tenant, array $counts): void
+    /**
+     * @param  array<string, mixed>  $counts
+     * @param  array<string, int>  $financeRows
+     */
+    public function finish(Tenant $tenant, array $counts, array $financeRows = []): void
     {
-        $this->save($tenant, [...$this->load($tenant), 'counts' => $counts]);
+        $this->save($tenant, [...$this->load($tenant), 'counts' => $counts, 'finance_rows' => $financeRows]);
+    }
+
+    /** @return array<string, int> */
+    public function financeRows(Tenant $tenant): array
+    {
+        return $this->load($tenant)['finance_rows'] ?? [];
     }
 
     public function restoreCounters(Tenant $tenant): void

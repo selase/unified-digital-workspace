@@ -138,6 +138,19 @@ describe('tgf:demo-remove', function (): void {
             ->and(app(DemoManifest::class)->startedAt($tenant))->not->toBeNull();
     });
 
+    test('deletes nothing when finance records were added after the seed finished', function (): void {
+        $tenant = tgfDemoTenant();
+        Artisan::call('tgf:demo-seed', ['--confirm' => true]);
+        FinContact::query()->create(['tenant_id' => $tenant->id, 'name' => 'Customer added after the seed', 'email' => 'later@example.com', 'is_customer' => true, 'is_active' => true]);
+
+        $code = Artisan::call('tgf:demo-remove', ['--confirm' => true]);
+
+        expect($code)->not->toBe(0)
+            ->and(tgfFakeRows($tenant))->toBe(1)
+            ->and(FinContact::query()->where('tenant_id', $tenant->id)->count())->toBe(1)
+            ->and(app(DemoManifest::class)->startedAt($tenant))->not->toBeNull();
+    });
+
     test('removing twice is a harmless no-op', function (): void {
         $tenant = tgfDemoTenant();
         Artisan::call('tgf:demo-seed', ['--confirm' => true]);

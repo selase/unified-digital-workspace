@@ -30,7 +30,7 @@ final class RemoveDemo extends DemoCommand
         }
 
         try {
-            $guard->assertNoRealRows($tenant, $since);
+            $guard->assertUntouched($tenant, $since, $manifest->financeRows($tenant));
         } catch (DemoRemovalBlocked $e) {
             $this->error($e->getMessage());
 
