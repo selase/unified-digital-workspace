@@ -80,11 +80,7 @@
                 @else
                     <div class="rounded-2xl bg-white p-6 shadow-lg sm:p-8">
                         <h3 class="text-xl font-bold" style="color: var(--tgf-dark);">Give by bank transfer or mobile money</h3>
-                        <p class="mt-2 text-sm leading-relaxed" style="color: var(--tgf-muted);">Contact us and we will send you our account details, and a receipt once your gift arrives.</p>
-                        <dl class="mt-6 space-y-3 text-sm">
-                            <div class="flex gap-3"><dt class="w-16 font-semibold" style="color: var(--tgf-dark);">Phone</dt><dd><a href="tel:+233243376304" class="underline" style="color: var(--tgf-primary-dark);">+233 (024) 337 6304</a></dd></div>
-                            <div class="flex gap-3"><dt class="w-16 font-semibold" style="color: var(--tgf-dark);">Email</dt><dd><a href="mailto:info@thyroidghanafoundation.org" class="underline" style="color: var(--tgf-primary-dark);">info@thyroidghanafoundation.org</a></dd></div>
-                        </dl>
+                        <p class="mt-2 text-sm leading-relaxed" style="color: var(--tgf-muted);">Message or call us below and we will send you our account details, and a receipt once your gift arrives.</p>
                     </div>
                 @endif
             </div>
