@@ -73,13 +73,9 @@
                 </form>
             </div>
         </section>
-    @else
-        <section class="py-16 lg:py-20">
-            <div class="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
-                @include('cms-core::components.enquiry-form', ['type' => 'volunteer'])
-            </div>
-        </section>
     @endif
+
+    @include('site-thyroid-ghana-foundation::public.pages._questions', ['type' => 'volunteer', 'subject' => 'Volunteer enquiry'])
 
     @include('site-thyroid-ghana-foundation::public.pages._cta')
 @endsection

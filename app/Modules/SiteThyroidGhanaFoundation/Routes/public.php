@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
+use App\Modules\SiteThyroidGhanaFoundation\Http\Controllers\BoardPageController;
 use App\Modules\SiteThyroidGhanaFoundation\Http\Controllers\DonatePageController;
+use App\Modules\SiteThyroidGhanaFoundation\Http\Controllers\ImpactPageController;
 use App\Modules\SiteThyroidGhanaFoundation\Http\Controllers\MembershipPageController;
 use App\Modules\SiteThyroidGhanaFoundation\Http\Controllers\PartnerPageController;
 use App\Modules\SiteThyroidGhanaFoundation\Http\Controllers\VolunteerPageController;
@@ -23,3 +25,5 @@ Route::post('/donate', [DonatePageController::class, 'store'])->middleware('thro
 Route::get('/volunteer', [VolunteerPageController::class, 'show'])->name('volunteer.show');
 Route::post('/volunteer', [VolunteerPageController::class, 'store'])->middleware('throttle:10,1')->name('volunteer.store');
 Route::get('/partner-us', [PartnerPageController::class, 'show'])->name('partner.show');
+Route::get('/our-board', [BoardPageController::class, 'show'])->name('board.show');
+Route::get('/our-impact', [ImpactPageController::class, 'show'])->name('impact.show');

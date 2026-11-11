@@ -50,6 +50,9 @@
     @stack('styles')
 </head>
 <body class="min-h-screen flex flex-col bg-white antialiased" style="color: var(--tgf-text);">
+    @php
+        $tgfRoute = fn (string $name): string => route(($cmsUrl->isWebsiteMode() ? 'site-thyroid-ghana-foundation.website.' : 'site-thyroid-ghana-foundation.public.').$name, [], false);
+    @endphp
 
     {{-- Top utility bar --}}
     <div style="background: var(--tgf-dark);" class="text-sm">
@@ -102,6 +105,8 @@
                         <a href="{{ $cmsUrl->route('pages.show', 'about') }}">About Us</a>
                         <a href="{{ $cmsUrl->route('pages.show', 'the-founder') }}">The Founder</a>
                         <a href="{{ $cmsUrl->route('pages.show', 'our-team') }}">Our Team</a>
+                        <a href="{{ $tgfRoute('board.show') }}">Our Board</a>
+                        <a href="{{ $tgfRoute('impact.show') }}">Our Impact</a>
                         <a href="{{ $cmsUrl->route('pages.show', 'our-plan') }}">Our Plan</a>
                     </div>
                 </div>
@@ -163,6 +168,8 @@
                 <a href="{{ $cmsUrl->route('pages.show', 'about') }}" class="block rounded-md px-3 py-2 text-sm">About Us</a>
                 <a href="{{ $cmsUrl->route('pages.show', 'the-founder') }}" class="block rounded-md px-3 py-2 text-sm">The Founder</a>
                 <a href="{{ $cmsUrl->route('pages.show', 'our-team') }}" class="block rounded-md px-3 py-2 text-sm">Our Team</a>
+                <a href="{{ $tgfRoute('board.show') }}" class="block rounded-md px-3 py-2 text-sm">Our Board</a>
+                <a href="{{ $tgfRoute('impact.show') }}" class="block rounded-md px-3 py-2 text-sm">Our Impact</a>
                 <p class="px-3 pt-3 text-xs font-semibold uppercase tracking-wider" style="color: var(--tgf-muted);">Thyroid Health</p>
                 <a href="{{ $cmsUrl->route('pages.show', 'the-challenge') }}" class="block rounded-md px-3 py-2 text-sm">The Challenge</a>
                 <a href="{{ $cmsUrl->route('pages.show', 'thyroid-disease') }}" class="block rounded-md px-3 py-2 text-sm">Thyroid Disease</a>
@@ -202,6 +209,8 @@
                         <li><a href="{{ $cmsUrl->route('pages.show', 'about') }}" class="transition hover:text-white">About Us</a></li>
                         <li><a href="{{ $cmsUrl->route('pages.show', 'the-founder') }}" class="transition hover:text-white">The Founder</a></li>
                         <li><a href="{{ $cmsUrl->route('pages.show', 'our-team') }}" class="transition hover:text-white">Our Team</a></li>
+                        <li><a href="{{ $tgfRoute('board.show') }}" class="transition hover:text-white">Our Board</a></li>
+                        <li><a href="{{ $tgfRoute('impact.show') }}" class="transition hover:text-white">Our Impact</a></li>
                         <li><a href="{{ $cmsUrl->route('pages.show', 'our-plan') }}" class="transition hover:text-white">Our Plan</a></li>
                     </ul>
                 </div>

@@ -33,11 +33,10 @@
                     </article>
                 @endforeach
             </div>
-            <div class="mx-auto max-w-3xl">
-                @include('cms-core::components.enquiry-form', ['type' => 'partnership'])
-            </div>
         </div>
     </section>
+
+    @include('site-thyroid-ghana-foundation::public.pages._questions', ['type' => 'partnership', 'subject' => 'Partnership enquiry'])
 
     @include('site-thyroid-ghana-foundation::public.pages._cta')
 @endsection

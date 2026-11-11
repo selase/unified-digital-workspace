@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Models\TenantFeature;
 use App\Models\TenantModule;
 use App\Models\User;
 use App\Modules\CmsCore\Mail\SiteEnquiryReceived;
@@ -23,6 +24,10 @@ beforeEach(function (): void {
         'custom_domain' => 'thyroidghanafoundation.org',
         'custom_domain_status' => 'active',
     ]);
+
+    foreach (['module-cms-core', 'custom-domains'] as $feature) {
+        TenantFeature::query()->create(['tenant_id' => $this->tenant->id, 'feature_key' => $feature, 'enabled' => true, 'meta' => ['source' => 'complimentary']]);
+    }
 
     foreach (['cms-core', 'site-thyroid-ghana-foundation'] as $module) {
         TenantModule::query()->create([

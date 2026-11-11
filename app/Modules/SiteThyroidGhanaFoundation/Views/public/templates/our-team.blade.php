@@ -37,45 +37,8 @@
                     ->where('path', \App\Modules\SiteThyroidGhanaFoundation\Database\Seeders\ThyroidAwarenessWeek2026Seeder::FOUNDER_PORTRAIT_PATH)
                     ->first();
 
-                $team = [
-                    [
-                        'name' => 'Dr. Nana Adwoa Konadu Dsane',
-                        'role' => 'Founder & President',
-                        'photo' => 'cms/team/nana-adjoa.jpg',
-                        'photo_url' => $founderPortrait?->url(),
-                        'bio' => 'Established the foundation in 2018 following her personal battle with hyperthyroidism. A seasoned administrator with over 20 years of experience across research, health, and education.',
-                    ],
-                    [
-                        'name' => 'Rev. Prof. Patrick F. Ayeh-Kumi',
-                        'role' => 'Management Board Chair',
-                        'photo' => 'cms/team/prof-patrick.jpg',
-                        'bio' => 'A distinguished academic and researcher who brings decades of medical expertise to the foundation\'s governance and strategic direction.',
-                    ],
-                    [
-                        'name' => 'Mr. Leslie Chartey Kumahlor',
-                        'role' => 'Head of Operations',
-                        'photo' => 'cms/team/lesley-chartey.jpg',
-                        'bio' => 'Oversees the day-to-day operations and ensures our programs reach communities across Ghana effectively.',
-                    ],
-                    [
-                        'name' => 'Dr. Joyce Emefa Addo-Klah',
-                        'role' => 'Public Relations Officer',
-                        'photo' => 'cms/team/joyce-emefa.jpg',
-                        'bio' => 'Leads our communications strategy and public engagement initiatives across media platforms.',
-                    ],
-                    [
-                        'name' => 'Frank Anyimadu',
-                        'role' => 'Consultant Dietician',
-                        'photo' => 'cms/team/frank-anyimedu.jpg',
-                        'bio' => 'Provides nutritional guidance and develops dietary programs tailored for thyroid patients.',
-                    ],
-                    [
-                        'name' => 'Justice Kwesi Baah',
-                        'role' => 'Research Coordinator',
-                        'photo' => 'cms/team/justice.jpg',
-                        'bio' => 'Coordinates research initiatives and partnerships with academic institutions across Ghana.',
-                    ],
-                ];
+                $team = \App\Modules\SiteThyroidGhanaFoundation\Support\TeamRoster::management();
+                $team[0]['photo_url'] = $founderPortrait?->url();
             @endphp
 
             <div class="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
@@ -109,11 +72,7 @@
             </div>
 
             @php
-                $advisors = [
-                    ['name' => 'Dr. Josephine Akpalu', 'role' => 'Advisory Board Chair'],
-                    ['name' => 'Dr. Alfred Tetteh', 'role' => 'Member, Management Board'],
-                    ['name' => 'Dr. Matilda Asante', 'role' => 'Member, Management Board'],
-                ];
+                $advisors = \App\Modules\SiteThyroidGhanaFoundation\Support\TeamRoster::advisors();
             @endphp
 
             <div class="grid gap-6 sm:grid-cols-3">

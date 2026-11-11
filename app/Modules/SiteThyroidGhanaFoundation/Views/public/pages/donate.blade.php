@@ -86,11 +86,12 @@
                             <div class="flex gap-3"><dt class="w-16 font-semibold" style="color: var(--tgf-dark);">Email</dt><dd><a href="mailto:info@thyroidghanafoundation.org" class="underline" style="color: var(--tgf-primary-dark);">info@thyroidghanafoundation.org</a></dd></div>
                         </dl>
                     </div>
-                    @include('cms-core::components.enquiry-form', ['type' => 'donation'])
                 @endif
             </div>
         </div>
     </section>
+
+    @include('site-thyroid-ghana-foundation::public.pages._questions', ['type' => 'donation', 'subject' => 'Donation enquiry'])
 
     @include('site-thyroid-ghana-foundation::public.pages._cta')
 @endsection

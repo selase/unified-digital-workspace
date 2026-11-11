@@ -108,10 +108,11 @@
         <section class="py-16 lg:py-20">
             <div class="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">
                 <p class="text-lg" style="color: var(--tgf-text);">Membership details are being finalised. Tell us you are interested and we will contact you as soon as joining opens.</p>
-                @include('cms-core::components.enquiry-form', ['type' => 'membership'])
             </div>
         </section>
     @endif
+
+    @include('site-thyroid-ghana-foundation::public.pages._questions', ['type' => 'membership', 'subject' => 'Membership enquiry'])
 
     @include('site-thyroid-ghana-foundation::public.pages._cta')
 @endsection
