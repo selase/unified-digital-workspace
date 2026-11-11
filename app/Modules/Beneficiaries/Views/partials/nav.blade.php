@@ -1,5 +1,6 @@
 @php
     $tabs = ['beneficiaries.index' => ['Overview', 'beneficiaries.index'], 'beneficiaries.beneficiaries' => ['Register', 'beneficiaries.beneficiaries.index']];
+    if (auth()->user()?->can('beneficiaries.manage')) { $tabs['beneficiaries.field'] = ['Field entry', 'beneficiaries.field']; }
     if (auth()->user()?->can('beneficiaries.audit.view')) { $tabs['beneficiaries.audit'] = ['Access log', 'beneficiaries.audit']; }
     $current = request()->route()?->getName() ?? '';
 @endphp

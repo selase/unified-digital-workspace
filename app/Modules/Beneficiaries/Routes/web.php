@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Modules\Beneficiaries\Http\Controllers\BeneficiaryController;
+use App\Modules\Beneficiaries\Http\Controllers\FieldEntryController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [BeneficiaryController::class, 'overview'])->name('index');
@@ -24,4 +25,8 @@ Route::post('/register/{beneficiary}/referrals', [BeneficiaryController::class, 
 Route::post('/referrals/{referral}', [BeneficiaryController::class, 'updateReferral'])->name('beneficiaries.referrals.update');
 Route::post('/cases/{case}/close', [BeneficiaryController::class, 'closeCase'])->name('beneficiaries.cases.close');
 Route::post('/cases/{case}/notes', [BeneficiaryController::class, 'addNote'])->name('beneficiaries.cases.notes');
+Route::get('/field', [FieldEntryController::class, 'page'])->name('field');
+Route::get('/field/sw.js', [FieldEntryController::class, 'serviceWorker'])->name('field.sw');
+Route::get('/field/token', [FieldEntryController::class, 'token'])->name('field.token');
+Route::post('/field/sync', [FieldEntryController::class, 'sync'])->name('field.sync');
 Route::get('/access-log', [BeneficiaryController::class, 'auditLog'])->name('audit');

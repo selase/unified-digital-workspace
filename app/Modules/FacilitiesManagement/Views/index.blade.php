@@ -9,7 +9,7 @@
         <div>
             <h1 class="text-2xl font-bold tracking-tight text-foreground">Dual-Mode Facilities Management Hub</h1>
             <p class="text-sm text-muted-foreground">
-                Institutional Asset Lifecycle &amp; Preventive Maintenance (Mode A) + Estate Occupant Artisan Marketplace Requests (Mode B)
+                Buildings, equipment and planned maintenance (Mode A), plus repair requests from tenants or occupants sent to local tradespeople (Mode B)
             </p>
         </div>
         <div>
@@ -88,7 +88,7 @@
                     @csrf
                     <div>
                         <label class="kt-form-label text-xs">Building Name *</label>
-                        <input type="text" name="name" class="kt-input" placeholder="e.g. Clinical Administration Block" required>
+                        <input type="text" name="name" class="kt-input" placeholder="e.g. Main office block" required>
                     </div>
                     <div class="grid grid-cols-2 gap-3">
                         <div>
@@ -106,7 +106,7 @@
                     </div>
                     <div>
                         <label class="kt-form-label text-xs">Physical Address</label>
-                        <input type="text" name="address" class="kt-input" placeholder="Legon Bypass Campus">
+                        <input type="text" name="address" class="kt-input" placeholder="Street, town">
                     </div>
                     <button type="submit" class="kt-btn kt-btn-outline w-full justify-center">Create Building</button>
                 </form>
@@ -142,7 +142,7 @@
                     </div>
                     <div>
                         <label class="kt-form-label text-xs">Asset Name *</label>
-                        <input type="text" name="name" class="kt-input" placeholder="e.g. Carrier 50kW Central Chiller System" required>
+                        <input type="text" name="name" class="kt-input" placeholder="e.g. Air conditioning unit, generator" required>
                     </div>
                     <div class="grid grid-cols-2 gap-3">
                         <div>
@@ -177,7 +177,7 @@
         {{-- Estate Occupant Artisan Request (Mode B Marketplace) --}}
         <div class="kt-card border-primary/20 bg-primary/5">
             <div class="kt-card-header">
-                <h3 class="kt-card-title text-sm font-semibold text-primary">3. Occupant Artisan Request (Mode B)</h3>
+                <h3 class="kt-card-title text-sm font-semibold text-primary">3. Occupant repair request (Mode B)</h3>
             </div>
             <div class="kt-card-body p-5">
                 <form action="{{ route('facilities-management.work-orders.occupant.store') }}" method="POST" class="space-y-3">
@@ -185,7 +185,7 @@
                     <div>
                         <label class="kt-form-label text-xs">Request Category *</label>
                         <select name="category" class="kt-select" required>
-                            <option value="plumbing">Plumbing &amp; Leakage Artisan</option>
+                            <option value="plumbing">Plumbing and leaks</option>
                             <option value="electrical">Electrical &amp; Inverter Artisan</option>
                             <option value="landscaping">Landscaping &amp; Grounds Care</option>
                             <option value="water_delivery">Potable Water Delivery Tanker</option>
@@ -194,11 +194,11 @@
                     </div>
                     <div>
                         <label class="kt-form-label text-xs">Order Title *</label>
-                        <input type="text" name="title" class="kt-input" placeholder="e.g. Master Suite Bathroom Leakage Repair" required>
+                        <input type="text" name="title" class="kt-input" placeholder="e.g. Bathroom leak" required>
                     </div>
                     <div>
-                        <label class="kt-form-label text-xs">Estate / Apartment Location *</label>
-                        <input type="text" name="location" class="kt-input" placeholder="e.g. Unit 4B, Emerald Court" required>
+                        <label class="kt-form-label text-xs">Unit or location *</label>
+                        <input type="text" name="location" class="kt-input" placeholder="e.g. Unit 4B" required>
                     </div>
                     <div>
                         <label class="kt-form-label text-xs">Issue Description *</label>

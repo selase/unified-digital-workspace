@@ -743,3 +743,26 @@ describe('Candidate CV download', function (): void {
         $this->get(route('hrms-core.recruitment.documents.download', $document->uuid))->assertForbidden();
     });
 });
+
+describe('Candidate CV round trip', function (): void {
+    test('a CV uploaded on the public careers page can be opened by staff from the application', function (): void {
+        [$user, $tenant] = createRecruitmentWebContext();
+        Storage::fake('tenant');
+        Illuminate\Support\Facades\Mail::fake();
+        $department = Department::create(['tenant_id' => $tenant->id, 'name' => 'Programmes', 'is_active' => true]);
+        $requisition = JobRequisition::create(['tenant_id' => $tenant->id, 'title' => 'Officer', 'department_id' => $department->id, 'requisition_number' => 'REQ-CV-1', 'status' => 'approved', 'vacancies' => 1]);
+        JobPosting::create(['tenant_id' => $tenant->id, 'requisition_id' => $requisition->id, 'title' => 'Field Officer', 'slug' => 'field-officer', 'description' => 'Work in the field.', 'is_external' => true, 'is_active' => true, 'posted_date' => now()->subDay()]);
+
+        $this->post(route('hrms-core.public.careers.apply', 'field-officer'), [
+            'first_name' => 'Ama', 'last_name' => 'Mensah', 'email' => 'ama@example.test',
+            'form_token' => App\Modules\CmsCore\Support\EnquiryToken::issue(time() - 10),
+            'cv' => Illuminate\Http\UploadedFile::fake()->createWithContent('ama-cv.pdf', '%PDF-1.4 real bytes'),
+        ])->assertSessionHas('applied');
+
+        $document = CandidateDocument::query()->firstOrFail();
+        $this->actingAs($user)->withSession(['active_tenant_id' => $tenant->id]);
+        $response = $this->get(route('hrms-core.recruitment.documents.download', $document->uuid));
+        $response->assertOk()->assertDownload('ama-cv.pdf');
+        expect($response->streamedContent())->toContain('real bytes');
+    });
+});

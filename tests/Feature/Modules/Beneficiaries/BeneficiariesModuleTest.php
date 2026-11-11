@@ -19,8 +19,8 @@ use App\Services\Tenancy\TenantContext;
 use App\Services\Tenancy\TenantDatabaseManager;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Spatie\Permission\Models\Permission;
 
@@ -212,6 +212,48 @@ describe('Beneficiary documents and referrals', function (): void {
         $this->actingAs($limited)->withSession(['active_tenant_id' => $limitedTenant->id]);
         $this->get(route('beneficiaries.beneficiaries.show', $other->uuid))->assertOk()->assertDontSee('Photos and documents');
         $this->get(route('beneficiaries.beneficiaries.documents.download', $kept->uuid))->assertForbidden();
+    });
+});
+
+describe('Offline field entry', function (): void {
+    test('queued entries are recorded once each, rechecked for consent and validity, and safe to resend', function (): void {
+        [$user, $tenant] = createBeneficiariesContext();
+        $consented = consentedPerson($tenant);
+        $locked = app(BeneficiaryService::class)->register($tenant->id, 'No Consent', [], null);
+        $this->actingAs($user)->withSession(['active_tenant_id' => $tenant->id]);
+
+        $payload = ['entries' => [
+            ['id' => 'a-1', 'reference' => mb_strtolower($consented->reference), 'type' => 'food', 'delivered_on' => today()->toDateString(), 'description' => 'Rice and beans'],
+            ['id' => 'a-2', 'reference' => $locked->reference, 'type' => 'food', 'delivered_on' => today()->toDateString()],
+            ['id' => 'a-3', 'reference' => 'BEN-99999', 'type' => 'food', 'delivered_on' => today()->toDateString()],
+            ['id' => 'a-4', 'reference' => $consented->reference, 'type' => 'bogus', 'delivered_on' => today()->toDateString()],
+            ['id' => 'a-5', 'reference' => $consented->reference, 'type' => 'medical', 'delivered_on' => today()->addDay()->toDateString()],
+        ]];
+
+        $results = collect($this->postJson(route('beneficiaries.field.sync'), $payload)->assertOk()->json('results'))->keyBy('id');
+        expect($results['a-1']['ok'])->toBeTrue()->and($results['a-2']['ok'])->toBeFalse()->and($results['a-2']['message'])->toContain('consent')
+            ->and($results['a-3']['message'])->toContain('BEN-99999')->and($results['a-4']['ok'])->toBeFalse()->and($results['a-5']['message'])->toContain('future');
+        expect(BenService::query()->count())->toBe(1);
+
+        $again = collect($this->postJson(route('beneficiaries.field.sync'), $payload)->json('results'))->keyBy('id');
+        expect($again['a-1']['message'])->toBe('Already recorded.')->and(BenService::query()->count())->toBe(1)
+            ->and(BenAccessLog::query()->where('action', 'service_recorded')->count())->toBe(1);
+
+        $this->postJson(route('beneficiaries.field.sync'), ['entries' => []])->assertStatus(422);
+    });
+
+    test('the page, token and service worker are available to staff who can record services only', function (): void {
+        [$user, $tenant] = createBeneficiariesContext();
+        $this->actingAs($user)->withSession(['active_tenant_id' => $tenant->id]);
+
+        $this->get(route('beneficiaries.field'))->assertOk()->assertSee('Field entry')->assertSee('names are never stored on the phone', false);
+        $this->getJson(route('beneficiaries.field.token'))->assertOk()->assertJsonStructure(['token']);
+        $this->get(route('beneficiaries.field.sw'))->assertOk()->assertHeader('Service-Worker-Allowed', '/beneficiaries/')->assertSee('field-entry-v1', false);
+
+        $user->revokePermissionTo('beneficiaries.manage');
+        app(Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+        $this->get(route('beneficiaries.field'))->assertForbidden();
+        $this->postJson(route('beneficiaries.field.sync'), ['entries' => [['id' => 'x', 'reference' => 'BEN-00001', 'type' => 'food', 'delivered_on' => today()->toDateString()]]])->assertForbidden();
     });
 });
 
