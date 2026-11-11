@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Models\AlertRule;
 use App\Models\Tenant;
 use App\Models\TenantFeature;
 use App\Models\User;
@@ -95,6 +96,15 @@ describe('tgf:demo-seed', function (): void {
         $code = Artisan::call('tgf:demo-seed', ['--confirm' => true]);
 
         expect($code)->toBe(0)->and(tgfFakeRows($tenant))->toBe(1);
+    });
+
+    test('refuses while the tenant has an active alert rule, so demo events cannot notify real staff', function (): void {
+        $tenant = tgfDemoTenant();
+        AlertRule::query()->create(['tenant_id' => $tenant->id, 'event' => 'donations.gift_received', 'name' => 'Gift alert', 'is_active' => true, 'channels' => ['mail']]);
+
+        $code = Artisan::call('tgf:demo-seed', ['--confirm' => true]);
+
+        expect($code)->not->toBe(0)->and(tgfFakeRows($tenant))->toBe(0);
     });
 
     test('sends no mail and no notification', function (): void {
