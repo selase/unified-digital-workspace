@@ -59,6 +59,31 @@ final class PaystackFinanceGateway implements FinancePaymentGateway
             'currency' => mb_strtoupper((string) $response->json('data.currency', '')),
             'reference' => (string) $response->json('data.reference', $reference),
             'metadata' => (array) $response->json('data.metadata', []),
+            'authorization' => [
+                'code' => is_string($code = $response->json('data.authorization.authorization_code')) ? $code : null,
+                'reusable' => (bool) $response->json('data.authorization.reusable', false),
+                'last4' => is_string($last4 = $response->json('data.authorization.last4')) ? $last4 : null,
+                'brand' => is_string($brand = $response->json('data.authorization.card_type')) ? mb_trim($brand) : null,
+            ],
+        ];
+    }
+
+    public function chargeAuthorization(string $tenantId, string $email, int $amountMinor, string $currency, string $authorizationCode, string $reference, array $metadata): array
+    {
+        $response = Http::withToken($this->requireSecret($tenantId))->timeout(30)->post(self::BASE_URL.'/transaction/charge_authorization', [
+            'email' => $email,
+            'amount' => $amountMinor,
+            'currency' => $currency,
+            'authorization_code' => $authorizationCode,
+            'reference' => $reference,
+            'metadata' => $metadata,
+        ]);
+
+        return [
+            'paid' => $response->successful() && $response->json('data.status') === 'success',
+            'amount' => (int) $response->json('data.amount', 0),
+            'reference' => (string) $response->json('data.reference', $reference),
+            'message' => (string) ($response->json('data.gateway_response') ?: $response->json('message') ?: 'The charge was not completed.'),
         ];
     }
 

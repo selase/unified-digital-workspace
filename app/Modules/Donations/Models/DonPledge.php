@@ -32,6 +32,12 @@ final class DonPledge extends Model
     /** @var list<string> */
     protected $guarded = ['id'];
 
+    /** True when the donor allowed automatic charges and a reusable card is on file. */
+    public function canAutoCharge(): bool
+    {
+        return $this->auto_charge && $this->authorization_code !== null && $this->status === self::STATUS_ACTIVE;
+    }
+
     public function isDue(): bool
     {
         return $this->status === self::STATUS_ACTIVE && $this->next_due_on !== null && $this->next_due_on->lte(today());
@@ -68,6 +74,6 @@ final class DonPledge extends Model
 
     protected function casts(): array
     {
-        return ['amount' => 'integer', 'starts_on' => 'date', 'next_due_on' => 'date', 'ends_on' => 'date'];
+        return ['amount' => 'integer', 'starts_on' => 'date', 'next_due_on' => 'date', 'ends_on' => 'date', 'auto_charge' => 'boolean', 'authorization_code' => \App\Casts\EncryptedString::class, 'consent_at' => 'datetime', 'last_charge_attempt_on' => 'date'];
     }
 }

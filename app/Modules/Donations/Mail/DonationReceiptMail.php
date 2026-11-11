@@ -17,6 +17,7 @@ final class DonationReceiptMail extends Mailable
         public readonly DonDonation $donation,
         public readonly string $senderName,
         public readonly ?string $replyToAddress = null,
+        public readonly ?string $stopAutoChargeUrl = null,
     ) {}
 
     public function envelope(): Envelope

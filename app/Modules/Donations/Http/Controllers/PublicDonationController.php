@@ -9,6 +9,7 @@ use App\Models\Tenant;
 use App\Modules\Donations\Models\DonCampaign;
 use App\Modules\Donations\Models\DonPledge;
 use App\Modules\Donations\Services\OnlineGivingService;
+use App\Modules\Donations\Services\PledgeChargeService;
 use App\Modules\Finance\Services\FinanceSettings;
 use App\Modules\Finance\Support\ActivateTenant;
 use App\Modules\Finance\Support\Money;
@@ -67,14 +68,22 @@ final class PublicDonationController extends Controller
         }
     }
 
-    /** The donor opens the signed link staff sent them and goes straight to paying their pledge. */
-    public function payPledge(string $tenant, string $pledge, OnlineGivingService $giving): RedirectResponse
+    /** The donor opens the signed link staff sent them. They see the amount and can choose to let future instalments be charged automatically. */
+    public function pledgePage(string $tenant, string $pledge, FinanceSettings $settings, OnlineGivingService $giving): View
+    {
+        $model = $this->tenant($tenant);
+        $record = DonPledge::query()->where('tenant_id', $model->id)->where('uuid', $pledge)->with('donor')->firstOrFail();
+
+        return view('donations::public.pledge', ['tenant' => $model, 'profile' => $settings->for($model->id), 'pledge' => $record, 'enabled' => $giving->isEnabled($model->id) && $record->status === DonPledge::STATUS_ACTIVE]);
+    }
+
+    public function payPledge(Request $request, string $tenant, string $pledge, OnlineGivingService $giving): RedirectResponse
     {
         $model = $this->tenant($tenant);
         $record = DonPledge::query()->where('tenant_id', $model->id)->where('uuid', $pledge)->firstOrFail();
 
         try {
-            return redirect()->away($giving->pledgeCheckout($record, route('donations.public.thanks', ['tenant' => $model->slug])));
+            return redirect()->away($giving->pledgeCheckout($record, route('donations.public.thanks', ['tenant' => $model->slug]), $request->boolean('allow_auto_charge')));
         } catch (DomainException $error) {
             return redirect()->route('donations.public.give', ['tenant' => $model->slug])->with('error', $error->getMessage());
         } catch (Throwable $error) {
@@ -82,6 +91,24 @@ final class PublicDonationController extends Controller
 
             return redirect()->route('donations.public.give', ['tenant' => $model->slug])->with('error', 'We could not start the payment. Please try again in a moment.');
         }
+    }
+
+    /** The donor stops automatic charges from the signed link in their receipt. */
+    public function stopPage(string $tenant, string $pledge, FinanceSettings $settings): View
+    {
+        $model = $this->tenant($tenant);
+        $record = DonPledge::query()->where('tenant_id', $model->id)->where('uuid', $pledge)->firstOrFail();
+
+        return view('donations::public.pledge-stop', ['tenant' => $model, 'profile' => $settings->for($model->id), 'pledge' => $record, 'stopped' => false]);
+    }
+
+    public function stop(string $tenant, string $pledge, FinanceSettings $settings, PledgeChargeService $charges): View
+    {
+        $model = $this->tenant($tenant);
+        $record = DonPledge::query()->where('tenant_id', $model->id)->where('uuid', $pledge)->firstOrFail();
+        $charges->stopAutoCharge($record);
+
+        return view('donations::public.pledge-stop', ['tenant' => $model, 'profile' => $settings->for($model->id), 'pledge' => $record, 'stopped' => true]);
     }
 
     public function thanks(Request $request, string $tenant, OnlineGivingService $giving, FinanceSettings $settings): View

@@ -44,7 +44,7 @@
                 <tbody>
                 @forelse($pledges as $pledge)
                     <tr>
-                        <td><a class="text-primary" href="{{ route('donations.donors.show', $pledge->donor->uuid) }}">{{ $pledge->donor->name }}</a><div class="text-xs text-muted-foreground">{{ $pledge->campaign?->name ?? $pledge->fund?->name }}</div></td>
+                        <td><a class="text-primary" href="{{ route('donations.donors.show', $pledge->donor->uuid) }}">{{ $pledge->donor->name }}</a><div class="text-xs text-muted-foreground">{{ $pledge->campaign?->name ?? $pledge->fund?->name }}</div>@if($pledge->auto_charge)<div class="text-xs text-green-700">Auto-charge on: {{ $pledge->card_brand }} •••• {{ $pledge->card_last4 }}</div>@elseif($pledge->last_charge_error)<div class="text-xs text-destructive">Last auto-charge failed: {{ $pledge->last_charge_error }}</div>@endif</td>
                         <td>{{ Money::format($pledge->amount, $currency) }} · {{ DonPledge::FREQUENCIES[$pledge->frequency] }}</td>
                         <td class="{{ $pledge->isOverdue() ? 'text-destructive' : '' }}">{{ $pledge->next_due_on?->toInstitutionalDate() ?? '—' }}{{ $pledge->isOverdue() ? ' (overdue)' : '' }}</td>
                         <td class="text-end">{{ Money::format((int) $pledge->received, $currency) }}</td>
@@ -53,6 +53,7 @@
                             @can('donations.record')
                             @if($pledge->status === 'active')
                                 <div class="flex justify-end gap-1">
+                                    @if($pledge->auto_charge)<form method="POST" action="{{ route('donations.pledges.stop-auto', $pledge->uuid) }}" onsubmit="return confirm('Stop automatic charges and remove the saved card?')">@csrf<button class="kt-btn kt-btn-xs kt-btn-outline" type="submit">Stop auto-charge</button></form>@endif
                                     <form method="POST" action="{{ route('donations.pledges.link', $pledge->uuid) }}">@csrf<button class="kt-btn kt-btn-xs kt-btn-outline" type="submit">Payment link</button></form>
                                     <form method="POST" action="{{ route('donations.pledges.receive', $pledge->uuid) }}">@csrf<button class="kt-btn kt-btn-xs kt-btn-primary" type="submit">Receive instalment</button></form>
                                     <form method="POST" action="{{ route('donations.pledges.status', $pledge->uuid) }}">@csrf<input type="hidden" name="status" value="paused"><button class="kt-btn kt-btn-xs kt-btn-outline" type="submit">Pause</button></form>

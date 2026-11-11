@@ -6,5 +6,9 @@
 
 Your receipt {{ $donation->receipt_number }} is attached.
 
+@if($stopAutoChargeUrl)
+This gift was taken automatically from the card you saved. To stop future automatic charges, [click here]({{ $stopAutoChargeUrl }}).
+
+@endif
 If you have any questions, reply to this email.
 </x-mail::message>

@@ -21,9 +21,19 @@ interface FinancePaymentGateway
     public function initialize(string $tenantId, string $email, int $amountMinor, string $currency, string $callbackUrl, array $metadata): array;
 
     /**
-     * @return array{paid: bool, amount: int, currency: string, reference: string, metadata: array<string, mixed>}
+     * `authorization` describes the card used, so a reusable one can be kept (with the donor's consent) for later charges.
+     *
+     * @return array{paid: bool, amount: int, currency: string, reference: string, metadata: array<string, mixed>, authorization: array{code: string|null, reusable: bool, last4: string|null, brand: string|null}}
      */
     public function verify(string $tenantId, string $reference): array;
+
+    /**
+     * Charges a card that was saved with consent. The reference makes a repeated request safe.
+     *
+     * @param  array<string, string>  $metadata
+     * @return array{paid: bool, amount: int, reference: string, message: string}
+     */
+    public function chargeAuthorization(string $tenantId, string $email, int $amountMinor, string $currency, string $authorizationCode, string $reference, array $metadata): array;
 
     /**
      * Payouts from the gateway to the organisation's bank, newest first.

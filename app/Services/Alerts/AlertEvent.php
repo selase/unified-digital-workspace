@@ -28,6 +28,8 @@ final class AlertEvent
 
     public const DONATION_RECEIVED = 'donations.gift_received';
 
+    public const PLEDGE_CHARGE_FAILED = 'donations.pledge_charge_failed';
+
     public const MEMBERSHIP_RENEWAL = 'memberships.renewal_invoiced';
 
     /** @return array<string, array{label: string, description: string}> */
@@ -43,6 +45,7 @@ final class AlertEvent
             self::FINANCE_PAYMENT => ['label' => 'Customer payment received', 'description' => 'A customer pays one of your Finance invoices.'],
             self::FINANCE_INVOICE_OVERDUE => ['label' => 'Customer invoice overdue', 'description' => 'An invoice you issued to a customer is past its due date.'],
             self::DONATION_RECEIVED => ['label' => 'Donation received', 'description' => 'A donation is recorded or arrives.'],
+            self::PLEDGE_CHARGE_FAILED => ['label' => 'Automatic pledge charge failed', 'description' => 'A donor\'s saved card could not be charged for a pledge instalment.'],
             self::MEMBERSHIP_RENEWAL => ['label' => 'Membership renewal invoiced', 'description' => 'A member is close to the end of their paid period and a renewal invoice was raised.'],
         ];
     }

@@ -5,13 +5,14 @@ declare(strict_types=1);
 namespace App\Modules\Donations\Http\Controllers;
 
 use App\Http\Controllers\Controller;
+use App\Models\Tenant;
 use App\Modules\Donations\Http\Requests\SavePledgeRequest;
 use App\Modules\Donations\Models\DonCampaign;
 use App\Modules\Donations\Models\DonDonor;
 use App\Modules\Donations\Models\DonPledge;
 use App\Modules\Donations\Services\OnlineGivingService;
+use App\Modules\Donations\Services\PledgeChargeService;
 use App\Modules\Donations\Services\PledgeService;
-use App\Models\Tenant;
 use App\Modules\Finance\Models\FinFund;
 use App\Modules\Finance\Services\FinanceSettings;
 use App\Modules\Finance\Support\Money;
@@ -87,6 +88,15 @@ final class PledgeController extends Controller
         }
 
         return back()->with('pledge_link', ['donor' => $model->donor->name, 'url' => $giving->pledgeLink($model, (string) Tenant::query()->whereKey($tenantId)->value('slug'))]);
+    }
+
+    /** Staff can stop automatic charges for a donor who asks. */
+    public function stopAuto(Request $request, PledgeChargeService $charges, string $pledge): RedirectResponse
+    {
+        $tenantId = $this->allow($request, 'donations.record');
+        $charges->stopAutoCharge(DonPledge::query()->where('tenant_id', $tenantId)->where('uuid', $pledge)->firstOrFail());
+
+        return back()->with('success', 'Automatic charges stopped and the saved card removed.');
     }
 
     public function status(Request $request, PledgeService $pledges, string $pledge): RedirectResponse

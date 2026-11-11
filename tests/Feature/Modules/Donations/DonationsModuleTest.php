@@ -7,6 +7,7 @@ use App\Models\TenantFeature;
 use App\Models\TenantPaymentGateway;
 use App\Models\User;
 use App\Modules\Donations\Database\Seeders\DonationsDemoSeeder;
+use App\Modules\Donations\Mail\DonationReceiptMail;
 use App\Modules\Donations\Models\DonCampaign;
 use App\Modules\Donations\Models\DonDonation;
 use App\Modules\Donations\Models\DonDonor;
@@ -25,6 +26,7 @@ use App\Services\ModuleManager;
 use App\Services\Tenancy\TenantContext;
 use App\Services\Tenancy\TenantDatabaseManager;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Session;
@@ -198,7 +200,7 @@ describe('Donations screens', function (): void {
         $this->actingAs($user)->withSession(['active_tenant_id' => $tenant->id]);
 
         $this->post(route('donations.donations.email', $withEmail->uuid))->assertSessionHas('success');
-        Mail::assertSent(App\Modules\Donations\Mail\DonationReceiptMail::class, fn ($mail): bool => $mail->hasTo('ama@example.test'));
+        Mail::assertSent(DonationReceiptMail::class, fn ($mail): bool => $mail->hasTo('ama@example.test'));
         expect($withEmail->fresh()->receipt_sent_at)->not->toBeNull();
 
         $this->post(route('donations.donations.email', $noEmail->uuid))->assertSessionHas('error');
@@ -379,8 +381,9 @@ describe('Online giving', function (): void {
         $link = $this->post(route('donations.pledges.link', $pledge->uuid))->assertSessionHas('pledge_link')->getSession()->get('pledge_link')['url'];
 
         $this->get(route('donations.public.pledge', ['tenant' => $tenant->slug, 'pledge' => $pledge->uuid]))->assertForbidden();
-        $this->get($link)->assertRedirect('https://checkout.paystack.test/pledge');
-        Http::assertSent(fn ($request): bool => str_contains($request->url(), 'initialize') && $request['amount'] === 25_000 && ($request['metadata']['pledge_id'] ?? null) === (string) $pledge->id);
+        $this->get($link)->assertOk()->assertSee('Pay now')->assertSee('Charge my card automatically');
+        $this->post($link)->assertRedirect('https://checkout.paystack.test/pledge');
+        Http::assertSent(fn ($request): bool => str_contains($request->url(), 'initialize') && $request['amount'] === 25_000 && ($request['metadata']['pledge_id'] ?? null) === (string) $pledge->id && ! isset($request['metadata']['auto_charge']));
 
         $this->get(route('donations.public.thanks', ['tenant' => $tenant->slug, 'reference' => 'ref_pledge']))->assertOk();
         $this->get(route('donations.public.thanks', ['tenant' => $tenant->slug, 'reference' => 'ref_pledge']))->assertOk();
@@ -390,7 +393,103 @@ describe('Online giving', function (): void {
 
         $pledge->forceFill(['status' => 'paused'])->save();
         $this->post(route('donations.pledges.link', $pledge->uuid))->assertSessionHas('error');
-        $this->get($link)->assertRedirect(route('donations.public.give', ['tenant' => $tenant->slug]));
+        $this->post($link)->assertRedirect(route('donations.public.give', ['tenant' => $tenant->slug]));
+    });
+
+    test('a card is kept for automatic charges only when the donor ticked the box and the card is reusable', function (): void {
+        [$user, $tenant] = createDonationsContext();
+        connectGivingGateway($tenant);
+        $donor = demoDonor($tenant);
+        $consenting = app(PledgeService::class)->create($tenant->id, $donor, 25_000, ['frequency' => 'monthly', 'starts_on' => '2026-01-31']);
+        $declining = app(PledgeService::class)->create($tenant->id, demoDonor($tenant, 'Kofi', 'kofi@example.test'), 10_000, ['frequency' => 'monthly', 'starts_on' => '2026-01-31']);
+        $verify = fn (DonPledge $pledge, string $reference, bool $reusable, bool $consent): array => ['data' => [
+            'status' => 'success', 'amount' => $pledge->amount, 'currency' => 'GHS', 'reference' => $reference,
+            'metadata' => array_filter(['type' => 'donation', 'tenant_id' => $tenant->id, 'donor_id' => (string) $pledge->donor_id, 'pledge_id' => (string) $pledge->id, 'auto_charge' => $consent ? '1' : null]),
+            'authorization' => ['authorization_code' => 'AUTH_secret123', 'reusable' => $reusable, 'last4' => '4081', 'card_type' => 'visa '],
+        ]];
+        Http::fake([
+            'api.paystack.co/transaction/initialize' => Http::response(['data' => ['authorization_url' => 'https://checkout.paystack.test/x', 'reference' => 'r']]),
+            'api.paystack.co/transaction/verify/ref_yes' => Http::response($verify($consenting, 'ref_yes', true, true)),
+            'api.paystack.co/transaction/verify/ref_no' => Http::response($verify($declining, 'ref_no', true, false)),
+        ]);
+
+        $this->actingAs($user)->withSession(['active_tenant_id' => $tenant->id]);
+        $link = $this->post(route('donations.pledges.link', $consenting->uuid))->getSession()->get('pledge_link')['url'];
+        $this->post($link, ['allow_auto_charge' => '1'])->assertRedirect('https://checkout.paystack.test/x');
+        Http::assertSent(fn ($request): bool => str_contains($request->url(), 'initialize') && ($request['metadata']['auto_charge'] ?? null) === '1');
+
+        $this->get(route('donations.public.thanks', ['tenant' => $tenant->slug, 'reference' => 'ref_yes']))->assertOk();
+        $this->get(route('donations.public.thanks', ['tenant' => $tenant->slug, 'reference' => 'ref_no']))->assertOk();
+
+        $kept = $consenting->fresh();
+        expect($kept->auto_charge)->toBeTrue()->and($kept->card_last4)->toBe('4081')->and($kept->card_brand)->toBe('visa')->and($kept->consent_at)->not->toBeNull()
+            ->and($kept->authorization_code)->toBe('AUTH_secret123')
+            ->and(DB::connection('tenant')->table('don_pledges')->where('id', $consenting->id)->value('authorization_code'))->not->toContain('AUTH_secret123')
+            ->and($declining->fresh()->auto_charge)->toBeFalse()->and($declining->fresh()->authorization_code)->toBeNull();
+    });
+
+    test('due pledges are charged once a day from the saved card, receipted with a stop link, and the schedule moves on', function (): void {
+        Mail::fake();
+        [, $tenant] = createDonationsContext();
+        connectGivingGateway($tenant);
+        $pledge = app(PledgeService::class)->create($tenant->id, demoDonor($tenant), 25_000, ['frequency' => 'monthly', 'starts_on' => today()->subDay()->toDateString()]);
+        $notDue = app(PledgeService::class)->create($tenant->id, demoDonor($tenant, 'Kofi', 'kofi@example.test'), 5_000, ['frequency' => 'monthly', 'starts_on' => today()->addWeek()->toDateString()]);
+        $noConsent = app(PledgeService::class)->create($tenant->id, demoDonor($tenant, 'Esi', 'esi@example.test'), 5_000, ['frequency' => 'monthly', 'starts_on' => today()->subDay()->toDateString()]);
+        foreach ([$pledge, $notDue] as $item) {
+            $item->forceFill(['auto_charge' => true, 'authorization_code' => 'AUTH_x', 'card_last4' => '4081'])->save();
+        }
+        Http::fake(['api.paystack.co/transaction/charge_authorization' => Http::response(['status' => true, 'data' => ['status' => 'success', 'amount' => 25_000, 'reference' => 'plg-test']])]);
+
+        $this->artisan('donations:charge-pledges')->assertSuccessful();
+        $this->artisan('donations:charge-pledges')->assertSuccessful();
+
+        Http::assertSentCount(1);
+        Http::assertSent(fn ($request): bool => str_contains($request->url(), 'charge_authorization') && $request['amount'] === 25_000 && $request['authorization_code'] === 'AUTH_x' && str_starts_with($request['reference'], 'plg-'.$pledge->uuid));
+        expect(DonDonation::query()->count())->toBe(1)->and(DonDonation::query()->first()->pledge_id)->toBe($pledge->id)
+            ->and($pledge->fresh()->next_due_on->gt(today()))->toBeTrue()->and($noConsent->fresh()->next_due_on->lte(today()))->toBeTrue();
+        Mail::assertSent(DonationReceiptMail::class, fn (DonationReceiptMail $mail): bool => $mail->stopAutoChargeUrl !== null && str_contains($mail->stopAutoChargeUrl, 'signature='));
+    });
+
+    test('a failing card is retried daily, dropped after three failures with an alert, and never charged twice in a day', function (): void {
+        Mail::fake();
+        [, $tenant] = createDonationsContext();
+        connectGivingGateway($tenant);
+        $pledge = app(PledgeService::class)->create($tenant->id, demoDonor($tenant), 25_000, ['frequency' => 'monthly', 'starts_on' => today()->subDay()->toDateString()]);
+        $pledge->forceFill(['auto_charge' => true, 'authorization_code' => 'AUTH_x', 'card_last4' => '4081'])->save();
+        Http::fake(['api.paystack.co/transaction/charge_authorization' => Http::response(['status' => false, 'message' => 'Insufficient funds', 'data' => ['status' => 'failed', 'gateway_response' => 'Insufficient funds']])]);
+
+        foreach ([0, 1, 2] as $day) {
+            Illuminate\Support\Carbon::setTestNow(today()->addDays($day)->setTime(7, 0));
+            $this->artisan('donations:charge-pledges')->assertSuccessful();
+            $this->artisan('donations:charge-pledges')->assertSuccessful();
+            if ($day < 2) {
+                expect($pledge->fresh()->charge_failures)->toBe($day + 1)->and($pledge->fresh()->auto_charge)->toBeTrue();
+            }
+        }
+        Illuminate\Support\Carbon::setTestNow();
+
+        Http::assertSentCount(3);
+        $fresh = $pledge->fresh();
+        expect($fresh->auto_charge)->toBeFalse()->and($fresh->authorization_code)->toBeNull()->and(str_contains((string) $fresh->last_charge_error, 'Insufficient funds'))->toBeTrue()
+            ->and(DonDonation::query()->count())->toBe(0)->and($fresh->status)->toBe('active');
+    });
+
+    test('the donor and staff can both stop automatic charges', function (): void {
+        [$user, $tenant] = createDonationsContext();
+        $pledge = app(PledgeService::class)->create($tenant->id, demoDonor($tenant), 25_000, ['frequency' => 'monthly', 'starts_on' => today()->toDateString()]);
+        $pledge->forceFill(['auto_charge' => true, 'authorization_code' => 'AUTH_x', 'card_last4' => '4081'])->save();
+        $stopUrl = app(OnlineGivingService::class)->stopLink($pledge, $tenant->slug);
+
+        $this->get(route('donations.public.pledge-stop', ['tenant' => $tenant->slug, 'pledge' => $pledge->uuid]))->assertForbidden();
+        $this->get($stopUrl)->assertOk()->assertSee('Yes, stop automatic charges');
+        $this->post($stopUrl)->assertOk()->assertSee('will not charge your card again');
+        expect($pledge->fresh()->auto_charge)->toBeFalse()->and($pledge->fresh()->authorization_code)->toBeNull();
+
+        $pledge->refresh()->forceFill(['auto_charge' => true, 'authorization_code' => 'AUTH_y', 'card_last4' => '1111'])->save();
+        $this->actingAs($user)->withSession(['active_tenant_id' => $tenant->id]);
+        $this->get(route('donations.pledges.index'))->assertSee('Auto-charge on')->assertSee('Stop auto-charge');
+        $this->post(route('donations.pledges.stop-auto', $pledge->uuid))->assertSessionHas('success');
+        expect($pledge->fresh()->auto_charge)->toBeFalse();
     });
 
     test('the donor is emailed the receipt once, and a mail failure does not undo the gift', function (): void {
@@ -406,7 +505,7 @@ describe('Online giving', function (): void {
 
         $giving->recordVerified($tenant->id, 'ref_mail');
         $giving->recordVerified($tenant->id, 'ref_mail');
-        Mail::assertSent(App\Modules\Donations\Mail\DonationReceiptMail::class, 1);
+        Mail::assertSent(DonationReceiptMail::class, 1);
         expect(DonDonation::query()->first()->receipt_sent_at)->not->toBeNull();
 
         Mail::shouldReceive('to')->andThrow(new RuntimeException('smtp down'));

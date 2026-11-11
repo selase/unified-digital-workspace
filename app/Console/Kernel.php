@@ -44,6 +44,7 @@ final class Kernel extends ConsoleKernel
         $schedule->command('billing:send-reminders')->dailyAt('08:00')->withoutOverlapping();
         $schedule->command('finance:run-recurring')->dailyAt('05:30')->withoutOverlapping();
         $schedule->command('finance:alert-overdue')->dailyAt('06:00')->withoutOverlapping();
+        $schedule->command('donations:charge-pledges')->dailyAt('07:00')->withoutOverlapping();
         $schedule->command('memberships:sync')->dailyAt('06:30')->withoutOverlapping();
 
         // Incident Management
