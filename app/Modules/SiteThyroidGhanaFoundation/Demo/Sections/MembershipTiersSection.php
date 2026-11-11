@@ -15,9 +15,9 @@ use App\Modules\Memberships\Models\MemType;
 final class MembershipTiersSection
 {
     private const TIERS = [
-        ['Student and Patient Member', 'For students and patients who want to stay informed and connected to the foundation.', 10_000],
-        ['Individual Member', 'For anyone who wants to support thyroid health awareness and care in Ghana.', 20_000],
-        ['Corporate Partner', 'For organisations that want to stand with thyroid patients and support our work.', 200_000],
+        ['Bronze Membership', 'For students and patients who want to stay informed and connected to the foundation.', 10_000],
+        ['Silver Membership', 'For anyone who wants to support thyroid health awareness and care in Ghana.', 20_000],
+        ['Gold Membership', 'For organisations that want to stand with thyroid patients and support our work.', 200_000],
     ];
 
     /** @return list<int> The ids of the types created; empty when nothing was needed. */

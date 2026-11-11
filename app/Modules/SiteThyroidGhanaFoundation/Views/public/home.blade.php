@@ -71,9 +71,10 @@
                     }
                 @endphp
                 <div
-                    :class="current === {{ $i }} ? 'z-10 opacity-100' : 'z-0 opacity-0 pointer-events-none'"
+                    :data-active="current === {{ $i }} ? 'true' : 'false'"
                     :aria-hidden="current === {{ $i }} ? 'false' : 'true'"
-                    class="absolute inset-0 flex items-center transition-opacity duration-500 ease-in-out {{ $i === 0 ? 'z-10 opacity-100' : 'z-0 opacity-0 pointer-events-none' }}"
+                    class="absolute inset-0 z-0 flex items-center opacity-0 pointer-events-none transition-opacity duration-500 ease-in-out data-[active=true]:z-10 data-[active=true]:opacity-100 data-[active=true]:pointer-events-auto"
+                    data-active="{{ $i === 0 ? 'true' : 'false' }}"
                     style="{{ $bgStyle }}"
                 >
                     @if($videoKind === 'file')

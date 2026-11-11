@@ -22,8 +22,8 @@ describe('Membership page', function (): void {
 
         $html = $this->get(TGF_SITE.'/membership')->assertOk()->getContent();
 
-        expect($html)->toContain('Student and Patient Member')->toContain('GHS 100')->toContain('Individual Member')->toContain('GHS 200')
-            ->toContain('Corporate Partner')->toContain('GHS 2,000')->not->toContain('Demo: Hidden tier')->not->toContain('Demo:');
+        expect($html)->toContain('Bronze Membership')->toContain('GHS 100')->toContain('Silver Membership')->toContain('GHS 200')
+            ->toContain('Gold Membership')->toContain('GHS 2,000')->not->toContain('Demo: Hidden tier')->not->toContain('Demo:');
     });
 
     test('falls back to the enquiry form when there are no real public tiers', function (): void {
@@ -38,7 +38,7 @@ describe('Membership page', function (): void {
     test('a valid application creates a pending member and a repeat looks the same', function (): void {
         $tenant = tgfSiteTenant();
         (new MembershipTiersSection)->ensure($tenant);
-        $type = MemType::query()->where('tenant_id', $tenant->id)->where('name', 'Individual Member')->firstOrFail();
+        $type = MemType::query()->where('tenant_id', $tenant->id)->where('name', 'Silver Membership')->firstOrFail();
         $payload = ['name' => 'Ama Visitor', 'email' => 'ama.visitor@example.com', 'phone' => '0240000000', 'type_id' => $type->id];
 
         $this->post(TGF_SITE.'/membership', $payload)->assertOk()->assertSee('Thank you')->assertDontSee('email you');

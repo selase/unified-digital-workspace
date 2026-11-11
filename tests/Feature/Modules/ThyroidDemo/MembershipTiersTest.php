@@ -43,7 +43,7 @@ describe('Proposed membership tiers', function (): void {
 
         $types = MemType::query()->where('tenant_id', $tenant->id)->orderBy('fee')->get();
         expect($ids)->toHaveCount(3)
-            ->and($types->pluck('name')->all())->toBe(['Student and Patient Member', 'Individual Member', 'Corporate Partner'])
+            ->and($types->pluck('name')->all())->toBe(['Bronze Membership', 'Silver Membership', 'Gold Membership'])
             ->and($types->pluck('fee')->all())->toBe([10_000, 20_000, 200_000])
             ->and($types->every(fn (MemType $t): bool => $t->is_public && $t->is_active && $t->period_months === 12))->toBeTrue();
     });
@@ -110,10 +110,10 @@ describe('Tiers and the demo commands', function (): void {
         $tenant = tgfTierTenant();
         Artisan::call('tgf:demo-seed', ['--confirm' => true]);
         Artisan::call('tgf:demo-remove', ['--confirm' => true]);
-        $type = MemType::query()->where('tenant_id', $tenant->id)->where('name', 'Individual Member')->firstOrFail();
+        $type = MemType::query()->where('tenant_id', $tenant->id)->where('name', 'Silver Membership')->firstOrFail();
         app(App\Modules\Memberships\Services\MembershipService::class)->join($tenant->id, $type, 'Real Member', ['email' => 'real@example.com']);
         Artisan::call('tgf:demo-remove', ['--confirm' => true, '--with-tiers' => true]);
 
-        expect(MemType::query()->where('tenant_id', $tenant->id)->pluck('name')->all())->toBe(['Individual Member']);
+        expect(MemType::query()->where('tenant_id', $tenant->id)->pluck('name')->all())->toBe(['Silver Membership']);
     });
 });

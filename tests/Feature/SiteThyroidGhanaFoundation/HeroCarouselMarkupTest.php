@@ -8,7 +8,7 @@ it('keeps hero slide visibility independent from display toggling', function () 
     expect($blade)
         ->not->toContain('x-show="current === {{ $i }}"')
         ->not->toContain('x-cloak')
-        ->toContain(':class="current === {{ $i }} ? \'z-10 opacity-100\' : \'z-0 opacity-0 pointer-events-none\'"');
+        ->toContain(':data-active="current === {{ $i }} ? \'true\' : \'false\'"');
 });
 
 it('lets visitors open hero background videos with controls', function () {
