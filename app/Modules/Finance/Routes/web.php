@@ -18,6 +18,7 @@ use App\Modules\Finance\Http\Controllers\RecurringInvoiceController;
 use App\Modules\Finance\Http\Controllers\ReportController;
 use App\Modules\Finance\Http\Controllers\SettingsController;
 use App\Modules\Finance\Http\Controllers\SettlementController;
+use App\Modules\Finance\Http\Controllers\StockController;
 use App\Modules\Finance\Http\Controllers\TimeBillingController;
 use Illuminate\Support\Facades\Route;
 
@@ -44,6 +45,9 @@ Route::delete('/contacts/{contact}', [ContactController::class, 'destroy'])->nam
 Route::get('/items', [ItemController::class, 'index'])->name('items.index');
 Route::post('/items', [ItemController::class, 'store'])->name('items.store');
 Route::delete('/items/{item}', [ItemController::class, 'destroy'])->name('items.destroy');
+Route::get('/stock', [StockController::class, 'index'])->name('stock.index');
+Route::get('/stock/{item}', [StockController::class, 'show'])->name('stock.show');
+Route::post('/stock/{item}', [StockController::class, 'store'])->name('stock.store');
 
 Route::get('/invoices', [InvoiceController::class, 'index'])->name('invoices.index');
 Route::get('/invoices/create', [InvoiceController::class, 'create'])->name('invoices.create');

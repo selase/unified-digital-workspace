@@ -28,6 +28,9 @@ final class SaveItemRequest extends FormRequest
             'sku' => ['nullable', 'string', 'max:64'],
             'description' => ['nullable', 'string', 'max:1000'],
             'unit_price' => ['required', 'numeric', 'min:0'],
+            'track_stock' => ['nullable', 'boolean'],
+            'reorder_level' => ['nullable', 'numeric', 'min:0'],
+            'opening_quantity' => ['nullable', 'numeric', 'min:0'],
             'income_account_id' => ['nullable', Rule::exists('fin_accounts', 'id')->where('tenant_id', $tenantId)->where('type', 'income')],
         ];
     }

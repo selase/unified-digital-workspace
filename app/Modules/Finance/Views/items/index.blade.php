@@ -26,6 +26,9 @@
                 @endforeach
             </select>
             <input class="kt-input" name="description" value="{{ old('description') }}" placeholder="Description">
+            <label class="flex items-center gap-2 text-sm"><input type="checkbox" name="track_stock" value="1" @checked(old('track_stock'))> Keep track of stock</label>
+            <input class="kt-input" type="number" step="0.001" min="0" name="opening_quantity" value="{{ old('opening_quantity') }}" placeholder="Opening quantity">
+            <input class="kt-input" type="number" step="0.001" min="0" name="reorder_level" value="{{ old('reorder_level') }}" placeholder="Reorder when stock falls to">
             <div><button class="kt-btn kt-btn-primary" type="submit">Save item</button></div>
         </form>
     </div>

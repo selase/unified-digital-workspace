@@ -12,6 +12,7 @@
         'finance.settlements' => ['Payouts', 'finance.settlements.index'],
         'finance.contacts' => ['Contacts', 'finance.contacts.index'],
         'finance.items' => ['Items', 'finance.items.index'],
+        'finance.stock' => ['Stock', 'finance.stock.index'],
         'finance.accounts' => ['Chart of accounts', 'finance.accounts.index'],
         'finance.journals' => ['Journals', 'finance.journals.index'],
         'finance.budgets' => ['Budgets', 'finance.budgets.index'],

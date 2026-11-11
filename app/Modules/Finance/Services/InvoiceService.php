@@ -18,6 +18,7 @@ final class InvoiceService
         private readonly FinanceSettings $settings,
         private readonly ChartOfAccounts $accounts,
         private readonly TaxCalculator $taxes,
+        private readonly StockService $stock,
     ) {}
 
     /**
@@ -139,6 +140,8 @@ final class InvoiceService
                 );
                 $invoice->journal_id = $journal->id;
 
+                $this->stock->applyDocument($invoice, $userId);
+
                 if ($original instanceof FinInvoice) {
                     $invoice->status = FinInvoice::STATUS_APPLIED;
                     $original->increment('credits_applied', $invoice->total);
@@ -213,6 +216,7 @@ final class InvoiceService
                 }
             }
 
+            $this->stock->reverseDocument($invoice, $userId);
             $invoice->forceFill(['status' => FinInvoice::STATUS_VOID, 'voided_at' => now()])->save();
 
             return $invoice;

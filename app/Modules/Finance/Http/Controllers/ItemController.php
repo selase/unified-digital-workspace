@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Modules\Finance\Http\Requests\SaveItemRequest;
 use App\Modules\Finance\Models\FinAccount;
 use App\Modules\Finance\Models\FinItem;
+use App\Modules\Finance\Services\StockService;
 use App\Modules\Finance\Support\Money;
 use App\Modules\Finance\Support\ResolvesFinanceTenant;
 use Illuminate\Contracts\View\View;
@@ -28,13 +29,20 @@ final class ItemController extends Controller
         ]);
     }
 
-    public function store(SaveItemRequest $request): RedirectResponse
+    public function store(SaveItemRequest $request, StockService $stock): RedirectResponse
     {
-        FinItem::query()->create([
-            ...$request->safe()->except('unit_price'),
+        $tracked = $request->boolean('track_stock');
+        $item = FinItem::query()->create([
+            ...$request->safe()->except(['unit_price', 'track_stock', 'reorder_level', 'opening_quantity']),
             'unit_price' => Money::toMinor($request->validated('unit_price')),
+            'track_stock' => $tracked,
+            'reorder_level_thousandths' => $tracked ? (int) round(((float) $request->validated('reorder_level')) * 1000) : 0,
             'tenant_id' => $this->tenantId($request),
         ]);
+
+        if ($tracked && (float) $request->validated('opening_quantity') > 0) {
+            $stock->record($item, 'opening', (float) $request->validated('opening_quantity'), today(), null, 'Opening stock', $this->actorId($request));
+        }
 
         return back()->with('success', 'Item added.');
     }
