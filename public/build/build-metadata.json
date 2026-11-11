@@ -1,6 +1,6 @@
 {
     "version": 2,
-    "source_sha256": "5b298d28ffec4111dd3733f99a03ec6730dd84110c582fe2cac52ed3fc70620d",
+    "source_sha256": "710cc7ec6a88d11778ac1b7a2a1680a2bd297cdf89ad84360094837032207c11",
     "source_files": {
         ".agent/rules/path-to-php.md": "c559a7b17fe39107f8e1a69a9b93fe720c8d11b947d9decaf6541ed429714359",
         ".agent/rules/testing.md": "8289cda546c31080a26018179a337bafa1f65c0967dd23d2d1561d6c9b0a9c1f",
@@ -1565,7 +1565,7 @@
         "app/Modules/SiteThyroidGhanaFoundation/Demo/Sections/FinanceSection.php": "4f812bd2a340f19b789484e16680b0f9eedcd04ed154603723e8e38eba70c5d0",
         "app/Modules/SiteThyroidGhanaFoundation/Demo/Sections/GovernanceSection.php": "c8bc73e0f957115f55131fd274d2890cfc4c370f83f8fbfff8934e90e043b8c3",
         "app/Modules/SiteThyroidGhanaFoundation/Demo/Sections/GrantsSection.php": "62dda4431fde1ffc5905434b964ee3ff55f6a4c7b627f54768bddae461368ea5",
-        "app/Modules/SiteThyroidGhanaFoundation/Demo/Sections/MembershipTiersSection.php": "86b5cee3f6acd5d05a3d482198ebafcc90268217fcc5817bcfb3837c2989a9a1",
+        "app/Modules/SiteThyroidGhanaFoundation/Demo/Sections/MembershipTiersSection.php": "dbc050ad1aaf4505dbd610165ee793a4d40b3f74bbef37119109ed88b73b07ae",
         "app/Modules/SiteThyroidGhanaFoundation/Demo/Sections/MembershipsSection.php": "af95c52f5b90c825bda42b3aaec1ede2233e6cec6af66e019e5eea25ab69ea35",
         "app/Modules/SiteThyroidGhanaFoundation/Demo/Sections/ResultsSection.php": "a09591faf183ecb2d0570d264b19ab434a15baa05269bc3e69c1db3eae750f55",
         "app/Modules/SiteThyroidGhanaFoundation/Demo/Sections/VolunteersSection.php": "8df4a92785dbe91f5abb26f51f764546f9e19211182f82cdca34b1bf258b21db",
@@ -1585,7 +1585,7 @@
         "app/Modules/SiteThyroidGhanaFoundation/Support/ImpactFigures.php": "9a99574478c49a5fda997829f093f51fd593e3152f4465e68fbe4c6263bddbef",
         "app/Modules/SiteThyroidGhanaFoundation/Support/TeamRoster.php": "2af8ae8bf883a81cdbc4b11f2096e6e6b45d8f1b53dd19511044f6769459e19d",
         "app/Modules/SiteThyroidGhanaFoundation/Views/public/archive.blade.php": "a5b251e8ade0f5a15f9b90b350f527f8d4cdafcb4e7cc0b8b57b79116880c487",
-        "app/Modules/SiteThyroidGhanaFoundation/Views/public/home.blade.php": "a12446bf50acd1a8271a01bfdfa58eff06ecbfb9d7d48aa15a60a7012a3cd036",
+        "app/Modules/SiteThyroidGhanaFoundation/Views/public/home.blade.php": "05f62bf4e533965e56b6071a50877d51dd5e486dc23e5edb8b226824fc8b4acf",
         "app/Modules/SiteThyroidGhanaFoundation/Views/public/layouts/website.blade.php": "11bd8b896c93cb142d62b626f2476267e73c64ef513109d0c7141847c13b22da",
         "app/Modules/SiteThyroidGhanaFoundation/Views/public/newsletters/archive.blade.php": "b08cfe13ac6a25199657017786a9a5190550dca29e5641733bae008fa788706d",
         "app/Modules/SiteThyroidGhanaFoundation/Views/public/newsletters/single.blade.php": "893ff1ecd8591ae7ba02eeb4b9408fac1d9b629a118d7460b7f18732376bbc1e",
@@ -7080,9 +7080,10 @@
         "tests/Feature/Modules/ThyroidDemo/BoardImpactPagesTest.php": "50357dccece869416748c664399491c6ae1ae7c56918eb657053c2dfee93029d",
         "tests/Feature/Modules/ThyroidDemo/DemoCommandsTest.php": "2798f1d2d535f210dca1e35d9dda52889281dd0e0e4016de1914a919de84d397",
         "tests/Feature/Modules/ThyroidDemo/FinanceMembershipsSectionTest.php": "fcf3e378a7600d42401c695708392b834ad0772d3bfc923b3d88a3d00f0638a3",
-        "tests/Feature/Modules/ThyroidDemo/MembershipTiersTest.php": "66629da43d24ddd9fc2d76390486628718ee692433b4a8889e7699dba8a2a542",
+        "tests/Feature/Modules/ThyroidDemo/HomeSliderTest.php": "82354547e6c7a465f8b9830178af79acefe1ea711ac4bc513dfcd27acc330b78",
+        "tests/Feature/Modules/ThyroidDemo/MembershipTiersTest.php": "1665e8f0137d50b99c7a3451c59c35242fb3d679970bf10082c5c4c8248e61a4",
         "tests/Feature/Modules/ThyroidDemo/NgoSectionsTest.php": "253e0eb351aa354584c55c13931325e02f56408e483d41609ca3b749e288466d",
-        "tests/Feature/Modules/ThyroidDemo/PublicPagesTest.php": "a7f96e4b581b2b01a79311adcdbe6d227d2473e4affa2f63b9651f5f9f78c07c",
+        "tests/Feature/Modules/ThyroidDemo/PublicPagesTest.php": "bb2de1327bfe5d4283743b83cac5ac45bc33639c264c994c2ee321725fcbb25a",
         "tests/Feature/Modules/ThyroidDemo/SiteTenantHelper.php": "0a936b5eea032b990b9872a01d33e4ee8dbed2ec5d0964ea552070e69da7ee6b",
         "tests/Feature/Modules/VendorMarketplace/VendorMarketplaceEscrowTest.php": "1ad1bcf3a1245758fad1ab5db2d322c84ea66e0c73b3f5849585c9e62d8147cb",
         "tests/Feature/Modules/Volunteers/VolunteersModuleTest.php": "877fdb6d918032415b2aa82b1edf23f87cd03c22a9518677c4de94f47422ef74",
@@ -7108,7 +7109,7 @@
         "tests/Feature/SiteLifepartnersPlatform/PreviewWebsiteTest.php": "94abf9ea750d4ccfc7bf85801c969e294da08431165cc8250da1257eb169502f",
         "tests/Feature/SiteThyroidGhanaFoundation/AwarenessWeek2026ContentTest.php": "40d44221a57d8e50505287fa9328ab60807a16fd7ed9cfaff553bf2f02e56152",
         "tests/Feature/SiteThyroidGhanaFoundation/CustomDomainHomeTest.php": "9bf4cc8abea6d587dc1867b5c36b82f718bc2a2bde75998cce77282c235bd981",
-        "tests/Feature/SiteThyroidGhanaFoundation/HeroCarouselMarkupTest.php": "73567dc76562f8ec622e5d7cacbb76d538165644ffe4717a187cf768401fc958",
+        "tests/Feature/SiteThyroidGhanaFoundation/HeroCarouselMarkupTest.php": "45f26b1054fd202641b527390b9e2d1a360bbf4c478ddb1885c819f361082531",
         "tests/Feature/Tenancy/ColdProvisioningTest.php": "db6eeb8069f3bdf3d70c35da5ce3d307defb6d781ee62c24d4c484e1b7b62d42",
         "tests/Feature/Tenancy/ConsumerScenarioTest.php": "a5c8416b74c6fc96eb926493ee5c7f2b1dc7e00dee1cb65e72d13c664debc328",
         "tests/Feature/Tenancy/CrossTenantSafetyTest.php": "b319bb5bbced5e6cde90db841668796e7bfc50d1092bf545a8d4b3b369eea392",
@@ -7216,8 +7217,8 @@
         "vite.config.js": "1bd7f75ae1df969c819e63114e9be5f0e2a69e399d4dcab4373aa680314a93d9"
     },
     "files": {
-        "assets/app-CUSAfdJB.css": "96c2815a5a6c253e0f2d1c7c05f7fec5087ae000bfbebb5848496e45d36f14e9",
+        "assets/app-DND8Ixp0.css": "3846dd884902f47448534d2b824d1ebc280f76adf7f8106272a934c0c79c6a2e",
         "assets/app-DZ7vsMlk.js": "9e50c4955507aaeebcd1314deed2cd1c97b55d9ac9c9388ab60cf33f0e6d510e",
-        "manifest.json": "ec2ab517f5d5e78359c7302a395d9a486b93e36ca5dc35338e657d9820adbeec"
+        "manifest.json": "417cd05c218279c54bb62b61e21278c16989fc11fea162672a29fc4eab6d7a36"
     }
 }
