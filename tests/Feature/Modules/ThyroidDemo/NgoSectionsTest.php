@@ -44,7 +44,7 @@ function tgfAllRowCounts(Tenant $tenant): array
     $counts = [];
     foreach ($connection->getSchemaBuilder()->getTableListing() as $table) {
         $name = str_contains($table, '.') ? explode('.', $table)[1] : $table;
-        if (! preg_match('/^(fin|mem|don|grt|vol|ben|gov|pr)_/', $name) || in_array($name, ['fin_accounts', 'fin_settings', 'fin_sequences', 'mem_types'], true)) {
+        if (! preg_match('/^(fin|mem|don|grt|vol|ben|gov|rf)_/', $name) || in_array($name, ['fin_accounts', 'fin_settings', 'fin_sequences', 'mem_types'], true)) {
             continue;
         }
         $counts[$name] = $connection->getSchemaBuilder()->hasColumn($name, 'tenant_id')
@@ -66,7 +66,7 @@ describe('Demo data across all eight modules', function (): void {
         $connection = DB::connection('tenant');
         $labelled = [
             'don_donors' => 'name', 'don_campaigns' => 'name', 'grt_funders' => 'name', 'grt_grants' => 'title', 'vol_volunteers' => 'name',
-            'vol_opportunities' => 'title', 'ben_beneficiaries' => 'full_name', 'gov_members' => 'name', 'gov_meetings' => 'title', 'pr_indicators' => 'name',
+            'vol_opportunities' => 'title', 'ben_beneficiaries' => 'full_name', 'gov_members' => 'name', 'gov_meetings' => 'title', 'rf_indicators' => 'name',
             'fin_contacts' => 'name', 'mem_members' => 'name',
         ];
         foreach ($labelled as $table => $column) {
@@ -74,7 +74,7 @@ describe('Demo data across all eight modules', function (): void {
             expect($names->count())->toBeGreaterThan(0, "{$table} has no rows")
                 ->and($names->reject(fn (string $n): bool => str_starts_with($n, 'Demo: '))->all())->toBe([], "{$table} has an unlabelled row");
         }
-        foreach (['don_donations', 'don_pledges', 'grt_instalments', 'vol_hours', 'ben_cases', 'ben_services', 'gov_resolutions', 'pr_readings'] as $table) {
+        foreach (['don_donations', 'don_pledges', 'grt_instalments', 'vol_hours', 'ben_cases', 'ben_services', 'gov_resolutions', 'rf_readings'] as $table) {
             expect($connection->table($table)->count())->toBeGreaterThan(0, "{$table} is empty");
         }
         expect($connection->table('don_pledges')->where('tenant_id', $tenant->id)->where(fn ($q) => $q->whereNotNull('authorization_code')->orWhereNotNull('consent_at')->orWhere('auto_charge', true))->count())->toBe(0);

@@ -24,7 +24,7 @@ final class ResultIndicator extends Model
 
     public const STATUSES = ['active' => 'Active', 'archived' => 'Archived'];
 
-    protected $table = 'pr_indicators';
+    protected $table = 'rf_indicators';
 
     /** @var list<string> */
     protected $guarded = ['id'];

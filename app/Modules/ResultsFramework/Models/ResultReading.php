@@ -12,7 +12,7 @@ final class ResultReading extends Model
 {
     use BelongsToTenant;
 
-    protected $table = 'pr_readings';
+    protected $table = 'rf_readings';
 
     /** @var list<string> */
     protected $guarded = ['id'];
