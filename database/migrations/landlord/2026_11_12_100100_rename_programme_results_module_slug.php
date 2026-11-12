@@ -6,6 +6,7 @@ use App\Services\Tenancy\EntitlementService;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Spatie\Permission\PermissionRegistrar;
 
 return new class extends Migration
 {
@@ -31,6 +32,11 @@ return new class extends Migration
             $moduleFeatures = $db->table('tenant_features')->where('meta->module_slug', $from);
             $tenantIds = $moduleRows->pluck('tenant_id')->merge($moduleFeatures->pluck('tenant_id'));
 
+            $db->table('permissions')
+                ->whereIn('name', ['results.view', 'results.manage'])
+                ->where('category', $from)
+                ->update(['category' => $to]);
+
             $moduleRows->update(['module_slug' => $to]);
             $moduleFeatures->update(['meta->module_slug' => $to]);
 
@@ -46,6 +52,8 @@ return new class extends Migration
 
             return $tenantIds->unique()->all();
         });
+
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
 
         foreach ($tenantIds as $tenantId) {
             Cache::forget("tenant.{$tenantId}.enabled_modules");

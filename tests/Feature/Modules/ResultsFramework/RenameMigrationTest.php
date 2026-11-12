@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Models\Feature;
 use App\Models\Package;
+use App\Models\Permission;
 use App\Models\Tenant;
 use App\Models\TenantFeature;
 use App\Models\TenantModule;
@@ -80,6 +81,9 @@ test('landlord rename preserves entitlements, module metadata, feature links and
     $package = Package::factory()->create();
     $feature->packages()->attach($package, ['value' => 'true']);
 
+    $view = Permission::query()->create(['name' => 'results.view', 'guard_name' => 'web', 'category' => 'programme-results', 'uuid' => (string) Str::uuid()]);
+    $manage = Permission::query()->create(['name' => 'results.manage', 'guard_name' => 'web', 'category' => 'custom-results', 'uuid' => (string) Str::uuid()]);
+
     $manager = app(ModuleManager::class);
     Cache::forget("tenant.{$tenant->id}.module.results-framework");
     expect($manager->isEnabledForTenant('results-framework', $tenant))->toBeFalse();
@@ -101,12 +105,16 @@ test('landlord rename preserves entitlements, module metadata, feature links and
             ->and($feature->packages()->firstOrFail()->pivot->value)->toBe('true')
             ->and($manager->isEnabledForTenant('results-framework', $tenant))->toBeTrue()
             ->and($manager->isEnabledForTenant('results-framework', $unrelated))->toBeFalse()
-            ->and($otherFeature->fresh()->getAttributes())->toBe($otherFeatureBefore);
+            ->and($otherFeature->fresh()->getAttributes())->toBe($otherFeatureBefore)
+            ->and($view->fresh()->category)->toBe('results-framework')
+            ->and($manage->fresh()->category)->toBe('custom-results');
     }
 
     $migration->down();
     expect($module->fresh()->module_slug)->toBe('programme-results')
         ->and($complimentary->fresh()->feature_key)->toBe('module-programme-results')
         ->and($managed->fresh()->meta['module_slug'])->toBe('programme-results')
-        ->and($feature->fresh()->slug)->toBe('module-programme-results');
+        ->and($feature->fresh()->slug)->toBe('module-programme-results')
+        ->and($view->fresh()->category)->toBe('programme-results')
+        ->and($manage->fresh()->category)->toBe('custom-results');
 });
