@@ -105,6 +105,18 @@ final class DemoManifest
         $this->save($tenant, [...$this->load($tenant), 'result_programme_ids' => array_values(array_unique([...$this->resultProgrammeIds($tenant), $id]))]);
     }
 
+    /** @return list<int> */
+    public function resultNodeIds(Tenant $tenant): array
+    {
+        return array_map('intval', $this->load($tenant)['result_node_ids'] ?? []);
+    }
+
+    /** @param list<int> $ids */
+    public function rememberResultNodeIds(Tenant $tenant, array $ids): void
+    {
+        $this->save($tenant, [...$this->load($tenant), 'result_node_ids' => array_values(array_unique([...$this->resultNodeIds($tenant), ...$ids]))]);
+    }
+
     /** @return array<string, int> */
     private function currentCounters(Tenant $tenant): array
     {

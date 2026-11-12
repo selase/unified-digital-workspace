@@ -278,16 +278,18 @@ Members can sign in the same way at `/join/<org>/portal` to see their status, pa
 
 _Source: `app/Modules/Memberships/Routes/web.php`; `Services/MembershipService.php`; memberships views._
 
-## 23. Results Framework: indicators, targets and progress (paid add-on)
+## 23. Results Framework (paid add-on)
 
-1. Open Results Framework and create an indicator: what you measure, its programme, the starting figure, the target, and the dates it is measured over.
-2. Choose where the figure comes from. "Enter readings by hand" lets you add a figure whenever you have one (for example after a field visit). The other choices are worked out live from People reached (Beneficiaries), approved Volunteer hours, or Donations raised, so nobody types the same number twice.
-3. The list shows each indicator's current figure, how far it is towards the target, and how much of the time has passed. It is marked Achieved, On track, Behind (more than 20 points behind the time used) or Missed (the period ended short of target).
-4. Download the indicator report as CSV or PDF for funders and board packs. Archive an indicator when it no longer applies.
+1. Open Results Framework for the active indicator verdicts and programme progress. Open **Programmes** to create a programme and build its results chain from goal through outcomes, outputs and activities. Add assumptions and risks to the relevant result. If Grants is enabled, you can link an agreement on the programme form.
+2. Open **Indicators** and choose the programme and result, unit, baseline, target and measurement dates. Add a definition and means of verification so reviewers can reproduce the figure.
+3. Choose **Enter readings by hand** or select a measure from an enabled source module. Beneficiaries, Volunteers, Donations, Grants, Memberships and Forms supply live measures. Some measures have filters for programmes, services, campaigns or forms. A disabled source shows as unavailable.
+4. On the indicator page, add manual readings and optional gender, age-band or location breakdowns. Each breakdown must add up to its reading. Beneficiary measures provide live demographic breakdowns. Viewers without Beneficiaries access see restricted small figures and entire affected breakdowns are hidden. Restricted figures are also protected in charts and exports.
+5. Add period targets individually or generate calendar-month or calendar-quarter targets, then adjust individual figures. The trend chart shows recent manual readings or visible live period results alongside targets and elapsed time. For a Behind or Missed indicator, add a variance reason and corrective action, then resolve the note when addressed.
+6. Open a programme's **View logframe** for the results matrix and its CSV or PDF. From **Indicators**, download the overall report as CSV or PDF, or open its print view. Grant viewers with Results Framework access also see linked programme results on the agreement and in the funder CSV.
 
-**Limits:** this is a simple results tracker for NGOs and their funders. For departmental workplans, approvals, variances and evidence, use Quality Monitoring. There are no disaggregated results (by gender or age), logical frameworks, or surveys; readings are single figures per date.
+Use Forms for surveys and Quality Monitoring for departmental workplans and approvals.
 
-_Source: `app/Modules/ResultsFramework/Routes/web.php`; `Services/IndicatorService.php`; monitoring views._
+_Source files are under `app/Modules/ResultsFramework`._
 
 ## 24. Board & Governance: meetings, minutes, resolutions and actions (paid add-on)
 

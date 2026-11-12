@@ -66,7 +66,7 @@ describe('Demo data across all eight modules', function (): void {
         $connection = DB::connection('tenant');
         $labelled = [
             'don_donors' => 'name', 'don_campaigns' => 'name', 'grt_funders' => 'name', 'grt_grants' => 'title', 'vol_volunteers' => 'name',
-            'vol_opportunities' => 'title', 'ben_beneficiaries' => 'full_name', 'gov_members' => 'name', 'gov_meetings' => 'title', 'rf_indicators' => 'name',
+            'vol_opportunities' => 'title', 'ben_beneficiaries' => 'full_name', 'gov_members' => 'name', 'gov_meetings' => 'title', 'rf_indicators' => 'name', 'rf_programmes' => 'name', 'rf_results' => 'title',
             'fin_contacts' => 'name', 'mem_members' => 'name',
         ];
         foreach ($labelled as $table => $column) {
@@ -74,7 +74,7 @@ describe('Demo data across all eight modules', function (): void {
             expect($names->count())->toBeGreaterThan(0, "{$table} has no rows")
                 ->and($names->reject(fn (string $n): bool => str_starts_with($n, 'Demo: '))->all())->toBe([], "{$table} has an unlabelled row");
         }
-        foreach (['don_donations', 'don_pledges', 'grt_instalments', 'vol_hours', 'ben_cases', 'ben_services', 'gov_resolutions', 'rf_readings'] as $table) {
+        foreach (['don_donations', 'don_pledges', 'grt_instalments', 'vol_hours', 'ben_cases', 'ben_services', 'gov_resolutions', 'rf_readings', 'rf_reading_breakdowns', 'rf_targets', 'rf_variance_notes'] as $table) {
             expect($connection->table($table)->count())->toBeGreaterThan(0, "{$table} is empty");
         }
         expect($connection->table('don_pledges')->where('tenant_id', $tenant->id)->where(fn ($q) => $q->whereNotNull('authorization_code')->orWhereNotNull('consent_at')->orWhere('auto_charge', true))->count())->toBe(0);
@@ -82,6 +82,15 @@ describe('Demo data across all eight modules', function (): void {
 
     test('removal returns every module table to its starting row count', function (): void {
         $tenant = tgfNgoTenant();
+        $programme = app(App\Modules\ResultsFramework\Services\ProgrammeService::class)->create($tenant->id, 'Keep operational programme');
+        $node = app(App\Modules\ResultsFramework\Services\ResultChainService::class)->add($programme, 'goal', 'Keep operational result');
+        $service = app(App\Modules\ResultsFramework\Services\IndicatorService::class);
+        $start = today()->subWeeks(3);
+        $end = today()->subDay();
+        $indicator = $service->create($tenant->id, 'Keep operational indicator', 10, $start, $end, ['programme_id' => $programme->id, 'result_id' => $node->id]);
+        $service->record($indicator, 4, $end, null, null, ['gender' => [['bucket' => 'unknown', 'value' => 4]]]);
+        app(App\Modules\ResultsFramework\Services\TargetService::class)->set($indicator, $start, $end, 10);
+        app(App\Modules\ResultsFramework\Services\VarianceService::class)->add($indicator, 'Keep operational variance', null, null);
         $before = tgfAllRowCounts($tenant);
 
         Artisan::call('tgf:demo-seed', ['--confirm' => true]);

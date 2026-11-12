@@ -182,10 +182,19 @@ describe('Indicator screens', function (): void {
         [, $tenant] = createMonitoringContext();
         config(['app.demo_tenant' => $tenant->slug]);
 
+        $tables = ['rf_programmes', 'rf_results', 'rf_indicators', 'rf_readings', 'rf_reading_breakdowns', 'rf_targets', 'rf_variance_notes'];
+        $counts = fn (): array => array_map(fn (string $table): int => DB::connection('tenant')->table($table)->where('tenant_id', $tenant->id)->count(), $tables);
         $this->seed(ResultsDemoSeeder::class);
-        expect(ResultIndicator::query()->count())->toBe(5);
+        expect(ResultIndicator::query()->count())->toBe(5)
+            ->and(ResultIndicator::query()->whereNotNull('measure_key')->count())->toBe(3)
+            ->and(ResultIndicator::query()->whereNotNull('result_id')->count())->toBe(5)
+            ->and(DB::connection('tenant')->table('rf_programmes')->where('tenant_id', $tenant->id)->count())->toBe(2)
+            ->and(DB::connection('tenant')->table('rf_results')->where('tenant_id', $tenant->id)->distinct()->pluck('level')->all())->toEqualCanonicalizing(['goal', 'outcome', 'output', 'activity'])
+            ->and(DB::connection('tenant')->table('rf_targets')->where('tenant_id', $tenant->id)->count())->toBeGreaterThan(0)
+            ->and(DB::connection('tenant')->table('rf_variance_notes')->where('tenant_id', $tenant->id)->count())->toBe(1);
+        $seeded = $counts();
         $this->seed(ResultsDemoSeeder::class);
-        expect(ResultIndicator::query()->count())->toBe(5);
+        expect(ResultIndicator::query()->count())->toBe(5)->and($counts())->toBe($seeded);
 
         ResultIndicator::query()->delete();
         app()->detectEnvironment(fn (): string => 'production');
