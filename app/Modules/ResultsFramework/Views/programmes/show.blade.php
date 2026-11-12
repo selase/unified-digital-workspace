@@ -5,6 +5,7 @@
 <div class="kt-card">
     <div class="kt-card-header">
         <h1 class="kt-card-title">{{ $programme->name }}</h1>
+        <a class="kt-btn kt-btn-outline" href="{{ route('results-framework.programmes.logframe', $programme->uuid) }}">View logframe</a>
         @can('results.manage')
             <a class="kt-btn kt-btn-outline" href="{{ route('results-framework.programmes.edit', $programme->uuid) }}">Edit programme</a>
             @if($programme->status !== 'closed')

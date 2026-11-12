@@ -14,6 +14,7 @@ Route::post('/indicators/{indicator}/readings', [IndicatorController::class, 're
 Route::post('/indicators/{indicator}/toggle', [IndicatorController::class, 'toggle'])->name('indicators.toggle');
 Route::get('/report', [IndicatorController::class, 'report'])->name('report');
 
+Route::get('programmes/{programme}/logframe', [ProgrammeController::class, 'logframe'])->name('programmes.logframe');
 Route::resource('programmes', ProgrammeController::class)->except('destroy');
 Route::post('programmes/{programme}/close', [ProgrammeController::class, 'close'])->name('programmes.close');
 

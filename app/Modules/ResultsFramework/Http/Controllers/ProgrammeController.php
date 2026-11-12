@@ -7,13 +7,17 @@ namespace App\Modules\ResultsFramework\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Modules\ResultsFramework\Http\Requests\SaveProgrammeRequest;
 use App\Modules\ResultsFramework\Models\ResultProgramme;
+use App\Modules\ResultsFramework\Services\LogframeReport;
 use App\Modules\ResultsFramework\Services\ProgrammeService;
 use App\Modules\ResultsFramework\Services\ResultChainService;
+use App\Modules\ResultsFramework\Support\CsvReport;
 use App\Services\Tenancy\TenantContext;
+use Barryvdh\DomPDF\Facade\Pdf;
 use DomainException;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\Response;
 
 final class ProgrammeController extends Controller
 {
@@ -58,6 +62,23 @@ final class ProgrammeController extends Controller
             'resultOptions' => $manager ? $chain->nodes($model)->get() : collect(),
             'projects' => $manager ? $chain->projects($model) : collect(),
         ]);
+    }
+
+    public function logframe(Request $request, string $programme, LogframeReport $report): View|Response
+    {
+        $viewer = $request->user();
+        abort_unless($viewer?->can('results.view'), 403);
+
+        $model = $this->find($programme);
+        $rows = $report->rows($model, $viewer);
+        $name = 'logframe-'.$model->uuid;
+        $data = ['programme' => $model, 'rows' => $rows, 'headings' => LogframeReport::HEADINGS];
+
+        return match ($request->query('format')) {
+            'csv' => CsvReport::download($report->csvRows($rows), $name.'.csv'),
+            'pdf' => Pdf::loadView('results-framework::pdf.logframe', $data)->setPaper('a4', 'landscape')->download($name.'.pdf'),
+            default => view('results-framework::programmes.logframe', $data),
+        };
     }
 
     public function edit(Request $request, string $programme): View
