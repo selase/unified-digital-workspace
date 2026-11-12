@@ -1,22 +1,22 @@
 @extends('layouts.metronic.app')
 
-@section('title', 'NGO M&E')
+@section('title', 'Results Framework')
 
 @section('content')
 @php $verdict = ['achieved' => 'Achieved', 'on_track' => 'On track', 'behind' => 'Behind', 'missed' => 'Missed']; @endphp
 <div class="flex flex-col gap-6">
     <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-            <h1 class="text-xl font-bold text-foreground">NGO M&E</h1>
+            <h1 class="text-xl font-bold text-foreground">Results Framework</h1>
             <p class="text-xs text-muted-foreground">Are our programmes delivering? Each indicator has a starting figure, a target and a period.</p>
         </div>
         <div class="flex gap-2">
-            <a class="kt-btn kt-btn-sm kt-btn-outline" href="{{ route('programme-results.report') }}">Report (CSV)</a>
-            <a class="kt-btn kt-btn-sm kt-btn-outline" href="{{ route('programme-results.report', ['format' => 'pdf']) }}">Report (PDF)</a>
+            <a class="kt-btn kt-btn-sm kt-btn-outline" href="{{ route('results-framework.report') }}">Report (CSV)</a>
+            <a class="kt-btn kt-btn-sm kt-btn-outline" href="{{ route('results-framework.report', ['format' => 'pdf']) }}">Report (PDF)</a>
         </div>
     </div>
 
-    @include('programme-results::partials.flash')
+    @include('results-framework::partials.flash')
 
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
         @foreach($verdict as $key => $label)
@@ -25,7 +25,7 @@
     </div>
 
     @can('results.manage')
-    <form method="POST" action="{{ route('programme-results.indicators.store') }}" class="kt-card">@csrf
+    <form method="POST" action="{{ route('results-framework.indicators.store') }}" class="kt-card">@csrf
         <div class="kt-card-header"><h3 class="kt-card-title">New indicator</h3></div>
         <div class="kt-card-content grid grid-cols-1 md:grid-cols-4 gap-3">
             <input class="kt-input md:col-span-2" name="name" value="{{ old('name') }}" placeholder="e.g. Children given a school meal" required>
@@ -49,7 +49,7 @@
             @forelse($rows as $row)
                 @php $i = $row['indicator']; $p = $row['progress']; @endphp
                 <tr class="{{ $i->status === 'archived' ? 'text-muted-foreground' : '' }}">
-                    <td><a class="text-primary" href="{{ route('programme-results.indicators.show', $i->uuid) }}">{{ $i->name }}</a><div class="text-xs text-muted-foreground">{{ $i->starts_on->toInstitutionalDate() }} to {{ $i->ends_on->toInstitutionalDate() }}</div></td>
+                    <td><a class="text-primary" href="{{ route('results-framework.indicators.show', $i->uuid) }}">{{ $i->name }}</a><div class="text-xs text-muted-foreground">{{ $i->starts_on->toInstitutionalDate() }} to {{ $i->ends_on->toInstitutionalDate() }}</div></td>
                     <td>{{ $i->programme }}</td>
                     <td class="text-end">{{ number_format($i->baseline, 0) }}</td>
                     <td class="text-end">{{ number_format($p['current'], 0) }} <span class="text-xs text-muted-foreground">{{ $i->unit }}</span></td>

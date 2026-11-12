@@ -3,20 +3,20 @@
 declare(strict_types=1);
 
 return [
-    'name' => 'NGO M&E',
-    'slug' => 'programme-results',
+    'name' => 'Results Framework',
+    'slug' => 'results-framework',
     'version' => '1.0.0',
-    'description' => 'A simple results tracker for NGOs and funders: indicators with baselines and targets, readings over time, figures worked out from Donations, Volunteers and Beneficiaries, and funder-ready reports. For workplans with approvals, use Quality Monitoring.',
-    'namespace' => 'App\\Modules\\ProgrammeResults',
-    'provider' => 'App\\Modules\\ProgrammeResults\\Providers\\ProgrammeResultsServiceProvider',
+    'description' => 'Track organisational results with indicators, baselines, targets, readings and reports.',
+    'namespace' => 'App\\Modules\\ResultsFramework',
+    'provider' => 'App\\Modules\\ResultsFramework\\Providers\\ResultsFrameworkServiceProvider',
     'tier' => 'premium',
     'is_billable' => true,
     'depends_on' => ['core'],
     'conflicts_with' => [],
     'features' => [
-        'programme-results.manage' => [
+        'results-framework.manage' => [
             'type' => 'boolean',
-            'name' => 'NGO M&E',
+            'name' => 'Results Framework',
             'description' => 'Indicators, targets and readings for programme results.',
         ],
     ],

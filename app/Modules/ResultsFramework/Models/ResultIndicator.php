@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Modules\ProgrammeResults\Models;
+namespace App\Modules\ResultsFramework\Models;
 
 use App\Traits\BelongsToTenant;
 use App\Traits\HasUuid;

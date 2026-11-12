@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-namespace App\Modules\ProgrammeResults\Services;
+namespace App\Modules\ResultsFramework\Services;
 
-use App\Modules\ProgrammeResults\Models\ResultIndicator;
-use App\Modules\ProgrammeResults\Models\ResultReading;
+use App\Modules\ResultsFramework\Models\ResultIndicator;
+use App\Modules\ResultsFramework\Models\ResultReading;
 use Carbon\CarbonInterface;
 use DomainException;
 use Illuminate\Support\Facades\DB;

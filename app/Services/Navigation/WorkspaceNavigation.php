@@ -837,20 +837,20 @@ final class WorkspaceNavigation
                     ],
                 ],
             ],
-            'programme-results' => [
-                'label' => 'NGO M&E',
+            'results-framework' => [
+                'label' => 'Results Framework',
                 'icon' => 'ki-filled ki-chart-line-up',
                 'permission' => 'results.view',
-                'home_route' => 'programme-results.index',
+                'home_route' => 'results-framework.index',
                 'sidebar' => [
-                    ['label' => 'Indicator report', 'route' => 'programme-results.report'],
+                    ['label' => 'Indicator report', 'route' => 'results-framework.report'],
                 ],
                 'top_menu' => [
                     [
-                        'label' => 'NGO M&E',
+                        'label' => 'Results Framework',
                         'items' => [
-                            ['label' => 'Indicators', 'route' => 'programme-results.index'],
-                            ['label' => 'Indicator report', 'route' => 'programme-results.report'],
+                            ['label' => 'Indicators', 'route' => 'results-framework.index'],
+                            ['label' => 'Indicator report', 'route' => 'results-framework.report'],
                         ],
                     ],
                 ],

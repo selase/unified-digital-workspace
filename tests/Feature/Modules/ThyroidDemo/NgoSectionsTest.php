@@ -26,7 +26,7 @@ function tgfNgoTenant(): Tenant
     app(TenantDatabaseManager::class)->configure($tenant);
     app()->forgetInstance(DemoSections::class);
 
-    $modules = ['finance' => 'Finance', 'memberships' => 'Memberships', 'donations' => 'Donations', 'grants' => 'Grants', 'volunteers' => 'Volunteers', 'beneficiaries' => 'Beneficiaries', 'governance' => 'Governance', 'programme-results' => 'ProgrammeResults'];
+    $modules = ['finance' => 'Finance', 'memberships' => 'Memberships', 'donations' => 'Donations', 'grants' => 'Grants', 'volunteers' => 'Volunteers', 'beneficiaries' => 'Beneficiaries', 'governance' => 'Governance', 'results-framework' => 'ResultsFramework'];
     foreach (array_keys($modules) as $slug) {
         TenantFeature::query()->create(['tenant_id' => $tenant->id, 'feature_key' => 'module-'.$slug, 'enabled' => true, 'meta' => ['source' => 'complimentary']]);
         app(ModuleManager::class)->enableForTenant($slug, $tenant);

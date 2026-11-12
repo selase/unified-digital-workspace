@@ -128,14 +128,14 @@ final class DashboardController extends Controller
             }
         }
 
-        // NGO M&E telemetry
-        if ($moduleManager->isEnabledForTenant('programme-results', $tenant) && auth()->user()?->can('results.view')) {
+        // Results Framework telemetry
+        if ($moduleManager->isEnabledForTenant('results-framework', $tenant) && auth()->user()?->can('results.view')) {
             try {
-                $melIndicators = app(\App\Modules\ProgrammeResults\Services\IndicatorService::class);
-                $melProgress = \App\Modules\ProgrammeResults\Models\ResultIndicator::query()->where('tenant_id', $tenant->id)->where('status', 'active')->get()->map(fn ($indicator): string => $melIndicators->progress($indicator)['status']);
-                $moduleCards['programme-results'] = [
-                    'name' => 'NGO M&E',
-                    'route' => Route::has('programme-results.index') ? route('programme-results.index') : '#',
+                $melIndicators = app(\App\Modules\ResultsFramework\Services\IndicatorService::class);
+                $melProgress = \App\Modules\ResultsFramework\Models\ResultIndicator::query()->where('tenant_id', $tenant->id)->where('status', 'active')->get()->map(fn ($indicator): string => $melIndicators->progress($indicator)['status']);
+                $moduleCards['results-framework'] = [
+                    'name' => 'Results Framework',
+                    'route' => Route::has('results-framework.index') ? route('results-framework.index') : '#',
                     'icon' => 'ki-chart-line-up',
                     'badge' => 'Active',
                     'kpis' => [

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\SiteThyroidGhanaFoundation\Demo\Sections;
 
 use App\Models\Tenant;
-use App\Modules\ProgrammeResults\Services\IndicatorService;
+use App\Modules\ResultsFramework\Services\IndicatorService;
 use App\Modules\SiteThyroidGhanaFoundation\Demo\DemoSection;
 use App\Modules\SiteThyroidGhanaFoundation\Demo\RowRemover;
 use Carbon\CarbonImmutable;
@@ -15,7 +15,7 @@ final class ResultsSection implements DemoSection
 {
     public function label(): string
     {
-        return 'NGO M&E';
+        return 'Results Framework';
     }
 
     public function seed(Tenant $tenant): void

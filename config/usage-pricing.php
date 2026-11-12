@@ -55,7 +55,7 @@ return [
             'donations' => ['name' => 'Donations & Fundraising', 'GHS' => 500.00, 'USD' => 40.00, 'modules' => ['donations'], 'features' => []],
             'grants' => ['name' => 'Grants & Funders', 'GHS' => 500.00, 'USD' => 40.00, 'modules' => ['grants'], 'features' => []],
             'volunteers' => ['name' => 'Volunteers', 'GHS' => 300.00, 'USD' => 25.00, 'modules' => ['volunteers'], 'features' => []],
-            'programme_results' => ['name' => 'NGO M&E', 'GHS' => 400.00, 'USD' => 30.00, 'modules' => ['programme-results'], 'features' => []],
+            'results_framework' => ['name' => 'Results Framework', 'GHS' => 400.00, 'USD' => 30.00, 'modules' => ['results-framework'], 'features' => []],
             'governance' => ['name' => 'Board & Governance', 'GHS' => 300.00, 'USD' => 25.00, 'modules' => ['governance'], 'features' => []],
             'memberships' => ['name' => 'Memberships', 'GHS' => 400.00, 'USD' => 30.00, 'modules' => ['memberships'], 'features' => []],
             'beneficiaries' => ['name' => 'Beneficiaries & Cases', 'GHS' => 600.00, 'USD' => 50.00, 'modules' => ['beneficiaries'], 'features' => []],

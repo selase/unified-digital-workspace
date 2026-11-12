@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-namespace App\Modules\ProgrammeResults\Database\Seeders;
+namespace App\Modules\ResultsFramework\Database\Seeders;
 
 use App\Models\Tenant;
-use App\Modules\ProgrammeResults\Models\ResultIndicator;
-use App\Modules\ProgrammeResults\Services\IndicatorService;
+use App\Modules\ResultsFramework\Models\ResultIndicator;
+use App\Modules\ResultsFramework\Services\IndicatorService;
 use App\Services\Tenancy\TenantContext;
 use App\Services\Tenancy\TenantDatabaseManager;
 use Illuminate\Database\Seeder;

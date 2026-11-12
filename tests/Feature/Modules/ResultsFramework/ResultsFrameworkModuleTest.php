@@ -5,9 +5,9 @@ declare(strict_types=1);
 use App\Models\Tenant;
 use App\Models\TenantFeature;
 use App\Models\User;
-use App\Modules\ProgrammeResults\Database\Seeders\ResultsDemoSeeder;
-use App\Modules\ProgrammeResults\Models\ResultIndicator;
-use App\Modules\ProgrammeResults\Services\IndicatorService;
+use App\Modules\ResultsFramework\Database\Seeders\ResultsDemoSeeder;
+use App\Modules\ResultsFramework\Models\ResultIndicator;
+use App\Modules\ResultsFramework\Services\IndicatorService;
 use App\Services\ModuleManager;
 use App\Services\Tenancy\TenantContext;
 use App\Services\Tenancy\TenantDatabaseManager;
@@ -30,16 +30,16 @@ function createMonitoringContext(): array
     setPermissionsTeamId($tenant->id);
     app(TenantContext::class)->setTenant($tenant);
 
-    $permissions = config('modules.programme-results.permissions');
+    $permissions = config('modules.results-framework.permissions');
     foreach ($permissions as $permission) {
         Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'web'], ['category' => 'results', 'uuid' => (string) Str::uuid()]);
     }
     $user->givePermissionTo($permissions);
 
     app(TenantDatabaseManager::class)->configure($tenant);
-    TenantFeature::query()->create(['tenant_id' => $tenant->id, 'feature_key' => 'module-programme-results', 'enabled' => true, 'meta' => ['source' => 'complimentary']]);
-    app(ModuleManager::class)->enableForTenant('programme-results', $tenant);
-    Artisan::call('migrate', ['--database' => 'tenant', '--path' => app_path('Modules/ProgrammeResults/Database/Migrations'), '--realpath' => true, '--force' => true]);
+    TenantFeature::query()->create(['tenant_id' => $tenant->id, 'feature_key' => 'module-results-framework', 'enabled' => true, 'meta' => ['source' => 'complimentary']]);
+    app(ModuleManager::class)->enableForTenant('results-framework', $tenant);
+    Artisan::call('migrate', ['--database' => 'tenant', '--path' => app_path('Modules/ResultsFramework/Database/Migrations'), '--realpath' => true, '--force' => true]);
 
     return [$user, $tenant];
 }
@@ -148,22 +148,22 @@ describe('Indicator screens', function (): void {
         [$user, $tenant] = createMonitoringContext();
         $this->actingAs($user)->withSession(['active_tenant_id' => $tenant->id]);
 
-        $this->get(route('programme-results.index'))->assertOk()->assertSee('NGO M&E');
-        $this->post(route('programme-results.indicators.store'), ['name' => 'Wells built', 'programme' => 'Water', 'unit' => 'wells', 'source' => 'manual', 'baseline' => 0, 'target' => 12, 'starts_on' => today()->startOfYear()->toDateString(), 'ends_on' => today()->endOfYear()->toDateString()])->assertRedirect();
+        $this->get(route('results-framework.index'))->assertOk()->assertSee('Results Framework');
+        $this->post(route('results-framework.indicators.store'), ['name' => 'Wells built', 'programme' => 'Water', 'unit' => 'wells', 'source' => 'manual', 'baseline' => 0, 'target' => 12, 'starts_on' => today()->startOfYear()->toDateString(), 'ends_on' => today()->endOfYear()->toDateString()])->assertRedirect();
         $model = ResultIndicator::query()->firstOrFail();
 
-        $this->get(route('programme-results.indicators.show', $model->uuid))->assertOk()->assertSee('Wells built')->assertSee('Add a reading');
-        $this->post(route('programme-results.indicators.readings.store', $model->uuid), ['value' => 3, 'recorded_on' => today()->toDateString(), 'note' => 'First three'])->assertSessionHas('success');
-        $this->get(route('programme-results.index'))->assertSee('Wells built')->assertSee('25% of target');
+        $this->get(route('results-framework.indicators.show', $model->uuid))->assertOk()->assertSee('Wells built')->assertSee('Add a reading');
+        $this->post(route('results-framework.indicators.readings.store', $model->uuid), ['value' => 3, 'recorded_on' => today()->toDateString(), 'note' => 'First three'])->assertSessionHas('success');
+        $this->get(route('results-framework.index'))->assertSee('Wells built')->assertSee('25% of target');
 
-        $csv = $this->get(route('programme-results.report'));
+        $csv = $this->get(route('results-framework.report'));
         $csv->assertOk()->assertDownload();
         expect($csv->streamedContent())->toContain('Wells built', 'Water');
-        $this->get(route('programme-results.report', ['format' => 'pdf']))->assertOk()->assertHeader('Content-Type', 'application/pdf');
+        $this->get(route('results-framework.report', ['format' => 'pdf']))->assertOk()->assertHeader('Content-Type', 'application/pdf');
 
-        $this->post(route('programme-results.indicators.toggle', $model->uuid))->assertSessionHas('success');
+        $this->post(route('results-framework.indicators.toggle', $model->uuid))->assertSessionHas('success');
         expect($model->fresh()->status)->toBe('archived');
-        $this->post(route('programme-results.indicators.readings.store', $model->uuid), ['value' => 4, 'recorded_on' => today()->toDateString()])->assertSessionHas('error');
+        $this->post(route('results-framework.indicators.readings.store', $model->uuid), ['value' => 4, 'recorded_on' => today()->toDateString()])->assertSessionHas('error');
     });
 
     test('validation and permissions are enforced and one organisation cannot see another\'s indicators', function (): void {
@@ -171,17 +171,17 @@ describe('Indicator screens', function (): void {
         $foreign = ResultIndicator::query()->create(['tenant_id' => (string) Tenant::factory()->create()->id, 'name' => 'Other org', 'target' => 10, 'starts_on' => today(), 'ends_on' => today()->addDay()]);
         $this->actingAs($user)->withSession(['active_tenant_id' => $tenant->id]);
 
-        $this->post(route('programme-results.indicators.store'), [])->assertSessionHasErrors(['name', 'target', 'starts_on', 'ends_on']);
-        $this->get(route('programme-results.indicators.show', $foreign->uuid))->assertNotFound();
+        $this->post(route('results-framework.indicators.store'), [])->assertSessionHasErrors(['name', 'target', 'starts_on', 'ends_on']);
+        $this->get(route('results-framework.indicators.show', $foreign->uuid))->assertNotFound();
 
         $user->revokePermissionTo('results.manage');
         app(Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
-        $this->post(route('programme-results.indicators.store'), ['name' => 'X', 'target' => 1, 'source' => 'manual', 'starts_on' => today()->toDateString(), 'ends_on' => today()->addDay()->toDateString()])->assertForbidden();
-        $this->get(route('programme-results.index'))->assertOk();
+        $this->post(route('results-framework.indicators.store'), ['name' => 'X', 'target' => 1, 'source' => 'manual', 'starts_on' => today()->toDateString(), 'ends_on' => today()->addDay()->toDateString()])->assertForbidden();
+        $this->get(route('results-framework.index'))->assertOk();
 
         $user->revokePermissionTo('results.view');
         app(Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
-        $this->get(route('programme-results.index'))->assertForbidden();
+        $this->get(route('results-framework.index'))->assertForbidden();
     });
 
     test('the demo seeder creates indicators once and refuses production', function (): void {
@@ -199,4 +199,24 @@ describe('Indicator screens', function (): void {
         app()->detectEnvironment(fn (): string => 'testing');
         expect(ResultIndicator::query()->count())->toBe(0);
     });
+});
+
+test('the results framework has its new module, navigation, route and package names', function (): void {
+    $module = app(ModuleManager::class)->find('results-framework');
+    $navigation = new ReflectionMethod(App\Services\Navigation\WorkspaceNavigation::class, 'moduleDefinitions');
+
+    expect($module['slug'] ?? null)->toBe('results-framework')
+        ->and($module['name'] ?? null)->toBe('Results Framework')
+        ->and($navigation->invoke(app(App\Services\Navigation\WorkspaceNavigation::class)))->toHaveKey('results-framework')
+        ->and(Route::has('results-framework.index'))->toBeTrue()
+        ->and(Route::has('programme-results.index'))->toBeFalse()
+        ->and(config('usage-pricing.hybrid.packages.results_framework.modules'))->toBe(['results-framework'])
+        ->and(config('usage-pricing.hybrid.packages.programme_results'))->toBeNull();
+});
+
+test('legacy results bookmarks redirect permanently to the corresponding results framework page', function (): void {
+    [$user] = createMonitoringContext();
+
+    $this->actingAs($user)->get('/programme-results')->assertRedirect('/results-framework')->assertStatus(301);
+    $this->get('/programme-results/indicators/1')->assertRedirect('/results-framework/indicators/1')->assertStatus(301);
 });

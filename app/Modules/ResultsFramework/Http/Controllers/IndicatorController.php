@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace App\Modules\ProgrammeResults\Http\Controllers;
+namespace App\Modules\ResultsFramework\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Models\Tenant;
-use App\Modules\ProgrammeResults\Http\Requests\AddReadingRequest;
-use App\Modules\ProgrammeResults\Http\Requests\SaveIndicatorRequest;
-use App\Modules\ProgrammeResults\Models\ResultIndicator;
-use App\Modules\ProgrammeResults\Services\IndicatorService;
+use App\Modules\ResultsFramework\Http\Requests\AddReadingRequest;
+use App\Modules\ResultsFramework\Http\Requests\SaveIndicatorRequest;
+use App\Modules\ResultsFramework\Models\ResultIndicator;
+use App\Modules\ResultsFramework\Services\IndicatorService;
 use App\Services\Tenancy\TenantContext;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
@@ -27,7 +27,7 @@ final class IndicatorController extends Controller
         $rows = ResultIndicator::query()->where('tenant_id', $tenantId)->orderByRaw("case status when 'active' then 0 else 1 end")->orderBy('programme')->orderBy('name')->get()
             ->map(fn (ResultIndicator $indicator): array => ['indicator' => $indicator, 'progress' => $indicators->progress($indicator)]);
 
-        return view('programme-results::indicators.index', [
+        return view('results-framework::indicators.index', [
             'rows' => $rows,
             'counts' => $rows->where('indicator.status', 'active')->countBy(fn (array $row): string => $row['progress']['status']),
             'sources' => ResultIndicator::SOURCES,
@@ -49,7 +49,7 @@ final class IndicatorController extends Controller
             return back()->withInput()->with('error', $error->getMessage());
         }
 
-        return redirect()->route('programme-results.indicators.show', $indicator->uuid)->with('success', 'Indicator created.');
+        return redirect()->route('results-framework.indicators.show', $indicator->uuid)->with('success', 'Indicator created.');
     }
 
     public function show(Request $request, IndicatorService $indicators, string $indicator): View
@@ -57,7 +57,7 @@ final class IndicatorController extends Controller
         $tenantId = $this->allow($request, 'results.view');
         $model = ResultIndicator::query()->where('tenant_id', $tenantId)->where('uuid', $indicator)->firstOrFail();
 
-        return view('programme-results::indicators.show', [
+        return view('results-framework::indicators.show', [
             'indicator' => $model,
             'progress' => $indicators->progress($model),
             'readings' => $model->readings()->limit(50)->get(),
@@ -95,7 +95,7 @@ final class IndicatorController extends Controller
         $name = 'indicator-report-'.today()->toDateString();
 
         if ($request->query('format') === 'pdf') {
-            $output = Pdf::loadView('programme-results::pdf.report', ['rows' => $rows, 'organisation' => (string) Tenant::query()->whereKey($tenantId)->value('name')])->setPaper('a4', 'landscape')->output();
+            $output = Pdf::loadView('results-framework::pdf.report', ['rows' => $rows, 'organisation' => (string) Tenant::query()->whereKey($tenantId)->value('name')])->setPaper('a4', 'landscape')->output();
 
             return response($output, 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline; filename="'.$name.'.pdf"']);
         }

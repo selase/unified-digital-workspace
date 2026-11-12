@@ -15,7 +15,7 @@
         'volunteers.index',
         'memberships.index',
         'governance.index',
-        'programme-results.index',
+        'results-framework.index',
         'beneficiaries.index',
         'vendor-marketplace.index',
         'real-estate.index',
