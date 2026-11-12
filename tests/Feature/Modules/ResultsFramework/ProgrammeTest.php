@@ -76,7 +76,7 @@ test('programme pages enforce access and group indicators by the linked programm
     $this->actingAs($user)->withSession(['active_tenant_id' => $tenant->id]);
     $this->get(route('results-framework.programmes.index'))->assertOk()->assertSee('Water programme')->assertDontSee('New programme');
     $this->get(route('results-framework.programmes.show', $foreignProgramme->uuid))->assertNotFound();
-    $this->get(route('results-framework.index'))->assertOk()->assertSeeInOrder(['Water programme', 'Wells completed']);
+    $this->get(route('results-framework.indicators.index'))->assertOk()->assertSeeInOrder(['Water programme', 'Wells completed']);
     $this->post(route('results-framework.programmes.store'), ['name' => 'Forbidden', 'status' => 'planning'])->assertForbidden();
     $user->givePermissionTo($manage);
     $this->post(route('results-framework.programmes.store'), ['name' => '', 'status' => 'bad'])->assertSessionHasErrors(['name', 'status']);

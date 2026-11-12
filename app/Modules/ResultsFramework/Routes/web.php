@@ -3,11 +3,13 @@
 declare(strict_types=1);
 
 use App\Modules\ResultsFramework\Http\Controllers\IndicatorController;
+use App\Modules\ResultsFramework\Http\Controllers\OverviewController;
 use App\Modules\ResultsFramework\Http\Controllers\ProgrammeController;
 use App\Modules\ResultsFramework\Http\Controllers\ResultNodeController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', [IndicatorController::class, 'index'])->name('index');
+Route::get('/', OverviewController::class)->name('index');
+Route::get('/indicators', [IndicatorController::class, 'index'])->name('indicators.index');
 Route::post('/indicators', [IndicatorController::class, 'store'])->name('indicators.store');
 Route::get('/indicators/{indicator}', [IndicatorController::class, 'show'])->name('indicators.show');
 Route::post('/indicators/{indicator}/readings', [IndicatorController::class, 'reading'])->name('indicators.readings.store');

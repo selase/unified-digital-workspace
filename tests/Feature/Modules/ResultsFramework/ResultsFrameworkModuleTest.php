@@ -141,14 +141,14 @@ describe('Indicator screens', function (): void {
         [$user, $tenant] = createMonitoringContext();
         $this->actingAs($user)->withSession(['active_tenant_id' => $tenant->id]);
 
-        $this->get(route('results-framework.index'))->assertOk()->assertSee('Results Framework');
+        $this->get(route('results-framework.indicators.index'))->assertOk()->assertSee('Results Framework');
         $programme = app(App\Modules\ResultsFramework\Services\ProgrammeService::class)->create($tenant->id, 'Water');
         $this->post(route('results-framework.indicators.store'), ['name' => 'Wells built', 'programme_id' => $programme->id, 'unit' => 'wells', 'measure_key' => null, 'baseline' => 0, 'target' => 12, 'starts_on' => today()->startOfYear()->toDateString(), 'ends_on' => today()->endOfYear()->toDateString()])->assertRedirect();
         $model = ResultIndicator::query()->firstOrFail();
 
         $this->get(route('results-framework.indicators.show', $model->uuid))->assertOk()->assertSee('Wells built')->assertSee('Add a reading');
         $this->post(route('results-framework.indicators.readings.store', $model->uuid), ['value' => 3, 'recorded_on' => today()->toDateString(), 'note' => 'First three'])->assertSessionHas('success');
-        $this->get(route('results-framework.index'))->assertSee('Wells built')->assertSee('25% of target');
+        $this->get(route('results-framework.indicators.index'))->assertSee('Wells built')->assertSee('25% of target');
 
         $csv = $this->get(route('results-framework.report'));
         $csv->assertOk()->assertDownload();
@@ -171,11 +171,11 @@ describe('Indicator screens', function (): void {
         $user->revokePermissionTo('results.manage');
         app(Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
         $this->post(route('results-framework.indicators.store'), ['name' => 'X', 'target' => 1, 'measure_key' => null, 'starts_on' => today()->toDateString(), 'ends_on' => today()->addDay()->toDateString()])->assertForbidden();
-        $this->get(route('results-framework.index'))->assertOk();
+        $this->get(route('results-framework.indicators.index'))->assertOk();
 
         $user->revokePermissionTo('results.view');
         app(Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
-        $this->get(route('results-framework.index'))->assertForbidden();
+        $this->get(route('results-framework.indicators.index'))->assertForbidden();
     });
 
     test('the demo seeder creates indicators once and refuses production', function (): void {

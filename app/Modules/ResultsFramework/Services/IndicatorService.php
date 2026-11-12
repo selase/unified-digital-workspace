@@ -177,6 +177,69 @@ final class IndicatorService
         return $periods;
     }
 
+    /** @return list<array{date: string, value: float}> */
+    public function history(ResultIndicator $indicator, User $viewer): array
+    {
+        if ($indicator->measure_key !== null) {
+            return $this->periodHistory($this->periodProgress($indicator, $viewer));
+        }
+
+        return $indicator->readings()->where('tenant_id', $indicator->tenant_id)->limit(50)->get(['id', 'recorded_on', 'value'])
+            ->unique(fn (ResultReading $reading): string => $reading->recorded_on->toDateString())
+            ->reverse()->values()
+            ->map(fn (ResultReading $reading): array => ['date' => $reading->recorded_on->toDateString(), 'value' => $reading->value])
+            ->all();
+    }
+
+    /**
+     * @param  list<array{start: CarbonInterface, end: CarbonInterface, target: float, achieved: float|string|null, percent: ?int, status: string}>  $periods  Viewer-filtered period progress.
+     * @return array<string, mixed>
+     */
+    public function trend(ResultIndicator $indicator, User $viewer, array $periods): array
+    {
+        $manual = $indicator->measure_key === null;
+        $history = $manual ? $this->history($indicator, $viewer) : $this->periodHistory($periods);
+        if ($history === []) {
+            return [];
+        }
+
+        $readings = array_column($history, 'value', 'date');
+        $targets = [];
+        foreach ($periods as $period) {
+            $targets[$period['end']->toDateString()] = $period['target'];
+        }
+
+        $labels = array_values(array_unique([
+            $indicator->starts_on->toDateString(), ...array_keys($readings),
+            ...($manual ? [] : array_keys($targets)), $indicator->ends_on->toDateString(),
+        ]));
+        sort($labels);
+        $duration = max(1, $indicator->starts_on->diffInDays($indicator->ends_on));
+
+        return [
+            'labels' => $labels,
+            'datasets' => [
+                [
+                    'label' => $manual ? 'Readings' : 'Period results',
+                    'data' => array_map(fn (string $date): ?float => $readings[$date] ?? null, $labels),
+                    'borderColor' => '#2563eb', 'yAxisID' => 'y',
+                ],
+                [
+                    'label' => 'Target',
+                    'data' => array_map(fn (string $date): ?float => $manual ? $indicator->target : ($targets[$date] ?? null), $labels),
+                    'borderColor' => '#15803d', 'borderDash' => [5, 4], 'yAxisID' => 'y',
+                ],
+                [
+                    'label' => 'Time elapsed',
+                    'data' => array_map(fn (string $date): int => (int) max(0, min(100, round(
+                        $indicator->starts_on->diffInDays(CarbonImmutable::parse($date), false) / $duration * 100
+                    ))), $labels),
+                    'borderColor' => '#64748b', 'borderDash' => [2, 4], 'yAxisID' => 'elapsed',
+                ],
+            ],
+        ];
+    }
+
     /**
      * Rows for the CSV and PDF report.
      *
@@ -205,6 +268,22 @@ final class IndicatorService
         }
 
         return $rows;
+    }
+
+    /**
+     * @param  list<array{end: CarbonInterface, achieved: float|string|null}>  $periods
+     * @return list<array{date: string, value: float}>
+     */
+    private function periodHistory(array $periods): array
+    {
+        $history = [];
+        foreach ($periods as $period) {
+            if (is_float($period['achieved'])) {
+                $history[] = ['date' => $period['end']->toDateString(), 'value' => $period['achieved']];
+            }
+        }
+
+        return $history;
     }
 
     private function periodFigure(ResultIndicator $indicator, CarbonInterface $start, CarbonInterface $end): ?float

@@ -11,7 +11,7 @@
             <p class="text-xs text-muted-foreground">{{ $indicator->programmeName() }} · {{ $measureLabel }} · {{ $indicator->starts_on->toInstitutionalDate() }} to {{ $indicator->ends_on->toInstitutionalDate() }}</p>
         </div>
         <div class="flex gap-2">
-            <a class="kt-btn kt-btn-sm kt-btn-outline" href="{{ route('results-framework.index') }}">All indicators</a>
+            <a class="kt-btn kt-btn-sm kt-btn-outline" href="{{ route('results-framework.indicators.index') }}">All indicators</a>
             @can('results.manage')<form method="POST" action="{{ route('results-framework.indicators.toggle', $indicator->uuid) }}">@csrf<button class="kt-btn kt-btn-sm kt-btn-outline" type="submit">{{ $indicator->status === 'active' ? 'Archive' : 'Reactivate' }}</button></form>@endcan
         </div>
     </div>
@@ -45,6 +45,7 @@
         <p class="text-xs text-muted-foreground">Progress is unavailable. Check that the source module is enabled.</p>
     @endif
 
+    @include('results-framework::indicators._trend')
     @include('results-framework::indicators._targets', ['periods' => $progress['periods']])
     @include('results-framework::indicators._breakdowns')
 

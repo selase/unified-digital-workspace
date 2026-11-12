@@ -16,6 +16,7 @@
         'memberships.index',
         'governance.index',
         'results-framework.index',
+        'results-framework.indicators.index',
         'beneficiaries.index',
         'vendor-marketplace.index',
         'real-estate.index',

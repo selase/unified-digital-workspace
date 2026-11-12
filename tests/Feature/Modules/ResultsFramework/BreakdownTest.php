@@ -103,7 +103,7 @@ test('restricted totals and buckets stay masked in indicator views and exports',
     $show = route('results-framework.indicators.show', $indicator->uuid);
     $this->get($show)->assertOk()->assertSee('<3')->assertDontSee('20%')
         ->assertViewHas('progress', fn (array $progress): bool => $progress['current'] === '<3' && $progress['percent'] === null);
-    $this->get(route('results-framework.index'))->assertOk()->assertSee('<3')->assertDontSee('20% of target')
+    $this->get(route('results-framework.indicators.index'))->assertOk()->assertSee('<3')->assertDontSee('20% of target')
         ->assertSee('Hidden to protect small groups');
     $this->get(route('results-framework.indicators.show', $all->uuid))->assertOk()
         ->assertSee('Hidden to protect small groups')->assertDontSee('Female')->assertDontSee('Male');

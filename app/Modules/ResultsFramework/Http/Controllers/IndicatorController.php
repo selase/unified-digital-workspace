@@ -98,13 +98,16 @@ final class IndicatorController extends Controller
     public function show(Request $request, IndicatorService $indicators, MeasureRegistry $measures, BreakdownService $breakdowns, string $indicator): View
     {
         $tenantId = $this->allow($request, 'results.view');
-        $model = ResultIndicator::query()->where('tenant_id', $tenantId)->where('uuid', $indicator)->firstOrFail();
+        $model = ResultIndicator::query()->where('tenant_id', $tenantId)->where('uuid', $indicator)->with(['tenant', 'programme'])->firstOrFail();
+        $viewer = $request->user();
+        $progress = $indicators->progress($model, $viewer);
 
         return view('results-framework::indicators.show', [
-            'indicator' => $model->load('programme'),
-            'progress' => $indicators->progress($model, $request->user()),
-            'breakdowns' => $breakdowns->allForIndicator($model, $request->user()),
-            'readings' => $model->readings()->limit(50)->get(),
+            'indicator' => $model,
+            'progress' => $progress,
+            'trend' => $indicators->trend($model, $viewer, $progress['periods']),
+            'breakdowns' => $breakdowns->allForIndicator($model, $viewer),
+            'readings' => $model->measure_key === null ? $model->readings()->limit(50)->get() : collect(),
             'measureLabel' => $model->measure_key === null ? 'Enter readings by hand' : $measures->label($model->measure_key),
         ]);
     }

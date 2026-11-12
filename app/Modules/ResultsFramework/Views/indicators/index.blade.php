@@ -7,10 +7,11 @@
 <div class="flex flex-col gap-6">
     <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-            <h1 class="text-xl font-bold text-foreground">Results Framework</h1>
+            <h1 class="text-xl font-bold text-foreground">Results Framework indicators</h1>
             <p class="text-xs text-muted-foreground">Are our programmes delivering? Each indicator has a starting figure, a target and a period.</p>
         </div>
-        <div class="flex gap-2">
+        <div class="flex flex-wrap gap-2">
+            <a class="kt-btn kt-btn-sm kt-btn-outline" href="{{ route('results-framework.index') }}">Overview</a>
             <a class="kt-btn kt-btn-sm kt-btn-outline" href="{{ route('results-framework.report') }}">Report (CSV)</a>
             <a class="kt-btn kt-btn-sm kt-btn-outline" href="{{ route('results-framework.report', ['format' => 'print']) }}">Print report</a>
             <a class="kt-btn kt-btn-sm kt-btn-outline" href="{{ route('results-framework.report', ['format' => 'pdf']) }}">Report (PDF)</a>

@@ -120,7 +120,7 @@ test('live indicator configuration persists and disabled measures are unavailabl
     [$user, $tenant] = createMonitoringContext();
     enableResultMeasureModules($tenant, 'beneficiaries');
     $this->actingAs($user)->withSession(['active_tenant_id' => $tenant->id]);
-    $this->get(route('results-framework.index'))->assertOk()->assertSee('beneficiaries.people_reached')->assertDontSee('volunteers.hours_approved');
+    $this->get(route('results-framework.indicators.index'))->assertOk()->assertSee('beneficiaries.people_reached')->assertDontSee('volunteers.hours_approved');
     $fields = [
         'name' => 'Live count', 'target' => 10, 'starts_on' => today()->subDay()->toDateString(), 'ends_on' => today()->toDateString(),
         'measure_key' => 'beneficiaries.people_reached', 'measure_filters' => ['beneficiaries.people_reached' => ['service_type' => 'food']],
@@ -170,7 +170,7 @@ test('retired programme filters keep calculating and the list loads programme op
         }
     });
     $this->actingAs($user)->withSession(['active_tenant_id' => $tenant->id])
-        ->get(route('results-framework.index'))->assertOk();
+        ->get(route('results-framework.indicators.index'))->assertOk();
 
     expect([$figure, $optionQueries])->toBe([0.0, 1]);
 });
