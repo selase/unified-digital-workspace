@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\ResultsFramework\Services;
 
 use App\Modules\ResultsFramework\Models\ResultIndicator;
+use App\Modules\ResultsFramework\Models\ResultProgramme;
 use App\Modules\ResultsFramework\Models\ResultReading;
 use Carbon\CarbonInterface;
 use DomainException;
@@ -34,11 +35,20 @@ final class IndicatorService
             throw new DomainException('The target must be different from the starting figure.');
         }
 
+        $programme = null;
+        if (isset($details['programme_id'])) {
+            $programme = ResultProgramme::query()->where('tenant_id', $tenantId)->find($details['programme_id']);
+            if (! $programme) {
+                throw new DomainException('Choose a programme in your organisation.');
+            }
+        }
+
         return ResultIndicator::query()->create([
             'tenant_id' => $tenantId,
             'name' => $name,
             'description' => $details['description'] ?? null,
-            'programme' => $details['programme'] ?? null,
+            'programme' => $programme?->name ?? $details['programme'] ?? null,
+            'programme_id' => $programme?->id,
             'unit' => ($details['unit'] ?? null) ?: 'people',
             'source' => $source,
             'baseline' => $baseline,
@@ -126,9 +136,9 @@ final class IndicatorService
         $rows = [['Indicator report', 'As at '.today()->toDateString()], ['Indicator', 'Programme', 'Unit', 'Baseline', 'Target', 'Current', 'Progress %', 'Period', 'Status']];
         $labels = ['achieved' => 'Achieved', 'missed' => 'Missed', 'behind' => 'Behind', 'on_track' => 'On track'];
 
-        foreach (ResultIndicator::query()->where('tenant_id', $tenantId)->where('status', 'active')->orderBy('programme')->orderBy('name')->get() as $indicator) {
+        foreach (ResultIndicator::query()->where('tenant_id', $tenantId)->where('status', 'active')->with('programme')->orderBy('programme')->orderBy('name')->get() as $indicator) {
             $progress = $this->progress($indicator);
-            $rows[] = [$indicator->name, $indicator->programme, $indicator->unit, $indicator->baseline, $indicator->target, $progress['current'], $progress['percent'], $indicator->starts_on->toDateString().' to '.$indicator->ends_on->toDateString(), $labels[$progress['status']]];
+            $rows[] = [$indicator->name, $indicator->programmeName(), $indicator->unit, $indicator->baseline, $indicator->target, $progress['current'], $progress['percent'], $indicator->starts_on->toDateString().' to '.$indicator->ends_on->toDateString(), $labels[$progress['status']]];
         }
 
         return $rows;

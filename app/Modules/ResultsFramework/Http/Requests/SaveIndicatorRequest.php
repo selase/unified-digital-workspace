@@ -21,6 +21,7 @@ final class SaveIndicatorRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string', 'max:1000'],
+            'programme_id' => ['nullable', 'integer'],
             'programme' => ['nullable', 'string', 'max:255'],
             'unit' => ['nullable', 'string', 'max:32'],
             'source' => ['required', 'string'],

@@ -1,0 +1,92 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Modules\ResultsFramework\Http\Controllers;
+
+use App\Http\Controllers\Controller;
+use App\Modules\ResultsFramework\Http\Requests\SaveProgrammeRequest;
+use App\Modules\ResultsFramework\Models\ResultProgramme;
+use App\Modules\ResultsFramework\Services\ProgrammeService;
+use App\Services\Tenancy\TenantContext;
+use DomainException;
+use Illuminate\Contracts\View\View;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+
+final class ProgrammeController extends Controller
+{
+    public function __construct(private ProgrammeService $programmes, private TenantContext $context) {}
+
+    public function index(Request $request): View
+    {
+        abort_unless($request->user()?->can('results.view'), 403);
+
+        return view('results-framework::programmes.index', ['programmes' => ResultProgramme::query()->where('tenant_id', $this->tenantId())->withCount('indicators')->orderBy('name')->get()]);
+    }
+
+    public function create(Request $request): View
+    {
+        abort_unless($request->user()?->can('results.manage'), 403);
+        $this->tenantId();
+
+        return view('results-framework::programmes.form', ['programme' => new ResultProgramme]);
+    }
+
+    public function store(SaveProgrammeRequest $request): RedirectResponse
+    {
+        try {
+            $programme = $this->programmes->create($this->tenantId(), $request->validated('name'), $request->validated());
+        } catch (DomainException $error) {
+            return back()->withInput()->withErrors(['programme' => $error->getMessage()]);
+        }
+
+        return redirect()->route('results-framework.programmes.show', $programme->uuid);
+    }
+
+    public function show(Request $request, string $programme): View
+    {
+        abort_unless($request->user()?->can('results.view'), 403);
+
+        return view('results-framework::programmes.show', ['programme' => $this->find($programme)->load('indicators')]);
+    }
+
+    public function edit(Request $request, string $programme): View
+    {
+        abort_unless($request->user()?->can('results.manage'), 403);
+
+        return view('results-framework::programmes.form', ['programme' => $this->find($programme)]);
+    }
+
+    public function update(SaveProgrammeRequest $request, string $programme): RedirectResponse
+    {
+        try {
+            $this->programmes->update($this->find($programme), $request->validated());
+        } catch (DomainException $error) {
+            return back()->withInput()->withErrors(['programme' => $error->getMessage()]);
+        }
+
+        return redirect()->route('results-framework.programmes.show', $programme);
+    }
+
+    public function close(Request $request, string $programme): RedirectResponse
+    {
+        abort_unless($request->user()?->can('results.manage'), 403);
+        $this->programmes->close($this->find($programme));
+
+        return back()->with('success', 'Programme closed.');
+    }
+
+    private function find(string $uuid): ResultProgramme
+    {
+        return ResultProgramme::query()->where('tenant_id', $this->tenantId())->where('uuid', $uuid)->firstOrFail();
+    }
+
+    private function tenantId(): string
+    {
+        $id = $this->context->activeTenantId();
+        abort_unless($id, 403, 'No active organisation.');
+
+        return $id;
+    }
+}

@@ -7,6 +7,7 @@ namespace App\Modules\ResultsFramework\Models;
 use App\Traits\BelongsToTenant;
 use App\Traits\HasUuid;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 final class ResultIndicator extends Model
@@ -36,6 +37,16 @@ final class ResultIndicator extends Model
     public function readings(): HasMany
     {
         return $this->hasMany(ResultReading::class, 'indicator_id')->orderByDesc('recorded_on')->orderByDesc('id');
+    }
+
+    public function programme(): BelongsTo
+    {
+        return $this->belongsTo(ResultProgramme::class, 'programme_id');
+    }
+
+    public function programmeName(): string
+    {
+        return $this->getRelationValue('programme')?->name ?? $this->getAttribute('programme') ?? 'General';
     }
 
     protected function casts(): array

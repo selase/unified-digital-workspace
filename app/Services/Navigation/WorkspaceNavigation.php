@@ -843,6 +843,7 @@ final class WorkspaceNavigation
                 'permission' => 'results.view',
                 'home_route' => 'results-framework.index',
                 'sidebar' => [
+                    ['label' => 'Programmes', 'route' => 'results-framework.programmes.index'],
                     ['label' => 'Indicator report', 'route' => 'results-framework.report'],
                 ],
                 'top_menu' => [
@@ -850,6 +851,7 @@ final class WorkspaceNavigation
                         'label' => 'Results Framework',
                         'items' => [
                             ['label' => 'Indicators', 'route' => 'results-framework.index'],
+                            ['label' => 'Programmes', 'route' => 'results-framework.programmes.index'],
                             ['label' => 'Indicator report', 'route' => 'results-framework.report'],
                         ],
                     ],

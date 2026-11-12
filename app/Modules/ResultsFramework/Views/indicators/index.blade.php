@@ -29,7 +29,7 @@
         <div class="kt-card-header"><h3 class="kt-card-title">New indicator</h3></div>
         <div class="kt-card-content grid grid-cols-1 md:grid-cols-4 gap-3">
             <input class="kt-input md:col-span-2" name="name" value="{{ old('name') }}" placeholder="e.g. Children given a school meal" required>
-            <input class="kt-input" name="programme" value="{{ old('programme') }}" placeholder="Programme">
+            <select class="kt-select" name="programme_id" aria-label="Programme"><option value="">Unassigned</option>@foreach($programmes as $programme)<option value="{{ $programme->id }}" @selected((string) old('programme_id') === (string) $programme->id)>{{ $programme->name }}</option>@endforeach</select>
             <input class="kt-input" name="unit" value="{{ old('unit', 'people') }}" placeholder="Unit (people, hours, GHS)">
             <select class="kt-select md:col-span-2" name="source">@foreach($sources as $key => $label)<option value="{{ $key }}" @selected(old('source', 'manual') === $key)>{{ $label }}</option>@endforeach</select>
             <input class="kt-input" type="number" step="0.01" name="baseline" value="{{ old('baseline', 0) }}" placeholder="Starting figure">
@@ -46,17 +46,20 @@
         <div class="kt-card-table kt-scrollable-x-auto"><table class="kt-table table-auto kt-table-border">
             <thead><tr><th>Indicator</th><th>Programme</th><th class="text-end">Start</th><th class="text-end">Now</th><th class="text-end">Target</th><th style="min-width:160px">Progress</th><th>Status</th></tr></thead>
             <tbody>
-            @forelse($rows as $row)
+            @forelse($rows as $programmeName => $group)
+                <tr><th colspan="7" scope="rowgroup">{{ $programmeName }}</th></tr>
+                @foreach($group as $row)
                 @php $i = $row['indicator']; $p = $row['progress']; @endphp
                 <tr class="{{ $i->status === 'archived' ? 'text-muted-foreground' : '' }}">
                     <td><a class="text-primary" href="{{ route('results-framework.indicators.show', $i->uuid) }}">{{ $i->name }}</a><div class="text-xs text-muted-foreground">{{ $i->starts_on->toInstitutionalDate() }} to {{ $i->ends_on->toInstitutionalDate() }}</div></td>
-                    <td>{{ $i->programme }}</td>
+                    <td>{{ $programmeName }}</td>
                     <td class="text-end">{{ number_format($i->baseline, 0) }}</td>
                     <td class="text-end">{{ number_format($p['current'], 0) }} <span class="text-xs text-muted-foreground">{{ $i->unit }}</span></td>
                     <td class="text-end">{{ number_format($i->target, 0) }}</td>
                     <td><div class="h-2 rounded bg-muted"><div class="h-2 rounded bg-primary" style="width: {{ min(100, $p['percent']) }}%"></div></div><div class="text-xs text-muted-foreground mt-1">{{ $p['percent'] }}% of target, {{ $p['time_percent'] }}% of time</div></td>
                     <td class="{{ in_array($p['status'], ['behind', 'missed'], true) ? 'text-destructive' : '' }}">{{ $i->status === 'archived' ? 'Archived' : $verdict[$p['status']] }}</td>
                 </tr>
+                @endforeach
             @empty
                 <tr><td colspan="7" class="text-center text-muted-foreground py-6">No indicators yet.</td></tr>
             @endforelse

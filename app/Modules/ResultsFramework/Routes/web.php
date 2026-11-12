@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Modules\ResultsFramework\Http\Controllers\IndicatorController;
+use App\Modules\ResultsFramework\Http\Controllers\ProgrammeController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [IndicatorController::class, 'index'])->name('index');
@@ -11,3 +12,6 @@ Route::get('/indicators/{indicator}', [IndicatorController::class, 'show'])->nam
 Route::post('/indicators/{indicator}/readings', [IndicatorController::class, 'reading'])->name('indicators.readings.store');
 Route::post('/indicators/{indicator}/toggle', [IndicatorController::class, 'toggle'])->name('indicators.toggle');
 Route::get('/report', [IndicatorController::class, 'report'])->name('report');
+
+Route::resource('programmes', ProgrammeController::class)->except('destroy');
+Route::post('programmes/{programme}/close', [ProgrammeController::class, 'close'])->name('programmes.close');
