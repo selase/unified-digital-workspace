@@ -18,7 +18,7 @@ require_once __DIR__.'/fixtures.php';
 
 test('programme grant links are tenant scoped and grant reports respect results access', function (): void {
     [$user, $tenant] = createMonitoringContext();
-    enableResultMeasureModules($tenant, 'grants', 'finance');
+    enableResultMeasureModules($tenant, 'grants', 'finance', 'beneficiaries');
     Permission::firstOrCreate(['name' => 'grants.view', 'guard_name' => 'web'], ['uuid' => (string) Str::uuid(), 'category' => 'grants']);
     $user->givePermissionTo('grants.view');
     $grantService = app(GrantService::class);
@@ -42,6 +42,17 @@ test('programme grant links are tenant scoped and grant reports respect results 
     $report = route('grants.grants.report', $grant->uuid);
     $this->get($show)->assertOk()->assertSee('Wells commissioned');
     expect($this->get($report)->assertOk()->streamedContent())->toContain('Water works', 'Wells commissioned');
+    $person = App\Modules\Beneficiaries\Models\BenBeneficiary::query()->create(['tenant_id' => $tenant->id, 'full_name' => 'Test person']);
+    $person->services()->create(['tenant_id' => $tenant->id, 'delivered_on' => today(), 'type' => 'food']);
+    app(IndicatorService::class)->create($tenant->id, 'People reached', 10, today(), today(), [
+        'programme_id' => $programme->id, 'measure_key' => 'beneficiaries.people_reached',
+    ]);
+    $this->get($show)->assertOk()->assertSee('<3')->assertSee('Restricted')->assertDontSee('People reached · 1 /');
+    expect($this->get($report)->assertOk()->streamedContent())->toContain('"People reached",10,<3,Restricted')->not->toContain('"People reached",10,1,');
+    Permission::firstOrCreate(['name' => 'beneficiaries.view', 'guard_name' => 'web'], ['uuid' => (string) Str::uuid(), 'category' => 'beneficiaries']);
+    $user->givePermissionTo('beneficiaries.view');
+    $this->get($show)->assertOk()->assertSee('People reached · 1 / 10');
+    expect($this->get($report)->assertOk()->streamedContent())->toContain('"People reached",10,1,');
     $user->revokePermissionTo('results.view');
     $this->get($show)->assertOk()->assertDontSee('Wells commissioned');
     expect($this->get($report)->assertOk()->streamedContent())->not->toContain('Wells commissioned');

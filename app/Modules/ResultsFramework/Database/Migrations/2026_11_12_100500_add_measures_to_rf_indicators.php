@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Modules\ResultsFramework\Support\RollbackPreflight;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
@@ -9,19 +10,13 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    private const SOURCES = [
-        'beneficiaries_reached' => 'beneficiaries.people_reached',
-        'volunteer_hours' => 'volunteers.hours_approved',
-        'donations_total' => 'donations.amount_raised',
-    ];
-
     public function up(): void
     {
         if (! Schema::hasColumn('rf_indicators', 'source')) {
             return;
         }
 
-        if (DB::table('rf_indicators')->whereNotIn('source', ['manual', ...array_keys(self::SOURCES)])->exists()) {
+        if (DB::table('rf_indicators')->whereNotIn('source', ['manual', ...array_keys(RollbackPreflight::LEGACY_MEASURES)])->exists()) {
             throw new RuntimeException('An indicator uses an unrecognised legacy source.');
         }
 
@@ -30,7 +25,7 @@ return new class extends Migration
             $table->json('measure_filters')->nullable();
         });
 
-        foreach (self::SOURCES as $source => $measure) {
+        foreach (RollbackPreflight::LEGACY_MEASURES as $source => $measure) {
             DB::table('rf_indicators')->where('source', $source)->update(['measure_key' => $measure]);
         }
 
@@ -45,8 +40,7 @@ return new class extends Migration
             return;
         }
 
-        if (DB::table('rf_indicators')->whereNotIn('measure_key', array_values(self::SOURCES))
-            ->orWhereNotNull('measure_filters')->exists()) {
+        if ((new RollbackPreflight)->hasUnrepresentableMeasures(DB::connection())) {
             throw new RuntimeException('New measures or filters cannot be represented by legacy indicator sources.');
         }
 
@@ -54,7 +48,7 @@ return new class extends Migration
             $table->string('source', 32)->default('manual');
         });
 
-        foreach (self::SOURCES as $source => $measure) {
+        foreach (RollbackPreflight::LEGACY_MEASURES as $source => $measure) {
             DB::table('rf_indicators')->where('measure_key', $measure)->update(['source' => $source]);
         }
 

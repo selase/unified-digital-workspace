@@ -213,3 +213,28 @@ test('measure migration refuses an unknown legacy source before changing the sch
         $migration->up();
     });
 });
+
+test('full rollback preflight refuses before dropping later tables or changing stored rows', function (bool $withVariance): void {
+    [, $tenant] = createMonitoringContext();
+    $indicator = ResultIndicator::query()->create([
+        'tenant_id' => $tenant->id, 'name' => 'Protected configuration', 'target' => 10,
+        'starts_on' => today(), 'ends_on' => today(), 'measure_key' => 'forms.submissions',
+    ]);
+    if ($withVariance) {
+        $indicator->varianceNotes()->create(['tenant_id' => $tenant->id, 'reason' => 'Preserve this note']);
+    }
+    $db = DB::connection('tenant');
+    $schema = $db->getSchemaBuilder();
+    $tables = ['rf_indicators', 'rf_readings', 'rf_programmes', 'rf_results', 'rf_reading_breakdowns', 'rf_targets', 'rf_variance_notes'];
+    $snapshot = fn (): array => array_map(fn (string $table): array => [
+        $schema->getColumnListing($table), $db->table($table)->where('tenant_id', $tenant->id)->orderBy('id')->get()->toJson(),
+    ], $tables);
+    $before = $snapshot();
+    $guard = app(App\Modules\ResultsFramework\Support\RollbackPreflight::class);
+    $expected = $withVariance ? 'Variance notes' : 'Unrepresentable indicator measures or filters';
+    expect($guard->tenantBlockers($db))->toContain('Unrepresentable indicator measures or filters', $expected);
+    expect(fn () => $guard->assertTenantCanRollback($db))->toThrow(RuntimeException::class, $expected);
+    $migration = require app_path('Modules/ResultsFramework/Database/Migrations/2026_11_12_100800_create_rf_variance_notes.php');
+    DB::usingConnection('tenant', fn () => expect(fn () => $migration->down())->toThrow(RuntimeException::class, $expected));
+    expect($snapshot())->toBe($before)->and($schema->hasTable('pr_indicators'))->toBeFalse();
+})->with(['later table empty' => [false], 'later table has a note' => [true]]);

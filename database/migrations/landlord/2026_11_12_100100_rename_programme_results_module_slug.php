@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Modules\ResultsFramework\Support\RollbackPreflight;
 use App\Services\Tenancy\EntitlementService;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\Cache;
@@ -19,6 +20,8 @@ return new class extends Migration
 
     public function down(): void
     {
+        (new RollbackPreflight)->assertLandlordCanRollback(DB::connection('landlord'));
+
         $this->rename('results-framework', 'programme-results', 'Results Framework', 'NGO M&E');
     }
 

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Modules\ResultsFramework\Support\RollbackPreflight;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
@@ -44,6 +45,8 @@ return new class extends Migration
 
     public function down(): void
     {
+        (new RollbackPreflight)->assertTenantCanRollback(DB::connection());
+
         Schema::table('rf_indicators', function (Blueprint $table): void {
             $table->dropConstrainedForeignId('programme_id');
         });

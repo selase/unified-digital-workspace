@@ -34,4 +34,7 @@
             <tr><td colspan="{{ count($headings) }}">No results have been added to this programme.</td></tr>
         @endforelse
     </tbody>
+    @if($omissions !== null)
+        <tfoot><tr><td colspan="{{ count($headings) }}">{{ $omissions }}</td></tr></tfoot>
+    @endif
 </table>

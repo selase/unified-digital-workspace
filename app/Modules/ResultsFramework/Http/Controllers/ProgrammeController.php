@@ -74,10 +74,11 @@ final class ProgrammeController extends Controller
         $model = $this->find($programme);
         $rows = $report->rows($model, $viewer);
         $name = 'logframe-'.$model->uuid;
-        $data = ['programme' => $model, 'rows' => $rows, 'headings' => LogframeReport::HEADINGS];
+        $omissions = $report->omissions($model, $rows);
+        $data = ['programme' => $model, 'rows' => $rows, 'headings' => LogframeReport::HEADINGS, 'omissions' => $omissions];
 
         return match ($request->query('format')) {
-            'csv' => CsvReport::download($report->csvRows($rows), $name.'.csv'),
+            'csv' => CsvReport::download($report->csvRows($rows, $omissions), $name.'.csv'),
             'pdf' => Pdf::loadView('results-framework::pdf.logframe', $data)->setPaper('a4', 'landscape')->download($name.'.pdf'),
             default => view('results-framework::programmes.logframe', $data),
         };

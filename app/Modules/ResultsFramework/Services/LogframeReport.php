@@ -30,21 +30,41 @@ final class LogframeReport
         return $this->flatten($this->chain->tree($programme), $indicators, $viewer, 0);
     }
 
+    public function omissions(ResultProgramme $programme, array $rows): ?string
+    {
+        $included = array_sum(array_map(fn (LogframeRow $row): int => count($row->indicators), $rows));
+        $omitted = $programme->indicators()->where('tenant_id', $programme->tenant_id)->count() - $included;
+
+        return match (true) {
+            $omitted < 1 => null,
+            $omitted === 1 => '1 programme indicator is omitted because it has no linked result.',
+            default => $omitted.' programme indicators are omitted because they have no linked result.',
+        };
+    }
+
     /**
      * @param  list<LogframeRow>  $rows
      * @return list<list<string|int|float|null>>
      */
-    public function csvRows(array $rows): array
+    public function csvRows(array $rows, ?string $omissions = null): array
     {
         $matrix = [self::HEADINGS];
+        $hasBreakdowns = false;
         foreach ($rows as $row) {
             foreach ($row->indicators ?: [null] as $indicator) {
+                $hasBreakdowns = $hasBreakdowns || ($indicator['breakdowns'] ?? []) !== [];
                 $matrix[] = [
                     ucfirst($row->level), $row->title,
                     $indicator['name'] ?? null, $indicator['baseline'] ?? null, $indicator['target'] ?? null,
                     $indicator['current'] ?? null, $indicator['status'] ?? null, $indicator['means_of_verification'] ?? null,
                     $row->assumptions, $row->risks,
                 ];
+            }
+        }
+
+        foreach ([$omissions, $hasBreakdowns ? 'Breakdown details are available in the web and PDF logframe.' : null] as $note) {
+            if ($note !== null) {
+                $matrix[] = ['Note', $note, ...array_fill(0, count(self::HEADINGS) - 2, null)];
             }
         }
 

@@ -133,6 +133,7 @@ final class IndicatorService
     public function periodProgress(ResultIndicator $indicator, User $viewer): array
     {
         $periods = [];
+        $decreasing = $indicator->target < $indicator->baseline;
         $maySeeExact = $this->measures->canSeeExactValue($indicator->measure_key, $viewer);
 
         foreach ($this->targets->forIndicator($indicator) as $target) {
@@ -144,12 +145,15 @@ final class IndicatorService
             }
 
             $value = $target->target_value;
-            $metTarget = is_float($achieved) && ($value < 0 ? $achieved <= $value : $achieved >= $value);
-            $percent = match (true) {
+            $metTarget = is_float($achieved) && ($decreasing ? $achieved <= $value : $achieved >= $value);
+            $ratio = match (true) {
                 ! is_float($achieved) => null,
-                $value === 0.0 => $achieved >= 0 ? 100 : 0,
-                default => (int) max(0, min($metTarget ? 999 : 99, round($achieved / $value * 100))),
+                $decreasing && $value < $indicator->baseline => ($indicator->baseline - $achieved) / ($indicator->baseline - $value),
+                ! $decreasing && $value > 0 => $achieved / $value,
+                ! $decreasing && $value < 0 && $value > $indicator->baseline => ($achieved - $indicator->baseline) / ($value - $indicator->baseline),
+                default => $metTarget ? 1.0 : 0.0,
             };
+            $percent = $ratio === null ? null : (int) max(0, min($metTarget ? 999 : 99, round($ratio * 100)));
 
             $status = match (true) {
                 is_string($achieved) => 'restricted',
@@ -164,14 +168,9 @@ final class IndicatorService
         }
 
         if (array_any($periods, fn (array $period): bool => $period['status'] === 'restricted')) {
-            foreach ($periods as &$period) {
-                if (is_float($period['achieved'])) {
-                    $period['achieved'] = null;
-                    $period['percent'] = null;
-                    $period['status'] = 'restricted';
-                }
+            foreach ($periods as $index => $period) {
+                $periods[$index] = array_replace($period, ['achieved' => null, 'percent' => null, 'status' => 'restricted']);
             }
-            unset($period);
         }
 
         return $periods;

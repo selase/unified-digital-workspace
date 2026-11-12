@@ -118,3 +118,42 @@ test('landlord rename preserves entitlements, module metadata, feature links and
         ->and($view->fresh()->category)->toBe('programme-results')
         ->and($manage->fresh()->category)->toBe('custom-results');
 });
+
+test('compatible data survives the complete tenant rollback in reverse migration order', function (): void {
+    require_once __DIR__.'/fixtures.php';
+    [, $tenant] = createMonitoringContext();
+    $programme = App\Modules\ResultsFramework\Models\ResultProgramme::query()->create(['tenant_id' => $tenant->id, 'name' => 'Water']);
+    $indicator = App\Modules\ResultsFramework\Models\ResultIndicator::query()->create([
+        'tenant_id' => $tenant->id, 'programme_id' => $programme->id, 'name' => 'Reach',
+        'target' => 10, 'starts_on' => today(), 'ends_on' => today(), 'measure_key' => 'beneficiaries.people_reached',
+    ]);
+    $reading = $indicator->readings()->create(['tenant_id' => $tenant->id, 'recorded_on' => today(), 'value' => 4]);
+    $db = DB::connection('tenant');
+    $guard = app(App\Modules\ResultsFramework\Support\RollbackPreflight::class);
+    expect($guard->tenantBlockers($db))->toBe([]);
+
+    DB::usingConnection('tenant', function () use ($db, $indicator, $reading): void {
+        $paths = glob(app_path('Modules/ResultsFramework/Database/Migrations/2026_11_12_*.php'));
+        rsort($paths);
+        foreach ($paths as $path) {
+            (require $path)->down();
+        }
+        $legacy = $db->table('pr_indicators')->where('id', $indicator->id)->first();
+        expect($legacy->tenant_id)->toBe($indicator->tenant_id)
+            ->and($legacy->uuid)->toBe((string) $indicator->uuid)
+            ->and($legacy->source)->toBe('beneficiaries_reached')
+            ->and($legacy->programme)->toBe('Water')
+            ->and((float) $db->table('pr_readings')->where('id', $reading->id)->value('value'))->toBe(4.0)
+            ->and($db->getSchemaBuilder()->hasTable('rf_indicators'))->toBeFalse();
+    });
+});
+
+test('landlord rollback refuses a slug collision without modifying either row', function (): void {
+    $tenant = Tenant::factory()->create();
+    $current = TenantModule::query()->create(['tenant_id' => $tenant->id, 'module_slug' => 'results-framework', 'is_enabled' => true]);
+    $legacy = TenantModule::query()->create(['tenant_id' => $tenant->id, 'module_slug' => 'programme-results', 'is_enabled' => false]);
+    $migration = require database_path('migrations/landlord/2026_11_12_100100_rename_programme_results_module_slug.php');
+    $before = [$current->fresh()->getAttributes(), $legacy->fresh()->getAttributes()];
+    expect(fn () => $migration->down())->toThrow(RuntimeException::class, 'Landlord collision');
+    expect([$current->fresh()->getAttributes(), $legacy->fresh()->getAttributes()])->toBe($before);
+});

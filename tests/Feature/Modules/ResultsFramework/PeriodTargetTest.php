@@ -86,7 +86,7 @@ test('live period figures use registry dates and apply the same privacy as overa
     $indicator = $service->create($tenant->id, 'Reach', 10, $start, $february, ['measure_key' => 'beneficiaries.people_reached']);
     app(TargetService::class)->set($indicator, $start, $january, 4);
     app(TargetService::class)->set($indicator, $january->addDay(), $february, 4);
-    expect($service->periodProgress($indicator, $user)[0])->toMatchArray(['achieved' => '<3', 'percent' => null, 'status' => 'restricted']);
+    expect($service->periodProgress($indicator, $user)[0])->toMatchArray(['achieved' => null, 'percent' => null, 'status' => 'restricted']);
     expect($service->periodProgress($indicator, $user)[1])->toMatchArray(['achieved' => null, 'percent' => null, 'status' => 'restricted']);
 
     Permission::firstOrCreate(['name' => 'beneficiaries.view', 'guard_name' => 'web'], ['category' => 'beneficiaries', 'uuid' => (string) Str::uuid()]);
@@ -132,4 +132,36 @@ test('rounded progress cannot mark a missed target as achieved', function (): vo
     expect($service->periodProgress($indicator, $user)[0])->toMatchArray(['percent' => 99, 'status' => 'missed']);
     $service->record($indicator, 100, $end, null, null);
     expect($service->periodProgress($indicator, $user)[0])->toMatchArray(['percent' => 100, 'status' => 'achieved']);
+});
+
+test('two small periods expose no individual small-group markers', function (): void {
+    [$user, $tenant] = createMonitoringContext();
+    enableResultMeasureModules($tenant, 'beneficiaries');
+    $start = today()->subDays(3);
+    $end = today()->subDay();
+    foreach ([$start, $start, $end, $end] as $date) {
+        $person = BenBeneficiary::query()->create(['tenant_id' => $tenant->id, 'full_name' => 'Test person']);
+        $person->services()->create(['tenant_id' => $tenant->id, 'type' => 'food', 'delivered_on' => $date]);
+    }
+    $service = app(IndicatorService::class);
+    $indicator = $service->create($tenant->id, 'Reach', 8, $start, $end, ['measure_key' => 'beneficiaries.people_reached']);
+    app(TargetService::class)->set($indicator, $start, $start, 4);
+    app(TargetService::class)->set($indicator, $start->copy()->addDay(), $end, 4);
+    $progress = $service->progress($indicator, $user);
+    expect($progress['current'])->toBe(4.0)
+        ->and(array_column($progress['periods'], 'achieved'))->toBe([null, null])
+        ->and(array_column($progress['periods'], 'status'))->toBe(['restricted', 'restricted']);
+});
+
+test('positive decreasing period targets are achieved at or below the target', function (): void {
+    [$user, $tenant] = createMonitoringContext();
+    $service = app(IndicatorService::class);
+    $start = today()->subWeek();
+    $end = today()->subDay();
+    $indicator = $service->create($tenant->id, 'Reduce waiting time', 20, $start, $end, ['baseline' => 100]);
+    app(TargetService::class)->set($indicator, $start, $end, 30);
+    $service->record($indicator, 40, $end, null, null);
+    expect($service->periodProgress($indicator, $user)[0])->toMatchArray(['status' => 'missed', 'percent' => 86]);
+    $service->record($indicator, 29, $end, null, null);
+    expect($service->periodProgress($indicator, $user)[0])->toMatchArray(['status' => 'achieved', 'percent' => 101]);
 });
