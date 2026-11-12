@@ -9,7 +9,7 @@
         .muted { color: #6b7280; margin-bottom: 14px; }
         table { width: 100%; border-collapse: collapse; }
         th { text-align: left; background: #f3f4f6; padding: 6px; }
-        td { padding: 6px; border-bottom: 1px solid #e5e7eb; }
+        td { white-space: pre-line; padding: 6px; border-bottom: 1px solid #e5e7eb; }
     </style>
 </head>
 <body>

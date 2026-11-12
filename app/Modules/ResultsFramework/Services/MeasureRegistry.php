@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\ResultsFramework\Services;
 
 use App\Models\Tenant;
+use App\Models\User;
 use App\Modules\ResultsFramework\Contracts\ProvidesMeasureFilterOptions;
 use App\Modules\ResultsFramework\Contracts\ResultMeasureProvider;
 use App\Modules\ResultsFramework\Support\MeasureDefinition;
@@ -83,12 +84,29 @@ final class MeasureRegistry
         return $provider->value((string) $tenant->id, $key, $query);
     }
 
+    public function canSeeExactValue(?string $key, User $viewer): bool
+    {
+        return ($this->measures[$key][0]->module ?? null) !== 'beneficiaries' || $viewer->can('beneficiaries.view');
+    }
+
+    /** @return list<string> */
+    public function dimensions(Tenant $tenant, string $key): array
+    {
+        [$definition] = $this->resolve($tenant, $key);
+
+        return $definition->dimensions;
+    }
+
     /** @return array<string, float> */
     public function breakdown(Tenant $tenant, string $key, string $dimension, MeasureQuery $query): array
     {
         [$definition, $provider] = $this->resolve($tenant, $key);
         if (! in_array($dimension, $definition->dimensions, true)) {
             throw new DomainException('This measure does not offer that breakdown.');
+        }
+
+        if ($query->from->toDateString() > $query->to->toDateString()) {
+            return [];
         }
 
         return $provider->breakdown((string) $tenant->id, $key, $dimension, $query);

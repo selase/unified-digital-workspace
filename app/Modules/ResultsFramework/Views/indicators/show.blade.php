@@ -3,7 +3,7 @@
 @section('title', $indicator->name)
 
 @section('content')
-@php $verdict = ['achieved' => 'Achieved', 'on_track' => 'On track', 'behind' => 'Behind', 'missed' => 'Missed', 'unavailable' => 'Unavailable']; @endphp
+@php $verdict = ['achieved' => 'Achieved', 'on_track' => 'On track', 'behind' => 'Behind', 'missed' => 'Missed', 'unavailable' => 'Unavailable', 'restricted' => 'Restricted']; @endphp
 <div class="flex flex-col gap-6">
     <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
@@ -26,19 +26,26 @@
         </div></div>
     @endif
     @include('results-framework::partials.flash')
+    @foreach($errors->all() as $error)
+        <p class="text-destructive" role="alert">{{ $error }}</p>
+    @endforeach
 
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div class="rounded-lg bg-muted/30 p-4"><div class="text-xs text-muted-foreground">Starting figure</div><div class="mt-1 text-lg font-semibold">{{ number_format($indicator->baseline, 0) }}</div></div>
-        <div class="rounded-lg bg-muted/30 p-4"><div class="text-xs text-muted-foreground">Now</div><div class="mt-1 text-lg font-semibold">@if($progress['current'] === null) Unavailable @else {{ number_format($progress['current'], floor($progress['current']) === $progress['current'] ? 0 : 2) }} {{ $indicator->unit }} @endif</div></div>
+        <div class="rounded-lg bg-muted/30 p-4"><div class="text-xs text-muted-foreground">Now</div><div class="mt-1 text-lg font-semibold">@if($progress['current'] === null) Unavailable @elseif(is_string($progress['current'])) {{ $progress['current'] }} @else {{ number_format($progress['current'], floor($progress['current']) === $progress['current'] ? 0 : 2) }} {{ $indicator->unit }} @endif</div></div>
         <div class="rounded-lg bg-muted/30 p-4"><div class="text-xs text-muted-foreground">Target</div><div class="mt-1 text-lg font-semibold">{{ number_format($indicator->target, 0) }}</div></div>
         <div class="rounded-lg bg-muted/30 p-4"><div class="text-xs text-muted-foreground">Status</div><div class="mt-1 text-lg font-semibold">{{ $verdict[$progress['status']] }}</div></div>
     </div>
     @if($progress['percent'] !== null)
     <div class="h-2 rounded bg-muted"><div class="h-2 rounded bg-primary" style="width: {{ min(100, $progress['percent']) }}%"></div></div>
     <p class="text-xs text-muted-foreground">{{ $progress['percent'] }}% of the way to the target with {{ $progress['time_percent'] }}% of the time used.@if($indicator->description) {{ $indicator->description }}@endif</p>
+    @elseif($progress['status'] === 'restricted')
+        <p class="text-xs text-muted-foreground">Small figures are restricted to staff with Beneficiaries access.</p>
     @else
-        <p class="text-xs text-muted-foreground">Progress is unavailable. Check that the source module and selected filters are still available.</p>
+        <p class="text-xs text-muted-foreground">Progress is unavailable. Check that the source module is enabled.</p>
     @endif
+
+    @include('results-framework::indicators._breakdowns')
 
     @if($indicator->measure_key === null)
     @can('results.manage')
@@ -49,6 +56,7 @@
             <input class="kt-input" type="date" name="recorded_on" value="{{ old('recorded_on', today()->toDateString()) }}" required>
             <input class="kt-input" name="note" value="{{ old('note') }}" placeholder="Note (optional)">
             <div><button class="kt-btn kt-btn-primary" type="submit">Save reading</button></div>
+            @include('results-framework::indicators._reading_breakdown_fields')
         </div>
     </form>
     @endcan

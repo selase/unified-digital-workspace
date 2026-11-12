@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\Modules\ResultsFramework\Services;
 
 use App\Models\Tenant;
+use App\Models\User;
 use App\Modules\ResultsFramework\Models\ResultIndicator;
 use App\Modules\ResultsFramework\Models\ResultNode;
 use App\Modules\ResultsFramework\Models\ResultProgramme;
 use App\Modules\ResultsFramework\Models\ResultReading;
+use App\Modules\ResultsFramework\Support\Dimensions;
 use App\Modules\ResultsFramework\Support\MeasureQuery;
 use App\Modules\ResultsFramework\Support\MeasureUnavailable;
 use Carbon\CarbonImmutable;
@@ -24,7 +26,7 @@ final class IndicatorService
 {
     private const FIELDS = ['name', 'description', 'definition', 'means_of_verification', 'programme_id', 'result_id', 'unit', 'measure_key', 'measure_filters', 'baseline', 'target', 'starts_on', 'ends_on', 'grant_id'];
 
-    public function __construct(private MeasureRegistry $measures) {}
+    public function __construct(private MeasureRegistry $measures, private BreakdownService $breakdowns) {}
 
     public function create(string $tenantId, string $name, float $target, CarbonInterface $startsOn, CarbonInterface $endsOn, array $details = [], bool $allowDisabledMeasure = false): ResultIndicator
     {
@@ -40,7 +42,7 @@ final class IndicatorService
         return $this->save($indicator, $details);
     }
 
-    public function record(ResultIndicator $indicator, float $value, CarbonInterface $date, ?string $note, ?string $userId): ResultReading
+    public function record(ResultIndicator $indicator, float $value, CarbonInterface $date, ?string $note, ?string $userId, array $breakdowns = []): ResultReading
     {
         if ($indicator->measure_key !== null) {
             throw new DomainException('This indicator is calculated from another module, so readings cannot be entered by hand.');
@@ -52,14 +54,22 @@ final class IndicatorService
             throw new DomainException('A reading cannot be dated in the future.');
         }
 
-        return ResultReading::query()->create([
-            'tenant_id' => $indicator->tenant_id,
-            'indicator_id' => $indicator->id,
-            'recorded_on' => $date->toDateString(),
-            'value' => $value,
-            'note' => $note,
-            'recorded_by' => $userId,
-        ]);
+        $rows = $this->breakdowns->validatedReadingRows($value, $breakdowns);
+
+        return $indicator->getConnection()->transaction(function () use ($indicator, $value, $date, $note, $userId, $rows): ResultReading {
+            $reading = $indicator->readings()->create([
+                'tenant_id' => $indicator->tenant_id,
+                'recorded_on' => $date->toDateString(),
+                'value' => $value,
+                'note' => $note,
+                'recorded_by' => $userId,
+            ]);
+            foreach ($rows as $row) {
+                $reading->breakdowns()->create($row + ['tenant_id' => $indicator->tenant_id]);
+            }
+
+            return $reading;
+        });
     }
 
     /** The figure today: the latest reading, or the live number from another module counted within the indicator's dates. */
@@ -69,13 +79,11 @@ final class IndicatorService
             return (float) ($indicator->readings()->value('value') ?? $indicator->baseline);
         }
 
-        $end = $indicator->ends_on->min(today());
-
         try {
             return $this->measures->value(
                 $indicator->tenant ?? Tenant::query()->findOrFail($indicator->tenant_id),
                 $indicator->measure_key,
-                new MeasureQuery($indicator->starts_on, $end, $indicator->measure_filters ?? []),
+                MeasureQuery::forIndicator($indicator),
             );
         } catch (MeasureUnavailable) {
             return null;
@@ -85,18 +93,23 @@ final class IndicatorService
     /**
      * Progress from baseline towards target, how much of the time has passed, and a plain verdict.
      *
-     * @return array{current: ?float, percent: ?int, time_percent: int, status: string}
+     * @return array{current: float|string|null, percent: ?int, time_percent: int, status: string}
      */
-    public function progress(ResultIndicator $indicator): array
+    public function progress(ResultIndicator $indicator, ?User $viewer = null): array
     {
         $current = $this->current($indicator);
+        if ($current !== null && $viewer !== null) {
+            $current = Dimensions::protect($current, $this->measures->canSeeExactValue($indicator->measure_key, $viewer));
+        }
+
         $range = $indicator->target - $indicator->baseline;
-        $percent = $current === null ? null : (int) max(0, min(999, round((($current - $indicator->baseline) / $range) * 100)));
+        $percent = ! is_float($current) ? null : (int) max(0, min(999, round((($current - $indicator->baseline) / $range) * 100)));
 
         $totalDays = max(1, $indicator->starts_on->diffInDays($indicator->ends_on));
         $timePercent = (int) max(0, min(100, round($indicator->starts_on->diffInDays(today(), false) / $totalDays * 100)));
 
         $status = match (true) {
+            is_string($current) => 'restricted',
             $percent === null => 'unavailable',
             $percent >= 100 => 'achieved',
             today()->gt($indicator->ends_on) => 'missed',
@@ -112,14 +125,20 @@ final class IndicatorService
      *
      * @return list<list<string|int|float|null>>
      */
-    public function reportRows(string $tenantId): array
+    public function reportRows(string $tenantId, User $viewer): array
     {
-        $rows = [['Indicator report', 'As at '.today()->toDateString()], ['Indicator', 'Programme', 'Unit', 'Baseline', 'Target', 'Current', 'Progress %', 'Period', 'Status']];
-        $labels = ['achieved' => 'Achieved', 'missed' => 'Missed', 'behind' => 'Behind', 'on_track' => 'On track', 'unavailable' => 'Unavailable'];
+        $rows = [['Indicator report', 'As at '.today()->toDateString()], ['Indicator', 'Programme', 'Unit', 'Baseline', 'Target', 'Current', 'Progress %', 'Period', 'Status', 'Breakdowns']];
+        $labels = ['achieved' => 'Achieved', 'missed' => 'Missed', 'behind' => 'Behind', 'on_track' => 'On track', 'unavailable' => 'Unavailable', 'restricted' => 'Restricted'];
 
         foreach (ResultIndicator::query()->where('tenant_id', $tenantId)->where('status', 'active')->with(['tenant', 'programme' => fn ($query) => $query->where('tenant_id', $tenantId)])->orderBy('programme_id')->orderBy('name')->get() as $indicator) {
-            $progress = $this->progress($indicator);
-            $rows[] = [$indicator->name, $indicator->programmeName(), $indicator->unit, $indicator->baseline, $indicator->target, $progress['current'] ?? 'Unavailable', $progress['percent'], $indicator->starts_on->toDateString().' to '.$indicator->ends_on->toDateString(), $labels[$progress['status']]];
+            $progress = $this->progress($indicator, $viewer);
+            $breakdownLines = [];
+            foreach ($this->breakdowns->allForIndicator($indicator, $viewer) as $dimension => $buckets) {
+                foreach ($buckets as $bucket => $value) {
+                    $breakdownLines[] = Dimensions::LABELS[$dimension].' / '.Dimensions::bucketLabel($dimension, (string) $bucket).': '.$value;
+                }
+            }
+            $rows[] = [$indicator->name, $indicator->programmeName(), $indicator->unit, $indicator->baseline, $indicator->target, $progress['current'] ?? 'Unavailable', $progress['percent'], $indicator->starts_on->toDateString().' to '.$indicator->ends_on->toDateString(), $labels[$progress['status']], implode("\n", $breakdownLines)];
         }
 
         return $rows;

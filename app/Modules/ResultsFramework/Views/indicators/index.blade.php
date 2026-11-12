@@ -3,7 +3,7 @@
 @section('title', 'Results Framework')
 
 @section('content')
-@php $verdict = ['achieved' => 'Achieved', 'on_track' => 'On track', 'behind' => 'Behind', 'missed' => 'Missed', 'unavailable' => 'Unavailable']; @endphp
+@php $verdict = ['achieved' => 'Achieved', 'on_track' => 'On track', 'behind' => 'Behind', 'missed' => 'Missed', 'unavailable' => 'Unavailable', 'restricted' => 'Restricted']; @endphp
 <div class="flex flex-col gap-6">
     <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
@@ -19,7 +19,7 @@
     @include('results-framework::partials.flash')
 
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        @foreach(\Illuminate\Support\Arr::except($verdict, ['unavailable']) as $key => $label)
+        @foreach(\Illuminate\Support\Arr::except($verdict, ['unavailable', 'restricted']) as $key => $label)
             <div class="rounded-lg bg-muted/30 p-4"><div class="text-xs text-muted-foreground">{{ $label }}</div><div class="mt-1 text-lg font-semibold">{{ $counts[$key] ?? 0 }}</div></div>
         @endforeach
     </div>
@@ -40,7 +40,7 @@
                     <td><a class="text-primary" href="{{ route('results-framework.indicators.show', $i->uuid) }}">{{ $i->name }}</a><div class="text-xs text-muted-foreground">{{ $i->starts_on->toInstitutionalDate() }} to {{ $i->ends_on->toInstitutionalDate() }}</div></td>
                     <td>{{ $programmeName }}</td>
                     <td class="text-end">{{ number_format($i->baseline, 0) }}</td>
-                    <td class="text-end">@if($p['current'] === null) Unavailable @else {{ number_format($p['current'], floor($p['current']) === $p['current'] ? 0 : 2) }} <span class="text-xs text-muted-foreground">{{ $i->unit }}</span> @endif</td>
+                    <td class="text-end">@if($p['current'] === null) Unavailable @elseif(is_string($p['current'])) {{ $p['current'] }} @else {{ number_format($p['current'], floor($p['current']) === $p['current'] ? 0 : 2) }} <span class="text-xs text-muted-foreground">{{ $i->unit }}</span> @endif</td>
                     <td class="text-end">{{ number_format($i->target, 0) }}</td>
                     <td>@if($p['percent'] !== null)<div class="h-2 rounded bg-muted"><div class="h-2 rounded bg-primary" style="width: {{ min(100, $p['percent']) }}%"></div></div><div class="text-xs text-muted-foreground mt-1">{{ $p['percent'] }}% of target, {{ $p['time_percent'] }}% of time</div>@endif</td>
                     <td class="{{ in_array($p['status'], ['behind', 'missed'], true) ? 'text-destructive' : '' }}">{{ $i->status === 'archived' ? 'Archived' : $verdict[$p['status']] }}</td>
