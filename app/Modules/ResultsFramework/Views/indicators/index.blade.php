@@ -12,6 +12,7 @@
         </div>
         <div class="flex gap-2">
             <a class="kt-btn kt-btn-sm kt-btn-outline" href="{{ route('results-framework.report') }}">Report (CSV)</a>
+            <a class="kt-btn kt-btn-sm kt-btn-outline" href="{{ route('results-framework.report', ['format' => 'print']) }}">Print report</a>
             <a class="kt-btn kt-btn-sm kt-btn-outline" href="{{ route('results-framework.report', ['format' => 'pdf']) }}">Report (PDF)</a>
         </div>
     </div>
@@ -37,7 +38,7 @@
                 @foreach($group as $row)
                 @php $i = $row['indicator']; $p = $row['progress']; @endphp
                 <tr class="{{ $i->status === 'archived' ? 'text-muted-foreground' : '' }}">
-                    <td><a class="text-primary" href="{{ route('results-framework.indicators.show', $i->uuid) }}">{{ $i->name }}</a><div class="text-xs text-muted-foreground">{{ $i->starts_on->toInstitutionalDate() }} to {{ $i->ends_on->toInstitutionalDate() }}</div></td>
+                    <td><a class="text-primary" href="{{ route('results-framework.indicators.show', $i->uuid) }}">{{ $i->name }}</a><div class="text-xs text-muted-foreground">{{ $i->starts_on->toInstitutionalDate() }} to {{ $i->ends_on->toInstitutionalDate() }}</div>@if($row['hiddenBreakdowns'])<div class="text-xs text-muted-foreground">{{ \App\Modules\ResultsFramework\Services\BreakdownService::HIDDEN_NOTE }}</div>@endif</td>
                     <td>{{ $programmeName }}</td>
                     <td class="text-end">{{ number_format($i->baseline, 0) }}</td>
                     <td class="text-end">@if($p['current'] === null) Unavailable @elseif(is_string($p['current'])) {{ $p['current'] }} @else {{ number_format($p['current'], floor($p['current']) === $p['current'] ? 0 : 2) }} <span class="text-xs text-muted-foreground">{{ $i->unit }}</span> @endif</td>

@@ -86,6 +86,10 @@ final class MeasureRegistry
 
     public function canSeeExactValue(?string $key, User $viewer): bool
     {
+        if ($key === null) {
+            return true;
+        }
+
         return ($this->measures[$key][0]->module ?? null) !== 'beneficiaries' || $viewer->can('beneficiaries.view');
     }
 

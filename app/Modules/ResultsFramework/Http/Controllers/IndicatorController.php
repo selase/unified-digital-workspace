@@ -25,11 +25,17 @@ use Symfony\Component\HttpFoundation\Response;
 
 final class IndicatorController extends Controller
 {
-    public function index(Request $request, IndicatorService $indicators, MeasureRegistry $measures): View
+    public function index(Request $request, IndicatorService $indicators, MeasureRegistry $measures, BreakdownService $breakdowns): View
     {
         $tenantId = $this->allow($request, 'results.view');
+        $viewer = $request->user();
+        $maySeeExact = $viewer->can('beneficiaries.view');
         $rows = ResultIndicator::query()->where('tenant_id', $tenantId)->orderByRaw("case status when 'active' then 0 else 1 end")->with(['programme', 'tenant'])->orderBy('programme_id')->orderBy('name')->get()
-            ->map(fn (ResultIndicator $indicator): array => ['indicator' => $indicator, 'progress' => $indicators->progress($indicator, $request->user())]);
+            ->map(fn (ResultIndicator $indicator): array => [
+                'indicator' => $indicator,
+                'progress' => $indicators->progress($indicator, $viewer),
+                'hiddenBreakdowns' => ! $maySeeExact && in_array(null, $breakdowns->allForIndicator($indicator, $viewer), true),
+            ]);
 
         return view('results-framework::indicators.index', [
             'rows' => $rows->groupBy(fn (array $row): string => $row['indicator']->programmeName())->sortKeys(),
@@ -128,8 +134,14 @@ final class IndicatorController extends Controller
         $rows = $indicators->reportRows($tenantId, $request->user());
         $name = 'indicator-report-'.today()->toDateString();
 
-        if ($request->query('format') === 'pdf') {
-            $output = Pdf::loadView('results-framework::pdf.report', ['rows' => $rows, 'organisation' => (string) Tenant::query()->whereKey($tenantId)->value('name')])->setPaper('a4', 'landscape')->output();
+        $format = $request->query('format');
+        if (in_array($format, ['print', 'pdf'], true)) {
+            $report = ['rows' => $rows, 'organisation' => (string) Tenant::query()->whereKey($tenantId)->value('name')];
+            if ($format === 'print') {
+                return response()->view('results-framework::pdf.report', $report + ['print' => true]);
+            }
+
+            $output = Pdf::loadView('results-framework::pdf.report', $report)->setPaper('a4', 'landscape')->output();
 
             return response($output, 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline; filename="'.$name.'.pdf"']);
         }

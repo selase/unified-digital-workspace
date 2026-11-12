@@ -5,6 +5,9 @@
             @foreach($breakdowns as $dimension => $buckets)
                 <div>
                     <h3 class="font-semibold">{{ \App\Modules\ResultsFramework\Support\Dimensions::LABELS[$dimension] }}</h3>
+                    @if($buckets === null)
+                        <p class="text-xs text-muted-foreground">{{ \App\Modules\ResultsFramework\Services\BreakdownService::HIDDEN_NOTE }}</p>
+                    @else
                     <dl class="mt-2 space-y-2">
                         @foreach($buckets as $bucket => $value)
                             <div class="flex justify-between gap-2">
@@ -13,6 +16,7 @@
                             </div>
                         @endforeach
                     </dl>
+                    @endif
                 </div>
             @endforeach
         </div>

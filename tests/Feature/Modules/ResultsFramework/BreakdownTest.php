@@ -75,9 +75,13 @@ test('manual breakdowns validate each total and persist with the latest reading'
     $this->post($url, $fields)->assertSessionHas('success');
 
     $breakdowns = app(BreakdownService::class);
-    expect($breakdowns->forIndicator($indicator, $user, 'gender'))->toBe(['female' => '<3', 'male' => 3.0])
+    expect($breakdowns->forIndicator($indicator, $user, 'gender'))->toBe([])
         ->and($breakdowns->forIndicator($indicator, $user, 'location'))->toBe(['North clinic' => 5.0]);
-    $this->get(route('results-framework.indicators.show', $indicator->uuid))->assertOk()->assertSee('North clinic')->assertSee('<3');
+    $this->get(route('results-framework.indicators.show', $indicator->uuid))->assertOk()->assertSee('North clinic')->assertSee('Hidden to protect small groups');
+    $service->record($indicator, 8, today(), null, null, ['gender' => [
+        ['bucket' => 'female', 'value' => 3], ['bucket' => 'male', 'value' => 5], ['bucket' => 'other', 'value' => 0],
+    ]]);
+    expect($breakdowns->forIndicator($indicator, $user, 'gender'))->toBe(['female' => 3.0, 'male' => 5.0, 'other' => 0.0]);
     $service->record($indicator, 8, today(), null, null);
     expect($breakdowns->forIndicator($indicator, $user, 'gender'))->toBe([]);
 });
@@ -88,8 +92,8 @@ test('restricted totals and buckets stay masked in indicator views and exports',
     $service = app(IndicatorService::class);
     $from = CarbonImmutable::parse('2026-01-01');
     $end = CarbonImmutable::parse('2026-01-31');
-    foreach (['female', 'female', 'male', 'male', 'male'] as $gender) {
-        makeBreakdownBeneficiary($tenant, ['gender' => $gender], $gender === 'female' ? 'food' : 'medical');
+    foreach (['male', 'male', 'female', 'female', 'female'] as $gender) {
+        makeBreakdownBeneficiary($tenant, ['gender' => $gender], $gender === 'male' ? 'food' : 'medical');
     }
     $indicator = $service->create($tenant->id, 'Filtered total', 10, $from, $end, [
         'measure_key' => 'beneficiaries.people_reached', 'measure_filters' => ['service_type' => 'food'],
@@ -99,15 +103,21 @@ test('restricted totals and buckets stay masked in indicator views and exports',
     $show = route('results-framework.indicators.show', $indicator->uuid);
     $this->get($show)->assertOk()->assertSee('<3')->assertDontSee('20%')
         ->assertViewHas('progress', fn (array $progress): bool => $progress['current'] === '<3' && $progress['percent'] === null);
-    $this->get(route('results-framework.index'))->assertOk()->assertSee('<3')->assertDontSee('20% of target');
-    expect(app(BreakdownService::class)->forIndicator($all, $user, 'gender'))->toBe(['female' => '<3', 'male' => 3.0]);
+    $this->get(route('results-framework.index'))->assertOk()->assertSee('<3')->assertDontSee('20% of target')
+        ->assertSee('Hidden to protect small groups');
+    $this->get(route('results-framework.indicators.show', $all->uuid))->assertOk()
+        ->assertSee('Hidden to protect small groups')->assertDontSee('Female')->assertDontSee('Male');
+    $this->get(route('results-framework.report', ['format' => 'print']))->assertOk()
+        ->assertSee('Hidden to protect small groups')->assertDontSee('Female:')->assertDontSee('Male:');
+    expect(app(MeasureRegistry::class)->canSeeExactValue(null, $user))->toBeTrue();
+    expect(app(BreakdownService::class)->forIndicator($all, $user, 'gender'))->toBe([]);
     $csv = $this->get(route('results-framework.report'))->assertOk()->streamedContent();
-    expect($csv)->toContain('<3', 'Female: <3', 'Male: 3')->not->toContain('Female: 2');
+    expect($csv)->toContain('<3', 'Hidden to protect small groups')->not->toContain('Female:', 'Male:');
 
     $renderer = Pdf::getFacadeRoot();
     Pdf::shouldReceive('loadView')->once()->andReturnUsing(function (string $view, array $data) use ($renderer): mixed {
         $html = html_entity_decode(view($view, $data)->render());
-        expect($html)->toContain('<3', 'Female: <3', 'Male: 3')->not->toContain('Female: 2');
+        expect($html)->toContain('<3', 'Hidden to protect small groups')->not->toContain('Female:', 'Male:');
 
         return $renderer->loadView($view, $data);
     });
@@ -116,12 +126,13 @@ test('restricted totals and buckets stay masked in indicator views and exports',
     expect($pdfContent)->toStartWith('%PDF');
     preg_match_all('/\bstream\r?\n(.*?)\r?\nendstream\b/s', $pdfContent, $matches);
     $streams = collect($matches[1])->map(fn (string $stream): string => @gzuncompress($stream) ?: $stream)->implode('');
-    expect($streams)->toContain(mb_convert_encoding('<3', 'UTF-16BE', 'UTF-8'));
+    expect($streams)->toContain(mb_convert_encoding('<3', 'UTF-16BE', 'UTF-8'))
+        ->not->toContain(mb_convert_encoding('Female:', 'UTF-16BE', 'UTF-8'), mb_convert_encoding('Male:', 'UTF-16BE', 'UTF-8'));
 
     Permission::firstOrCreate(['name' => 'beneficiaries.view', 'guard_name' => 'web'], ['category' => 'beneficiaries', 'uuid' => (string) Str::uuid()]);
     $user->givePermissionTo('beneficiaries.view');
     app(PermissionRegistrar::class)->forgetCachedPermissions();
-    expect(app(BreakdownService::class)->forIndicator($all, $user, 'gender'))->toBe(['female' => 2.0, 'male' => 3.0]);
+    expect(app(BreakdownService::class)->forIndicator($all, $user, 'gender'))->toBe(['male' => 2.0, 'female' => 3.0]);
     $this->get($show)->assertOk()->assertViewHas('progress', fn (array $progress): bool => $progress['current'] === 2.0);
-    expect($this->get(route('results-framework.report'))->assertOk()->streamedContent())->toContain('Female: 2');
+    expect($this->get(route('results-framework.report'))->assertOk()->streamedContent())->toContain('Male: 2', 'Female: 3');
 });

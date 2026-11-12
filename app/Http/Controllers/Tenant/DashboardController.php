@@ -129,10 +129,11 @@ final class DashboardController extends Controller
         }
 
         // Results Framework telemetry
-        if ($moduleManager->isEnabledForTenant('results-framework', $tenant) && auth()->user()?->can('results.view')) {
+        $viewer = auth()->user();
+        if ($viewer?->can('results.view') && $moduleManager->isEnabledForTenant('results-framework', $tenant)) {
             try {
                 $melIndicators = app(\App\Modules\ResultsFramework\Services\IndicatorService::class);
-                $melProgress = \App\Modules\ResultsFramework\Models\ResultIndicator::query()->where('tenant_id', $tenant->id)->where('status', 'active')->get()->map(fn ($indicator): string => $melIndicators->progress($indicator)['status']);
+                $melProgress = \App\Modules\ResultsFramework\Models\ResultIndicator::query()->where('tenant_id', $tenant->id)->where('status', 'active')->get()->map(fn ($indicator): string => $melIndicators->progress($indicator, $viewer)['status']);
                 $moduleCards['results-framework'] = [
                     'name' => 'Results Framework',
                     'route' => Route::has('results-framework.index') ? route('results-framework.index') : '#',

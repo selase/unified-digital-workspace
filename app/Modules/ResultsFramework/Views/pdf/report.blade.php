@@ -13,6 +13,10 @@
     </style>
 </head>
 <body>
+    @if($print ?? false)
+        <style>@media print { .print-action { display: none; } }</style>
+        <button class="print-action" type="button" onclick="window.print()">Print report</button>
+    @endif
     <h1>{{ $organisation }}: {{ $rows[0][0] }}</h1>
     <div class="muted">{{ $rows[0][1] }}</div>
     <table>

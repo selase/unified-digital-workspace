@@ -95,10 +95,10 @@ final class IndicatorService
      *
      * @return array{current: float|string|null, percent: ?int, time_percent: int, status: string}
      */
-    public function progress(ResultIndicator $indicator, ?User $viewer = null): array
+    public function progress(ResultIndicator $indicator, User $viewer): array
     {
         $current = $this->current($indicator);
-        if ($current !== null && $viewer !== null) {
+        if ($current !== null) {
             $current = Dimensions::protect($current, $this->measures->canSeeExactValue($indicator->measure_key, $viewer));
         }
 
@@ -134,6 +134,12 @@ final class IndicatorService
             $progress = $this->progress($indicator, $viewer);
             $breakdownLines = [];
             foreach ($this->breakdowns->allForIndicator($indicator, $viewer) as $dimension => $buckets) {
+                if ($buckets === null) {
+                    $breakdownLines[] = Dimensions::LABELS[$dimension].': '.BreakdownService::HIDDEN_NOTE;
+
+                    continue;
+                }
+
                 foreach ($buckets as $bucket => $value) {
                     $breakdownLines[] = Dimensions::LABELS[$dimension].' / '.Dimensions::bucketLabel($dimension, (string) $bucket).': '.$value;
                 }

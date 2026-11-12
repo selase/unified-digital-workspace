@@ -22,7 +22,7 @@ function indicator(Tenant $tenant, array $overrides = []): ResultIndicator
 
 describe('Indicator rules', function (): void {
     test('creation is validated and a manual indicator uses its latest reading', function (): void {
-        [, $tenant] = createMonitoringContext();
+        [$user, $tenant] = createMonitoringContext();
         $service = app(IndicatorService::class);
 
         expect(fn () => $service->create($tenant->id, 'Bad dates', 10, CarbonImmutable::today(), CarbonImmutable::today()->subDay()))->toThrow(DomainException::class, 'end after')
@@ -33,7 +33,7 @@ describe('Indicator rules', function (): void {
         expect($service->current($indicator))->toBe(0.0);
         $service->record($indicator, 300, CarbonImmutable::today()->subDays(30), null, null);
         $service->record($indicator, 450, CarbonImmutable::today()->subDays(2), 'After the term started', null);
-        expect($service->current($indicator))->toBe(450.0)->and($service->progress($indicator)['percent'])->toBe(45)
+        expect($service->current($indicator))->toBe(450.0)->and($service->progress($indicator, $user)['percent'])->toBe(45)
             ->and(fn () => $service->record($indicator, 5, CarbonImmutable::today()->addDay(), null, null))->toThrow(DomainException::class, 'future');
 
         $indicator->update(['status' => 'archived']);
@@ -41,7 +41,7 @@ describe('Indicator rules', function (): void {
     });
 
     test('status is achieved, on track, behind or missed', function (): void {
-        [, $tenant] = createMonitoringContext();
+        [$user, $tenant] = createMonitoringContext();
         $service = app(IndicatorService::class);
         $today = CarbonImmutable::today();
 
@@ -54,8 +54,8 @@ describe('Indicator rules', function (): void {
         $missed = indicator($tenant, ['name' => 'D', 'starts_on' => $today->subDays(60), 'ends_on' => $today->subDay()]);
         $service->record($missed, 200, $today->subDays(5), null, null);
 
-        expect($service->progress($achieved)['status'])->toBe('achieved')->and($service->progress($onTrack)['status'])->toBe('on_track')
-            ->and($service->progress($behind)['status'])->toBe('behind')->and($service->progress($missed)['status'])->toBe('missed');
+        expect($service->progress($achieved, $user)['status'])->toBe('achieved')->and($service->progress($onTrack, $user)['status'])->toBe('on_track')
+            ->and($service->progress($behind, $user)['status'])->toBe('behind')->and($service->progress($missed, $user)['status'])->toBe('missed');
     });
 
     test('calculated indicators read other modules and refuse hand-entered readings', function (): void {
@@ -220,9 +220,9 @@ test('indicator edits round trip the definition and verification and preserve de
     $service = app(IndicatorService::class);
     $model = indicator($tenant, ['name' => 'Malaria cases', 'baseline' => 400, 'target' => 100]);
     $service->record($model, 250, today()->subDay(), null, null);
-    expect($service->progress($model)['status'])->toBe('on_track');
+    expect($service->progress($model, $user)['status'])->toBe('on_track');
     $service->record($model, 100, today(), null, null);
-    expect($service->progress($model)['status'])->toBe('achieved');
+    expect($service->progress($model, $user)['status'])->toBe('achieved');
 
     $programme = app(App\Modules\ResultsFramework\Services\ProgrammeService::class)->create($tenant->id, 'Health');
     $node = app(App\Modules\ResultsFramework\Services\ResultChainService::class)->add($programme, 'outcome', 'Fewer cases');

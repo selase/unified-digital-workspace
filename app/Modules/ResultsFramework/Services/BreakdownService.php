@@ -14,15 +14,17 @@ use DomainException;
 
 final class BreakdownService
 {
+    public const HIDDEN_NOTE = 'Hidden to protect small groups';
+
     public function __construct(private MeasureRegistry $measures) {}
 
-    /** @return array<string, float|string> */
+    /** @return array<string, float> */
     public function forIndicator(ResultIndicator $indicator, User $viewer, string $dimension): array
     {
         return $this->forDimensions($indicator, $viewer, [$dimension])[$dimension] ?? [];
     }
 
-    /** @return array<string, array<string, float|string>> */
+    /** @return array<string, array<string, float>|null> */
     public function allForIndicator(ResultIndicator $indicator, User $viewer): array
     {
         return $this->forDimensions($indicator, $viewer, array_keys(Dimensions::LABELS));
@@ -82,18 +84,35 @@ final class BreakdownService
 
     /**
      * @param  list<string>  $dimensions
-     * @return array<string, array<string, float|string>>
+     * @return array<string, array<string, float>|null>
      */
     private function forDimensions(ResultIndicator $indicator, User $viewer, array $dimensions): array
     {
-        $maySeeExact = $viewer->can('beneficiaries.view');
+        $result = $this->collectBuckets($indicator, $dimensions);
+        if (! $viewer->can('beneficiaries.view')) {
+            foreach ($result as $dimension => $buckets) {
+                if (array_any($buckets, fn (float $value): bool => $value > 0 && $value < 3)) {
+                    $result[$dimension] = null;
+                }
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * @param  list<string>  $dimensions
+     * @return array<string, array<string, float>>
+     */
+    private function collectBuckets(ResultIndicator $indicator, array $dimensions): array
+    {
         $result = [];
 
         if ($indicator->measure_key === null) {
             $reading = $indicator->readings()->where('tenant_id', $indicator->tenant_id)->first();
             if ($reading !== null) {
                 foreach ($reading->breakdowns()->where('tenant_id', $indicator->tenant_id)->whereIn('dimension', $dimensions)->orderBy('id')->get() as $row) {
-                    $result[$row->dimension][$row->bucket] = Dimensions::protect($row->value, $maySeeExact);
+                    $result[$row->dimension][$row->bucket] = $row->value;
                 }
             }
 
@@ -107,7 +126,7 @@ final class BreakdownService
             foreach (array_intersect($dimensions, $supported) as $dimension) {
                 $buckets = $this->measures->breakdown($tenant, $indicator->measure_key, $dimension, $query);
                 if ($buckets !== []) {
-                    $result[$dimension] = array_map(fn (float $value): float|string => Dimensions::protect($value, $maySeeExact), $buckets);
+                    $result[$dimension] = $buckets;
                 }
             }
         } catch (MeasureUnavailable) {
