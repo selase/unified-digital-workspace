@@ -30,6 +30,7 @@
         <div class="kt-card-content grid grid-cols-1 md:grid-cols-4 gap-3">
             <input class="kt-input md:col-span-2" name="name" value="{{ old('name') }}" placeholder="e.g. Children given a school meal" required>
             <select class="kt-select" name="programme_id" aria-label="Programme"><option value="">Unassigned</option>@foreach($programmes as $programme)<option value="{{ $programme->id }}" @selected((string) old('programme_id') === (string) $programme->id)>{{ $programme->name }}</option>@endforeach</select>
+            <select class="kt-select" name="result_id" aria-label="Result"><option value="">No result</option>@foreach($resultOptions as $result)<option value="{{ $result->id }}" @selected((string) old('result_id') === (string) $result->id)>{{ $programmes->find($result->programme_id)?->name }} — {{ $result->title }}</option>@endforeach</select>
             <input class="kt-input" name="unit" value="{{ old('unit', 'people') }}" placeholder="Unit (people, hours, GHS)">
             <select class="kt-select md:col-span-2" name="source">@foreach($sources as $key => $label)<option value="{{ $key }}" @selected(old('source', 'manual') === $key)>{{ $label }}</option>@endforeach</select>
             <input class="kt-input" type="number" step="0.01" name="baseline" value="{{ old('baseline', 0) }}" placeholder="Starting figure">

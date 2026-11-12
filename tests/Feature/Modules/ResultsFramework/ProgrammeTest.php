@@ -30,6 +30,8 @@ test('programmes can be updated and closed and validate dates and tenant-local n
 
 test('the programme migration preserves legacy labels and assigns unlabelled indicators to General', function (): void {
     $migration = require app_path('Modules/ResultsFramework/Database/Migrations/2026_11_12_100200_create_rf_programmes.php');
+    $chainMigration = require app_path('Modules/ResultsFramework/Database/Migrations/2026_11_12_100300_create_rf_results.php');
+    $chainMigration->down();
     $migration->down();
     $db = DB::connection('tenant');
     $tenant = Tenant::factory()->create();
@@ -42,6 +44,7 @@ test('the programme migration preserves legacy labels and assigns unlabelled ind
     }
 
     $migration->up();
+    $chainMigration->up();
     $programmes = $db->table('rf_programmes')->where('tenant_id', $tenant->id)->pluck('id', 'name');
     expect($programmes->count())->toBe(2)
         ->and($db->table('rf_indicators')->whereIn('id', $ids)->orderBy('id')->pluck('programme_id')->all())

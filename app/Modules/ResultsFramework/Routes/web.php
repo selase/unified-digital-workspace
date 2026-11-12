@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Modules\ResultsFramework\Http\Controllers\IndicatorController;
 use App\Modules\ResultsFramework\Http\Controllers\ProgrammeController;
+use App\Modules\ResultsFramework\Http\Controllers\ResultNodeController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [IndicatorController::class, 'index'])->name('index');
@@ -15,3 +16,7 @@ Route::get('/report', [IndicatorController::class, 'report'])->name('report');
 
 Route::resource('programmes', ProgrammeController::class)->except('destroy');
 Route::post('programmes/{programme}/close', [ProgrammeController::class, 'close'])->name('programmes.close');
+
+Route::post('programmes/{programme}/results', [ResultNodeController::class, 'store'])->name('programmes.results.store');
+Route::patch('programmes/{programme}/results/{result}', [ResultNodeController::class, 'move'])->name('programmes.results.move');
+Route::delete('programmes/{programme}/results/{result}', [ResultNodeController::class, 'destroy'])->name('programmes.results.destroy');

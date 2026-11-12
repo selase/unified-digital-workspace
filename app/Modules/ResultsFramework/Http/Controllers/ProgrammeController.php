@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use App\Modules\ResultsFramework\Http\Requests\SaveProgrammeRequest;
 use App\Modules\ResultsFramework\Models\ResultProgramme;
 use App\Modules\ResultsFramework\Services\ProgrammeService;
+use App\Modules\ResultsFramework\Services\ResultChainService;
 use App\Services\Tenancy\TenantContext;
 use DomainException;
 use Illuminate\Contracts\View\View;
@@ -44,11 +45,19 @@ final class ProgrammeController extends Controller
         return redirect()->route('results-framework.programmes.show', $programme->uuid);
     }
 
-    public function show(Request $request, string $programme): View
+    public function show(Request $request, string $programme, ResultChainService $chain): View
     {
         abort_unless($request->user()?->can('results.view'), 403);
 
-        return view('results-framework::programmes.show', ['programme' => $this->find($programme)->load('indicators')]);
+        $model = $this->find($programme);
+        $manager = $request->user()?->can('results.manage');
+
+        return view('results-framework::programmes.show', [
+            'programme' => $model->load(['indicators' => fn ($query) => $query->where('tenant_id', $model->tenant_id)]),
+            'chain' => $chain->tree($model),
+            'resultOptions' => $manager ? $chain->nodes($model)->get() : collect(),
+            'projects' => $manager ? $chain->projects($model) : collect(),
+        ]);
     }
 
     public function edit(Request $request, string $programme): View

@@ -9,6 +9,7 @@ use App\Models\Tenant;
 use App\Modules\ResultsFramework\Http\Requests\AddReadingRequest;
 use App\Modules\ResultsFramework\Http\Requests\SaveIndicatorRequest;
 use App\Modules\ResultsFramework\Models\ResultIndicator;
+use App\Modules\ResultsFramework\Models\ResultNode;
 use App\Modules\ResultsFramework\Models\ResultProgramme;
 use App\Modules\ResultsFramework\Services\IndicatorService;
 use App\Services\Tenancy\TenantContext;
@@ -31,6 +32,7 @@ final class IndicatorController extends Controller
         return view('results-framework::indicators.index', [
             'rows' => $rows->groupBy(fn (array $row): string => $row['indicator']->programmeName())->sortKeys(),
             'programmes' => ResultProgramme::query()->where('tenant_id', $tenantId)->orderBy('name')->get(),
+            'resultOptions' => ResultNode::query()->where('tenant_id', $tenantId)->orderBy('title')->get(),
             'counts' => $rows->where('indicator.status', 'active')->countBy(fn (array $row): string => $row['progress']['status']),
             'sources' => ResultIndicator::SOURCES,
         ]);
@@ -45,7 +47,7 @@ final class IndicatorController extends Controller
                 (float) $request->validated('target'),
                 Carbon::parse($request->validated('starts_on')),
                 Carbon::parse($request->validated('ends_on')),
-                $request->safe()->only(['description', 'programme', 'programme_id', 'unit', 'source', 'baseline']),
+                $request->safe()->only(['description', 'programme', 'programme_id', 'result_id', 'unit', 'source', 'baseline']),
             );
         } catch (DomainException $error) {
             return back()->withInput()->with('error', $error->getMessage());

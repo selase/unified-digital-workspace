@@ -49,6 +49,11 @@ final class ResultIndicator extends Model
         return $this->getRelationValue('programme')?->name ?? $this->getAttribute('programme') ?? 'General';
     }
 
+    public function node(): BelongsTo
+    {
+        return $this->belongsTo(ResultNode::class, 'result_id');
+    }
+
     protected function casts(): array
     {
         return ['baseline' => 'float', 'target' => 'float', 'starts_on' => 'date', 'ends_on' => 'date'];

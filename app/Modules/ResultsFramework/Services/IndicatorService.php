@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\ResultsFramework\Services;
 
 use App\Modules\ResultsFramework\Models\ResultIndicator;
+use App\Modules\ResultsFramework\Models\ResultNode;
 use App\Modules\ResultsFramework\Models\ResultProgramme;
 use App\Modules\ResultsFramework\Models\ResultReading;
 use Carbon\CarbonInterface;
@@ -43,12 +44,18 @@ final class IndicatorService
             }
         }
 
+        if (isset($details['result_id']) && (! $programme || ! ResultNode::query()->where('tenant_id', $tenantId)
+            ->where('programme_id', $programme->id)->whereKey($details['result_id'])->exists())) {
+            throw new DomainException('Choose a result from this indicator’s programme.');
+        }
+
         return ResultIndicator::query()->create([
             'tenant_id' => $tenantId,
             'name' => $name,
             'description' => $details['description'] ?? null,
             'programme' => $programme?->name ?? $details['programme'] ?? null,
             'programme_id' => $programme?->id,
+            'result_id' => $details['result_id'] ?? null,
             'unit' => ($details['unit'] ?? null) ?: 'people',
             'source' => $source,
             'baseline' => $baseline,
