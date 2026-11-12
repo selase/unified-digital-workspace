@@ -12,6 +12,7 @@ use App\Modules\ResultsFramework\Models\ResultIndicator;
 use App\Modules\ResultsFramework\Models\ResultNode;
 use App\Modules\ResultsFramework\Models\ResultProgramme;
 use App\Modules\ResultsFramework\Services\IndicatorService;
+use App\Modules\ResultsFramework\Services\MeasureRegistry;
 use App\Services\Tenancy\TenantContext;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
@@ -23,10 +24,10 @@ use Symfony\Component\HttpFoundation\Response;
 
 final class IndicatorController extends Controller
 {
-    public function index(Request $request, IndicatorService $indicators): View
+    public function index(Request $request, IndicatorService $indicators, MeasureRegistry $measures): View
     {
         $tenantId = $this->allow($request, 'results.view');
-        $rows = ResultIndicator::query()->where('tenant_id', $tenantId)->orderByRaw("case status when 'active' then 0 else 1 end")->with('programme')->orderBy('programme_id')->orderBy('name')->get()
+        $rows = ResultIndicator::query()->where('tenant_id', $tenantId)->orderByRaw("case status when 'active' then 0 else 1 end")->with(['programme', 'tenant'])->orderBy('programme_id')->orderBy('name')->get()
             ->map(fn (ResultIndicator $indicator): array => ['indicator' => $indicator, 'progress' => $indicators->progress($indicator)]);
 
         return view('results-framework::indicators.index', [
@@ -34,7 +35,7 @@ final class IndicatorController extends Controller
             'programmes' => ResultProgramme::query()->where('tenant_id', $tenantId)->orderBy('name')->get(),
             'resultOptions' => ResultNode::query()->where('tenant_id', $tenantId)->orderBy('title')->get(),
             'counts' => $rows->where('indicator.status', 'active')->countBy(fn (array $row): string => $row['progress']['status']),
-            'sources' => ResultIndicator::SOURCES,
+            'measures' => $request->user()->can('results.manage') ? $measures->definitions(Tenant::query()->findOrFail($tenantId)) : [],
         ]);
     }
 
@@ -47,7 +48,7 @@ final class IndicatorController extends Controller
                 (float) $request->validated('target'),
                 Carbon::parse($request->validated('starts_on')),
                 Carbon::parse($request->validated('ends_on')),
-                $request->safe()->only(['description', 'definition', 'means_of_verification', 'programme_id', 'result_id', 'unit', 'source', 'baseline']),
+                $request->indicatorFields(),
             );
         } catch (DomainException $error) {
             return back()->withInput()->with('error', $error->getMessage());
@@ -56,7 +57,7 @@ final class IndicatorController extends Controller
         return redirect()->route('results-framework.indicators.show', $indicator->uuid)->with('success', 'Indicator created.');
     }
 
-    public function edit(Request $request, string $indicator): View
+    public function edit(Request $request, MeasureRegistry $measures, string $indicator): View
     {
         $tenantId = $this->allow($request, 'results.manage');
         $model = ResultIndicator::query()->where('tenant_id', $tenantId)->where('uuid', $indicator)->firstOrFail();
@@ -65,7 +66,8 @@ final class IndicatorController extends Controller
             'indicator' => $model,
             'programmes' => ResultProgramme::query()->where('tenant_id', $tenantId)->orderBy('name')->get(),
             'resultOptions' => ResultNode::query()->where('tenant_id', $tenantId)->orderBy('title')->get(),
-            'sources' => ResultIndicator::SOURCES,
+            'measures' => $measures->definitions(Tenant::query()->findOrFail($tenantId)),
+            'measureLabel' => $model->measure_key === null ? null : $measures->label($model->measure_key),
         ]);
     }
 
@@ -74,7 +76,7 @@ final class IndicatorController extends Controller
         $model = ResultIndicator::query()->where('tenant_id', $this->tenantId($request))->where('uuid', $indicator)->firstOrFail();
 
         try {
-            $indicators->update($model, $request->validated());
+            $indicators->update($model, $request->indicatorFields($model->measure_key));
         } catch (DomainException $error) {
             return back()->withInput()->withErrors(['indicator' => $error->getMessage()]);
         }
@@ -82,7 +84,7 @@ final class IndicatorController extends Controller
         return redirect()->route('results-framework.indicators.show', $indicator)->with('success', 'Indicator updated.');
     }
 
-    public function show(Request $request, IndicatorService $indicators, string $indicator): View
+    public function show(Request $request, IndicatorService $indicators, MeasureRegistry $measures, string $indicator): View
     {
         $tenantId = $this->allow($request, 'results.view');
         $model = ResultIndicator::query()->where('tenant_id', $tenantId)->where('uuid', $indicator)->firstOrFail();
@@ -91,7 +93,7 @@ final class IndicatorController extends Controller
             'indicator' => $model->load('programme'),
             'progress' => $indicators->progress($model),
             'readings' => $model->readings()->limit(50)->get(),
-            'sources' => ResultIndicator::SOURCES,
+            'measureLabel' => $model->measure_key === null ? 'Enter readings by hand' : $measures->label($model->measure_key),
         ]);
     }
 

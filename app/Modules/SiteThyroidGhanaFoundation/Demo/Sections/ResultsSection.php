@@ -36,9 +36,9 @@ final class ResultsSection implements DemoSection
         $surgeries = $service->create($tenantId, 'Demo: Subsidised surgeries completed', 40, $start, $end, ['programme_id' => $this->demoProgramme($tenant, 'Subsidised surgery'), 'unit' => 'operations']);
         $service->record($surgeries, 9, today()->subDays(45), 'Phase 2, first cohort', null);
 
-        $service->create($tenantId, 'Demo: People reached with services', 500, $start, $end, ['programme_id' => $this->demoProgramme($tenant, 'All programmes'), 'unit' => 'people', 'source' => 'beneficiaries_reached']);
-        $service->create($tenantId, 'Demo: Volunteer hours given', 800, $start, $end, ['programme_id' => $this->demoProgramme($tenant, 'Volunteering'), 'unit' => 'hours', 'source' => 'volunteer_hours']);
-        $service->create($tenantId, 'Demo: Donations raised', 250000, $start, $end, ['programme_id' => $this->demoProgramme($tenant, 'Fundraising'), 'unit' => 'GHS', 'source' => 'donations_total']);
+        $service->create($tenantId, 'Demo: People reached with services', 500, $start, $end, ['programme_id' => $this->demoProgramme($tenant, 'All programmes'), 'unit' => 'people', 'measure_key' => 'beneficiaries.people_reached'], allowDisabledMeasure: true);
+        $service->create($tenantId, 'Demo: Volunteer hours given', 800, $start, $end, ['programme_id' => $this->demoProgramme($tenant, 'Volunteering'), 'unit' => 'hours', 'measure_key' => 'volunteers.hours_approved'], allowDisabledMeasure: true);
+        $service->create($tenantId, 'Demo: Donations raised', 250000, $start, $end, ['programme_id' => $this->demoProgramme($tenant, 'Fundraising'), 'unit' => 'GHS', 'measure_key' => 'donations.amount_raised'], allowDisabledMeasure: true);
     }
 
     public function remove(Tenant $tenant, CarbonImmutable $since): int

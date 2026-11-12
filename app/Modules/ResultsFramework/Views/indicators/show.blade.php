@@ -3,12 +3,12 @@
 @section('title', $indicator->name)
 
 @section('content')
-@php $verdict = ['achieved' => 'Achieved', 'on_track' => 'On track', 'behind' => 'Behind', 'missed' => 'Missed']; @endphp
+@php $verdict = ['achieved' => 'Achieved', 'on_track' => 'On track', 'behind' => 'Behind', 'missed' => 'Missed', 'unavailable' => 'Unavailable']; @endphp
 <div class="flex flex-col gap-6">
     <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
             <h1 class="text-xl font-bold text-foreground">{{ $indicator->name }}</h1>
-            <p class="text-xs text-muted-foreground">{{ $indicator->programmeName() }} · {{ $sources[$indicator->source] }} · {{ $indicator->starts_on->toInstitutionalDate() }} to {{ $indicator->ends_on->toInstitutionalDate() }}</p>
+            <p class="text-xs text-muted-foreground">{{ $indicator->programmeName() }} · {{ $measureLabel }} · {{ $indicator->starts_on->toInstitutionalDate() }} to {{ $indicator->ends_on->toInstitutionalDate() }}</p>
         </div>
         <div class="flex gap-2">
             <a class="kt-btn kt-btn-sm kt-btn-outline" href="{{ route('results-framework.index') }}">All indicators</a>
@@ -29,14 +29,18 @@
 
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div class="rounded-lg bg-muted/30 p-4"><div class="text-xs text-muted-foreground">Starting figure</div><div class="mt-1 text-lg font-semibold">{{ number_format($indicator->baseline, 0) }}</div></div>
-        <div class="rounded-lg bg-muted/30 p-4"><div class="text-xs text-muted-foreground">Now</div><div class="mt-1 text-lg font-semibold">{{ number_format($progress['current'], 0) }} {{ $indicator->unit }}</div></div>
+        <div class="rounded-lg bg-muted/30 p-4"><div class="text-xs text-muted-foreground">Now</div><div class="mt-1 text-lg font-semibold">@if($progress['current'] === null) Unavailable @else {{ number_format($progress['current'], floor($progress['current']) === $progress['current'] ? 0 : 2) }} {{ $indicator->unit }} @endif</div></div>
         <div class="rounded-lg bg-muted/30 p-4"><div class="text-xs text-muted-foreground">Target</div><div class="mt-1 text-lg font-semibold">{{ number_format($indicator->target, 0) }}</div></div>
         <div class="rounded-lg bg-muted/30 p-4"><div class="text-xs text-muted-foreground">Status</div><div class="mt-1 text-lg font-semibold">{{ $verdict[$progress['status']] }}</div></div>
     </div>
+    @if($progress['percent'] !== null)
     <div class="h-2 rounded bg-muted"><div class="h-2 rounded bg-primary" style="width: {{ min(100, $progress['percent']) }}%"></div></div>
     <p class="text-xs text-muted-foreground">{{ $progress['percent'] }}% of the way to the target with {{ $progress['time_percent'] }}% of the time used.@if($indicator->description) {{ $indicator->description }}@endif</p>
+    @else
+        <p class="text-xs text-muted-foreground">Progress is unavailable. Check that the source module and selected filters are still available.</p>
+    @endif
 
-    @if($indicator->source === 'manual')
+    @if($indicator->measure_key === null)
     @can('results.manage')
     <form method="POST" action="{{ route('results-framework.indicators.readings.store', $indicator->uuid) }}" class="kt-card">@csrf
         <div class="kt-card-header"><h3 class="kt-card-title">Add a reading</h3></div>
@@ -62,8 +66,8 @@
             </tbody>
         </table></div>
     </div>
-    @else
-    <div class="rounded-lg bg-muted/30 p-4 text-sm text-muted-foreground">This figure is worked out live from {{ $sources[$indicator->source] }} between the start and end dates, so there is nothing to type in.</div>
+    @elseif($progress['current'] !== null)
+    <div class="rounded-lg bg-muted/30 p-4 text-sm text-muted-foreground">This figure is worked out live from {{ $measureLabel }} between the start and end dates, so there is nothing to type in.</div>
     @endif
 </div>
 @endsection

@@ -15,14 +15,6 @@ final class ResultIndicator extends Model
     use BelongsToTenant;
     use HasUuid;
 
-    /** Where the current figure comes from. Manual indicators use the latest reading; the others are worked out from other modules. */
-    public const SOURCES = [
-        'manual' => 'Enter readings by hand',
-        'beneficiaries_reached' => 'People reached (Beneficiaries services)',
-        'volunteer_hours' => 'Volunteer hours (approved)',
-        'donations_total' => 'Donations raised',
-    ];
-
     public const STATUSES = ['active' => 'Active', 'archived' => 'Archived'];
 
     protected $table = 'rf_indicators';
@@ -31,7 +23,7 @@ final class ResultIndicator extends Model
     protected $guarded = ['id'];
 
     /** @var array<string, mixed> */
-    protected $attributes = ['status' => 'active', 'source' => 'manual', 'baseline' => 0, 'unit' => 'people'];
+    protected $attributes = ['status' => 'active', 'baseline' => 0, 'unit' => 'people'];
 
     /** @return HasMany<ResultReading, $this> */
     public function readings(): HasMany
@@ -56,6 +48,6 @@ final class ResultIndicator extends Model
 
     protected function casts(): array
     {
-        return ['baseline' => 'float', 'target' => 'float', 'starts_on' => 'date', 'ends_on' => 'date'];
+        return ['baseline' => 'float', 'target' => 'float', 'starts_on' => 'date', 'ends_on' => 'date', 'measure_filters' => 'array'];
     }
 }

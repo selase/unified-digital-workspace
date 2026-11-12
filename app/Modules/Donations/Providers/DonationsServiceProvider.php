@@ -7,6 +7,7 @@ namespace App\Modules\Donations\Providers;
 use App\Modules\Concerns\ModuleServiceProvider;
 use App\Modules\Donations\Console\ChargePledges;
 use App\Modules\Donations\Listeners\RecordOnlineGift;
+use App\Modules\Donations\Services\DonationResultMeasures;
 use App\Modules\Finance\Events\GatewayChargeSucceeded;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Route;
@@ -21,6 +22,11 @@ final class DonationsServiceProvider extends ModuleServiceProvider
     public function getModuleName(): string
     {
         return 'Donations';
+    }
+
+    protected function registerBindings(): void
+    {
+        $this->app->tag([DonationResultMeasures::class], 'results.measure-providers');
     }
 
     protected function bootModule(): void

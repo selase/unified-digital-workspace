@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Beneficiaries\Providers;
 
+use App\Modules\Beneficiaries\Services\BeneficiaryResultMeasures;
 use App\Modules\Concerns\ModuleServiceProvider;
 
 final class BeneficiariesServiceProvider extends ModuleServiceProvider
@@ -16,6 +17,11 @@ final class BeneficiariesServiceProvider extends ModuleServiceProvider
     public function getModuleName(): string
     {
         return 'Beneficiaries';
+    }
+
+    protected function registerBindings(): void
+    {
+        $this->app->tag([BeneficiaryResultMeasures::class], 'results.measure-providers');
     }
 
     protected function bootModule(): void

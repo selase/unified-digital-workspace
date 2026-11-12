@@ -56,9 +56,9 @@ final class ResultsDemoSeeder extends Seeder
         $wells = $service->create($tenantId, 'Demo: Boreholes commissioned', 12, $start, $end, ['programme_id' => $this->demoProgramme($tenant, 'Clean water'), 'unit' => 'boreholes']);
         $service->record($wells, 3, today()->subDays(45), 'Adaklu and Tafi Atome', null);
 
-        $reached = $service->create($tenantId, 'Demo: People reached with services', 500, $start, $end, ['programme_id' => $this->demoProgramme($tenant, 'All programmes'), 'unit' => 'people', 'source' => 'beneficiaries_reached']);
-        $service->create($tenantId, 'Demo: Volunteer hours given', 800, $start, $end, ['programme_id' => $this->demoProgramme($tenant, 'Volunteering'), 'unit' => 'hours', 'source' => 'volunteer_hours']);
-        $service->create($tenantId, 'Demo: Donations raised', 250000, $start, $end, ['programme_id' => $this->demoProgramme($tenant, 'Fundraising'), 'unit' => 'GHS', 'source' => 'donations_total']);
+        $reached = $service->create($tenantId, 'Demo: People reached with services', 500, $start, $end, ['programme_id' => $this->demoProgramme($tenant, 'All programmes'), 'unit' => 'people', 'measure_key' => 'beneficiaries.people_reached'], allowDisabledMeasure: true);
+        $service->create($tenantId, 'Demo: Volunteer hours given', 800, $start, $end, ['programme_id' => $this->demoProgramme($tenant, 'Volunteering'), 'unit' => 'hours', 'measure_key' => 'volunteers.hours_approved'], allowDisabledMeasure: true);
+        $service->create($tenantId, 'Demo: Donations raised', 250000, $start, $end, ['programme_id' => $this->demoProgramme($tenant, 'Fundraising'), 'unit' => 'GHS', 'measure_key' => 'donations.amount_raised'], allowDisabledMeasure: true);
         unset($reached);
 
         $this->command?->info('ResultsDemoSeeder: 5 indicators created.');

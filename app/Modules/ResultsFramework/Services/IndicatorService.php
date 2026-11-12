@@ -4,16 +4,17 @@ declare(strict_types=1);
 
 namespace App\Modules\ResultsFramework\Services;
 
+use App\Models\Tenant;
 use App\Modules\ResultsFramework\Models\ResultIndicator;
 use App\Modules\ResultsFramework\Models\ResultNode;
 use App\Modules\ResultsFramework\Models\ResultProgramme;
 use App\Modules\ResultsFramework\Models\ResultReading;
+use App\Modules\ResultsFramework\Support\MeasureQuery;
+use App\Modules\ResultsFramework\Support\MeasureUnavailable;
 use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use DomainException;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Schema;
 
 /**
  * Indicators measure whether a programme is delivering. A manual indicator's figure is its latest reading; the
@@ -21,30 +22,27 @@ use Illuminate\Support\Facades\Schema;
  */
 final class IndicatorService
 {
-    private const FIELDS = ['name', 'description', 'definition', 'means_of_verification', 'programme_id', 'result_id', 'unit', 'source', 'baseline', 'target', 'starts_on', 'ends_on', 'grant_id'];
+    private const FIELDS = ['name', 'description', 'definition', 'means_of_verification', 'programme_id', 'result_id', 'unit', 'measure_key', 'measure_filters', 'baseline', 'target', 'starts_on', 'ends_on', 'grant_id'];
 
-    public function create(string $tenantId, string $name, float $target, CarbonInterface $startsOn, CarbonInterface $endsOn, array $details = []): ResultIndicator
+    public function __construct(private MeasureRegistry $measures) {}
+
+    public function create(string $tenantId, string $name, float $target, CarbonInterface $startsOn, CarbonInterface $endsOn, array $details = [], bool $allowDisabledMeasure = false): ResultIndicator
     {
-        $indicator = new ResultIndicator(['tenant_id' => $tenantId, 'status' => 'active']);
+        $indicator = new ResultIndicator(['tenant_id' => $tenantId, 'status' => 'active', 'unit' => null]);
 
         return $this->save($indicator, [
             'name' => $name, 'target' => $target, 'starts_on' => $startsOn->toDateString(), 'ends_on' => $endsOn->toDateString(),
-        ] + $details);
+        ] + $details, $allowDisabledMeasure);
     }
 
     public function update(ResultIndicator $indicator, array $details): ResultIndicator
     {
-        if (isset($details['source']) && $details['source'] !== $indicator->source
-            && ! ($details['confirm_source_change'] ?? false) && $indicator->readings()->exists()) {
-            throw new DomainException('Confirm the change of source because this indicator already has readings.');
-        }
-
         return $this->save($indicator, $details);
     }
 
     public function record(ResultIndicator $indicator, float $value, CarbonInterface $date, ?string $note, ?string $userId): ResultReading
     {
-        if ($indicator->source !== 'manual') {
+        if ($indicator->measure_key !== null) {
             throw new DomainException('This indicator is calculated from another module, so readings cannot be entered by hand.');
         }
         if ($indicator->status !== 'active') {
@@ -65,40 +63,41 @@ final class IndicatorService
     }
 
     /** The figure today: the latest reading, or the live number from another module counted within the indicator's dates. */
-    public function current(ResultIndicator $indicator): float
+    public function current(ResultIndicator $indicator): ?float
     {
-        $from = $indicator->starts_on->toDateString();
-        $to = min($indicator->ends_on->toDateString(), today()->toDateString());
+        if ($indicator->measure_key === null) {
+            return (float) ($indicator->readings()->value('value') ?? $indicator->baseline);
+        }
 
-        return match ($indicator->source) {
-            'beneficiaries_reached' => Schema::connection('tenant')->hasTable('ben_services')
-                ? (float) DB::connection('tenant')->table('ben_services')->where('tenant_id', $indicator->tenant_id)->whereDate('delivered_on', '>=', $from)->whereDate('delivered_on', '<=', $to)->distinct()->count('beneficiary_id')
-                : 0.0,
-            'volunteer_hours' => Schema::connection('tenant')->hasTable('vol_hours')
-                ? round(((int) DB::connection('tenant')->table('vol_hours')->where('tenant_id', $indicator->tenant_id)->where('status', 'approved')->whereDate('worked_on', '>=', $from)->whereDate('worked_on', '<=', $to)->sum('minutes')) / 60, 2)
-                : 0.0,
-            'donations_total' => Schema::connection('tenant')->hasTable('don_donations')
-                ? round(((int) DB::connection('tenant')->table('don_donations')->where('tenant_id', $indicator->tenant_id)->whereNull('voided_at')->whereDate('date', '>=', $from)->whereDate('date', '<=', $to)->sum('amount')) / 100, 2)
-                : 0.0,
-            default => (float) ($indicator->readings()->value('value') ?? $indicator->baseline),
-        };
+        $end = $indicator->ends_on->min(today());
+
+        try {
+            return $this->measures->value(
+                $indicator->tenant ?? Tenant::query()->findOrFail($indicator->tenant_id),
+                $indicator->measure_key,
+                new MeasureQuery($indicator->starts_on, $end, $indicator->measure_filters ?? []),
+            );
+        } catch (MeasureUnavailable) {
+            return null;
+        }
     }
 
     /**
      * Progress from baseline towards target, how much of the time has passed, and a plain verdict.
      *
-     * @return array{current: float, percent: int, time_percent: int, status: string}
+     * @return array{current: ?float, percent: ?int, time_percent: int, status: string}
      */
     public function progress(ResultIndicator $indicator): array
     {
         $current = $this->current($indicator);
         $range = $indicator->target - $indicator->baseline;
-        $percent = (int) max(0, min(999, round((($current - $indicator->baseline) / $range) * 100)));
+        $percent = $current === null ? null : (int) max(0, min(999, round((($current - $indicator->baseline) / $range) * 100)));
 
         $totalDays = max(1, $indicator->starts_on->diffInDays($indicator->ends_on));
         $timePercent = (int) max(0, min(100, round($indicator->starts_on->diffInDays(today(), false) / $totalDays * 100)));
 
         $status = match (true) {
+            $percent === null => 'unavailable',
             $percent >= 100 => 'achieved',
             today()->gt($indicator->ends_on) => 'missed',
             $timePercent - $percent > 20 => 'behind',
@@ -116,28 +115,47 @@ final class IndicatorService
     public function reportRows(string $tenantId): array
     {
         $rows = [['Indicator report', 'As at '.today()->toDateString()], ['Indicator', 'Programme', 'Unit', 'Baseline', 'Target', 'Current', 'Progress %', 'Period', 'Status']];
-        $labels = ['achieved' => 'Achieved', 'missed' => 'Missed', 'behind' => 'Behind', 'on_track' => 'On track'];
+        $labels = ['achieved' => 'Achieved', 'missed' => 'Missed', 'behind' => 'Behind', 'on_track' => 'On track', 'unavailable' => 'Unavailable'];
 
-        foreach (ResultIndicator::query()->where('tenant_id', $tenantId)->where('status', 'active')->with(['programme' => fn ($query) => $query->where('tenant_id', $tenantId)])->orderBy('programme_id')->orderBy('name')->get() as $indicator) {
+        foreach (ResultIndicator::query()->where('tenant_id', $tenantId)->where('status', 'active')->with(['tenant', 'programme' => fn ($query) => $query->where('tenant_id', $tenantId)])->orderBy('programme_id')->orderBy('name')->get() as $indicator) {
             $progress = $this->progress($indicator);
-            $rows[] = [$indicator->name, $indicator->programmeName(), $indicator->unit, $indicator->baseline, $indicator->target, $progress['current'], $progress['percent'], $indicator->starts_on->toDateString().' to '.$indicator->ends_on->toDateString(), $labels[$progress['status']]];
+            $rows[] = [$indicator->name, $indicator->programmeName(), $indicator->unit, $indicator->baseline, $indicator->target, $progress['current'] ?? 'Unavailable', $progress['percent'], $indicator->starts_on->toDateString().' to '.$indicator->ends_on->toDateString(), $labels[$progress['status']]];
         }
 
         return $rows;
     }
 
-    private function save(ResultIndicator $indicator, array $details): ResultIndicator
+    private function save(ResultIndicator $indicator, array $details, bool $allowDisabledMeasure = false): ResultIndicator
     {
         $candidate = clone $indicator;
         $candidate->fill(Arr::only($details, self::FIELDS));
         $candidate->baseline = $candidate->baseline ?? 0.0;
-        $candidate->unit = $candidate->unit ?: 'people';
         if (! $candidate->starts_on || ! $candidate->ends_on || CarbonImmutable::parse($candidate->ends_on)->lt($candidate->starts_on)) {
             throw new DomainException('The indicator must end after it starts.');
         }
-        if (! array_key_exists((string) $candidate->source, ResultIndicator::SOURCES)) {
-            throw new DomainException('Choose where the figure comes from.');
+        $filters = $candidate->measure_filters ?? [];
+        if ($candidate->measure_key === null && $filters !== []) {
+            throw new DomainException('Choose a live measure before adding filters.');
         }
+        ksort($filters);
+        $candidate->measure_filters = $filters ?: null;
+        $previousFilters = $indicator->measure_filters ?? [];
+        ksort($previousFilters);
+        $changed = $candidate->measure_key !== $indicator->measure_key || $filters !== $previousFilters;
+        if ($changed && $indicator->exists && ! ($details['confirm_source_change'] ?? false) && $indicator->readings()->exists()) {
+            throw new DomainException('Confirm the change of source because this indicator already has readings.');
+        }
+
+        $definition = null;
+        if ($candidate->measure_key !== null && (! $indicator->exists || $changed)) {
+            $definition = $this->measures->validateSelection(
+                Tenant::query()->findOrFail($candidate->tenant_id),
+                $candidate->measure_key,
+                $filters,
+                $allowDisabledMeasure && $filters === [],
+            );
+        }
+        $candidate->unit = $candidate->unit ?: ($definition?->unit ?? $indicator->unit ?? 'people');
         if ($candidate->target === $candidate->baseline) {
             throw new DomainException('The target must be different from the starting figure.');
         }
@@ -152,7 +170,9 @@ final class IndicatorService
             throw new DomainException('Choose a result from this indicator’s programme.');
         }
 
-        $indicator->fill(Arr::only($candidate->getAttributes(), self::FIELDS));
+        $fields = Arr::only($candidate->getAttributes(), self::FIELDS);
+        $fields['measure_filters'] = $candidate->measure_filters;
+        $indicator->fill($fields);
         $indicator->save();
         $indicator->unsetRelation('programme')->unsetRelation('node');
 

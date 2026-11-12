@@ -3,46 +3,14 @@
 declare(strict_types=1);
 
 use App\Models\Tenant;
-use App\Models\TenantFeature;
-use App\Models\User;
 use App\Modules\ResultsFramework\Database\Seeders\ResultsDemoSeeder;
 use App\Modules\ResultsFramework\Models\ResultIndicator;
 use App\Modules\ResultsFramework\Services\IndicatorService;
 use App\Services\ModuleManager;
-use App\Services\Tenancy\TenantContext;
-use App\Services\Tenancy\TenantDatabaseManager;
 use Carbon\CarbonImmutable;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Session;
-use Illuminate\Support\Str;
-use Spatie\Permission\Models\Permission;
 
-/**
- * @return array{0: User, 1: Tenant}
- */
-function createMonitoringContext(): array
-{
-    $user = User::factory()->create();
-    $tenant = setActiveTenantForTest($user);
-
-    Session::put('active_tenant_id', $tenant->id);
-    setPermissionsTeamId($tenant->id);
-    app(TenantContext::class)->setTenant($tenant);
-
-    $permissions = config('modules.results-framework.permissions');
-    foreach ($permissions as $permission) {
-        Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'web'], ['category' => 'results', 'uuid' => (string) Str::uuid()]);
-    }
-    $user->givePermissionTo($permissions);
-
-    app(TenantDatabaseManager::class)->configure($tenant);
-    TenantFeature::query()->create(['tenant_id' => $tenant->id, 'feature_key' => 'module-results-framework', 'enabled' => true, 'meta' => ['source' => 'complimentary']]);
-    app(ModuleManager::class)->enableForTenant('results-framework', $tenant);
-    Artisan::call('migrate', ['--database' => 'tenant', '--path' => app_path('Modules/ResultsFramework/Database/Migrations'), '--realpath' => true, '--force' => true]);
-
-    return [$user, $tenant];
-}
+require_once __DIR__.'/fixtures.php';
 
 function indicator(Tenant $tenant, array $overrides = []): ResultIndicator
 {
@@ -59,7 +27,7 @@ describe('Indicator rules', function (): void {
 
         expect(fn () => $service->create($tenant->id, 'Bad dates', 10, CarbonImmutable::today(), CarbonImmutable::today()->subDay()))->toThrow(DomainException::class, 'end after')
             ->and(fn () => $service->create($tenant->id, 'Same', 10, CarbonImmutable::today(), CarbonImmutable::today()->addDay(), ['baseline' => 10]))->toThrow(DomainException::class, 'different')
-            ->and(fn () => $service->create($tenant->id, 'Bad source', 10, CarbonImmutable::today(), CarbonImmutable::today()->addDay(), ['source' => 'nonsense']))->toThrow(DomainException::class, 'where the figure');
+            ->and(fn () => $service->create($tenant->id, 'Bad source', 10, CarbonImmutable::today(), CarbonImmutable::today()->addDay(), ['measure_key' => 'nonsense']))->toThrow(DomainException::class, 'where the figure');
 
         $indicator = indicator($tenant);
         expect($service->current($indicator))->toBe(0.0);
@@ -93,7 +61,8 @@ describe('Indicator rules', function (): void {
     test('calculated indicators read other modules and refuse hand-entered readings', function (): void {
         [, $tenant] = createMonitoringContext();
         $service = app(IndicatorService::class);
-        $reached = indicator($tenant, ['name' => 'Reached', 'source' => 'beneficiaries_reached']);
+        enableResultMeasureModules($tenant, 'beneficiaries', 'volunteers', 'donations');
+        $reached = indicator($tenant, ['name' => 'Reached', 'measure_key' => 'beneficiaries.people_reached']);
 
         expect($service->current($reached))->toBe(0.0)
             ->and(fn () => $service->record($reached, 5, CarbonImmutable::today(), null, null))->toThrow(DomainException::class, 'calculated');
@@ -137,9 +106,33 @@ describe('Indicator rules', function (): void {
             ['tenant_id' => $tenant->id, 'donor_id' => 1, 'date' => $today, 'amount' => 90000, 'voided_at' => now()],
         ]);
 
-        expect($service->current($reached))->toBe(3.0)
-            ->and($service->current(indicator($tenant, ['name' => 'Hours', 'source' => 'volunteer_hours'])))->toBe(2.5)
-            ->and($service->current(indicator($tenant, ['name' => 'Money', 'source' => 'donations_total'])))->toBe(250.5);
+        $hours = indicator($tenant, ['name' => 'Hours', 'measure_key' => 'volunteers.hours_approved']);
+        $money = indicator($tenant, ['name' => 'Money', 'measure_key' => 'donations.amount_raised']);
+        $manual = indicator($tenant, ['name' => 'Manual']);
+        $migration = require app_path('Modules/ResultsFramework/Database/Migrations/2026_11_12_100500_add_measures_to_rf_indicators.php');
+        $db = DB::connection('tenant');
+        DB::usingConnection('tenant', function () use ($migration, $db, $tenant, $today, $reached, $hours, $money, $manual, $service): void {
+            $migration->down();
+            $migration->down();
+            $indicators = $db->table('rf_indicators')->where('tenant_id', $tenant->id);
+            expect((clone $indicators)->orderBy('id')->pluck('source')->all())
+                ->toBe(['beneficiaries_reached', 'volunteer_hours', 'donations_total', 'manual']);
+            $legacy = [
+                (float) $db->table('ben_services')->where('tenant_id', $tenant->id)->whereDate('delivered_on', $today)->distinct()->count('beneficiary_id'),
+                round($db->table('vol_hours')->where('tenant_id', $tenant->id)->where('status', 'approved')->whereDate('worked_on', $today)->sum('minutes') / 60, 2),
+                round($db->table('don_donations')->where('tenant_id', $tenant->id)->whereNull('voided_at')->whereDate('date', $today)->sum('amount') / 100, 2),
+            ];
+            $migration->up();
+            $migration->up();
+
+            expect($legacy)->toBe([3.0, 2.5, 250.5])
+                ->and((clone $indicators)->orderBy('id')->pluck('measure_key')->all())
+                ->toBe(['beneficiaries.people_reached', 'volunteers.hours_approved', 'donations.amount_raised', null])
+                ->and($service->current($reached->fresh()))->toBe($legacy[0])
+                ->and($service->current($hours->fresh()))->toBe($legacy[1])
+                ->and($service->current($money->fresh()))->toBe($legacy[2])
+                ->and($service->current($manual->fresh()))->toBe(0.0);
+        });
     });
 });
 
@@ -150,7 +143,7 @@ describe('Indicator screens', function (): void {
 
         $this->get(route('results-framework.index'))->assertOk()->assertSee('Results Framework');
         $programme = app(App\Modules\ResultsFramework\Services\ProgrammeService::class)->create($tenant->id, 'Water');
-        $this->post(route('results-framework.indicators.store'), ['name' => 'Wells built', 'programme_id' => $programme->id, 'unit' => 'wells', 'source' => 'manual', 'baseline' => 0, 'target' => 12, 'starts_on' => today()->startOfYear()->toDateString(), 'ends_on' => today()->endOfYear()->toDateString()])->assertRedirect();
+        $this->post(route('results-framework.indicators.store'), ['name' => 'Wells built', 'programme_id' => $programme->id, 'unit' => 'wells', 'measure_key' => null, 'baseline' => 0, 'target' => 12, 'starts_on' => today()->startOfYear()->toDateString(), 'ends_on' => today()->endOfYear()->toDateString()])->assertRedirect();
         $model = ResultIndicator::query()->firstOrFail();
 
         $this->get(route('results-framework.indicators.show', $model->uuid))->assertOk()->assertSee('Wells built')->assertSee('Add a reading');
@@ -177,7 +170,7 @@ describe('Indicator screens', function (): void {
 
         $user->revokePermissionTo('results.manage');
         app(Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
-        $this->post(route('results-framework.indicators.store'), ['name' => 'X', 'target' => 1, 'source' => 'manual', 'starts_on' => today()->toDateString(), 'ends_on' => today()->addDay()->toDateString()])->assertForbidden();
+        $this->post(route('results-framework.indicators.store'), ['name' => 'X', 'target' => 1, 'measure_key' => null, 'starts_on' => today()->toDateString(), 'ends_on' => today()->addDay()->toDateString()])->assertForbidden();
         $this->get(route('results-framework.index'))->assertOk();
 
         $user->revokePermissionTo('results.view');
@@ -238,7 +231,7 @@ test('indicator edits round trip the definition and verification and preserve de
         'definition' => 'Confirmed cases in the programme period',
         'means_of_verification' => 'Lab register and routine surveillance report',
         'programme_id' => $programme->id, 'result_id' => $node->id, 'unit' => 'cases',
-        'source' => 'manual', 'baseline' => 400, 'target' => 100,
+        'measure_key' => null, 'baseline' => 400, 'target' => 100,
         'starts_on' => today()->subDays(100)->toDateString(), 'ends_on' => today()->addDays(100)->toDateString(),
     ];
 
@@ -254,7 +247,7 @@ test('indicator edits round trip the definition and verification and preserve de
         ->and($model->getConnection()->getSchemaBuilder()->hasColumn('rf_indicators', 'programme'))->toBeFalse();
     $this->get(route('results-framework.indicators.show', $model->uuid))
         ->assertOk()->assertSee($fields['definition'])->assertSee($fields['means_of_verification']);
-    expect(fn () => $service->update($model, ['source' => 'donations_total']))->toThrow(DomainException::class)
+    expect(fn () => $service->update($model, ['measure_key' => 'donations.amount_raised']))->toThrow(DomainException::class)
         ->and(fn () => $service->update($model->fresh(), ['target' => 400]))->toThrow(DomainException::class);
 });
 

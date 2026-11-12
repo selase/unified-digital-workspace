@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Forms\Providers;
 
+use App\Modules\Forms\Services\FormResultMeasures;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
@@ -11,7 +12,7 @@ final class FormsServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        //
+        $this->app->tag([FormResultMeasures::class], 'results.measure-providers');
     }
 
     public function boot(): void
