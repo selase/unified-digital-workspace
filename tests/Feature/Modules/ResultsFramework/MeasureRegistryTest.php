@@ -79,6 +79,10 @@ test('the registry returns enabled tenant measures with inclusive ranges and sco
         $insert('fin_payment_allocations', ['invoice_id' => $invoice, 'payment_id' => $payment, 'amount' => $amount]);
     }
 
+    $unrelatedInvoice = $owned('fin_invoices', ['contact_id' => $contact, 'issue_date' => $start, 'status' => 'paid']);
+    $unrelatedPayment = $owned('fin_payments', ['contact_id' => $contact, 'number' => 'UNRELATED', 'date' => $end, 'amount' => 4100]);
+    $insert('fin_payment_allocations', ['invoice_id' => $unrelatedInvoice, 'payment_id' => $unrelatedPayment, 'amount' => 4100]);
+
     $form = $owned('form_definitions', ['title' => 'Survey', 'slug' => 'survey', 'created_by' => $user->uuid]);
     $secondForm = $owned('form_definitions', ['title' => 'Other survey', 'slug' => 'other', 'created_by' => $user->uuid]);
     $foreignForm = $owned('form_definitions', ['title' => 'Foreign survey', 'slug' => 'foreign', 'created_by' => $user->uuid], $other);
@@ -107,8 +111,8 @@ test('the registry returns enabled tenant measures with inclusive ranges and sco
         ->and($registry->value($tenant, 'donations.amount_raised', new MeasureQuery($from, $to, ['campaign_id' => (string) $campaign])))->toBe(12.0)
         ->and($definitions['forms.submissions']->filters['form_id'])->not->toHaveKey($foreignForm)
         ->and($registry->value($tenant, 'forms.submissions', new MeasureQuery($from, $to, ['form_id' => (string) $form])))->toBe(1.0)
-        ->and(fn () => $registry->value($tenant, 'forms.submissions', new MeasureQuery($from, $to, ['form_id' => (string) $foreignForm])))->toThrow(DomainException::class)
-        ->and(fn () => $registry->value($tenant, 'forms.submissions', new MeasureQuery($from, $to, ['unknown' => 'x'])))->toThrow(DomainException::class)
+        ->and(fn () => $registry->validateSelection($tenant, 'forms.submissions', ['form_id' => (string) $foreignForm]))->toThrow(DomainException::class)
+        ->and(fn () => $registry->validateSelection($tenant, 'forms.submissions', ['unknown' => 'x']))->toThrow(DomainException::class)
         ->and(fn () => $registry->breakdown($tenant, 'forms.submissions', 'gender', new MeasureQuery($from, $to)))->toThrow(DomainException::class);
 });
 
@@ -140,4 +144,72 @@ test('live indicator configuration persists and disabled measures are unavailabl
     expect($indicator->fresh()->measure_filters)->toBe(['service_type' => 'food']);
     $report = $this->get(route('results-framework.report'))->assertOk();
     expect($report->streamedContent())->toContain('Unavailable');
+});
+
+test('retired programme filters keep calculating and the list loads programme options once', function (): void {
+    [$user, $tenant] = createMonitoringContext();
+    enableResultMeasureModules($tenant, 'beneficiaries');
+    $person = App\Modules\Beneficiaries\Models\BenBeneficiary::query()->create([
+        'tenant_id' => $tenant->id, 'full_name' => 'Person', 'programme' => 'Water',
+    ]);
+    $person->services()->create(['tenant_id' => $tenant->id, 'delivered_on' => today(), 'type' => 'food']);
+    $service = app(IndicatorService::class);
+    foreach (['First', 'Second'] as $name) {
+        $indicator = $service->create($tenant->id, $name, 10, today(), today(), [
+            'measure_key' => 'beneficiaries.people_reached', 'measure_filters' => ['programme' => 'Water'],
+        ]);
+    }
+    expect($service->current($indicator))->toBe(1.0);
+
+    $person->update(['programme' => 'Food']);
+    $figure = $service->current($indicator);
+    $optionQueries = 0;
+    DB::listen(function (Illuminate\Database\Events\QueryExecuted $event) use (&$optionQueries): void {
+        if (str_contains($event->sql, 'select distinct "programme"')) {
+            $optionQueries++;
+        }
+    });
+    $this->actingAs($user)->withSession(['active_tenant_id' => $tenant->id])
+        ->get(route('results-framework.index'))->assertOk();
+
+    expect([$figure, $optionQueries])->toBe([0.0, 1]);
+});
+
+test('measure rollback refuses to discard newer keys or filters', function (array $fields): void {
+    [, $tenant] = createMonitoringContext();
+    $indicator = ResultIndicator::query()->create($fields + [
+        'tenant_id' => $tenant->id, 'name' => 'Guard', 'target' => 10, 'starts_on' => today(), 'ends_on' => today(),
+    ]);
+    $migration = require app_path('Modules/ResultsFramework/Database/Migrations/2026_11_12_100500_add_measures_to_rf_indicators.php');
+    DB::usingConnection('tenant', function () use ($migration, $indicator, $fields): void {
+        expect(fn () => $migration->down())->toThrow(RuntimeException::class, 'cannot be represented');
+        $schema = DB::connection('tenant')->getSchemaBuilder();
+        expect($schema->hasColumns('rf_indicators', ['measure_key', 'measure_filters']))->toBeTrue()
+            ->and($schema->hasColumn('rf_indicators', 'source'))->toBeFalse()
+            ->and($indicator->fresh()->only(array_keys($fields)))->toBe($fields);
+    });
+})->with([
+    'new key' => [['measure_key' => 'forms.submissions']],
+    'saved filters' => [['measure_key' => 'beneficiaries.people_reached', 'measure_filters' => ['programme' => 'Water']]],
+]);
+
+test('measure migration refuses an unknown legacy source before changing the schema', function (): void {
+    [, $tenant] = createMonitoringContext();
+    $migration = require app_path('Modules/ResultsFramework/Database/Migrations/2026_11_12_100500_add_measures_to_rf_indicators.php');
+    DB::usingConnection('tenant', function () use ($migration, $tenant): void {
+        $migration->down();
+        $db = DB::connection('tenant');
+        $id = $db->table('rf_indicators')->insertGetId([
+            'uuid' => (string) Str::uuid(), 'tenant_id' => $tenant->id, 'name' => 'Legacy', 'source' => 'unknown',
+            'target' => 10, 'starts_on' => today(), 'ends_on' => today(),
+        ]);
+        expect(fn () => $migration->up())->toThrow(RuntimeException::class, 'unrecognised legacy source');
+        $schema = $db->getSchemaBuilder();
+        expect($schema->hasColumn('rf_indicators', 'source'))->toBeTrue()
+            ->and($schema->hasColumn('rf_indicators', 'measure_key'))->toBeFalse()
+            ->and($schema->hasColumn('rf_indicators', 'measure_filters'))->toBeFalse()
+            ->and($db->table('rf_indicators')->where('id', $id)->value('source'))->toBe('unknown');
+        $db->table('rf_indicators')->where('id', $id)->update(['source' => 'manual']);
+        $migration->up();
+    });
 });

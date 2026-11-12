@@ -59,10 +59,7 @@ final class MeasureRegistry
     /** @param array<string, int|string> $filters */
     public function validateSelection(Tenant $tenant, string $key, array $filters, bool $allowDisabled = false): MeasureDefinition
     {
-        [$definition, $provider] = $this->measures[$key] ?? throw new MeasureUnavailable('Choose where the figure comes from.');
-        if (! $allowDisabled && ! $this->modules->isEnabledForTenant($definition->module, $tenant)) {
-            throw new MeasureUnavailable('The module for this measure is unavailable.');
-        }
+        [$definition, $provider] = $this->resolve($tenant, $key, $allowDisabled);
 
         if ($filters !== []) {
             $options = $this->filterOptions($tenant, $definition, $provider);
@@ -78,23 +75,34 @@ final class MeasureRegistry
 
     public function value(Tenant $tenant, string $key, MeasureQuery $query): float
     {
-        $this->validateSelection($tenant, $key, $query->filters);
+        [, $provider] = $this->resolve($tenant, $key);
         if ($query->from->toDateString() > $query->to->toDateString()) {
             return 0.0;
         }
 
-        return $this->measures[$key][1]->value((string) $tenant->id, $key, $query);
+        return $provider->value((string) $tenant->id, $key, $query);
     }
 
     /** @return array<string, float> */
     public function breakdown(Tenant $tenant, string $key, string $dimension, MeasureQuery $query): array
     {
-        $definition = $this->validateSelection($tenant, $key, $query->filters);
+        [$definition, $provider] = $this->resolve($tenant, $key);
         if (! in_array($dimension, $definition->dimensions, true)) {
             throw new DomainException('This measure does not offer that breakdown.');
         }
 
-        return $this->measures[$key][1]->breakdown((string) $tenant->id, $key, $dimension, $query);
+        return $provider->breakdown((string) $tenant->id, $key, $dimension, $query);
+    }
+
+    /** @return array{MeasureDefinition, ResultMeasureProvider} */
+    private function resolve(Tenant $tenant, string $key, bool $allowDisabled = false): array
+    {
+        [$definition, $provider] = $this->measures[$key] ?? throw new MeasureUnavailable('Choose where the figure comes from.');
+        if (! $allowDisabled && ! $this->modules->isEnabledForTenant($definition->module, $tenant)) {
+            throw new MeasureUnavailable('The module for this measure is unavailable.');
+        }
+
+        return [$definition, $provider];
     }
 
     /** @return array<string, array<int|string, string>> */
