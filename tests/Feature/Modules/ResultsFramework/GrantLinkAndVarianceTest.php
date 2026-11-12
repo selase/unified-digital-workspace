@@ -60,6 +60,8 @@ test('programme grant links are tenant scoped and grant reports respect results 
     TenantModule::query()->where('tenant_id', $tenant->id)->where('module_slug', 'results-framework')->update(['is_enabled' => false]);
     Cache::flush();
     $this->get($show)->assertOk()->assertDontSee('Wells commissioned');
+    $disabledCsv = $this->get($report)->assertOk()->streamedContent();
+    expect($disabledCsv)->toContain('Funder report: Water grant')->not->toContain('Water works', 'Wells commissioned', 'People reached');
 });
 
 test('variance notes require a behind or missed indicator and resolve only once', function (): void {

@@ -6,7 +6,7 @@ return [
     'name' => 'Quality Monitoring',
     'slug' => 'quality-monitoring',
     'version' => '1.0.0',
-    'description' => 'Monitoring, evaluation, and performance workplans with approvals and reporting.',
+    'description' => 'Performance workplans with approvals and reporting. Use Results Framework for programme results, indicator trends and logframes.',
 
     'namespace' => 'App\\Modules\\QualityMonitoring',
     'provider' => 'App\\Modules\\QualityMonitoring\\Providers\\QualityMonitoringServiceProvider',
