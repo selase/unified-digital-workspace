@@ -45,6 +45,7 @@
         <p class="text-xs text-muted-foreground">Progress is unavailable. Check that the source module is enabled.</p>
     @endif
 
+    @include('results-framework::indicators._variance')
     @include('results-framework::indicators._trend')
     @include('results-framework::indicators._targets', ['periods' => $progress['periods']])
     @include('results-framework::indicators._breakdowns')

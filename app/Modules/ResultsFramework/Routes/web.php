@@ -29,3 +29,6 @@ Route::put('/indicators/{indicator}', [IndicatorController::class, 'update'])->n
 
 Route::post('/indicators/{indicator}/targets', [IndicatorController::class, 'saveTarget'])->name('indicators.targets.store');
 Route::post('/indicators/{indicator}/targets/generate', [IndicatorController::class, 'generateTargets'])->name('indicators.targets.generate');
+
+Route::post('/indicators/{indicator}/variance-notes', [IndicatorController::class, 'addVariance'])->name('indicators.variance.store');
+Route::post('/indicators/{indicator}/variance-notes/{note}/resolve', [IndicatorController::class, 'resolveVariance'])->whereNumber('note')->name('indicators.variance.resolve');

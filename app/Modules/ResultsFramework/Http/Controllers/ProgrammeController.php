@@ -33,9 +33,11 @@ final class ProgrammeController extends Controller
     public function create(Request $request): View
     {
         abort_unless($request->user()?->can('results.manage'), 403);
-        $this->tenantId();
 
-        return view('results-framework::programmes.form', ['programme' => new ResultProgramme]);
+        return view('results-framework::programmes.form', [
+            'programme' => new ResultProgramme,
+            'grants' => $this->programmes->availableGrants($this->tenantId()),
+        ]);
     }
 
     public function store(SaveProgrammeRequest $request): RedirectResponse
@@ -85,7 +87,12 @@ final class ProgrammeController extends Controller
     {
         abort_unless($request->user()?->can('results.manage'), 403);
 
-        return view('results-framework::programmes.form', ['programme' => $this->find($programme)]);
+        $model = $this->find($programme);
+
+        return view('results-framework::programmes.form', [
+            'programme' => $model,
+            'grants' => $this->programmes->availableGrants($model->tenant_id),
+        ]);
     }
 
     public function update(SaveProgrammeRequest $request, string $programme): RedirectResponse

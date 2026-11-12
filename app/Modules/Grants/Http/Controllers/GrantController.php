@@ -7,10 +7,10 @@ namespace App\Modules\Grants\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Modules\Finance\Models\FinAccount;
 use App\Modules\Finance\Services\FinanceSettings;
-use App\Modules\Finance\Support\Money;
-use App\Modules\Finance\Support\ResolvesFinanceTenant;
 use App\Modules\Finance\Services\ReportCsv;
 use App\Modules\Finance\Services\ReportPdf;
+use App\Modules\Finance\Support\Money;
+use App\Modules\Finance\Support\ResolvesFinanceTenant;
 use App\Modules\Grants\Http\Requests\ReceiveInstalmentRequest;
 use App\Modules\Grants\Http\Requests\SaveBudgetLineRequest;
 use App\Modules\Grants\Http\Requests\SaveGrantRequest;
@@ -22,6 +22,8 @@ use App\Modules\Grants\Models\GrtGrant;
 use App\Modules\Grants\Models\GrtInstalment;
 use App\Modules\Grants\Models\GrtReport;
 use App\Modules\Grants\Services\GrantService;
+use App\Modules\ResultsFramework\Services\ProgrammeService;
+use App\Modules\ResultsFramework\Support\CsvReport;
 use Carbon\Carbon;
 use DomainException;
 use Illuminate\Contracts\View\View;
@@ -74,13 +76,14 @@ final class GrantController extends Controller
         return redirect()->route('grants.grants.show', $grant->uuid)->with('success', 'Grant saved. A restricted fund was created for it.');
     }
 
-    public function show(Request $request, GrantService $grants, FinanceSettings $settings, string $grant): View
+    public function show(Request $request, GrantService $grants, FinanceSettings $settings, ProgrammeService $programmes, string $grant): View
     {
         $tenantId = $this->allow($request, 'grants.view');
         $model = $this->find($tenantId, $grant)->load(['funder', 'fund', 'instalments', 'reports']);
 
         return view('grants::grants.show', [
             'grant' => $model,
+            'programmeResults' => $programmes->resultsForGrant($model, $request->user()),
             'position' => $grants->position($model),
             'plan' => $grants->budgetVsActual($model),
             'expenseAccounts' => FinAccount::query()->where('tenant_id', $tenantId)->where('type', 'expense')->where('is_active', true)->orderBy('code')->get(),
@@ -161,14 +164,31 @@ final class GrantController extends Controller
     }
 
     /** Downloads the funder report as CSV (default) or PDF. */
-    public function funderReport(Request $request, GrantService $grants, ReportCsv $csv, ReportPdf $pdf, string $grant): StreamedResponse|\Illuminate\Http\Response
+    public function funderReport(Request $request, GrantService $grants, ReportCsv $csv, ReportPdf $pdf, ProgrammeService $programmes, string $grant): StreamedResponse|\Illuminate\Http\Response
     {
         $tenantId = $this->allow($request, 'grants.view');
         $model = $this->find($tenantId, $grant);
         $rows = $grants->funderReport($model);
         $name = 'funder-report-'.Str::slug($model->title);
 
-        return $request->query('format') === 'pdf' ? $pdf->download($tenantId, $name, $rows) : $csv->download($name.'.csv', $rows);
+        if ($request->query('format') === 'pdf') {
+            return $pdf->download($tenantId, $name, $rows);
+        }
+
+        $results = $programmes->resultsForGrant($model, $request->user());
+        if ($results === []) {
+            return $csv->download($name.'.csv', $rows);
+        }
+
+        $rows[] = [];
+        $rows[] = ['Programme', 'Indicator', 'Target', 'Current', 'Status'];
+        foreach ($results as $result) {
+            foreach ($result['indicators'] as $indicator) {
+                $rows[] = [$result['programme']->name, $indicator['name'], $indicator['target'], $indicator['current'], $indicator['status']];
+            }
+        }
+
+        return CsvReport::download($rows, $name.'.csv');
     }
 
     public function addReport(SaveReportDeadlineRequest $request, string $grant): RedirectResponse

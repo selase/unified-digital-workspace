@@ -10,6 +10,7 @@ use App\Modules\ResultsFramework\Http\Requests\AddReadingRequest;
 use App\Modules\ResultsFramework\Http\Requests\GenerateTargetsRequest;
 use App\Modules\ResultsFramework\Http\Requests\SaveIndicatorRequest;
 use App\Modules\ResultsFramework\Http\Requests\SaveTargetRequest;
+use App\Modules\ResultsFramework\Http\Requests\SaveVarianceNoteRequest;
 use App\Modules\ResultsFramework\Models\ResultIndicator;
 use App\Modules\ResultsFramework\Models\ResultNode;
 use App\Modules\ResultsFramework\Models\ResultProgramme;
@@ -17,6 +18,7 @@ use App\Modules\ResultsFramework\Services\BreakdownService;
 use App\Modules\ResultsFramework\Services\IndicatorService;
 use App\Modules\ResultsFramework\Services\MeasureRegistry;
 use App\Modules\ResultsFramework\Services\TargetService;
+use App\Modules\ResultsFramework\Services\VarianceService;
 use App\Modules\ResultsFramework\Support\CsvReport;
 use App\Services\Tenancy\TenantContext;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -106,6 +108,8 @@ final class IndicatorController extends Controller
             'indicator' => $model,
             'progress' => $progress,
             'trend' => $indicators->trend($model, $viewer, $progress['periods']),
+            'varianceNotes' => $progress['status'] === 'restricted' ? collect() : $model->varianceNotes()->where('tenant_id', $tenantId)->get(),
+            'mayAddVariance' => $model->status === 'active' && in_array($progress['status'], ['behind', 'missed'], true),
             'breakdowns' => $breakdowns->allForIndicator($model, $viewer),
             'readings' => $model->measure_key === null ? $model->readings()->limit(50)->get() : collect(),
             'measureLabel' => $model->measure_key === null ? 'Enter readings by hand' : $measures->label($model->measure_key),
@@ -123,6 +127,33 @@ final class IndicatorController extends Controller
         }
 
         return back()->with('success', 'Reading recorded.');
+    }
+
+    public function addVariance(SaveVarianceNoteRequest $request, VarianceService $variances, string $indicator): RedirectResponse
+    {
+        try {
+            $variances->add($this->findIndicator($request, $indicator), $request->validated('reason'), $request->validated('corrective_action'), (string) $request->user()->uuid);
+        } catch (DomainException $error) {
+            return back()->withInput()->with('error', $error->getMessage());
+        }
+
+        return back()->with('success', 'Variance note added.');
+    }
+
+    public function resolveVariance(Request $request, VarianceService $variances, IndicatorService $indicators, string $indicator, string $note): RedirectResponse
+    {
+        $tenantId = $this->allow($request, 'results.manage');
+        $model = $this->findIndicator($request, $indicator);
+        abort_if($indicators->progress($model, $request->user(), includePeriods: false)['status'] === 'restricted', 404);
+        $variance = $model->varianceNotes()->where('tenant_id', $tenantId)->whereKey($note)->firstOrFail();
+
+        try {
+            $variances->resolve($variance, (string) $request->user()->uuid);
+        } catch (DomainException $error) {
+            return back()->with('error', $error->getMessage());
+        }
+
+        return back()->with('success', 'Variance note resolved.');
     }
 
     public function saveTarget(SaveTargetRequest $request, TargetService $targets, string $indicator): RedirectResponse

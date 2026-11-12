@@ -37,6 +37,12 @@ final class ResultIndicator extends Model
         return $this->hasMany(ResultTarget::class, 'indicator_id');
     }
 
+    /** @return HasMany<ResultVarianceNote, $this> */
+    public function varianceNotes(): HasMany
+    {
+        return $this->hasMany(ResultVarianceNote::class, 'indicator_id')->latest()->orderByDesc('id');
+    }
+
     public function programme(): BelongsTo
     {
         return $this->belongsTo(ResultProgramme::class, 'programme_id');

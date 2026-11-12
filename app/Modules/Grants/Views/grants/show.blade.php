@@ -126,4 +126,21 @@
         @endcan
     </div>
 </div>
+@if($programmeResults !== [])
+    <section class="kt-card">
+        <div class="kt-card-header"><h2 class="kt-card-title">Programme results</h2></div>
+        <div class="kt-card-content space-y-4">
+            @foreach($programmeResults as $result)
+                <div>
+                    <h3><a class="text-primary" href="{{ route('results-framework.programmes.show', $result['programme']->uuid) }}">{{ $result['programme']->name }}</a></h3>
+                    @forelse($result['indicators'] as $indicator)
+                        <p>{{ $indicator['name'] }} · {{ $indicator['current'] }} / {{ $indicator['target'] }} · {{ $indicator['status'] }}</p>
+                    @empty
+                        <p class="text-xs text-muted-foreground">No active indicators</p>
+                    @endforelse
+                </div>
+            @endforeach
+        </div>
+    </section>
+@endif
 @endsection
