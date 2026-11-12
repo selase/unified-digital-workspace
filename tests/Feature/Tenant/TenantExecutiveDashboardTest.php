@@ -51,3 +51,22 @@ it('displays action items and module counters when data exists', function (): vo
     $response->assertViewHas('checklist');
     $response->assertViewHas('usages');
 });
+
+it('omits a small beneficiary figure from dashboard progress verdicts', function (): void {
+    require_once dirname(__DIR__).'/Modules/ResultsFramework/fixtures.php';
+    enableResultMeasureModules($this->tenant, 'beneficiaries', 'results-framework');
+    foreach (['results.view', 'beneficiaries.view'] as $ability) {
+        Permission::firstOrCreate(['name' => $ability, 'guard_name' => 'web'], ['uuid' => (string) Str::uuid(), 'category' => 'results']);
+    }
+    $this->user->givePermissionTo('results.view');
+    $person = App\Modules\Beneficiaries\Models\BenBeneficiary::query()->create(['tenant_id' => $this->tenant->id, 'full_name' => 'Test person']);
+    $person->services()->create(['tenant_id' => $this->tenant->id, 'delivered_on' => today(), 'type' => 'food']);
+    app(App\Modules\ResultsFramework\Services\IndicatorService::class)->create($this->tenant->id, 'Reach', 1, today(), today(), [
+        'measure_key' => 'beneficiaries.people_reached',
+    ]);
+    $url = route('tenant.dashboard', ['subdomain' => $this->tenant->slug]);
+    $this->actingAs($this->user)->withSession(['active_tenant_id' => $this->tenant->id]);
+    $this->get($url)->assertOk()->assertViewHas('moduleCards', fn (array $cards): bool => array_column($cards['results-framework']['kpis'], 'value') === [1, 0, 0]);
+    $this->user->givePermissionTo('beneficiaries.view');
+    $this->get($url)->assertOk()->assertViewHas('moduleCards', fn (array $cards): bool => array_column($cards['results-framework']['kpis'], 'value') === [1, 1, 0]);
+});

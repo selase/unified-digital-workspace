@@ -144,15 +144,16 @@ final class IndicatorService
             }
 
             $value = $target->target_value;
+            $metTarget = is_float($achieved) && ($value < 0 ? $achieved <= $value : $achieved >= $value);
             $percent = match (true) {
                 ! is_float($achieved) => null,
                 $value === 0.0 => $achieved >= 0 ? 100 : 0,
-                default => (int) max(0, min(999, round($achieved / $value * 100))),
+                default => (int) max(0, min($metTarget ? 999 : 99, round($achieved / $value * 100))),
             };
 
             $status = match (true) {
                 is_string($achieved) => 'restricted',
-                $percent >= 100 => 'achieved',
+                $metTarget => 'achieved',
                 $start->gt(today()) => 'pending',
                 $achieved === null => $indicator->measure_key === null ? 'no_reading' : 'unavailable',
                 $end->lt(today()) => 'missed',
@@ -160,6 +161,17 @@ final class IndicatorService
             };
 
             $periods[] = ['start' => $start, 'end' => $end, 'target' => $value, 'achieved' => $achieved, 'percent' => $percent, 'status' => $status];
+        }
+
+        if (array_any($periods, fn (array $period): bool => $period['status'] === 'restricted')) {
+            foreach ($periods as &$period) {
+                if (is_float($period['achieved'])) {
+                    $period['achieved'] = null;
+                    $period['percent'] = null;
+                    $period['status'] = 'restricted';
+                }
+            }
+            unset($period);
         }
 
         return $periods;

@@ -78,14 +78,16 @@ test('live period figures use registry dates and apply the same privacy as overa
     $start = CarbonImmutable::parse('2025-01-01');
     $january = $start->endOfMonth()->startOfDay();
     $february = $january->addMonthNoOverflow()->endOfMonth()->startOfDay();
-    foreach ([$start, $january, $february] as $date) {
+    foreach ([$start, $january, $february, $february, $february] as $date) {
         $beneficiary = BenBeneficiary::query()->create(['tenant_id' => $tenant->id, 'full_name' => 'Person']);
         $beneficiary->services()->create(['tenant_id' => $tenant->id, 'type' => 'food', 'delivered_on' => $date]);
     }
     $service = app(IndicatorService::class);
     $indicator = $service->create($tenant->id, 'Reach', 10, $start, $february, ['measure_key' => 'beneficiaries.people_reached']);
     app(TargetService::class)->set($indicator, $start, $january, 4);
+    app(TargetService::class)->set($indicator, $january->addDay(), $february, 4);
     expect($service->periodProgress($indicator, $user)[0])->toMatchArray(['achieved' => '<3', 'percent' => null, 'status' => 'restricted']);
+    expect($service->periodProgress($indicator, $user)[1])->toMatchArray(['achieved' => null, 'percent' => null, 'status' => 'restricted']);
 
     Permission::firstOrCreate(['name' => 'beneficiaries.view', 'guard_name' => 'web'], ['category' => 'beneficiaries', 'uuid' => (string) Str::uuid()]);
     $user->givePermissionTo('beneficiaries.view');
@@ -117,4 +119,17 @@ test('target forms persist through the indicator page and reject cross-tenant wr
     expect(app(TargetService::class)->forIndicator($generated))->toHaveCount(3);
     $user->revokePermissionTo('results.manage');
     $this->post(route('results-framework.indicators.targets.generate', $indicator->uuid), ['frequency' => 'monthly'])->assertForbidden();
+});
+
+test('rounded progress cannot mark a missed target as achieved', function (): void {
+    [$user, $tenant] = createMonitoringContext();
+    $service = app(IndicatorService::class);
+    $start = today()->subMonth();
+    $end = today()->subDay();
+    $indicator = $service->create($tenant->id, 'Precise target', 100, $start, $end);
+    app(TargetService::class)->set($indicator, $start, $end, 100);
+    $service->record($indicator, 99.6, $end, null, null);
+    expect($service->periodProgress($indicator, $user)[0])->toMatchArray(['percent' => 99, 'status' => 'missed']);
+    $service->record($indicator, 100, $end, null, null);
+    expect($service->periodProgress($indicator, $user)[0])->toMatchArray(['percent' => 100, 'status' => 'achieved']);
 });

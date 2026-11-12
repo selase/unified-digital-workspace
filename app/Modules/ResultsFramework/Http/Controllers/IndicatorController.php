@@ -17,6 +17,7 @@ use App\Modules\ResultsFramework\Services\BreakdownService;
 use App\Modules\ResultsFramework\Services\IndicatorService;
 use App\Modules\ResultsFramework\Services\MeasureRegistry;
 use App\Modules\ResultsFramework\Services\TargetService;
+use App\Modules\ResultsFramework\Support\CsvReport;
 use App\Services\Tenancy\TenantContext;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
@@ -180,13 +181,7 @@ final class IndicatorController extends Controller
             return response($output, 200, ['Content-Type' => 'application/pdf', 'Content-Disposition' => 'inline; filename="'.$name.'.pdf"']);
         }
 
-        return response()->streamDownload(function () use ($rows): void {
-            $out = fopen('php://output', 'wb');
-            foreach ($rows as $row) {
-                fputcsv($out, array_map(fn ($cell): string => (string) ($cell ?? ''), $row), ',', '"', '');
-            }
-            fclose($out);
-        }, $name.'.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
+        return CsvReport::download($rows, $name.'.csv');
     }
 
     private function findIndicator(Request $request, string $uuid): ResultIndicator

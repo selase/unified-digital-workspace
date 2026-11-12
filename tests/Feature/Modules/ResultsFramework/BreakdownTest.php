@@ -136,3 +136,13 @@ test('restricted totals and buckets stay masked in indicator views and exports',
     $this->get($show)->assertOk()->assertViewHas('progress', fn (array $progress): bool => $progress['current'] === 2.0);
     expect($this->get(route('results-framework.report'))->assertOk()->streamedContent())->toContain('Male: 2', 'Female: 3');
 });
+
+test('indicator CSV neutralises formula text while keeping signed numeric cells', function (): void {
+    [$user, $tenant] = createMonitoringContext();
+    $indicator = app(IndicatorService::class)->create($tenant->id, '=1+1', 5, today(), today(), ['baseline' => -2]);
+    $indicator->update(['unit' => " \t@SUM(1)"]);
+    $csv = $this->actingAs($user)->withSession(['active_tenant_id' => $tenant->id])
+        ->get(route('results-framework.report'))->assertOk()->streamedContent();
+    $row = str_getcsv(explode("\n", $csv)[2], ',', '"', '');
+    expect([$row[0], $row[2], $row[3]])->toBe(["'=1+1", "' \t@SUM(1)", '-2']);
+});

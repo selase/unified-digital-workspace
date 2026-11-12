@@ -7,6 +7,9 @@
 @if($periods !== [] || auth()->user()->can('results.manage'))
     <section class="kt-card">
         <div class="kt-card-header"><h2 class="kt-card-title">Period targets</h2></div>
+        @if(in_array('restricted', array_column($periods, 'status'), true))
+            <p class="kt-card-content text-xs text-muted-foreground">{{ \App\Modules\ResultsFramework\Services\BreakdownService::HIDDEN_NOTE }}</p>
+        @endif
         @if($periods !== [])
             <div class="kt-card-table kt-scrollable-x-auto">
                 <table class="kt-table table-auto kt-table-border">
