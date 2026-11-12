@@ -31,6 +31,12 @@ final class ResultIndicator extends Model
         return $this->hasMany(ResultReading::class, 'indicator_id')->orderByDesc('recorded_on')->orderByDesc('id');
     }
 
+    /** @return HasMany<ResultTarget, $this> */
+    public function targets(): HasMany
+    {
+        return $this->hasMany(ResultTarget::class, 'indicator_id');
+    }
+
     public function programme(): BelongsTo
     {
         return $this->belongsTo(ResultProgramme::class, 'programme_id');

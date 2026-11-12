@@ -26,7 +26,7 @@ final class IndicatorService
 {
     private const FIELDS = ['name', 'description', 'definition', 'means_of_verification', 'programme_id', 'result_id', 'unit', 'measure_key', 'measure_filters', 'baseline', 'target', 'starts_on', 'ends_on', 'grant_id'];
 
-    public function __construct(private MeasureRegistry $measures, private BreakdownService $breakdowns) {}
+    public function __construct(private MeasureRegistry $measures, private BreakdownService $breakdowns, private TargetService $targets) {}
 
     public function create(string $tenantId, string $name, float $target, CarbonInterface $startsOn, CarbonInterface $endsOn, array $details = [], bool $allowDisabledMeasure = false): ResultIndicator
     {
@@ -39,7 +39,13 @@ final class IndicatorService
 
     public function update(ResultIndicator $indicator, array $details): ResultIndicator
     {
-        return $this->save($indicator, $details);
+        return $indicator->getConnection()->transaction(function () use ($indicator, $details): ResultIndicator {
+            $locked = ResultIndicator::query()->where('tenant_id', $indicator->tenant_id)->whereKey($indicator->id)
+                ->lockForUpdate()->firstOrFail();
+            $indicator->setRawAttributes($locked->getAttributes(), true);
+
+            return $this->save($indicator, $details);
+        });
     }
 
     public function record(ResultIndicator $indicator, float $value, CarbonInterface $date, ?string $note, ?string $userId, array $breakdowns = []): ResultReading
@@ -93,9 +99,9 @@ final class IndicatorService
     /**
      * Progress from baseline towards target, how much of the time has passed, and a plain verdict.
      *
-     * @return array{current: float|string|null, percent: ?int, time_percent: int, status: string}
+     * @return array{current: float|string|null, percent: ?int, time_percent: int, status: string, periods: list<array{start: CarbonInterface, end: CarbonInterface, target: float, achieved: float|string|null, percent: ?int, status: string}>}
      */
-    public function progress(ResultIndicator $indicator, User $viewer): array
+    public function progress(ResultIndicator $indicator, User $viewer, bool $includePeriods = true): array
     {
         $current = $this->current($indicator);
         if ($current !== null) {
@@ -117,7 +123,46 @@ final class IndicatorService
             default => 'on_track',
         };
 
-        return ['current' => $current, 'percent' => $percent, 'time_percent' => $timePercent, 'status' => $status];
+        return [
+            'current' => $current, 'percent' => $percent, 'time_percent' => $timePercent, 'status' => $status,
+            'periods' => $includePeriods ? $this->periodProgress($indicator, $viewer) : [],
+        ];
+    }
+
+    /** @return list<array{start: CarbonInterface, end: CarbonInterface, target: float, achieved: float|string|null, percent: ?int, status: string}> */
+    public function periodProgress(ResultIndicator $indicator, User $viewer): array
+    {
+        $periods = [];
+        $maySeeExact = $this->measures->canSeeExactValue($indicator->measure_key, $viewer);
+
+        foreach ($this->targets->forIndicator($indicator) as $target) {
+            $start = $target->period_start;
+            $end = $target->period_end;
+            $achieved = $this->periodFigure($indicator, $start, $end);
+            if ($achieved !== null) {
+                $achieved = Dimensions::protect($achieved, $maySeeExact);
+            }
+
+            $value = $target->target_value;
+            $percent = match (true) {
+                ! is_float($achieved) => null,
+                $value === 0.0 => $achieved >= 0 ? 100 : 0,
+                default => (int) max(0, min(999, round($achieved / $value * 100))),
+            };
+
+            $status = match (true) {
+                is_string($achieved) => 'restricted',
+                $percent >= 100 => 'achieved',
+                $start->gt(today()) => 'pending',
+                $achieved === null => $indicator->measure_key === null ? 'no_reading' : 'unavailable',
+                $end->lt(today()) => 'missed',
+                default => 'in_progress',
+            };
+
+            $periods[] = ['start' => $start, 'end' => $end, 'target' => $value, 'achieved' => $achieved, 'percent' => $percent, 'status' => $status];
+        }
+
+        return $periods;
     }
 
     /**
@@ -131,7 +176,7 @@ final class IndicatorService
         $labels = ['achieved' => 'Achieved', 'missed' => 'Missed', 'behind' => 'Behind', 'on_track' => 'On track', 'unavailable' => 'Unavailable', 'restricted' => 'Restricted'];
 
         foreach (ResultIndicator::query()->where('tenant_id', $tenantId)->where('status', 'active')->with(['tenant', 'programme' => fn ($query) => $query->where('tenant_id', $tenantId)])->orderBy('programme_id')->orderBy('name')->get() as $indicator) {
-            $progress = $this->progress($indicator, $viewer);
+            $progress = $this->progress($indicator, $viewer, includePeriods: false);
             $breakdownLines = [];
             foreach ($this->breakdowns->allForIndicator($indicator, $viewer) as $dimension => $buckets) {
                 if ($buckets === null) {
@@ -150,6 +195,26 @@ final class IndicatorService
         return $rows;
     }
 
+    private function periodFigure(ResultIndicator $indicator, CarbonInterface $start, CarbonInterface $end): ?float
+    {
+        if ($indicator->measure_key === null) {
+            $reading = $indicator->readings()->where('tenant_id', $indicator->tenant_id)
+                ->whereBetween('recorded_on', [$start->toDateString(), $end->toDateString()])->value('value');
+
+            return $reading === null ? null : (float) $reading;
+        }
+
+        try {
+            return $this->measures->value(
+                $indicator->tenant ?? Tenant::query()->findOrFail($indicator->tenant_id),
+                $indicator->measure_key,
+                new MeasureQuery($start, $end, $indicator->measure_filters ?? []),
+            );
+        } catch (MeasureUnavailable) {
+            return null;
+        }
+    }
+
     private function save(ResultIndicator $indicator, array $details, bool $allowDisabledMeasure = false): ResultIndicator
     {
         $candidate = clone $indicator;
@@ -157,6 +222,12 @@ final class IndicatorService
         $candidate->baseline = $candidate->baseline ?? 0.0;
         if (! $candidate->starts_on || ! $candidate->ends_on || CarbonImmutable::parse($candidate->ends_on)->lt($candidate->starts_on)) {
             throw new DomainException('The indicator must end after it starts.');
+        }
+        if ($indicator->exists && $candidate->isDirty(['starts_on', 'ends_on'])
+            && $indicator->targets()->where('tenant_id', $indicator->tenant_id)
+                ->where(fn ($query) => $query->where('period_start', '<', $candidate->starts_on->toDateString())
+                    ->orWhere('period_end', '>', $candidate->ends_on->toDateString()))->exists()) {
+            throw new DomainException('The indicator dates must include its existing period targets.');
         }
         $filters = $candidate->measure_filters ?? [];
         if ($candidate->measure_key === null && $filters !== []) {

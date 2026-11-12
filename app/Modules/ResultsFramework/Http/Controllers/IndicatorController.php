@@ -7,13 +7,16 @@ namespace App\Modules\ResultsFramework\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Models\Tenant;
 use App\Modules\ResultsFramework\Http\Requests\AddReadingRequest;
+use App\Modules\ResultsFramework\Http\Requests\GenerateTargetsRequest;
 use App\Modules\ResultsFramework\Http\Requests\SaveIndicatorRequest;
+use App\Modules\ResultsFramework\Http\Requests\SaveTargetRequest;
 use App\Modules\ResultsFramework\Models\ResultIndicator;
 use App\Modules\ResultsFramework\Models\ResultNode;
 use App\Modules\ResultsFramework\Models\ResultProgramme;
 use App\Modules\ResultsFramework\Services\BreakdownService;
 use App\Modules\ResultsFramework\Services\IndicatorService;
 use App\Modules\ResultsFramework\Services\MeasureRegistry;
+use App\Modules\ResultsFramework\Services\TargetService;
 use App\Services\Tenancy\TenantContext;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
@@ -33,7 +36,7 @@ final class IndicatorController extends Controller
         $rows = ResultIndicator::query()->where('tenant_id', $tenantId)->orderByRaw("case status when 'active' then 0 else 1 end")->with(['programme', 'tenant'])->orderBy('programme_id')->orderBy('name')->get()
             ->map(fn (ResultIndicator $indicator): array => [
                 'indicator' => $indicator,
-                'progress' => $indicators->progress($indicator, $viewer),
+                'progress' => $indicators->progress($indicator, $viewer, includePeriods: false),
                 'hiddenBreakdowns' => ! $maySeeExact && in_array(null, $breakdowns->allForIndicator($indicator, $viewer), true),
             ]);
 
@@ -118,6 +121,37 @@ final class IndicatorController extends Controller
         return back()->with('success', 'Reading recorded.');
     }
 
+    public function saveTarget(SaveTargetRequest $request, TargetService $targets, string $indicator): RedirectResponse
+    {
+        $model = $this->findIndicator($request, $indicator);
+
+        try {
+            $targets->set(
+                $model,
+                Carbon::parse($request->validated('period_start')),
+                Carbon::parse($request->validated('period_end')),
+                (float) $request->validated('target_value'),
+            );
+        } catch (DomainException $error) {
+            return back()->withInput()->with('error', $error->getMessage());
+        }
+
+        return redirect()->route('results-framework.indicators.show', $indicator)->with('success', 'Period target saved.');
+    }
+
+    public function generateTargets(GenerateTargetsRequest $request, TargetService $targets, string $indicator): RedirectResponse
+    {
+        $model = $this->findIndicator($request, $indicator);
+
+        try {
+            $targets->generate($model, $request->validated('frequency'));
+        } catch (DomainException $error) {
+            return back()->withInput()->with('error', $error->getMessage());
+        }
+
+        return redirect()->route('results-framework.indicators.show', $indicator)->with('success', 'Period targets generated.');
+    }
+
     public function toggle(Request $request, string $indicator): RedirectResponse
     {
         $tenantId = $this->allow($request, 'results.manage');
@@ -153,6 +187,11 @@ final class IndicatorController extends Controller
             }
             fclose($out);
         }, $name.'.csv', ['Content-Type' => 'text/csv; charset=UTF-8']);
+    }
+
+    private function findIndicator(Request $request, string $uuid): ResultIndicator
+    {
+        return ResultIndicator::query()->where('tenant_id', $this->tenantId($request))->where('uuid', $uuid)->firstOrFail();
     }
 
     private function tenantId(Request $request): string

@@ -23,3 +23,6 @@ Route::delete('programmes/{programme}/results/{result}', [ResultNodeController::
 
 Route::get('/indicators/{indicator}/edit', [IndicatorController::class, 'edit'])->name('indicators.edit');
 Route::put('/indicators/{indicator}', [IndicatorController::class, 'update'])->name('indicators.update');
+
+Route::post('/indicators/{indicator}/targets', [IndicatorController::class, 'saveTarget'])->name('indicators.targets.store');
+Route::post('/indicators/{indicator}/targets/generate', [IndicatorController::class, 'generateTargets'])->name('indicators.targets.generate');

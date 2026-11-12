@@ -133,7 +133,7 @@ final class DashboardController extends Controller
         if ($viewer?->can('results.view') && $moduleManager->isEnabledForTenant('results-framework', $tenant)) {
             try {
                 $melIndicators = app(\App\Modules\ResultsFramework\Services\IndicatorService::class);
-                $melProgress = \App\Modules\ResultsFramework\Models\ResultIndicator::query()->where('tenant_id', $tenant->id)->where('status', 'active')->get()->map(fn ($indicator): string => $melIndicators->progress($indicator, $viewer)['status']);
+                $melProgress = \App\Modules\ResultsFramework\Models\ResultIndicator::query()->where('tenant_id', $tenant->id)->where('status', 'active')->get()->map(fn ($indicator): string => $melIndicators->progress($indicator, $viewer, includePeriods: false)['status']);
                 $moduleCards['results-framework'] = [
                     'name' => 'Results Framework',
                     'route' => Route::has('results-framework.index') ? route('results-framework.index') : '#',
