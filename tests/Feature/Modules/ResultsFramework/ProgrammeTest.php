@@ -31,6 +31,8 @@ test('programmes can be updated and closed and validate dates and tenant-local n
 test('the programme migration preserves legacy labels and assigns unlabelled indicators to General', function (): void {
     $migration = require app_path('Modules/ResultsFramework/Database/Migrations/2026_11_12_100200_create_rf_programmes.php');
     $chainMigration = require app_path('Modules/ResultsFramework/Database/Migrations/2026_11_12_100300_create_rf_results.php');
+    $indicatorMigration = require app_path('Modules/ResultsFramework/Database/Migrations/2026_11_12_100400_extend_rf_indicators.php');
+    $indicatorMigration->down();
     $chainMigration->down();
     $migration->down();
     $db = DB::connection('tenant');
@@ -51,6 +53,7 @@ test('the programme migration preserves legacy labels and assigns unlabelled ind
         ->toBe([$programmes['Water'], $programmes['Water'], $programmes['General']])
         ->and($db->table('rf_indicators')->whereIn('id', $ids)->orderBy('id')->pluck('programme')->all())
         ->toBe(['Water', 'Water', null]);
+    $indicatorMigration->up();
 });
 
 test('programme pages enforce access and group indicators by the linked programme', function (): void {

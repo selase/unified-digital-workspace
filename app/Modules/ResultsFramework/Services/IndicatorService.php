@@ -8,8 +8,10 @@ use App\Modules\ResultsFramework\Models\ResultIndicator;
 use App\Modules\ResultsFramework\Models\ResultNode;
 use App\Modules\ResultsFramework\Models\ResultProgramme;
 use App\Modules\ResultsFramework\Models\ResultReading;
+use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use DomainException;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
@@ -19,52 +21,25 @@ use Illuminate\Support\Facades\Schema;
  */
 final class IndicatorService
 {
-    /**
-     * @param  array{description?: string|null, programme?: string|null, unit?: string|null, source?: string|null, baseline?: float|int|null, grant_id?: int|null}  $details
-     */
+    private const FIELDS = ['name', 'description', 'definition', 'means_of_verification', 'programme_id', 'result_id', 'unit', 'source', 'baseline', 'target', 'starts_on', 'ends_on', 'grant_id'];
+
     public function create(string $tenantId, string $name, float $target, CarbonInterface $startsOn, CarbonInterface $endsOn, array $details = []): ResultIndicator
     {
-        if ($endsOn->lt($startsOn)) {
-            throw new DomainException('The indicator must end after it starts.');
-        }
-        $source = $details['source'] ?? 'manual';
-        if (! array_key_exists($source, ResultIndicator::SOURCES)) {
-            throw new DomainException('Choose where the figure comes from.');
-        }
-        $baseline = (float) ($details['baseline'] ?? 0);
-        if ($target === $baseline) {
-            throw new DomainException('The target must be different from the starting figure.');
+        $indicator = new ResultIndicator(['tenant_id' => $tenantId, 'status' => 'active']);
+
+        return $this->save($indicator, [
+            'name' => $name, 'target' => $target, 'starts_on' => $startsOn->toDateString(), 'ends_on' => $endsOn->toDateString(),
+        ] + $details);
+    }
+
+    public function update(ResultIndicator $indicator, array $details): ResultIndicator
+    {
+        if (isset($details['source']) && $details['source'] !== $indicator->source
+            && ! ($details['confirm_source_change'] ?? false) && $indicator->readings()->exists()) {
+            throw new DomainException('Confirm the change of source because this indicator already has readings.');
         }
 
-        $programme = null;
-        if (isset($details['programme_id'])) {
-            $programme = ResultProgramme::query()->where('tenant_id', $tenantId)->find($details['programme_id']);
-            if (! $programme) {
-                throw new DomainException('Choose a programme in your organisation.');
-            }
-        }
-
-        if (isset($details['result_id']) && (! $programme || ! ResultNode::query()->where('tenant_id', $tenantId)
-            ->where('programme_id', $programme->id)->whereKey($details['result_id'])->exists())) {
-            throw new DomainException('Choose a result from this indicator’s programme.');
-        }
-
-        return ResultIndicator::query()->create([
-            'tenant_id' => $tenantId,
-            'name' => $name,
-            'description' => $details['description'] ?? null,
-            'programme' => $programme?->name ?? $details['programme'] ?? null,
-            'programme_id' => $programme?->id,
-            'result_id' => $details['result_id'] ?? null,
-            'unit' => ($details['unit'] ?? null) ?: 'people',
-            'source' => $source,
-            'baseline' => $baseline,
-            'target' => $target,
-            'starts_on' => $startsOn->toDateString(),
-            'ends_on' => $endsOn->toDateString(),
-            'grant_id' => $details['grant_id'] ?? null,
-            'status' => 'active',
-        ]);
+        return $this->save($indicator, $details);
     }
 
     public function record(ResultIndicator $indicator, float $value, CarbonInterface $date, ?string $note, ?string $userId): ResultReading
@@ -143,11 +118,44 @@ final class IndicatorService
         $rows = [['Indicator report', 'As at '.today()->toDateString()], ['Indicator', 'Programme', 'Unit', 'Baseline', 'Target', 'Current', 'Progress %', 'Period', 'Status']];
         $labels = ['achieved' => 'Achieved', 'missed' => 'Missed', 'behind' => 'Behind', 'on_track' => 'On track'];
 
-        foreach (ResultIndicator::query()->where('tenant_id', $tenantId)->where('status', 'active')->with('programme')->orderBy('programme')->orderBy('name')->get() as $indicator) {
+        foreach (ResultIndicator::query()->where('tenant_id', $tenantId)->where('status', 'active')->with(['programme' => fn ($query) => $query->where('tenant_id', $tenantId)])->orderBy('programme_id')->orderBy('name')->get() as $indicator) {
             $progress = $this->progress($indicator);
             $rows[] = [$indicator->name, $indicator->programmeName(), $indicator->unit, $indicator->baseline, $indicator->target, $progress['current'], $progress['percent'], $indicator->starts_on->toDateString().' to '.$indicator->ends_on->toDateString(), $labels[$progress['status']]];
         }
 
         return $rows;
+    }
+
+    private function save(ResultIndicator $indicator, array $details): ResultIndicator
+    {
+        $candidate = clone $indicator;
+        $candidate->fill(Arr::only($details, self::FIELDS));
+        $candidate->baseline = $candidate->baseline ?? 0.0;
+        $candidate->unit = $candidate->unit ?: 'people';
+        if (! $candidate->starts_on || ! $candidate->ends_on || CarbonImmutable::parse($candidate->ends_on)->lt($candidate->starts_on)) {
+            throw new DomainException('The indicator must end after it starts.');
+        }
+        if (! array_key_exists((string) $candidate->source, ResultIndicator::SOURCES)) {
+            throw new DomainException('Choose where the figure comes from.');
+        }
+        if ($candidate->target === $candidate->baseline) {
+            throw new DomainException('The target must be different from the starting figure.');
+        }
+
+        $programmeId = $candidate->programme_id;
+        if ($programmeId !== null && ! ResultProgramme::query()->where('tenant_id', $candidate->tenant_id)->whereKey($programmeId)->exists()) {
+            throw new DomainException('Choose a programme in your organisation.');
+        }
+
+        if ($candidate->result_id !== null && (! $programmeId || ! ResultNode::query()->where('tenant_id', $candidate->tenant_id)
+            ->where('programme_id', $programmeId)->whereKey($candidate->result_id)->exists())) {
+            throw new DomainException('Choose a result from this indicator’s programme.');
+        }
+
+        $indicator->fill(Arr::only($candidate->getAttributes(), self::FIELDS));
+        $indicator->save();
+        $indicator->unsetRelation('programme')->unsetRelation('node');
+
+        return $indicator;
     }
 }

@@ -20,3 +20,6 @@ Route::post('programmes/{programme}/close', [ProgrammeController::class, 'close'
 Route::post('programmes/{programme}/results', [ResultNodeController::class, 'store'])->name('programmes.results.store');
 Route::patch('programmes/{programme}/results/{result}', [ResultNodeController::class, 'move'])->name('programmes.results.move');
 Route::delete('programmes/{programme}/results/{result}', [ResultNodeController::class, 'destroy'])->name('programmes.results.destroy');
+
+Route::get('/indicators/{indicator}/edit', [IndicatorController::class, 'edit'])->name('indicators.edit');
+Route::put('/indicators/{indicator}', [IndicatorController::class, 'update'])->name('indicators.update');

@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace App\Modules\SiteThyroidGhanaFoundation\Demo\Sections;
 
 use App\Models\Tenant;
+use App\Modules\ResultsFramework\Models\ResultNode;
+use App\Modules\ResultsFramework\Models\ResultProgramme;
 use App\Modules\ResultsFramework\Services\IndicatorService;
+use App\Modules\SiteThyroidGhanaFoundation\Demo\DemoManifest;
 use App\Modules\SiteThyroidGhanaFoundation\Demo\DemoSection;
 use App\Modules\SiteThyroidGhanaFoundation\Demo\RowRemover;
 use Carbon\CarbonImmutable;
@@ -25,23 +28,46 @@ final class ResultsSection implements DemoSection
         $start = today()->startOfYear();
         $end = today()->endOfYear();
 
-        $screened = $service->create($tenantId, 'Demo: People screened for thyroid disease', 2000, $start, $end, ['programme' => 'Screening camps', 'unit' => 'people', 'baseline' => 0, 'description' => 'People tested at screening camps this year.']);
+        $screened = $service->create($tenantId, 'Demo: People screened for thyroid disease', 2000, $start, $end, ['programme_id' => $this->demoProgramme($tenant, 'Screening camps'), 'unit' => 'people', 'baseline' => 0, 'description' => 'People tested at screening camps this year.']);
         foreach ([[90, 250], [60, 610], [30, 980], [1, 1320]] as [$daysAgo, $value]) {
             $service->record($screened, $value, today()->subDays($daysAgo), null, null);
         }
 
-        $surgeries = $service->create($tenantId, 'Demo: Subsidised surgeries completed', 40, $start, $end, ['programme' => 'Subsidised surgery', 'unit' => 'operations']);
+        $surgeries = $service->create($tenantId, 'Demo: Subsidised surgeries completed', 40, $start, $end, ['programme_id' => $this->demoProgramme($tenant, 'Subsidised surgery'), 'unit' => 'operations']);
         $service->record($surgeries, 9, today()->subDays(45), 'Phase 2, first cohort', null);
 
-        $service->create($tenantId, 'Demo: People reached with services', 500, $start, $end, ['programme' => 'All programmes', 'unit' => 'people', 'source' => 'beneficiaries_reached']);
-        $service->create($tenantId, 'Demo: Volunteer hours given', 800, $start, $end, ['programme' => 'Volunteering', 'unit' => 'hours', 'source' => 'volunteer_hours']);
-        $service->create($tenantId, 'Demo: Donations raised', 250000, $start, $end, ['programme' => 'Fundraising', 'unit' => 'GHS', 'source' => 'donations_total']);
+        $service->create($tenantId, 'Demo: People reached with services', 500, $start, $end, ['programme_id' => $this->demoProgramme($tenant, 'All programmes'), 'unit' => 'people', 'source' => 'beneficiaries_reached']);
+        $service->create($tenantId, 'Demo: Volunteer hours given', 800, $start, $end, ['programme_id' => $this->demoProgramme($tenant, 'Volunteering'), 'unit' => 'hours', 'source' => 'volunteer_hours']);
+        $service->create($tenantId, 'Demo: Donations raised', 250000, $start, $end, ['programme_id' => $this->demoProgramme($tenant, 'Fundraising'), 'unit' => 'GHS', 'source' => 'donations_total']);
     }
 
     public function remove(Tenant $tenant, CarbonImmutable $since): int
     {
         $remover = new RowRemover;
 
-        return $remover->children('rf_readings', 'indicator_id', 'rf_indicators', $tenant, $since, 'name') + $remover->rows('rf_indicators', $tenant, $since, 'name');
+        $removed = $remover->children('rf_readings', 'indicator_id', 'rf_indicators', $tenant, $since, 'name') + $remover->rows('rf_indicators', $tenant, $since, 'name');
+
+        if ($tenant->slug !== 'thyroid-ghana-foundation') {
+            return $removed;
+        }
+
+        $ids = app(DemoManifest::class)->resultProgrammeIds($tenant);
+
+        return $removed + ResultProgramme::query()->where('tenant_id', $tenant->id)->whereKey($ids)
+            ->where('created_at', '>=', $since)->where('name', 'like', 'Demo: %')
+            ->whereDoesntHave('indicators')
+            ->whereNotIn('id', ResultNode::query()->where('tenant_id', $tenant->id)->select('programme_id'))
+            ->delete();
+    }
+
+    private function demoProgramme(Tenant $tenant, string $name): int
+    {
+        $programme = ResultProgramme::query()->firstOrCreate(['tenant_id' => $tenant->id, 'name' => 'Demo: '.$name]);
+
+        if ($programme->wasRecentlyCreated) {
+            app(DemoManifest::class)->rememberResultProgrammeId($tenant, $programme->id);
+        }
+
+        return $programme->id;
     }
 }

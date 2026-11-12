@@ -152,3 +152,30 @@ describe('Demo data across all eight modules', function (): void {
         expect(tgfAllRowCounts($tenant))->toBe($before);
     });
 });
+
+test('results cleanup removes only newly seeded labelled programmes with no indicators left', function (): void {
+    $tenant = tgfNgoTenant();
+    $manifest = app(App\Modules\SiteThyroidGhanaFoundation\Demo\DemoManifest::class);
+    $section = new App\Modules\SiteThyroidGhanaFoundation\Demo\Sections\ResultsSection;
+    $programmes = app(App\Modules\ResultsFramework\Services\ProgrammeService::class);
+    $older = $programmes->create($tenant->id, 'Demo: Earlier programme');
+    $older->forceFill(['created_at' => now()->subDay()])->save();
+    $since = $manifest->begin($tenant);
+    $section->seed($tenant);
+    $created = App\Modules\ResultsFramework\Models\ResultProgramme::query()->where('tenant_id', $tenant->id)->where('created_at', '>=', $since)->get();
+    expect($created)->not->toBeEmpty()
+        ->and($created->every(fn ($programme): bool => str_starts_with($programme->name, 'Demo: ')))->toBeTrue();
+
+    $withIndicator = $created->first();
+    $unlabelled = $created->last();
+    $unlabelled->update(['name' => 'Keep renamed programme']);
+    $notSeeded = $programmes->create($tenant->id, 'Demo: Manually created');
+    $real = app(App\Modules\ResultsFramework\Services\IndicatorService::class)->create($tenant->id, 'Keep real indicator', 10, today(), today()->addDay(), ['programme_id' => $withIndicator->id]);
+    $section->remove($tenant, $since);
+    expect($real->fresh())->not->toBeNull()
+        ->and($withIndicator->fresh())->not->toBeNull()
+        ->and($unlabelled->fresh())->not->toBeNull()
+        ->and($notSeeded->fresh())->not->toBeNull()
+        ->and($older->fresh())->not->toBeNull()
+        ->and($created->except([$withIndicator->id, $unlabelled->id])->every(fn ($programme): bool => $programme->fresh() === null))->toBeTrue();
+});

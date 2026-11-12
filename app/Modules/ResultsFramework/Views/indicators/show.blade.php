@@ -8,7 +8,7 @@
     <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
             <h1 class="text-xl font-bold text-foreground">{{ $indicator->name }}</h1>
-            <p class="text-xs text-muted-foreground">{{ $indicator->programme ?: 'No programme' }} · {{ $sources[$indicator->source] }} · {{ $indicator->starts_on->toInstitutionalDate() }} to {{ $indicator->ends_on->toInstitutionalDate() }}</p>
+            <p class="text-xs text-muted-foreground">{{ $indicator->programmeName() }} · {{ $sources[$indicator->source] }} · {{ $indicator->starts_on->toInstitutionalDate() }} to {{ $indicator->ends_on->toInstitutionalDate() }}</p>
         </div>
         <div class="flex gap-2">
             <a class="kt-btn kt-btn-sm kt-btn-outline" href="{{ route('results-framework.index') }}">All indicators</a>
@@ -16,6 +16,15 @@
         </div>
     </div>
 
+    @can('results.manage')
+        <a class="kt-btn kt-btn-outline" href="{{ route('results-framework.indicators.edit', $indicator->uuid) }}">Edit indicator</a>
+    @endcan
+    @if($indicator->definition || $indicator->means_of_verification)
+        <div class="kt-card"><div class="kt-card-content">
+            @if($indicator->definition)<p><strong>Definition:</strong> {{ $indicator->definition }}</p>@endif
+            @if($indicator->means_of_verification)<p><strong>Means of verification:</strong> {{ $indicator->means_of_verification }}</p>@endif
+        </div></div>
+    @endif
     @include('results-framework::partials.flash')
 
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">

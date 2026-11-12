@@ -149,7 +149,8 @@ describe('Indicator screens', function (): void {
         $this->actingAs($user)->withSession(['active_tenant_id' => $tenant->id]);
 
         $this->get(route('results-framework.index'))->assertOk()->assertSee('Results Framework');
-        $this->post(route('results-framework.indicators.store'), ['name' => 'Wells built', 'programme' => 'Water', 'unit' => 'wells', 'source' => 'manual', 'baseline' => 0, 'target' => 12, 'starts_on' => today()->startOfYear()->toDateString(), 'ends_on' => today()->endOfYear()->toDateString()])->assertRedirect();
+        $programme = app(App\Modules\ResultsFramework\Services\ProgrammeService::class)->create($tenant->id, 'Water');
+        $this->post(route('results-framework.indicators.store'), ['name' => 'Wells built', 'programme_id' => $programme->id, 'unit' => 'wells', 'source' => 'manual', 'baseline' => 0, 'target' => 12, 'starts_on' => today()->startOfYear()->toDateString(), 'ends_on' => today()->endOfYear()->toDateString()])->assertRedirect();
         $model = ResultIndicator::query()->firstOrFail();
 
         $this->get(route('results-framework.indicators.show', $model->uuid))->assertOk()->assertSee('Wells built')->assertSee('Add a reading');
@@ -219,4 +220,55 @@ test('legacy results bookmarks redirect permanently to the corresponding results
 
     $this->actingAs($user)->get('/programme-results')->assertRedirect('/results-framework')->assertStatus(301);
     $this->get('/programme-results/indicators/1')->assertRedirect('/results-framework/indicators/1')->assertStatus(301);
+});
+
+test('indicator edits round trip the definition and verification and preserve decreasing progress', function (): void {
+    [$user, $tenant] = createMonitoringContext();
+    $service = app(IndicatorService::class);
+    $model = indicator($tenant, ['name' => 'Malaria cases', 'baseline' => 400, 'target' => 100]);
+    $service->record($model, 250, today()->subDay(), null, null);
+    expect($service->progress($model)['status'])->toBe('on_track');
+    $service->record($model, 100, today(), null, null);
+    expect($service->progress($model)['status'])->toBe('achieved');
+
+    $programme = app(App\Modules\ResultsFramework\Services\ProgrammeService::class)->create($tenant->id, 'Health');
+    $node = app(App\Modules\ResultsFramework\Services\ResultChainService::class)->add($programme, 'outcome', 'Fewer cases');
+    $fields = [
+        'name' => 'Confirmed malaria cases', 'description' => 'Reported cases',
+        'definition' => 'Confirmed cases in the programme period',
+        'means_of_verification' => 'Lab register and routine surveillance report',
+        'programme_id' => $programme->id, 'result_id' => $node->id, 'unit' => 'cases',
+        'source' => 'manual', 'baseline' => 400, 'target' => 100,
+        'starts_on' => today()->subDays(100)->toDateString(), 'ends_on' => today()->addDays(100)->toDateString(),
+    ];
+
+    $this->actingAs($user)->withSession(['active_tenant_id' => $tenant->id]);
+    $this->get(route('results-framework.indicators.edit', $model->uuid))->assertOk()->assertSee('Edit indicator');
+    $this->put(route('results-framework.indicators.update', $model->uuid), $fields)->assertRedirect(route('results-framework.indicators.show', $model->uuid));
+    $model->refresh();
+    expect($model->only(array_keys(array_diff_key($fields, array_flip(['starts_on', 'ends_on', 'baseline', 'target'])))))
+        ->toEqual(array_diff_key($fields, array_flip(['starts_on', 'ends_on', 'baseline', 'target'])))
+        ->and($model->starts_on->toDateString())->toBe($fields['starts_on'])
+        ->and($model->ends_on->toDateString())->toBe($fields['ends_on'])
+        ->and($model->baseline)->toBe(400.0)->and($model->target)->toBe(100.0)
+        ->and($model->getConnection()->getSchemaBuilder()->hasColumn('rf_indicators', 'programme'))->toBeFalse();
+    $this->get(route('results-framework.indicators.show', $model->uuid))
+        ->assertOk()->assertSee($fields['definition'])->assertSee($fields['means_of_verification']);
+    expect(fn () => $service->update($model, ['source' => 'donations_total']))->toThrow(DomainException::class)
+        ->and(fn () => $service->update($model->fresh(), ['target' => 400]))->toThrow(DomainException::class);
+});
+
+test('indicator editing requires manage permission and returns 404 for another tenant', function (): void {
+    [$user, $tenant] = createMonitoringContext();
+    $model = indicator($tenant);
+    $foreign = ResultIndicator::query()->create([
+        'tenant_id' => Tenant::factory()->create()->id, 'name' => 'Foreign indicator',
+        'target' => 20, 'starts_on' => today(), 'ends_on' => today()->addDay(),
+    ]);
+    $this->actingAs($user)->withSession(['active_tenant_id' => $tenant->id]);
+    $this->get(route('results-framework.indicators.edit', $foreign->uuid))->assertNotFound();
+    $user->revokePermissionTo('results.manage');
+    app(Spatie\Permission\PermissionRegistrar::class)->forgetCachedPermissions();
+    $this->get(route('results-framework.indicators.edit', $model->uuid))->assertForbidden();
+    $this->put(route('results-framework.indicators.update', $model->uuid), [])->assertForbidden();
 });

@@ -26,7 +26,7 @@ final class IndicatorController extends Controller
     public function index(Request $request, IndicatorService $indicators): View
     {
         $tenantId = $this->allow($request, 'results.view');
-        $rows = ResultIndicator::query()->where('tenant_id', $tenantId)->orderByRaw("case status when 'active' then 0 else 1 end")->with('programme')->orderBy('programme')->orderBy('name')->get()
+        $rows = ResultIndicator::query()->where('tenant_id', $tenantId)->orderByRaw("case status when 'active' then 0 else 1 end")->with('programme')->orderBy('programme_id')->orderBy('name')->get()
             ->map(fn (ResultIndicator $indicator): array => ['indicator' => $indicator, 'progress' => $indicators->progress($indicator)]);
 
         return view('results-framework::indicators.index', [
@@ -47,7 +47,7 @@ final class IndicatorController extends Controller
                 (float) $request->validated('target'),
                 Carbon::parse($request->validated('starts_on')),
                 Carbon::parse($request->validated('ends_on')),
-                $request->safe()->only(['description', 'programme', 'programme_id', 'result_id', 'unit', 'source', 'baseline']),
+                $request->safe()->only(['description', 'definition', 'means_of_verification', 'programme_id', 'result_id', 'unit', 'source', 'baseline']),
             );
         } catch (DomainException $error) {
             return back()->withInput()->with('error', $error->getMessage());
@@ -56,13 +56,39 @@ final class IndicatorController extends Controller
         return redirect()->route('results-framework.indicators.show', $indicator->uuid)->with('success', 'Indicator created.');
     }
 
+    public function edit(Request $request, string $indicator): View
+    {
+        $tenantId = $this->allow($request, 'results.manage');
+        $model = ResultIndicator::query()->where('tenant_id', $tenantId)->where('uuid', $indicator)->firstOrFail();
+
+        return view('results-framework::indicators.edit', [
+            'indicator' => $model,
+            'programmes' => ResultProgramme::query()->where('tenant_id', $tenantId)->orderBy('name')->get(),
+            'resultOptions' => ResultNode::query()->where('tenant_id', $tenantId)->orderBy('title')->get(),
+            'sources' => ResultIndicator::SOURCES,
+        ]);
+    }
+
+    public function update(SaveIndicatorRequest $request, IndicatorService $indicators, string $indicator): RedirectResponse
+    {
+        $model = ResultIndicator::query()->where('tenant_id', $this->tenantId($request))->where('uuid', $indicator)->firstOrFail();
+
+        try {
+            $indicators->update($model, $request->validated());
+        } catch (DomainException $error) {
+            return back()->withInput()->withErrors(['indicator' => $error->getMessage()]);
+        }
+
+        return redirect()->route('results-framework.indicators.show', $indicator)->with('success', 'Indicator updated.');
+    }
+
     public function show(Request $request, IndicatorService $indicators, string $indicator): View
     {
         $tenantId = $this->allow($request, 'results.view');
         $model = ResultIndicator::query()->where('tenant_id', $tenantId)->where('uuid', $indicator)->firstOrFail();
 
         return view('results-framework::indicators.show', [
-            'indicator' => $model,
+            'indicator' => $model->load('programme'),
             'progress' => $indicators->progress($model),
             'readings' => $model->readings()->limit(50)->get(),
             'sources' => ResultIndicator::SOURCES,

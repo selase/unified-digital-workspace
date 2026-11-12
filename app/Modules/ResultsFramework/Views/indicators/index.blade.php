@@ -25,22 +25,7 @@
     </div>
 
     @can('results.manage')
-    <form method="POST" action="{{ route('results-framework.indicators.store') }}" class="kt-card">@csrf
-        <div class="kt-card-header"><h3 class="kt-card-title">New indicator</h3></div>
-        <div class="kt-card-content grid grid-cols-1 md:grid-cols-4 gap-3">
-            <input class="kt-input md:col-span-2" name="name" value="{{ old('name') }}" placeholder="e.g. Children given a school meal" required>
-            <select class="kt-select" name="programme_id" aria-label="Programme"><option value="">Unassigned</option>@foreach($programmes as $programme)<option value="{{ $programme->id }}" @selected((string) old('programme_id') === (string) $programme->id)>{{ $programme->name }}</option>@endforeach</select>
-            <select class="kt-select" name="result_id" aria-label="Result"><option value="">No result</option>@foreach($resultOptions as $result)<option value="{{ $result->id }}" @selected((string) old('result_id') === (string) $result->id)>{{ $programmes->find($result->programme_id)?->name }} — {{ $result->title }}</option>@endforeach</select>
-            <input class="kt-input" name="unit" value="{{ old('unit', 'people') }}" placeholder="Unit (people, hours, GHS)">
-            <select class="kt-select md:col-span-2" name="source">@foreach($sources as $key => $label)<option value="{{ $key }}" @selected(old('source', 'manual') === $key)>{{ $label }}</option>@endforeach</select>
-            <input class="kt-input" type="number" step="0.01" name="baseline" value="{{ old('baseline', 0) }}" placeholder="Starting figure">
-            <input class="kt-input" type="number" step="0.01" name="target" value="{{ old('target') }}" placeholder="Target" required>
-            <input class="kt-input" type="date" name="starts_on" value="{{ old('starts_on', today()->startOfYear()->toDateString()) }}" title="Measuring starts" required>
-            <input class="kt-input" type="date" name="ends_on" value="{{ old('ends_on', today()->endOfYear()->toDateString()) }}" title="Measuring ends" required>
-            <input class="kt-input md:col-span-2" name="description" value="{{ old('description') }}" placeholder="How it is measured">
-            <div><button class="kt-btn kt-btn-primary" type="submit">Create indicator</button></div>
-        </div>
-    </form>
+    @include('results-framework::indicators.form', ['indicator' => new \App\Modules\ResultsFramework\Models\ResultIndicator])
     @endcan
 
     <div class="kt-card">

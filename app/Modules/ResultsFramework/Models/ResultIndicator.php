@@ -46,7 +46,7 @@ final class ResultIndicator extends Model
 
     public function programmeName(): string
     {
-        return $this->getRelationValue('programme')?->name ?? $this->getAttribute('programme') ?? 'General';
+        return $this->programme?->name ?? 'General';
     }
 
     public function node(): BelongsTo

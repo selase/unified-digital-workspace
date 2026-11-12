@@ -94,6 +94,17 @@ final class DemoManifest
         $this->save($tenant, [...$this->load($tenant), 'tier_ids' => array_values(array_unique([...$this->proposedTierIds($tenant), ...$ids]))]);
     }
 
+    /** @return list<int> */
+    public function resultProgrammeIds(Tenant $tenant): array
+    {
+        return array_map('intval', $this->load($tenant)['result_programme_ids'] ?? []);
+    }
+
+    public function rememberResultProgrammeId(Tenant $tenant, int $id): void
+    {
+        $this->save($tenant, [...$this->load($tenant), 'result_programme_ids' => array_values(array_unique([...$this->resultProgrammeIds($tenant), $id]))]);
+    }
+
     /** @return array<string, int> */
     private function currentCounters(Tenant $tenant): array
     {
