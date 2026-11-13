@@ -435,13 +435,16 @@ it('optimizes a featured image uploaded with a post', function (): void {
     [$editor, $tenant] = cmsEditorWith(['cms.posts.view', 'cms.posts.update']);
     $post = PostFactory::new()->forTenant($tenant->id)->create(['author_id' => $editor->uuid]);
 
+    $fixture = Illuminate\Http\UploadedFile::fake()->image('source.jpg', 3200, 1800);
+    $original = mb_str_pad(file_get_contents($fixture->getPathname()), 3 * 1024 * 1024, "\0", STR_PAD_RIGHT, '8bit');
+
     $this->actingAs($editor)
         ->withSession(['active_tenant_id' => $tenant->id])
         ->put(route('cms-core.posts.update', $post), [
             'title' => $post->title,
             'post_type_id' => $post->post_type_id,
             'status' => $post->status,
-            'featured_image' => Illuminate\Http\UploadedFile::fake()->createWithContent('banner.jpg', cmsTestPhoto(3200, 1800)),
+            'featured_image' => Illuminate\Http\UploadedFile::fake()->createWithContent('banner.jpg', $original),
         ])
         ->assertSessionHasNoErrors();
 
@@ -451,6 +454,23 @@ it('optimizes a featured image uploaded with a post', function (): void {
         ->and([$media->width, $media->height])->toBe([2560, 1440])
         ->and(Illuminate\Support\Facades\Storage::disk('tenant')->exists($media->path))->toBeTrue()
         ->and($media->checksum_sha256)->not->toBeNull();
+
+    $served = $this->get(route('cms-core.media.serve', $media))
+        ->assertSuccessful()
+        ->assertHeader('Content-Type', 'image/jpeg')
+        ->streamedContent();
+
+    expect(hash('sha256', $served))->toBe($media->checksum_sha256)
+        ->and(mb_strlen($served))->toBeLessThan(500 * 1024)
+        ->and(array_slice(getimagesizefromstring($served), 0, 2))->toBe([2560, 1440]);
+
+    $mobileUrl = route('cms-core.media.serve', ['media' => $media, 'width' => 768]);
+    $mobile = $this->get($mobileUrl)->assertSuccessful()->assertHeader('Content-Type', 'image/webp')->streamedContent();
+
+    expect(array_slice(getimagesizefromstring($mobile), 0, 2))->toBe([768, 432])
+        ->and(mb_strlen($mobile, '8bit'))->toBeLessThanOrEqual(300 * 1024)
+        ->and($media->postImageSrcset())->toContain('480w', '768w', '1200w', '2560w');
+    expect($this->get($mobileUrl)->assertSuccessful()->streamedContent())->toBe($mobile);
 });
 
 it('stores files it cannot safely improve exactly as uploaded', function (string $name, string $contents): void {
@@ -478,4 +498,35 @@ it('turns a sideways phone photo upright', function (): void {
 
     expect($optimized)->not->toBeNull()
         ->and([$optimized['width'], $optimized['height']])->toBe([200, 400]);
+});
+
+it('rejects unsuitable featured images before replacing post media', function (int $width, int $height, int $kilobytes): void {
+    Illuminate\Support\Facades\Storage::fake('tenant');
+    [$editor, $tenant] = cmsEditorWith(['cms.posts.view', 'cms.posts.update']);
+    $post = PostFactory::new()->forTenant($tenant->id)->create(['author_id' => $editor->uuid]);
+
+    $this->actingAs($editor)
+        ->withSession(['active_tenant_id' => $tenant->id])
+        ->put(route('cms-core.posts.update', $post), [
+            'featured_image' => Illuminate\Http\UploadedFile::fake()->image('banner.jpg', $width, $height)->size($kilobytes),
+        ])
+        ->assertSessionHasErrors('featured_image');
+
+    expect($post->fresh()->featured_media_id)->toBe($post->featured_media_id)
+        ->and(Illuminate\Support\Facades\Storage::disk('tenant')->allFiles())->toBe([]);
+})->with([[800, 450, 3073], [799, 450, 100]]);
+
+it('rejects an oversized inline image with a message the editor can display', function (): void {
+    Illuminate\Support\Facades\Storage::fake('tenant');
+    [$editor, $tenant] = cmsEditorWith(['cms.media.manage']);
+
+    $this->actingAs($editor)
+        ->withSession(['active_tenant_id' => $tenant->id])
+        ->postJson(route('cms-core.media.upload-inline'), [
+            'file' => Illuminate\Http\UploadedFile::fake()->image('inline.jpg', 1200, 675)->size(3073),
+        ])
+        ->assertUnprocessable()
+        ->assertJsonPath('errors.file.0', 'The image must be 3 MB or smaller.');
+
+    expect(Illuminate\Support\Facades\Storage::disk('tenant')->allFiles())->toBe([]);
 });

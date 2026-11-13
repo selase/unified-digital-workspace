@@ -57,7 +57,7 @@ final class PostStoreRequest extends FormRequest
                 'integer',
                 Rule::exists(Media::class, 'id')->where('tenant_id', $tenantId),
             ],
-            'featured_image' => ['nullable', 'image', 'max:10240'],
+            'featured_image' => ['nullable', ...PostImageUploadRequest::imageRules(), 'dimensions:min_width=800,min_height=450,max_width=4096,max_height=4096'],
             'parent_id' => [
                 'nullable',
                 'integer',
@@ -110,6 +110,9 @@ final class PostStoreRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'featured_image.max' => 'The featured image must be 3 MB or smaller.',
+            'featured_image.mimes' => 'Upload a JPEG, PNG or WebP featured image.',
+            'featured_image.dimensions' => 'Use a featured image at least 800 × 450 pixels and no larger than 4,096 pixels on either side.',
             'cta_url.required_with' => 'Add a link for the first button, or clear its text.',
             'cta2_url.required_with' => 'Add a link for the second button, or clear its text.',
             'cta_url.regex' => 'The first button link must start with / or https://.',

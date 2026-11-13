@@ -144,6 +144,40 @@ final class ImageOptimizer
         return ['contents' => $contents, 'width' => $width, 'height' => $height];
     }
 
+    /** @return array{contents: string, width: int, height: int}|null */
+    public function responsive(string $bytes, int $width): ?array
+    {
+        $size = @getimagesizefromstring($bytes);
+        if (! function_exists('imagewebp') || $size === false || ! in_array($size[2], [IMAGETYPE_JPEG, IMAGETYPE_PNG, IMAGETYPE_WEBP], true)
+            || ! $this->fitsInMemory($size[0], $size[1]) || $this->isAnimated($bytes, $size[2])) {
+            return null;
+        }
+
+        $source = @imagecreatefromstring($bytes);
+        if (! $source) {
+            return null;
+        }
+
+        $width = min($width, imagesx($source));
+        $height = max(1, (int) round(imagesy($source) * $width / imagesx($source)));
+        $canvas = imagecreatetruecolor($width, $height);
+        imagealphablending($canvas, false);
+        imagesavealpha($canvas, true);
+        imagecopyresampled($canvas, $source, 0, 0, 0, 0, $width, $height, imagesx($source), imagesy($source));
+
+        foreach ([80, 68, 56, 44] as $quality) {
+            ob_start();
+            imagewebp($canvas, null, $quality);
+            $contents = (string) ob_get_clean();
+
+            if ($contents !== '' && mb_strlen($contents, '8bit') <= min(300 * 1024, mb_strlen($bytes, '8bit'))) {
+                return compact('contents', 'width', 'height');
+            }
+        }
+
+        return null;
+    }
+
     private function storeUpload(UploadedFile $file, string $directory, string $disk): string
     {
         $tenant = app(\App\Services\Tenancy\TenantContext::class)->getTenant();

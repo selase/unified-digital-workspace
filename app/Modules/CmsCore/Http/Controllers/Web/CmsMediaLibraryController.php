@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\CmsCore\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
+use App\Modules\CmsCore\Http\Requests\PostImageUploadRequest;
 use App\Modules\CmsCore\Models\Media;
 use App\Modules\CmsCore\Services\ImageOptimizer;
 use App\Modules\CmsCore\Services\MediaThumbnailService;
@@ -198,14 +199,8 @@ final class CmsMediaLibraryController extends Controller
     /**
      * Inline upload for the TipTap editor — returns JSON with the image URL.
      */
-    public function uploadInline(Request $request): JsonResponse
+    public function uploadInline(PostImageUploadRequest $request): JsonResponse
     {
-        abort_if(! $request->user()?->can('cms.media.manage'), 403);
-
-        $request->validate([
-            'file' => ['required', 'image', 'max:10240'],
-        ]);
-
         /** @var UploadedFile $file */
         $file = $request->file('file');
         $stored = $this->imageOptimizer->store($file, 'cms/inline');
@@ -245,12 +240,11 @@ final class CmsMediaLibraryController extends Controller
         $tenant = app(\App\Services\Tenancy\TenantContext::class)->getTenant();
         if ($tenant) {
             $capacity = app(\App\Services\Tenancy\HybridCapacityService::class);
-            if ($capacity->limit($tenant, 'files') !== null) {
-                $capacity->deleteMediaFiles($tenant, $media);
-            } else {
-                $capacity->deleteFile($tenant, $media->disk, $media->path);
-            }
+            $capacity->deleteMediaFiles($tenant, $media);
         } else {
+            foreach ($media->variants as $variant) {
+                Storage::disk($variant->disk)->delete($variant->path);
+            }
             Storage::disk($media->disk)->delete($media->path);
         }
         $media->delete();

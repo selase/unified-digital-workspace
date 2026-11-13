@@ -150,6 +150,7 @@
             @include('cms-core::partials.media-picker', ['name' => 'featured_media_id', 'selected' => $selectedFeaturedMedia, 'uploadName' => 'featured_image'])
         </div>
         @error('featured_media_id') <p class="text-xs text-destructive mt-1">{{ $message }}</p> @enderror
+        <p class="text-xs text-muted-foreground mt-1">For a featured image, use a landscape JPEG, PNG or WebP. Recommended 1,600 × 900 px, minimum 800 × 450 px, maximum 4,096 px per side and 3 MB.</p>
         @error('featured_image') <p class="text-xs text-destructive mt-1">{{ $message }}</p> @enderror
     </div>
 

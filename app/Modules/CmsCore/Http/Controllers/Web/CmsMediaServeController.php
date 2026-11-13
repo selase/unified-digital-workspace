@@ -6,6 +6,8 @@ namespace App\Modules\CmsCore\Http\Controllers\Web;
 
 use App\Http\Controllers\Controller;
 use App\Modules\CmsCore\Models\Media;
+use App\Modules\CmsCore\Services\MediaThumbnailService;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
@@ -19,7 +21,7 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
  */
 final class CmsMediaServeController extends Controller
 {
-    public function show(Media $media): StreamedResponse
+    public function show(Media $media, Request $request, MediaThumbnailService $variants): StreamedResponse
     {
         if ($media->is_internal && ! auth()->check()) {
             abort(403, 'Authentication required to access internal media assets.');
@@ -37,6 +39,20 @@ final class CmsMediaServeController extends Controller
         $cacheControl = $media->is_internal
             ? 'private, no-cache, no-store, must-revalidate'
             : 'public, max-age=31536000, immutable';
+
+        $width = $request->query('width');
+        if (! $media->is_internal && $media->is_public !== false && in_array($width, ['480', '768', '1200'], true)) {
+            $variant = $variants->bytes($media, (int) $width);
+            if ($variant !== null) {
+                return response()->stream(static function () use ($variant): void {
+                    echo $variant['contents'];
+                }, 200, [
+                    'Content-Type' => $variant['mime'],
+                    'Content-Length' => (string) mb_strlen($variant['contents'], '8bit'),
+                    'Cache-Control' => $cacheControl,
+                ]);
+            }
+        }
 
         return $disk->response($media->path, $filename, [
             'Content-Type' => $mimeType,

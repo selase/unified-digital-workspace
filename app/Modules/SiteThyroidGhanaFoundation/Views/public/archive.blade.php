@@ -38,7 +38,7 @@
                         <article class="group overflow-hidden rounded-xl bg-white shadow-sm transition hover:shadow-lg">
                             @if($post->featuredMedia)
                                 <div class="aspect-video overflow-hidden">
-                                    <img src="{{ $post->featuredMedia->url() }}" alt="{{ $post->title }}" class="h-full w-full object-cover transition group-hover:scale-105" loading="lazy" />
+                                    <img src="{{ $post->featuredMedia->url() }}" @if($srcset = $post->featuredMedia->postImageSrcset()) srcset="{{ $srcset }}" sizes="(max-width: 639px) calc(100vw - 32px), 400px" @endif alt="{{ $post->title }}" class="h-full w-full object-cover transition group-hover:scale-105" loading="lazy" />
                                 </div>
                             @else
                                 <div class="aspect-video" style="background: linear-gradient(135deg, var(--tgf-primary), #134E4A);"></div>

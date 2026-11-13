@@ -7,6 +7,7 @@ namespace App\Modules\CmsCore\Services;
 use App\Modules\CmsCore\Models\Media;
 use App\Modules\CmsCore\Models\MediaVariant;
 use Illuminate\Support\Facades\Storage;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 
 /**
  * Small JPEG previews of library images for admin screens that show many at
@@ -32,19 +33,22 @@ final class MediaThumbnailService
     /**
      * @return array{contents: string, mime: string}|null Null when the original file is missing or cannot be read as an image.
      */
-    public function bytes(Media $media): ?array
+    public function bytes(Media $media, ?int $width = null): ?array
     {
         if (! in_array(mb_strtolower((string) $media->mime_type), self::RESIZABLE_MIMES, true)) {
             return null;
         }
 
+        $variant = $width === null ? self::VARIANT : "post-v1-{$width}-".mb_substr((string) $media->checksum_sha256, 0, 12);
+        $mime = $width === null ? 'image/jpeg' : 'image/webp';
+        $extension = $width === null ? 'jpg' : 'webp';
         $cached = MediaVariant::query()
             ->where('media_id', $media->id)
-            ->where('variant', self::VARIANT)
+            ->where('variant', $variant)
             ->first();
 
         if ($cached && Storage::disk($cached->disk)->exists($cached->path)) {
-            return ['contents' => (string) Storage::disk($cached->disk)->get($cached->path), 'mime' => 'image/jpeg'];
+            return ['contents' => (string) Storage::disk($cached->disk)->get($cached->path), 'mime' => $mime];
         }
 
         $disk = Storage::disk($media->disk);
@@ -53,33 +57,46 @@ final class MediaThumbnailService
             return null;
         }
 
-        $resized = $this->resize((string) $disk->get($media->path));
+        if ($width !== null && $disk->size($media->path) > 10 * 1024 * 1024) {
+            return null;
+        }
+
+        $source = (string) $disk->get($media->path);
+        $resized = $width === null ? $this->resize($source) : app(ImageOptimizer::class)->responsive($source, $width);
 
         if ($resized === null) {
             return null;
         }
 
-        $path = "cms/media/variants/{$media->id}-".self::VARIANT.'.jpg';
+        $path = "cms/media/variants/{$media->id}-{$variant}.{$extension}";
         $tenant = app(\App\Services\Tenancy\TenantContext::class)->getTenant();
         if ($tenant) {
-            app(\App\Services\Tenancy\HybridCapacityService::class)->writeFile($tenant, $media->disk, $path, $resized['contents']);
+            try {
+                app(\App\Services\Tenancy\HybridCapacityService::class)->writeFile($tenant, $media->disk, $path, $resized['contents']);
+            } catch (HttpExceptionInterface $exception) {
+                if ($width === null || ! in_array($exception->getStatusCode(), [413, 503], true)) {
+                    throw $exception;
+                }
+
+                return ['contents' => $resized['contents'], 'mime' => $mime];
+            }
         } else {
             $disk->put($path, $resized['contents']);
         }
 
         MediaVariant::query()->updateOrCreate(
-            ['media_id' => $media->id, 'variant' => self::VARIANT],
+            ['media_id' => $media->id, 'variant' => $variant],
             [
                 'disk' => $media->disk,
                 'path' => $path,
                 'width' => $resized['width'],
                 'height' => $resized['height'],
                 'size_bytes' => mb_strlen($resized['contents'], '8bit'),
-                'mime_type' => 'image/jpeg',
+                'mime_type' => $mime,
             ]
         );
 
-        return ['contents' => $resized['contents'], 'mime' => 'image/jpeg'];
+        return ['contents' => $resized['contents'], 'mime' => $mime];
     }
 
     /**

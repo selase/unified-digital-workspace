@@ -64,7 +64,7 @@
             @if($post->featuredMedia && !$post->meta?->where('key', 'video_url')->first()?->value)
                 <div class="mt-8">
                     <img
-                        src="{{ $post->featuredMedia->url() }}"
+                        src="{{ $post->featuredMedia->url() }}" @if($srcset = $post->featuredMedia->postImageSrcset()) srcset="{{ $srcset }}" sizes="(max-width: 767px) calc(100vw - 32px), 768px" @endif
                         alt="{{ $post->featuredMedia->alt_text ?? $post->title }}"
                         class="w-full rounded-lg object-cover"
                     />

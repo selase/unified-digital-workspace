@@ -56,7 +56,7 @@
                 {{-- Featured image (only if no video) --}}
                 @if($post->featuredMedia && !$post->meta?->where('key', 'video_url')->first()?->value)
                     <div class="mb-10 overflow-hidden rounded-xl">
-                        <img src="{{ $post->featuredMedia->url() }}" alt="{{ $post->featuredMedia->alt_text ?? $post->title }}" class="w-full object-cover" />
+                        <img src="{{ $post->featuredMedia->url() }}" @if($srcset = $post->featuredMedia->postImageSrcset()) srcset="{{ $srcset }}" sizes="(max-width: 767px) calc(100vw - 32px), 768px" @endif alt="{{ $post->featuredMedia->alt_text ?? $post->title }}" class="w-full object-cover" />
                     </div>
                 @endif
 
@@ -88,7 +88,7 @@
                         <article class="group overflow-hidden rounded-xl bg-white shadow-sm transition hover:shadow-lg">
                             @if($relatedPost->featuredMedia)
                                 <div class="aspect-video overflow-hidden">
-                                    <img src="{{ $relatedPost->featuredMedia->url() }}" alt="{{ $relatedPost->title }}" class="h-full w-full object-cover transition group-hover:scale-105" loading="lazy" />
+                                    <img src="{{ $relatedPost->featuredMedia->url() }}" @if($srcset = $relatedPost->featuredMedia->postImageSrcset()) srcset="{{ $srcset }}" sizes="(max-width: 639px) calc(100vw - 32px), 400px" @endif alt="{{ $relatedPost->title }}" class="h-full w-full object-cover transition group-hover:scale-105" loading="lazy" />
                                 </div>
                             @else
                                 <div class="aspect-video" style="background: linear-gradient(135deg, var(--tgf-primary), #134E4A);"></div>

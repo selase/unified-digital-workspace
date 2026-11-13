@@ -145,6 +145,25 @@ final class Media extends Model
         return $this->checksum_sha256 ? $url.'?v='.mb_substr($this->checksum_sha256, 0, 12) : $url;
     }
 
+    public function postImageSrcset(): string
+    {
+        if ($this->is_internal || $this->is_public === false || ! in_array($this->mime_type, ['image/jpeg', 'image/png', 'image/webp'], true) || $this->width <= 480) {
+            return '';
+        }
+
+        $url = $this->serveUrl();
+        $separator = str_contains($url, '?') ? '&' : '?';
+        $sources = [];
+        foreach ([480, 768, 1200] as $width) {
+            if ($width < $this->width) {
+                $sources[] = $url.$separator.'width='.$width.' '.$width.'w';
+            }
+        }
+        $sources[] = $this->url().' '.$this->width.'w';
+
+        return implode(', ', $sources);
+    }
+
     /**
      * @return Factory<static>
      */

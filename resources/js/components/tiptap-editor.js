@@ -185,7 +185,9 @@ export default function tiptapEditor(content = '', uploadUrl = '') {
                 });
 
                 if (!response.ok) {
-                    throw new Error(`Upload failed: ${response.status}`);
+                    const error = response.status === 422 ? await response.json() : null;
+                    alert(error?.errors?.file?.[0] || 'Image upload failed. Please try again.');
+                    return;
                 }
 
                 const data = await response.json();
