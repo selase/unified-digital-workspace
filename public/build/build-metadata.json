@@ -1,6 +1,6 @@
 {
     "version": 2,
-    "source_sha256": "72a99b9d915bb0463a7b20d5dd2b1fdf99257e23190c70f17dccc53e66d8275c",
+    "source_sha256": "1201366bf184c70d7fb6db76a74f3aaca3ad4123f04d816d128f94d9e438249c",
     "source_files": {
         ".agent/rules/path-to-php.md": "c559a7b17fe39107f8e1a69a9b93fe720c8d11b947d9decaf6541ed429714359",
         ".agent/rules/testing.md": "8289cda546c31080a26018179a337bafa1f65c0967dd23d2d1561d6c9b0a9c1f",
@@ -1865,7 +1865,7 @@
         "config/services.php": "bbd2be24f30601d1687136ba3158b0caedc45524a460c83a9a8b624ca6476269",
         "config/session.php": "eb8a33aefb942f604b3963418333f1c52af72fcf80d72e8fa2cc30638dc79700",
         "config/telescope.php": "0d2de24ff9d2292d50354c2baa95b80f0ffda59dbac9180c342851293e16e9e8",
-        "config/usage-pricing.php": "492b9b4af76768be3a52a5a445369cf15a9242689bce93c9b132cf2197053ca5",
+        "config/usage-pricing.php": "606b21ad487b5babe9d8218df2861a4d08d737978bfac607478ed7fa8470323b",
         "config/view.php": "bbf88c002f7f6e4964a8e566ed0c66426f4e29f495eb44b1e16e4e91371d79a3",
         "database/.gitignore": "e758642d95e83e907e010b6e46b07b3f953c7cef11fe5ebefc2a77b9d7b4d5f7",
         "database/factories/FeatureFactory.php": "10b013ff1c96dd00a9cbc6e1d9bd17fcc4ae882fedbfbb1faa9927d6f929058d",
