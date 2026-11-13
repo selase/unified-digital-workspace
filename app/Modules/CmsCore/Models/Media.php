@@ -145,6 +145,18 @@ final class Media extends Model
         return $this->checksum_sha256 ? $url.'?v='.mb_substr($this->checksum_sha256, 0, 12) : $url;
     }
 
+    public function postImageMobileFallback(): ?string
+    {
+        if ($this->width !== null || $this->is_internal || $this->is_public === false
+            || ! in_array($this->mime_type, ['image/jpeg', 'image/png', 'image/webp'], true)) {
+            return null;
+        }
+
+        $url = $this->serveUrl();
+
+        return $url.(str_contains($url, '?') ? '&' : '?').'width=768';
+    }
+
     public function postImageSrcset(): string
     {
         if ($this->is_internal || $this->is_public === false || ! in_array($this->mime_type, ['image/jpeg', 'image/png', 'image/webp'], true) || $this->width <= 480) {

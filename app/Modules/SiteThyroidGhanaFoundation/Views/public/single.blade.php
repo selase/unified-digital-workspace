@@ -56,7 +56,12 @@
                 {{-- Featured image (only if no video) --}}
                 @if($post->featuredMedia && !$post->meta?->where('key', 'video_url')->first()?->value)
                     <div class="mb-10 overflow-hidden rounded-xl">
-                        <img src="{{ $post->featuredMedia->url() }}" @if($srcset = $post->featuredMedia->postImageSrcset()) srcset="{{ $srcset }}" sizes="(max-width: 767px) calc(100vw - 32px), 768px" @endif alt="{{ $post->featuredMedia->alt_text ?? $post->title }}" class="w-full object-cover" />
+                        <picture>
+                            @if($mobileFallback = $post->featuredMedia->postImageMobileFallback())
+                                <source media="(max-width: 767px)" srcset="{{ $mobileFallback }}">
+                            @endif
+                            <img src="{{ $post->featuredMedia->url() }}" @if($srcset = $post->featuredMedia->postImageSrcset()) srcset="{{ $srcset }}" sizes="(max-width: 767px) calc(100vw - 32px), 768px" @endif alt="{{ $post->featuredMedia->alt_text ?? $post->title }}" class="w-full object-cover" />
+                        </picture>
                     </div>
                 @endif
 
