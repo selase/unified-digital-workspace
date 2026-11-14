@@ -13,6 +13,7 @@ use App\Modules\SiteThyroidGhanaFoundation\Http\Requests\StartGiftRequest;
 use DomainException;
 use Illuminate\Contracts\View\View;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Throwable;
 
@@ -41,7 +42,7 @@ final class DonatePageController extends PublicPageController
                 'email' => $request->validated('email'),
                 'amount' => Money::toMinor($request->validated('amount')),
                 'campaign_id' => $this->campaigns($tenant)->firstWhere('id', (int) $request->validated('campaign_id'))?->id,
-            ], mb_rtrim((string) config('app.url'), '/').route('donations.public.thanks', ['tenant' => $tenant->slug], false));
+            ], route(str_replace('.store', '.thanks', (string) $request->route()?->getName())));
 
             return redirect()->away($url);
         } catch (DomainException $error) {
@@ -51,6 +52,29 @@ final class DonatePageController extends PublicPageController
 
             return back()->withInput()->with('error', 'We could not start the payment. Please try again in a moment.');
         }
+    }
+
+    public function thanks(Request $request, OnlineGivingService $giving): View
+    {
+        $tenant = $this->tenant();
+        abort_unless($this->moduleOn('donations', $tenant), 404);
+        $reference = (string) ($request->query('reference') ?? $request->query('trxref') ?? '');
+
+        try {
+            $gift = $reference !== '' ? $giving->recordVerified($tenant->id, $reference) : null;
+        } catch (Throwable $error) {
+            report($error);
+            $gift = null;
+        }
+
+        return view('site-thyroid-ghana-foundation::public.pages.thanks', [
+            'theme' => $this->theme,
+            'crumb' => 'Donate',
+            'heading' => $gift === null ? 'We are confirming your gift' : 'Thank you for your gift',
+            'message' => $gift === null
+                ? 'If you completed the payment, it will appear shortly. If you were charged and hear nothing, please contact us.'
+                : 'We received your gift of '.Money::format($gift->amount, $gift->currency).'. Your receipt number is '.$gift->receipt_number.'.',
+        ]);
     }
 
     /** @return Collection<int, DonCampaign> */

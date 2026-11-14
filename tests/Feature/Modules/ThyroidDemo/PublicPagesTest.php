@@ -6,6 +6,7 @@ use App\Models\AlertRule;
 use App\Models\Tenant;
 use App\Models\TenantPaymentGateway;
 use App\Modules\Donations\Models\DonCampaign;
+use App\Modules\Donations\Models\DonDonor;
 use App\Modules\Memberships\Models\MemMember;
 use App\Modules\Memberships\Models\MemType;
 use App\Modules\SiteThyroidGhanaFoundation\Demo\Sections\MembershipTiersSection;
@@ -121,7 +122,30 @@ describe('Donate page', function (): void {
         $this->get(TGF_SITE.'/donate')->assertOk()->assertSee('name="amount"', false);
         $this->post(TGF_SITE.'/donate', ['name' => 'Kind Donor', 'email' => 'donor@example.com', 'amount' => 100])->assertRedirect('https://checkout.paystack.test/abc');
 
-        Http::assertSent(fn ($request): bool => str_contains((string) json_encode($request->data(), JSON_UNESCAPED_SLASHES), mb_rtrim((string) config('app.url'), '/').'/give/thyroid-ghana-foundation/thanks'));
+        Http::assertSent(fn ($request): bool => str_contains((string) json_encode($request->data(), JSON_UNESCAPED_SLASHES), TGF_SITE.'/donate/thanks'));
+    });
+});
+
+describe('Donation return page', function (): void {
+    test('confirms a verified gift in the site theme and stays on the Thyroid domain', function (): void {
+        $tenant = tgfSiteTenant();
+        TenantPaymentGateway::query()->withoutGlobalScopes()->create(['tenant_id' => $tenant->id, 'provider' => 'paystack', 'api_key_encrypted' => 'sk_test_give', 'public_key_encrypted' => 'pk_test', 'is_active' => true]);
+        $donor = DonDonor::query()->create(['tenant_id' => $tenant->id, 'name' => 'Kind Donor', 'email' => 'donor@example.com', 'type' => 'individual']);
+        Http::fake(['api.paystack.co/transaction/verify/*' => Http::response(['data' => [
+            'status' => 'success', 'amount' => 10_000, 'currency' => 'GHS', 'reference' => 'ref_tgf',
+            'metadata' => ['type' => 'donation', 'tenant_id' => $tenant->id, 'donor_id' => (string) $donor->id],
+        ]])]);
+
+        $html = $this->get(TGF_SITE.'/donate/thanks?reference=ref_tgf')->assertOk()->assertSee('Thank you')->assertSee('RCT-00001')->getContent();
+
+        expect($html)->toContain('Thyroid Ghana Foundation')->not->toContain('udworkspace.com/give');
+    });
+
+    test('says the gift is being confirmed when there is no verified payment', function (): void {
+        tgfSiteTenant();
+
+        $this->get(TGF_SITE.'/donate/thanks')->assertOk()->assertSee('We are confirming your gift')->assertDontSee('RCT-');
+        $this->get(TGF_SITE.'/donate/thanks?reference=unknown')->assertOk()->assertSee('We are confirming your gift');
     });
 });
 
@@ -151,6 +175,16 @@ describe('Partner page and sign-in links', function (): void {
         tgfSiteTenant();
 
         $this->get(TGF_SITE.'/partner-us')->assertOk()->assertSee('enquiry', false);
+    });
+
+    test('every Thyroid page keeps its menu and footer links on the root paths of the custom domain', function (): void {
+        tgfSiteTenant();
+
+        foreach (['/membership', '/donate', '/volunteer', '/partner-us', '/our-board', '/our-impact', '/donate/thanks'] as $path) {
+            $html = $this->get(TGF_SITE.$path)->assertOk()->getContent();
+
+            expect($html)->not->toContain('/site/', "{$path} links into the /site prefix")->toContain('href="/our-board"')->toContain('href="/our-impact"');
+        }
     });
 
     test('the footer links to the member and volunteer sign-in', function (): void {

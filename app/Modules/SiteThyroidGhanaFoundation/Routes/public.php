@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/membership', [MembershipPageController::class, 'show'])->name('membership.show');
 Route::post('/membership', [MembershipPageController::class, 'store'])->middleware('throttle:10,1')->name('membership.store');
 Route::get('/donate', [DonatePageController::class, 'show'])->name('donate.show');
+Route::get('/donate/thanks', [DonatePageController::class, 'thanks'])->middleware('throttle:20,1')->name('donate.thanks');
 Route::post('/donate', [DonatePageController::class, 'store'])->middleware('throttle:10,1')->name('donate.store');
 Route::get('/volunteer', [VolunteerPageController::class, 'show'])->name('volunteer.show');
 Route::post('/volunteer', [VolunteerPageController::class, 'store'])->middleware('throttle:10,1')->name('volunteer.store');

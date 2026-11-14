@@ -41,7 +41,7 @@ final class CmsUrlService
 
         if ($currentRoute) {
             $routeName = $currentRoute->getName() ?? '';
-            $this->isWebsiteMode = str_starts_with($routeName, 'cms-core.website.');
+            $this->isWebsiteMode = str_starts_with($routeName, 'cms-core.website.') || preg_match('/^site-[a-z0-9-]+\.website\./', $routeName) === 1;
         } else {
             $this->isWebsiteMode = false;
         }
