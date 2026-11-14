@@ -79,6 +79,24 @@ final class MembershipService
         });
     }
 
+    /** Tells staff, through the organisation's alert rules, that someone applied on the public page. */
+    public function announceApplication(MemMember $member): void
+    {
+        $tenant = Tenant::query()->find($member->tenant_id);
+        if (! $tenant instanceof Tenant) {
+            return;
+        }
+
+        $this->alerts->dispatchSafely(
+            $tenant,
+            AlertEvent::MEMBERSHIP_APPLICATION,
+            'New membership application',
+            $member->name.' applied for '.$member->type->name.' membership ('.$member->number.').',
+            'membership-application-'.$member->id,
+            route('memberships.members.show', $member->uuid, false),
+        );
+    }
+
     /** Raises the dues invoice for the next period. A member can only have one unpaid dues invoice at a time. */
     public function billDues(MemMember $member, ?string $userId = null): MemRenewal
     {

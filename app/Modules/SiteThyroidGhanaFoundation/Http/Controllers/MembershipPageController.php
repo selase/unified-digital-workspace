@@ -51,6 +51,7 @@ final class MembershipPageController extends PublicPageController
             return null;
         }
 
+        $memberships->announceApplication($member);
         $invoice = $member->renewals()->with('invoice')->latest('id')->first()?->invoice;
 
         return $invoice !== null && $online->canCollect($invoice) ? $online->paymentUrl($invoice) : null;

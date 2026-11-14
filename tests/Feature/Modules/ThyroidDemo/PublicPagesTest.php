@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Models\AlertRule;
 use App\Models\Tenant;
 use App\Models\TenantPaymentGateway;
 use App\Modules\Donations\Models\DonCampaign;
@@ -10,7 +11,10 @@ use App\Modules\Memberships\Models\MemType;
 use App\Modules\SiteThyroidGhanaFoundation\Demo\Sections\MembershipTiersSection;
 use App\Modules\Volunteers\Models\VolOpportunity;
 use App\Modules\Volunteers\Models\VolVolunteer;
+use App\Notifications\AlertNotification;
+use App\Services\Alerts\AlertEvent;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Notification;
 
 require_once __DIR__.'/SiteTenantHelper.php';
 
@@ -47,6 +51,23 @@ describe('Membership page', function (): void {
 
         expect(MemMember::query()->where('tenant_id', $tenant->id)->where('email', 'ama.visitor@example.com')->count())->toBe(1)
             ->and(MemMember::query()->where('tenant_id', $tenant->id)->value('status'))->toBe('pending');
+    });
+
+    test('a new application alerts staff once when an alert rule is on, and says nothing without one', function (): void {
+        Notification::fake();
+        $tenant = tgfSiteTenant();
+        (new MembershipTiersSection)->ensure($tenant);
+        $type = MemType::query()->where('tenant_id', $tenant->id)->where('name', 'Silver Membership')->firstOrFail();
+        $payload = ['name' => 'Alert Applicant', 'email' => 'alert.applicant@example.com', 'type_id' => $type->id];
+
+        $this->post(TGF_SITE.'/membership', $payload)->assertOk();
+        Notification::assertNothingSent();
+
+        AlertRule::query()->create(['tenant_id' => $tenant->id, 'event' => AlertEvent::MEMBERSHIP_APPLICATION, 'name' => 'New applications', 'channels' => ['mail'], 'recipients' => ['emails' => ['office@thyroid.test'], 'phones' => []]]);
+        $this->post(TGF_SITE.'/membership', ['name' => 'Second Applicant', 'email' => 'second.applicant@example.com', 'type_id' => $type->id])->assertOk();
+        $this->post(TGF_SITE.'/membership', ['name' => 'Second Applicant', 'email' => 'second.applicant@example.com', 'type_id' => $type->id])->assertOk();
+
+        Notification::assertSentOnDemandTimes(AlertNotification::class, 1);
     });
 
     test('a filled honeypot field creates nothing', function (): void {

@@ -32,6 +32,8 @@ final class AlertEvent
 
     public const MEMBERSHIP_RENEWAL = 'memberships.renewal_invoiced';
 
+    public const MEMBERSHIP_APPLICATION = 'memberships.application_received';
+
     /** @return array<string, array{label: string, description: string}> */
     public static function all(): array
     {
@@ -47,6 +49,7 @@ final class AlertEvent
             self::DONATION_RECEIVED => ['label' => 'Donation received', 'description' => 'A donation is recorded or arrives.'],
             self::PLEDGE_CHARGE_FAILED => ['label' => 'Automatic pledge charge failed', 'description' => 'A donor\'s saved card could not be charged for a pledge instalment.'],
             self::MEMBERSHIP_RENEWAL => ['label' => 'Membership renewal invoiced', 'description' => 'A member is close to the end of their paid period and a renewal invoice was raised.'],
+            self::MEMBERSHIP_APPLICATION => ['label' => 'New membership application', 'description' => 'Someone applied to join through your public membership page.'],
         ];
     }
 

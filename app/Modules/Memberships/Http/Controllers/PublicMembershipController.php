@@ -43,6 +43,7 @@ final class PublicMembershipController extends Controller
 
         try {
             $member = $memberships->join($model->id, $type, $data['name'], ['email' => $data['email'], 'phone' => $data['phone'] ?? null]);
+            $memberships->announceApplication($member);
             $invoice = $member->renewals()->with('invoice')->latest('id')->first()?->invoice;
 
             if ($invoice !== null && $online->canCollect($invoice)) {
