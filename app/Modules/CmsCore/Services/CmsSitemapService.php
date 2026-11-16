@@ -75,11 +75,11 @@ final class CmsSitemapService
             $urls[] = ['loc' => $loc('newsletters.show', $newsletter->slug), 'lastmod' => $newsletter->updated_at?->toW3cString(), 'changefreq' => 'monthly', 'priority' => '0.5'];
         });
 
-        Category::query()->where('is_active', true)->select(['slug'])->each(function (Category $category) use (&$urls, $loc): void {
+        Category::query()->where('is_active', true)->whereHas('posts', fn ($posts) => $posts->published())->select(['slug'])->each(function (Category $category) use (&$urls, $loc): void {
             $urls[] = ['loc' => $loc('posts.category', $category->slug), 'changefreq' => 'weekly', 'priority' => '0.5'];
         });
 
-        Tag::query()->select(['slug'])->each(function (Tag $tag) use (&$urls, $loc): void {
+        Tag::query()->whereHas('posts', fn ($posts) => $posts->published())->select(['slug'])->each(function (Tag $tag) use (&$urls, $loc): void {
             $urls[] = ['loc' => $loc('posts.tag', $tag->slug), 'changefreq' => 'weekly', 'priority' => '0.4'];
         });
 

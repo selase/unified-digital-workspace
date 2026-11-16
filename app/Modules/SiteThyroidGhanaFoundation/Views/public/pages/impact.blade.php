@@ -12,6 +12,7 @@
 
 @section('content')
     @include('site-thyroid-ghana-foundation::public.pages._hero', [
+        'slug' => 'our-impact',
         'crumb' => 'Our Impact',
         'title' => 'Our Impact',
         'intro' => 'Where we have worked, whom we have served and how we help thyroid patients.',

@@ -12,6 +12,7 @@
 
 @section('content')
     @include('site-thyroid-ghana-foundation::public.pages._hero', [
+        'slug' => 'volunteer',
         'crumb' => 'Volunteer',
         'title' => 'Volunteer with us',
         'intro' => 'Join the people who run our screening days, support groups and awareness work.',

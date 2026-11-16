@@ -12,6 +12,7 @@
 
 @section('content')
     @include('site-thyroid-ghana-foundation::public.pages._hero', [
+        'slug' => 'membership',
         'crumb' => 'Membership',
         'title' => 'Become a member',
         'intro' => 'Stand with thyroid patients across Ghana. Your membership helps us run free screenings, patient education and subsidised surgery.',

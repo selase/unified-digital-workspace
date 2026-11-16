@@ -2,6 +2,12 @@
 
 @section('seo-title', ($title ?? 'News') . ' — ' . $theme->siteName())
 
+@section('seo')
+    @if($posts->isEmpty())
+        <meta name="robots" content="noindex, follow" />
+    @endif
+@endsection
+
 @section('content')
     {{-- Page header --}}
     <section class="relative overflow-hidden" style="background: linear-gradient(135deg, var(--tgf-dark) 0%, #134E4A 100%);">

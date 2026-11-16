@@ -14,27 +14,19 @@
 @endsection
 
 @section('content')
-    {{-- Page hero header --}}
-    <section style="background: linear-gradient(135deg, var(--tgf-dark) 0%, #134E4A 100%);">
-        <div class="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8 lg:py-24">
-            <nav class="mb-6 flex items-center gap-2 text-sm text-slate-400">
-                <a href="{{ $cmsUrl->route('home') }}" class="transition hover:text-white">Home</a>
-                <svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
-                <span class="text-white">{{ $page->title }}</span>
-            </nav>
-            <h1 class="text-3xl font-extrabold text-white sm:text-4xl lg:text-5xl">{{ $page->title }}</h1>
-            @if($page->excerpt)
-                <p class="mt-4 max-w-2xl text-lg text-slate-300">{{ $page->excerpt }}</p>
-            @endif
-        </div>
-    </section>
+    @include('site-thyroid-ghana-foundation::public.pages._hero', [
+        'heroMedia' => $page->featuredMedia,
+        'crumb' => $page->title,
+        'title' => $page->title,
+        'intro' => $page->excerpt,
+    ])
 
     {{-- Page body --}}
     <section class="py-16 lg:py-20">
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div class="mx-auto max-w-4xl">
                 {{-- Featured image --}}
-                @if($page->featuredMedia)
+                @if($page->featuredMedia && ! \App\Modules\SiteThyroidGhanaFoundation\Support\PageHero::suits($page->featuredMedia))
                     @php
                         $isPortraitImage = (int) $page->featuredMedia->height > (int) $page->featuredMedia->width;
                     @endphp
@@ -57,9 +49,18 @@
                         .prose ul li::marker { color: var(--tgf-primary); }
                         .prose p { margin-bottom: 1.25rem; }
                         .prose strong { color: var(--tgf-dark); }
+                        .tgf-faq-item { margin-bottom: 0.75rem; border-radius: 0.75rem; background: var(--tgf-light); }
+                        .tgf-faq-item summary { cursor: pointer; padding: 1rem 1.25rem; font-weight: 600; color: var(--tgf-dark); list-style-position: inside; }
+                        .tgf-faq-item[open] summary { color: var(--tgf-primary-dark); }
+                        .tgf-faq-answer { padding: 0 1.25rem 1rem; }
+                        .tgf-faq-answer > :last-child { margin-bottom: 0; }
+                        .tgf-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: 1rem; margin: 1.5rem 0 2rem; }
+                        .tgf-stat { border-radius: 0.75rem; background: var(--tgf-light); padding: 1.25rem; }
+                        .tgf-stat strong { display: block; font-size: 1.875rem; line-height: 1.1; font-weight: 800; color: var(--tgf-primary-dark); }
+                        .tgf-stat span { display: block; margin-top: 0.4rem; font-size: 0.9rem; color: var(--tgf-muted); }
                         .prose blockquote { border-left: 4px solid var(--tgf-primary); background: var(--tgf-light); padding: 1rem 1.5rem; border-radius: 0.375rem; }
                     </style>
-                    {!! $page->body !!}
+                    {!! \App\Modules\SiteThyroidGhanaFoundation\Support\PageEnhancer::apply($page->slug, (string) $page->body) !!}
                 </div>
 
                 {{-- Optional enquiry form, enabled per page with the "enquiry_form" meta --}}

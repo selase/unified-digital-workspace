@@ -12,6 +12,7 @@
 
 @section('content')
     @include('site-thyroid-ghana-foundation::public.pages._hero', [
+        'slug' => 'donate',
         'crumb' => 'Donate',
         'title' => 'Support our cause',
         'intro' => 'Your gift helps more patients reach early diagnosis and affordable treatment.',

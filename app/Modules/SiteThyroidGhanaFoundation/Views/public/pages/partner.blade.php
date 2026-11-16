@@ -12,6 +12,7 @@
 
 @section('content')
     @include('site-thyroid-ghana-foundation::public.pages._hero', [
+        'slug' => 'partner-us',
         'crumb' => 'Partner with us',
         'title' => 'Partner with us',
         'intro' => 'Hospitals, companies and organisations help us bring screening, education and affordable care to more people.',

@@ -12,6 +12,7 @@
 
 @section('content')
     @include('site-thyroid-ghana-foundation::public.pages._hero', [
+        'slug' => 'our-board',
         'crumb' => 'Our Board',
         'title' => 'Our Board',
         'intro' => 'The people who guide the foundation\'s direction and hold it to account.',
