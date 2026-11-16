@@ -86,11 +86,11 @@ describe('Photo heroes', function (): void {
 
     test('the membership, donate, volunteer and partner pages use their page image too', function (): void {
         tgfSiteTenant();
-        foreach (['membership', 'donate', 'volunteer', 'partner-us'] as $slug) {
+        foreach (['membership', 'donate', 'volunteer', 'partner-us', 'our-team', 'media-gallery'] as $slug) {
             tgfFeature($slug, 1600, 900);
         }
 
-        foreach (['membership', 'donate', 'volunteer', 'partner-us'] as $slug) {
+        foreach (['membership', 'donate', 'volunteer', 'partner-us', 'our-team', 'media-gallery'] as $slug) {
             expect($this->get(TGF_SITE.'/'.$slug)->assertOk()->getContent())->toContain('class="tgf-hero-image');
         }
     });
