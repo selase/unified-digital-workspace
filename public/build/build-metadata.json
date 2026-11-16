@@ -1,6 +1,6 @@
 {
     "version": 2,
-    "source_sha256": "4c2d046f78fdeb912ae7b77ca44ddb81243f12a0e2466983ba709f471ed15a6b",
+    "source_sha256": "287d4b2f62f1db47d845a208f29e3aef993a1e1a5ce579560285a4aef24254d5",
     "source_files": {
         ".agent/rules/path-to-php.md": "c559a7b17fe39107f8e1a69a9b93fe720c8d11b947d9decaf6541ed429714359",
         ".agent/rules/testing.md": "8289cda546c31080a26018179a337bafa1f65c0967dd23d2d1561d6c9b0a9c1f",
@@ -1663,8 +1663,8 @@
         "app/Modules/SiteThyroidGhanaFoundation/Views/public/pages/thanks.blade.php": "068b882a999ae48f34e564cb9fe3f76ff9dd96a2a35cd3482ab617f6a9dfde9e",
         "app/Modules/SiteThyroidGhanaFoundation/Views/public/pages/volunteer.blade.php": "ba8c375165d38e780790f32d3558bcf2a8b7aab76970d82466a2259755e7d912",
         "app/Modules/SiteThyroidGhanaFoundation/Views/public/single.blade.php": "3d6d3d8ce734f6a0a043f64b093d850a21be74e916af104e39a91509e3cff5f8",
-        "app/Modules/SiteThyroidGhanaFoundation/Views/public/templates/media-gallery.blade.php": "71cdd09dae581a7cc93631bd43b5453ea0c1145325418e656778129da944033e",
-        "app/Modules/SiteThyroidGhanaFoundation/Views/public/templates/our-team.blade.php": "00a4ab0bd64cebda0a5fe4ea0b044140b1d6c43ca1ac750ddd68a14d7c1991cd",
+        "app/Modules/SiteThyroidGhanaFoundation/Views/public/templates/media-gallery.blade.php": "05df864b1943b822103c1868c5fd599c5a98046ed0f503d51fd9addf45c2551c",
+        "app/Modules/SiteThyroidGhanaFoundation/Views/public/templates/our-team.blade.php": "8b078e7ce12693bf4cadca7372ed4b0f3618ae7d9ea66e714b6415b6a4b30816",
         "app/Modules/Store/Config/module.php": "bb255c08f24652c37cc18bb25b9b808cd42db31c6eba3a60aa2abfecbbafee6f",
         "app/Modules/Store/Database/Migrations/2026_10_16_160001_create_store_tables.php": "c64cb6a0d3ffb4e01a27dd1da58e90a8a5e09314e5c99ca4cb3b1f0c67dc115b",
         "app/Modules/Store/Database/Migrations/2026_10_17_000001_create_platform_credit_purchases_table.php": "00b79421c3b33e123f3317c66fdb96578daca5422759d6cf8b8162a91bea361e",
@@ -7157,7 +7157,7 @@
         "tests/Feature/Modules/ThyroidDemo/MembershipTiersTest.php": "1665e8f0137d50b99c7a3451c59c35242fb3d679970bf10082c5c4c8248e61a4",
         "tests/Feature/Modules/ThyroidDemo/NgoSectionsTest.php": "fc1a81792734f5a8d05545b4e71b8bacb598012925d94e25abf4ac7f93a85ffd",
         "tests/Feature/Modules/ThyroidDemo/PublicPagesTest.php": "3a9d486bf17a0dc84efc03db16d14938cec6c574b6ca390b3c826b20f4e05bc9",
-        "tests/Feature/Modules/ThyroidDemo/QuickWinsTest.php": "4fe006f2e98666ed140d9c00f0efca74559f68b18524f85686427d3f883c5e10",
+        "tests/Feature/Modules/ThyroidDemo/QuickWinsTest.php": "e777a659bdbd152e495c77795a5236e782c6373aedc6327fdd33941da5d08685",
         "tests/Feature/Modules/ThyroidDemo/SiteTenantHelper.php": "0a936b5eea032b990b9872a01d33e4ee8dbed2ec5d0964ea552070e69da7ee6b",
         "tests/Feature/Modules/VendorMarketplace/VendorMarketplaceEscrowTest.php": "1ad1bcf3a1245758fad1ab5db2d322c84ea66e0c73b3f5849585c9e62d8147cb",
         "tests/Feature/Modules/Volunteers/VolunteersModuleTest.php": "877fdb6d918032415b2aa82b1edf23f87cd03c22a9518677c4de94f47422ef74",
