@@ -1,6 +1,6 @@
 {
     "version": 2,
-    "source_sha256": "287d4b2f62f1db47d845a208f29e3aef993a1e1a5ce579560285a4aef24254d5",
+    "source_sha256": "cb7063c2127bb489a31080c86f50dc33bc8ef5779060106a0e499153fefc1eee",
     "source_files": {
         ".agent/rules/path-to-php.md": "c559a7b17fe39107f8e1a69a9b93fe720c8d11b947d9decaf6541ed429714359",
         ".agent/rules/testing.md": "8289cda546c31080a26018179a337bafa1f65c0967dd23d2d1561d6c9b0a9c1f",
@@ -1766,7 +1766,7 @@
         "app/Providers/FeatureServiceProvider.php": "b99df396503298f194bdf5fe452e4a9cc0e100d0976eec98d7952a5c90884b5f",
         "app/Providers/HealthServiceProvider.php": "81d9939aa7b817a142a7c1ecac894cb511e2692f3bf18b4b7622d4b2f964871e",
         "app/Providers/ModuleServiceProvider.php": "679550131ecafddbfce4bde08ae2e5b153825f5370e95c96e56504ff0d838826",
-        "app/Providers/RouteServiceProvider.php": "bec33c4121b70c77f04b3b0e12a92928e9fb7eb6caf908d4fe51796d8fe9a806",
+        "app/Providers/RouteServiceProvider.php": "a812874f4c23ae6d89a82facef607e51bbb0994f4e1052614b008b535f14437a",
         "app/Providers/TelescopeServiceProvider.php": "df44977f6f60e912b3c7147d8bb74ddb76817d4cd94bb2b14bc607edbaba5ef4",
         "app/Scopes/TenantScope.php": "c19f663f7ee67adc2efd0fc3939e80ae7c022d13243e83a877b9d6f772bfa3a6",
         "app/Services/Alerts/AlertDispatcher.php": "08b360d863454860b1feda79541781b83b1831746519233e23bb7eb6af6fc10a",
@@ -6931,7 +6931,7 @@
         "resources/views/vendor/health/status-indicator.blade.php": "f12eea32117fd0274569c1ac717abb102dca7740389346ef5ddeb034c67fccfa",
         "resources/views/welcome.blade.php": "4b7c0ac0ae53425fd76d294ef37a74a1a9d896483217e75ce587718fda4deff2",
         "routes/api.php": "65bf666f5471b8881e885af86d6a74deca40d3ae6325506b0a77956c0f83e673",
-        "routes/auth.php": "778678ab331efe35de33252248922fc6242db05107aa03f910f605531d66ae3a",
+        "routes/auth.php": "d73b26dd08d5a41d7659d7869725d6cbe7d898b44575d4eaf79842fcaa4caf53",
         "routes/billing-payments.php": "4bfae979c7ae69c0e288419b06597203709bf7ed6e616bef905647963c8d220b",
         "routes/channels.php": "aff2242557ff32e285c443ad56f64c3c298b7b8abc6df23c89a951ab136315a1",
         "routes/console.php": "764740e3ef18119583ca348158535f7fa5482f00345eb9834935db386bf2336d",
@@ -7006,6 +7006,7 @@
         "tests/Feature/Auth/EmailVerificationTest.php": "781d502f494369b3f821dda11921889e78e190e0022cc12aea8e0c29952dc341",
         "tests/Feature/Auth/PasswordConfirmationTest.php": "5fdefcde021cce9819ca9469c5f578365f385ab8167da2180c8b50f1f4a11811",
         "tests/Feature/Auth/PasswordResetTest.php": "196173109b514002a9363fc6df3467129e98ebd5158dc80699887e8885ef3085",
+        "tests/Feature/Auth/PublicMailRateLimitTest.php": "79c9a3c0e9d84a9eb09d2a1d13baecfb06a5a4429adf04008ba00d7d5863d3af",
         "tests/Feature/Auth/RegistrationTest.php": "face9fda99c544a8902df820631841fd30d8c663ca7a564c37d8e06e603d2763",
         "tests/Feature/Auth/TwoFactorTest.php": "e3754d44594a8d42b2b2bc69f350329d8512f9ca36bbebf24da95ef2799a22e3",
         "tests/Feature/Billing/AccruedMeteredTest.php": "6e23904280f58b536e91b21a15578ba28cdd1cc390af608b9c7fa5872ed2499a",
