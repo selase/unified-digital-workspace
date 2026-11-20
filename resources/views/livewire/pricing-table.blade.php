@@ -19,6 +19,7 @@
                     @foreach(['sites' => 'Websites', 'editors' => 'Included website editors', 'domains' => 'Connected custom domains', 'files_gib' => 'File storage (GiB)', 'database_gib' => 'Logical website database data (GiB)', 'bandwidth_gib' => 'Website bandwidth (GiB/month)'] as $key => $label)
                         <tr wire:key="website-limit-{{ $key }}" class="border-b border-slate-300"><th scope="row" class="p-4">{{ $label }}</th>@foreach($hybrid['website_plans'] as $plan)<td class="p-4">{{ $plan[$key] }}</td>@endforeach</tr>
                     @endforeach
+                    <tr class="border-b border-slate-300"><th scope="row" class="p-4">Included starter modules</th>@foreach($hybrid['website_plans'] as $plan)<td class="p-4">@if(isset($plan['starter']))Choose {{ $plan['starter']['picks'] }} of {{ collect($plan['starter']['packages'])->map(fn ($slug) => $hybrid['packages'][$slug]['name'])->join(', ', ' or ') }}, up to GHS {{ number_format($plan['starter']['cap']['GHS']) }} / USD {{ number_format($plan['starter']['cap']['USD']) }} of modules a month. Other modules are billed at their normal price.@else None. Modules are added separately.@endif</td>@endforeach</tr>
                     <tr><th scope="row" class="p-4">Support scope</th>@foreach($hybrid['website_plans'] as $plan)<td class="p-4">{{ $plan['support'] }}</td>@endforeach</tr>
                 </tbody>
             </table>
@@ -104,7 +105,7 @@
                             <div wire:key="quote-{{ $loop->index }}" class="flex justify-between gap-3"><dt>{{ $line['name'] }} × {{ number_format($line['quantity']) }}<br><span class="text-sm">After graduated discounts</span></dt><dd>{{ $quote['currency'] }} {{ number_format($line['subtotal'], 2) }}</dd></div>
                         @endforeach
                         @foreach($quote['package_lines'] as $line)
-                            <div wire:key="quote-package-{{ $loop->index }}" class="flex justify-between gap-3"><dt>{{ $line['name'] }}</dt><dd>{{ $quote['currency'] }} {{ number_format($line['subtotal'], 2) }}</dd></div>
+                            <div wire:key="quote-package-{{ $loop->index }}" class="flex justify-between gap-3"><dt>{{ $line['name'] }}@if($line['included'])<br><span class="text-sm">Included starter module</span>@endif</dt><dd>{{ $quote['currency'] }} {{ number_format($line['subtotal'], 2) }}</dd></div>
                         @endforeach
                         <div class="flex justify-between gap-3 border-t border-slate-300 pt-4 font-semibold"><dt>Monthly subtotal</dt><dd>{{ $quote['currency'] }} {{ number_format($quote['total'], 2) }}</dd></div>
                     </dl>

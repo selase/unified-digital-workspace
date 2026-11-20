@@ -14,7 +14,7 @@
                     Direct plan changes are available before usage is recorded in the current month. After usage begins, contact an administrator to arrange a change for the next billing period. Initial plan setup is still available.
                 @endif
             </p>
-            <p class="mt-3 text-sm text-muted-foreground">Website Essentials (GHS 600 / USD 50) and Managed Business (GHS 1,000 / USD 100) include editors and website usage allowances, with separate one-time setup fees. Operational modules are optional. Existing bundle agreements remain unchanged until an explicit transition is agreed.</p>
+            <p class="mt-3 text-sm text-muted-foreground">Website Essentials (GHS 600 / USD 50) and Managed Business (GHS 1,000 / USD 100) include editors and website usage allowances (Managed Business also includes two starter modules of your choice), with separate one-time setup fees. Operational modules are optional. Existing bundle agreements remain unchanged until an explicit transition is agreed.</p>
             <a href="{{ route('product.template') }}#pricing" class="kt-btn kt-btn-outline mt-4">Preview hybrid pricing and estimate your costs</a>
         </div>
 

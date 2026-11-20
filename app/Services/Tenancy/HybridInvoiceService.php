@@ -34,7 +34,13 @@ final class HybridInvoiceService
         }
         foreach ($snapshot['selected_packages'] as $slug) {
             $package = $card['packages'][$slug];
-            $lines[] = $this->line($package['name'].' — monthly module subscription', 1, (float) $package[$currency], $baseMeta + ['type' => 'module_subscription', 'module_package' => $slug]);
+            $included = in_array($slug, $snapshot['starter_packages'] ?? [], true);
+            $lines[] = $this->line(
+                $package['name'].($included ? ' — included starter module' : ' — monthly module subscription'),
+                1,
+                $included ? 0.0 : (float) $package[$currency],
+                $baseMeta + ['type' => 'module_subscription', 'module_package' => $slug, 'starter_included' => $included],
+            );
         }
         if ($agreement->setup_required && $agreement->effective_from->isSameMonth($start)) {
             $lines[] = $this->line($plan['name'].' — one-time standard setup', 1, (float) $plan['setup'][$currency], $baseMeta + ['type' => 'standard_setup']);

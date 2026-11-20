@@ -33,6 +33,7 @@ return [
                 'sites' => 1, 'editors' => 5, 'domains' => 1,
                 'files_gib' => 20, 'database_gib' => 2, 'bandwidth_gib' => 100,
                 'support' => 'Email support plus 30 minutes of routine configuration help per month; content edits are quoted separately.',
+                'starter' => ['picks' => 2, 'cap' => ['GHS' => 700.00, 'USD' => 60.00], 'packages' => ['website', 'volunteers', 'memberships', 'crm']],
             ],
         ],
         'extra_editor' => ['GHS' => 25.00, 'USD' => 2.00],

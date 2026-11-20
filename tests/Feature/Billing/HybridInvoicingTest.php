@@ -112,3 +112,14 @@ it('permits a reconciled terminated provider subscription without restarting it'
     $agreement = app(BillingAgreementService::class)->schedule($this->tenant, 'essentials', [], 'GHS', 2, false, Carbon::parse('2026-11-01'));
     expect($agreement->exists)->toBeTrue()->and($subscription->fresh()->provider_status)->toBe('canceled');
 });
+
+it('invoices included starter modules at zero and freezes the choice in the agreement', function (): void {
+    $agreement = app(BillingAgreementService::class)->schedule($this->tenant, 'managed_business', ['memberships', 'volunteers', 'finance'], 'GHS', 5, false, now());
+    expect($agreement->snapshot['starter_packages'])->toBe(['memberships', 'volunteers']);
+    config(['usage-pricing.hybrid.website_plans.managed_business.starter' => null]);
+    $this->travelTo(Carbon::parse('2026-11-01'));
+    $invoice = app(InvoicingService::class)->generate($this->tenant, Carbon::parse('2026-10-01'), Carbon::parse('2026-10-31')->endOfDay());
+    expect((float) $invoice->subtotal)->toBe(1750.0);
+    $starter = $invoice->items->filter(fn ($item) => ($item->meta['starter_included'] ?? false) === true);
+    expect($starter)->toHaveCount(2);
+});

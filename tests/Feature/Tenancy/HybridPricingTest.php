@@ -114,3 +114,26 @@ it('requires an upgrade or capacity quote above website limits', function (array
     [['websitePlan' => 'managed_business', 'bandwidthGiB' => 100.01]],
     [['websitePlan' => 'free']], [['websiteEditors' => -1]], [['fileStorageGiB' => -1]],
 ])->throws(ValidationException::class);
+
+it('includes two starter modules with Managed Business and bills the rest', function (): void {
+    $quote = app(HybridPricingService::class)->quote(0, 0, ['memberships', 'volunteers', 'finance'], 'GHS', ['websitePlan' => 'managed_business']);
+    expect($quote['packages_total'])->toBe(750.0)
+        ->and($quote['total'])->toBe(1750.0)
+        ->and(collect($quote['package_lines'])->where('included', true)->pluck('name')->all())->toBe(['Memberships', 'Volunteers'])
+        ->and($quote['modules'])->toContain('memberships', 'volunteers', 'finance');
+});
+
+it('keeps starter modules within the cap and picks the most valuable fit', function (): void {
+    $service = app(HybridPricingService::class);
+    $quote = $service->quote(0, 0, ['crm', 'volunteers', 'website'], 'GHS', ['websitePlan' => 'managed_business']);
+    expect(collect($quote['package_lines'])->where('included', true)->pluck('name')->all())->toBe(['CRM', 'Intranet'])
+        ->and($quote['packages_total'])->toBe(300.0);
+    $overCap = $service->quote(0, 0, ['crm', 'memberships'], 'USD', ['websitePlan' => 'managed_business']);
+    expect($overCap['packages_total'])->toBe(30.0);
+});
+
+it('does not include starter modules with Essentials or for ineligible packages', function (): void {
+    $service = app(HybridPricingService::class);
+    expect($service->quote(0, 0, ['memberships'], 'GHS')['packages_total'])->toBe(400.0);
+    expect($service->quote(0, 0, ['finance'], 'GHS', ['websitePlan' => 'managed_business'])['packages_total'])->toBe(750.0);
+});

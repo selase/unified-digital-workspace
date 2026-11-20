@@ -82,7 +82,9 @@ final class BillingAgreementService
                 'editor_seats' => $editorSeats, 'setup_required' => $setupRequired,
                 'snapshot' => [
                     'hybrid' => config('usage-pricing.hybrid'), 'meters' => config('usage-pricing.meters'),
-                    'selected_packages' => array_values($packageSlugs), 'dedicated_db' => $tenant->requiresDedicatedDb(),
+                    'selected_packages' => array_values($packageSlugs),
+                    'starter_packages' => StarterModules::waived(config('usage-pricing.hybrid'), $planSlug, array_values($packageSlugs), $currency),
+                    'dedicated_db' => $tenant->requiresDedicatedDb(),
                 ],
             ]);
         });

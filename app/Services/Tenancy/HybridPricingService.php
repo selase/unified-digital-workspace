@@ -71,7 +71,7 @@ final class HybridPricingService
      *
      * @param  array<int, string>  $packages
      * @param  array{websitePlan?: string, websiteEditors?: int, includeSetup?: bool, fileStorageGiB?: float, databaseGiB?: float, bandwidthGiB?: float}  $website
-     * @return array{currency: string, website_plan: string, base_fee: float, active_users: int, access_before_discount: float, access_discount: float, access_total: float, packages_total: float, total: float, setup_fee: float, first_month_total: float, included_editors: int, extra_editors: int, extra_editor_total: float, access_lines: list<array{name: string, quantity: int, unit_price: float, before_discount: float, discount: float, subtotal: float}>, package_lines: list<array{name: string, subtotal: float}>, modules: list<string>, features: list<string>}
+     * @return array{currency: string, website_plan: string, base_fee: float, active_users: int, access_before_discount: float, access_discount: float, access_total: float, packages_total: float, total: float, setup_fee: float, first_month_total: float, included_editors: int, extra_editors: int, extra_editor_total: float, access_lines: list<array{name: string, quantity: int, unit_price: float, before_discount: float, discount: float, subtotal: float}>, package_lines: list<array{name: string, subtotal: float, included: bool}>, modules: list<string>, features: list<string>}
      */
     public function quote(int $selfServiceUsers, int $operationalUsers, array $packages, string $currency, array $website = []): array
     {
@@ -113,13 +113,15 @@ final class HybridPricingService
         $packageCents = 0;
         $modules = config('usage-pricing.hybrid.included_modules');
         $features = ['custom-domains'];
+        $starter = StarterModules::waived(config('usage-pricing.hybrid'), $data['websitePlan'], array_values($packages), $currency);
         foreach (array_unique($packages) as $slug) {
             $package = $catalogue[$slug];
-            $cents = (int) round($package[$currency] * 100);
+            $included = in_array($slug, $starter, true);
+            $cents = $included ? 0 : (int) round($package[$currency] * 100);
             $packageCents += $cents;
             $modules = [...$modules, ...$package['modules']];
             $features = [...$features, ...$package['features']];
-            $packageLines[] = ['name' => $package['name'], 'subtotal' => $cents / 100.0];
+            $packageLines[] = ['name' => $package['name'], 'subtotal' => $cents / 100.0, 'included' => $included];
         }
 
         $plan = config('usage-pricing.hybrid.website_plans.'.$data['websitePlan']);
