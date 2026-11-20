@@ -1,6 +1,6 @@
 {
     "version": 2,
-    "source_sha256": "4930877859914b2e8026f7c57fd6cda5d0e9cc784a802fcffc73a7d5b795a5cd",
+    "source_sha256": "84b725f0c55209d40c16051b6028ba9825550f4d27049ab91e0bf2012640d6dd",
     "source_files": {
         ".agent/rules/path-to-php.md": "c559a7b17fe39107f8e1a69a9b93fe720c8d11b947d9decaf6541ed429714359",
         ".agent/rules/testing.md": "8289cda546c31080a26018179a337bafa1f65c0967dd23d2d1561d6c9b0a9c1f",
@@ -1977,6 +1977,7 @@
         "docs/EXECUTION_MASTER_PLAN.md": "74ca53298e3641a25b97a35efd047d8526554e710600d7aa8c229ae2bf73ee56",
         "docs/MODULE_QUICKSTARTS.md": "6b291020b1c9ea23f669fe190424610e03fb95b32e949b9dc02672b6bbfd511a",
         "docs/PRICING_SHEET.md": "f7dfe4f411f4ecd93731d3d0e802b73ea9c718d933d5050567d7543785a36479",
+        "docs/TGF_CLIENT_CHECKLIST.md": "14c136b7933b92366120741f1db124d074dfd2f71dcaec6f3cc33d7c9a762dd8",
         "docs/TRACK_STATUS.md": "daece7930439ced50444b41012aa988b1b5725f47481482f4afdb09218cf8b7c",
         "docs/tracks/TRACK_03_MODULE_INFRASTRUCTURE.md": "0893968a98bc59ec500747dfd70d9dee3b520c7f990c5966b13a22f3ba2c07b8",
         "docs/tracks/TRACK_04_HRMS_CORE.md": "a52fdbc481b2a3666eabe96f5224349ca8491ab44ec0af63fdc0c2c994e7e3b8",
