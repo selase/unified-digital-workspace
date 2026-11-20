@@ -135,6 +135,7 @@
                         <a href="{{ $cmsUrl->route('posts.archive') }}">Latest News</a>
                         <a href="{{ $cmsUrl->route('newsletters.archive') }}">Newsletters</a>
                         <a href="{{ $cmsUrl->route('pages.show', 'media-gallery') }}">Media Gallery</a>
+                        <a href="{{ $tgfRoute('events.show') }}">Events</a>
                     </div>
                 </div>
 
@@ -178,6 +179,7 @@
                 <a href="{{ $cmsUrl->route('posts.archive') }}" class="block rounded-md px-3 py-2 text-sm">Latest News</a>
                 <a href="{{ $cmsUrl->route('newsletters.archive') }}" class="block rounded-md px-3 py-2 text-sm">Newsletters</a>
                 <a href="{{ $cmsUrl->route('pages.show', 'media-gallery') }}" class="block rounded-md px-3 py-2 text-sm">Media Gallery</a>
+                <a href="{{ $tgfRoute('events.show') }}" class="block rounded-md px-3 py-2 text-sm">Events</a>
                 <div class="pt-3">
                     <a href="{{ $cmsUrl->route('pages.show', 'donate') }}" class="tgf-btn-accent block text-center">Donate</a>
                 </div>
@@ -240,11 +242,22 @@
                         <li>Awoshie, Accra, Ghana</li>
                         <li class="pt-1">+233 (024) 337 6304</li>
                         <li>info@thyroidghanafoundation.org</li>
+                        <li class="pt-1"><a href="{{ $cmsUrl->route('pages.show', 'contact') }}" class="font-semibold text-white underline transition hover:opacity-80">Contact us</a></li>
                     </ul>
                 </div>
             </div>
             <div class="mt-12 border-t border-slate-800 pt-8 flex flex-wrap items-center justify-between gap-4">
                 <p class="text-xs">&copy; {{ date('Y') }} Thyroid Ghana Foundation. All rights reserved.</p>
+                @php
+                    $tgfLegalPages = \App\Modules\CmsCore\Models\Post::query()->published()->whereIn('slug', ['privacy-policy', 'terms-of-use', 'medical-disclaimer'])->pluck('title', 'slug');
+                @endphp
+                @if($tgfLegalPages->isNotEmpty())
+                    <ul class="flex flex-wrap gap-x-4 gap-y-1 text-xs">
+                        @foreach($tgfLegalPages as $legalSlug => $legalTitle)
+                            <li><a href="{{ $cmsUrl->route('pages.show', $legalSlug) }}" class="transition hover:text-white">{{ $legalTitle }}</a></li>
+                        @endforeach
+                    </ul>
+                @endif
                 <div class="flex items-center gap-4">
                     <a href="https://www.facebook.com/thyroidghana" class="text-slate-500 transition hover:text-white" target="_blank" rel="noopener" aria-label="Facebook">
                         <svg class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>

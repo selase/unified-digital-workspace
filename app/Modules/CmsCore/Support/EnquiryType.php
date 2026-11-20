@@ -13,6 +13,7 @@ enum EnquiryType: string
     case Membership = 'membership';
     case Partnership = 'partnership';
     case Donation = 'donation';
+    case General = 'general';
 
     public function label(): string
     {
@@ -21,6 +22,7 @@ enum EnquiryType: string
             self::Membership => 'Membership',
             self::Partnership => 'Partnership',
             self::Donation => 'Donation',
+            self::General => 'General',
         };
     }
 
@@ -31,6 +33,7 @@ enum EnquiryType: string
             self::Membership => 'Apply for membership',
             self::Partnership => 'Start a conversation about partnering',
             self::Donation => 'Ask about giving',
+            self::General => 'Send us a message',
         };
     }
 
@@ -41,6 +44,7 @@ enum EnquiryType: string
             self::Membership => 'Tell us a little about yourself',
             self::Partnership => 'What kind of partnership do you have in mind?',
             self::Donation => 'How would you like to give?',
+            self::General => 'How can we help?',
         };
     }
 
@@ -49,8 +53,7 @@ enum EnquiryType: string
         return match ($this) {
             self::Volunteer => 'Send my details',
             self::Membership => 'Send my application',
-            self::Partnership => 'Send my message',
-            self::Donation => 'Send my message',
+            self::Partnership, self::Donation, self::General => 'Send my message',
         };
     }
 
