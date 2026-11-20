@@ -7,12 +7,12 @@ use Illuminate\Validation\ValidationException;
 
 it('quotes a hospital without charging every employee as an operator', function (): void {
     $quote = app(HybridPricingService::class)->quote(1350, 150, ['collaboration', 'hr', 'quality', 'facilities'], 'GHS');
-    expect($quote['base_fee'])->toBe(300.0)
+    expect($quote['base_fee'])->toBe(600.0)
         ->and($quote['access_before_discount'])->toBe(10500.0)
         ->and($quote['access_discount'])->toBe(1175.0)
         ->and($quote['access_total'])->toBe(9325.0)
         ->and($quote['packages_total'])->toBe(3000.0)
-        ->and($quote['total'])->toBe(12625.0)
+        ->and($quote['total'])->toBe(12925.0)
         ->and($quote['active_users'])->toBe(1500);
 });
 
@@ -20,7 +20,7 @@ it('quotes independent dollar rates', function (): void {
     $quote = app(HybridPricingService::class)->quote(1350, 150, ['collaboration', 'hr', 'quality', 'facilities'], 'USD');
     expect($quote['access_total'])->toBe(860.0)
         ->and($quote['packages_total'])->toBe(240.0)
-        ->and($quote['total'])->toBe(1125.0);
+        ->and($quote['total'])->toBe(1150.0);
 });
 
 it('offers commerce without institution modules or duplicate package charges', function (): void {
@@ -28,7 +28,7 @@ it('offers commerce without institution modules or duplicate package charges', f
     expect($quote['modules'])->toContain('store', 'vendor-marketplace')
         ->not->toContain('hrms-core', 'quality-monitoring', 'real-estate')
         ->and($quote['packages_total'])->toBe(750.0)
-        ->and($quote['total'])->toBe(1175.0)
+        ->and($quote['total'])->toBe(1475.0)
         ->and($quote['package_lines'])->toHaveCount(1);
 });
 
@@ -40,12 +40,12 @@ it('keeps additional user costs positive across discount boundaries', function (
 
 it('keeps module subscriptions payable when nobody logs in', function (): void {
     $quote = app(HybridPricingService::class)->quote(0, 0, ['hr'], 'GHS');
-    expect($quote['access_total'])->toBe(0.0)->and($quote['total'])->toBe(1300.0);
+    expect($quote['access_total'])->toBe(0.0)->and($quote['total'])->toBe(1600.0);
 });
 
 it('charges for websites blogs and forms even without staff logins', function (): void {
-    expect(app(HybridPricingService::class)->quote(0, 0, [], 'GHS')['total'])->toBe(300.0);
-    expect(app(HybridPricingService::class)->quote(0, 0, [], 'USD')['total'])->toBe(25.0);
+    expect(app(HybridPricingService::class)->quote(0, 0, [], 'GHS')['total'])->toBe(600.0);
+    expect(app(HybridPricingService::class)->quote(0, 0, [], 'USD')['total'])->toBe(50.0);
 });
 
 it('rejects invalid quotes', function (int $selfService, int $operators, array $packages, string $currency): void {
@@ -86,23 +86,23 @@ it('includes website editors without operational seat charges', function (string
             ->and($quote['extra_editor_total'])->toBe(0.0)
             ->and($quote['features'])->toContain('custom-domains');
     }
-})->with([['essentials', 2, 300.0, 25.0], ['managed_business', 5, 600.0, 50.0]]);
+})->with([['essentials', 2, 600.0, 50.0], ['managed_business', 5, 1000.0, 100.0]]);
 
 it('separates one-time setup from recurring subscription charges', function (): void {
     $quote = app(HybridPricingService::class)->quote(0, 0, [], 'GHS', ['websitePlan' => 'managed_business', 'includeSetup' => true]);
-    expect($quote['total'])->toBe(600.0)->and($quote['setup_fee'])->toBe(1000.0)->and($quote['first_month_total'])->toBe(1600.0);
-    expect(app(HybridPricingService::class)->quote(0, 0, [], 'USD', ['includeSetup' => true])['first_month_total'])->toBe(75.0);
+    expect($quote['total'])->toBe(1000.0)->and($quote['setup_fee'])->toBe(1000.0)->and($quote['first_month_total'])->toBe(2000.0);
+    expect(app(HybridPricingService::class)->quote(0, 0, [], 'USD', ['includeSetup' => true])['first_month_total'])->toBe(100.0);
     expect(app(HybridPricingService::class)->quote(0, 0, [], 'GHS')['setup_fee'])->toBe(0.0);
 });
 
 it('charges only for website editors beyond the included allowance', function (): void {
     $quote = app(HybridPricingService::class)->quote(0, 0, [], 'GHS', ['websiteEditors' => 3]);
-    expect($quote['extra_editors'])->toBe(1)->and($quote['extra_editor_total'])->toBe(25.0)->and($quote['total'])->toBe(325.0);
+    expect($quote['extra_editors'])->toBe(1)->and($quote['extra_editor_total'])->toBe(25.0)->and($quote['total'])->toBe(625.0);
 });
 
 it('accepts website usage at each allowance boundary', function (string $plan, float $files, float $database, float $bandwidth): void {
     $quote = app(HybridPricingService::class)->quote(0, 0, [], 'GHS', ['websitePlan' => $plan, 'fileStorageGiB' => $files, 'databaseGiB' => $database, 'bandwidthGiB' => $bandwidth]);
-    expect($quote['total'])->toBe($plan === 'essentials' ? 300.0 : 600.0);
+    expect($quote['total'])->toBe($plan === 'essentials' ? 600.0 : 1000.0);
 })->with([['essentials', 5.0, 0.5, 25.0], ['managed_business', 20.0, 2.0, 100.0]]);
 
 it('requires an upgrade or capacity quote above website limits', function (array $options): void {

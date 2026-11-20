@@ -21,14 +21,14 @@ return [
         'status' => 'opt_in',
         'website_plans' => [
             'essentials' => [
-                'name' => 'Website Essentials', 'GHS' => 300.00, 'USD' => 25.00,
+                'name' => 'Website Essentials', 'GHS' => 600.00, 'USD' => 50.00,
                 'setup' => ['GHS' => 500.00, 'USD' => 50.00],
                 'sites' => 1, 'editors' => 2, 'domains' => 1,
                 'files_gib' => 5, 'database_gib' => 0.5, 'bandwidth_gib' => 25,
                 'support' => 'Email support for platform faults; content edits are quoted separately.',
             ],
             'managed_business' => [
-                'name' => 'Managed Business', 'GHS' => 600.00, 'USD' => 50.00,
+                'name' => 'Managed Business', 'GHS' => 1000.00, 'USD' => 100.00,
                 'setup' => ['GHS' => 1000.00, 'USD' => 100.00],
                 'sites' => 1, 'editors' => 5, 'domains' => 1,
                 'files_gib' => 20, 'database_gib' => 2, 'bandwidth_gib' => 100,

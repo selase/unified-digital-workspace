@@ -8,7 +8,7 @@ use Livewire\Livewire;
 it('shows a paid core subscription without trial or free service promises', function (): void {
     Livewire::test(PricingTable::class)
         ->assertSee('Core Workspace')->assertSee('required')
-        ->assertSee('GHS 300.00 / USD 25.00')
+        ->assertSee('GHS 600.00 / USD 50.00')
         ->assertSee('even with no staff logins')
         ->assertDontSee('no monthly base charge')
         ->assertDontSee('14-day')->assertDontSee('2 months free')

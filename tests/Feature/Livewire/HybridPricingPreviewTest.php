@@ -12,14 +12,14 @@ it('provides a hospital example separate from current billing', function (): voi
         ->call('hospitalExample')
         ->assertSet('selfServiceUsers', 1350)
         ->assertSet('operationalUsers', 150)
-        ->assertSee('12,625.00')->assertSee('1,175.00');
+        ->assertSee('12,925.00')->assertSee('1,175.00');
 });
 
 it('recalculates currencies and selected packages', function (): void {
     Livewire::test(PricingTable::class)
         ->set('selfServiceUsers', 0)->set('operationalUsers', 5)
-        ->set('selectedPackages', ['commerce'])->assertSee('1,175.00')
-        ->set('quoteCurrency', 'USD')->assertSee('95.00');
+        ->set('selectedPackages', ['commerce'])->assertSee('1,475.00')
+        ->set('quoteCurrency', 'USD')->assertSee('120.00');
 });
 
 it('shows validation errors rather than an invalid estimate', function (): void {
@@ -48,7 +48,7 @@ it('exposes the preview from the existing billing pricing page', function (): vo
 it('renders paid pricing publicly without a free workspace promise', function (): void {
     $this->get(route('product.template'))->assertSuccessful()
         ->assertSee('Hybrid pricing preview')
-        ->assertSee('GHS 300.00 / USD 25.00')
+        ->assertSee('GHS 600.00 / USD 50.00')
         ->assertSee('Compare plans &amp; estimate costs', false)
         ->assertDontSee('Start for free')
         ->assertDontSee('no monthly base charge');
@@ -57,9 +57,9 @@ it('renders paid pricing publicly without a free workspace promise', function ()
 it('switches website plans and shows first-month setup separately', function (): void {
     Livewire::test(PricingTable::class)
         ->set('websiteEditors', 5)->set('websitePlan', 'managed_business')
-        ->assertSee('600.00')->assertSee('1,600.00')
-        ->set('includeSetup', false)->assertSee('600.00')
-        ->set('quoteCurrency', 'USD')->assertSee('50.00');
+        ->assertSee('1,000.00')->assertSee('2,000.00')
+        ->set('includeSetup', false)->assertSee('1,000.00')
+        ->set('quoteCurrency', 'USD')->assertSee('100.00');
 });
 
 it('revalidates capacity when changing to a smaller website plan', function (): void {
@@ -97,8 +97,8 @@ it('presents pricing in the workspace theme without template claims or sample te
         ->assertSee('A website first. A workspace when you need it.')
         ->assertSee('How billing works')
         ->assertSee('Existing customer agreements keep their agreed rates.')
-        ->assertSee('GHS 300.00 / USD 25.00')
         ->assertSee('GHS 600.00 / USD 50.00')
+        ->assertSee('GHS 1,000.00 / USD 100.00')
         ->assertDontSee('StarterKit')
         ->assertDontSee('SaaS in days')
         ->assertDontSee('UNVERIFIED_CUSTOMER_CLAIM')

@@ -27,7 +27,7 @@ it('invoices independent USD rates and excludes prepaid emails and included reso
     config(['usage-pricing.meters.emails.count.USD' => 999]);
     $this->travelTo(Carbon::parse('2026-11-01'));
     $invoice = app(InvoicingService::class)->generate($this->tenant, Carbon::parse('2026-10-01'), Carbon::parse('2026-10-31')->endOfDay());
-    expect($invoice->currency)->toBe('USD')->and((float) $invoice->subtotal)->toBe(151.0);
+    expect($invoice->currency)->toBe('USD')->and((float) $invoice->subtotal)->toBe(201.0);
 });
 
 it('provides custom domains without leaking legacy commerce grants', function (): void {
@@ -55,7 +55,7 @@ it('keeps historical invoice currency even after account billing-country changes
     $this->tenant->update(['country' => 'US']);
     $this->travelTo(Carbon::parse('2026-11-01'));
     $invoice = app(InvoicingService::class)->generate($this->tenant, Carbon::parse('2026-10-01'), Carbon::parse('2026-10-31')->endOfDay());
-    expect($invoice->currency)->toBe('GHS')->and((float) $invoice->subtotal)->toBe(300.0);
+    expect($invoice->currency)->toBe('GHS')->and((float) $invoice->subtotal)->toBe(600.0);
 });
 
 it('releases editor capacity when a person leaves the organisation', function (): void {

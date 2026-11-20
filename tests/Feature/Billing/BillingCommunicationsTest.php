@@ -31,7 +31,7 @@ it('records one cycle notice per billing contact and milestone using the upcomin
     $this->service->runDue();
     $message = BillingMessage::query()->sole();
     expect($message->recipient)->toBe('finance@example.org')->and($message->kind)->toBe('cycle_upcoming')
-        ->and($message->payload['fixed_amount'])->toEqual(600.0)->and($message->payload['currency'])->toBe('GHS');
+        ->and($message->payload['fixed_amount'])->toEqual(1000.0)->and($message->payload['currency'])->toBe('GHS');
     expect(Invoice::count())->toBe(0);
 });
 
@@ -150,7 +150,7 @@ it('sends the correct first-month setup information without creating an invoice'
     $this->service->runDue();
     $message = BillingMessage::sole();
     $mail = new InvoiceBillingNotice($message);
-    expect($mail->render())->toContain('GHS 300.00')->toContain('GHS 500.00')->toContain('not an invoice');
+    expect($mail->render())->toContain('GHS 600.00')->toContain('GHS 500.00')->toContain('not an invoice');
     expect(Invoice::count())->toBe(0);
 });
 

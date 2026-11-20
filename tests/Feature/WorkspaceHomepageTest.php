@@ -148,7 +148,7 @@ final class WorkspaceHomepageTest extends TestCase
         self::assertStringContainsString('https://udworkspace.com/register', $html);
         self::assertStringContainsString('https://udworkspace.com/product-template#pricing', $html);
         self::assertStringContainsString('GHS 345', $html);
-        self::assertStringContainsString('GHS 600', $html);
+        self::assertStringContainsString('GHS 1,000', $html);
         self::assertStringContainsString('Setup, additional access and usage charges may apply.', $html);
     }
 

@@ -36,12 +36,12 @@ it('invoices frozen website prices and setup once without extra charges for incl
     $this->travelTo(Carbon::parse('2026-11-01'));
     $service = app(InvoicingService::class);
     $invoice = $service->generate($this->tenant, Carbon::parse('2026-10-01'), Carbon::parse('2026-10-31')->endOfDay());
-    expect((float) $invoice->subtotal)->toBe(800.0)->and($invoice->currency)->toBe('GHS')
+    expect((float) $invoice->subtotal)->toBe(1100.0)->and($invoice->currency)->toBe('GHS')
         ->and($invoice->meta['billing_agreement_id'])->toBe($agreement->id)
         ->and($service->generate($this->tenant, $invoice->period_start, $invoice->period_end)->id)->toBe($invoice->id);
     $this->travelTo(Carbon::parse('2026-12-01'));
     $next = $service->generate($this->tenant, Carbon::parse('2026-11-01'), Carbon::parse('2026-11-30')->endOfDay());
-    expect((float) $next->subtotal)->toBe(300.0);
+    expect((float) $next->subtotal)->toBe(600.0);
 });
 
 it('bills purchased editor seats and highest monthly access with marginal discounts', function (): void {
@@ -51,7 +51,7 @@ it('bills purchased editor seats and highest monthly access with marginal discou
     }
     $this->travelTo(Carbon::parse('2026-11-01'));
     $invoice = app(InvoicingService::class)->generate($this->tenant, Carbon::parse('2026-10-01'), Carbon::parse('2026-10-31')->endOfDay());
-    expect((float) $invoice->subtotal)->toBe(3847.5);
+    expect((float) $invoice->subtotal)->toBe(4147.5);
 });
 
 it('uses the historical agreement when generating a late invoice after a plan change', function (): void {
@@ -61,7 +61,7 @@ it('uses the historical agreement when generating a late invoice after a plan ch
     $this->travelTo(Carbon::parse('2026-12-01'));
     expect($service->activeFor($this->tenant)->plan_slug)->toBe('managed_business');
     $invoice = app(InvoicingService::class)->generate($this->tenant, Carbon::parse('2026-10-01'), Carbon::parse('2026-10-31')->endOfDay());
-    expect((float) $invoice->subtotal)->toBe(300.0)->and($invoice->meta['billing_agreement_id'])->toBe($old->id);
+    expect((float) $invoice->subtotal)->toBe(600.0)->and($invoice->meta['billing_agreement_id'])->toBe($old->id);
 });
 
 it('rejects retroactive mid-month duplicate and currency-changing agreements', function (string $date, string $currency): void {
