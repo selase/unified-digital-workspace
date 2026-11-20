@@ -5,7 +5,7 @@
 @endphp
 <section class="relative isolate overflow-hidden" style="background: linear-gradient(135deg, var(--tgf-dark) 0%, #134E4A 100%);">
     @if($heroSources)
-        <img class="tgf-hero-image absolute inset-0 -z-20 h-full w-full object-cover" src="{{ $heroSources['src'] }}" srcset="{{ $heroSources['srcset'] }}" sizes="100vw" alt="{{ $heroMedia->alt_text ?? '' }}" fetchpriority="high" />
+        <img class="tgf-hero-image absolute inset-0 -z-20 h-full w-full object-cover" style="object-position: 50% 18%;" src="{{ $heroSources['src'] }}" srcset="{{ $heroSources['srcset'] }}" sizes="100vw" alt="{{ $heroMedia->alt_text ?? '' }}" fetchpriority="high" />
         <div class="absolute inset-0 -z-10" style="background: linear-gradient(90deg, rgba(15,23,42,0.85) 0%, rgba(15,23,42,0.6) 55%, rgba(15,23,42,0.35) 100%);"></div>
     @endif
     <div class="mx-auto max-w-7xl px-4 py-16 sm:px-6 sm:py-20 lg:px-8 lg:py-24">
