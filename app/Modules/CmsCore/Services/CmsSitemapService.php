@@ -34,7 +34,7 @@ final class CmsSitemapService
         return Cache::remember(
             self::cacheKey($tenantId, $websiteMode),
             self::CACHE_TTL_SECONDS,
-            fn (): string => $this->buildXml($this->urls($baseUrl, $websiteMode)),
+            fn (): string => $this->buildXml($this->urls($tenantId, $baseUrl, $websiteMode)),
         );
     }
 
@@ -46,7 +46,7 @@ final class CmsSitemapService
     /**
      * @return array<int, array{loc: string, lastmod?: string|null, changefreq: string, priority: string}>
      */
-    private function urls(string $baseUrl, bool $websiteMode): array
+    private function urls(string $tenantId, string $baseUrl, bool $websiteMode): array
     {
         $prefix = $websiteMode ? 'cms-core.website.' : 'cms-core.public.';
         $base = mb_rtrim($baseUrl, '/');
@@ -82,6 +82,12 @@ final class CmsSitemapService
         Tag::query()->whereHas('posts', fn ($posts) => $posts->published())->select(['slug'])->each(function (Tag $tag) use (&$urls, $loc): void {
             $urls[] = ['loc' => $loc('posts.tag', $tag->slug), 'changefreq' => 'weekly', 'priority' => '0.4'];
         });
+
+        foreach (app()->tagged('cms.sitemap.paths') as $provider) {
+            foreach ($provider($tenantId, $websiteMode) as $path) {
+                $urls[] = ['loc' => $base.$path, 'changefreq' => 'weekly', 'priority' => '0.7'];
+            }
+        }
 
         return $urls;
     }

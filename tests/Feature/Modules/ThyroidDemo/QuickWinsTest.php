@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 require_once __DIR__.'/SiteTenantHelper.php';
 
+use App\Models\Tenant;
 use App\Modules\CmsCore\Database\Factories\CategoryFactory;
 use App\Modules\CmsCore\Database\Factories\MediaFactory;
 use App\Modules\CmsCore\Database\Factories\PostFactory;
@@ -58,6 +59,20 @@ function tgfFeature(string $slug, int $width, int $height): App\Modules\CmsCore\
 
     return $media;
 }
+
+describe('Sitemap pages of the site module', function (): void {
+    test('lists the events, board and impact pages for Thyroid only', function (): void {
+        $tenant = tgfSiteTenant();
+
+        $xml = app(CmsSitemapService::class)->xml($tenant->id, 'https://thyroidghanafoundation.org', true);
+
+        expect($xml)->toContain('https://thyroidghanafoundation.org/events')->toContain('https://thyroidghanafoundation.org/our-board')->toContain('https://thyroidghanafoundation.org/our-impact');
+
+        $other = Tenant::factory()->create(['slug' => 'someone-else', 'isolation_mode' => 'shared']);
+
+        expect(app(CmsSitemapService::class)->xml($other->id, 'https://other.example', true))->not->toContain('/events');
+    });
+});
 
 describe('Photo heroes', function (): void {
     test('a landscape featured image becomes the page hero with sized variants', function (): void {

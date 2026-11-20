@@ -1,10 +1,15 @@
 # Thyroid Ghana Foundation website: what we need from you
 
-Your website now has photo banners, a Contact page, an Events page and draft legal pages. The items below are the ones only the foundation can provide. They are listed in order of how much they improve trust and results. Send what you have, even if it is not perfect, and we will place it on the site.
+Your website now has photo banners, a Contact page and an Events page. The items below are the ones only the foundation can provide. They are listed in order of how much they improve trust and results. Send what you have, even if it is not perfect, and we will place it on the site.
 
 Tick each item as you send it.
 
-## 1. Trust and credibility (most important)
+## 0. Email for the foundation (most urgent)
+
+- [ ] **Subscribe to Google Workspace** for thyroidghanafoundation.org (check Google for Nonprofits first), with one mailbox, info@thyroidghanafoundation.org. Choose the password yourselves and do not send it to us. Tell us when it is created and we add the technical settings to the domain.
+- [ ] Tell us whether anyone reads info@ today.
+
+## 1. Trust and credibility
 
 - [ ] **Registration details:** NGO registration number and the year the foundation was founded.
 - [ ] **Who oversees the money:** one or two sentences on governance (board approval, audit, or who signs off spending).
@@ -34,13 +39,16 @@ Tick each item as you send it.
 - [ ] **Recent news and photos** from events in the last year.
 - [ ] **Resources to download:** leaflets, posters and event reports (PDF).
 
-## 5. Legal wording (needs a decision from the foundation)
+## 5. Legal documents (from the foundation or its lawyer)
 
-We prepared **draft** Privacy Policy, Terms of Use and Medical Disclaimer pages. They are **not visible to the public yet**. Please:
+We do not write legal text for you. Please send:
 
-- [ ] Read them and tell us what to change. Ideally a lawyer should approve them.
-- [ ] Confirm whether the foundation is registered with the **Data Protection Commission** of Ghana. If it is, send us the registration number to add to the Privacy Policy.
-- [ ] Tell us when to **publish** them. Once published, links appear in the website footer automatically.
+- [ ] **Privacy Policy**
+- [ ] **Terms of Use**
+- [ ] **Medical Disclaimer** (the website's health information does not replace a doctor's advice)
+- [ ] Whether the foundation is registered with the **Data Protection Commission** of Ghana, and the registration number if so.
+
+Once we have the final text we publish each page and link it from the website footer.
 
 ## 6. Accounts we need access to
 

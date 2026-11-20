@@ -7,6 +7,7 @@ namespace App\Modules\SiteThyroidGhanaFoundation\Providers;
 use App\Modules\CmsCore\Providers\CmsSiteServiceProvider;
 use App\Modules\SiteThyroidGhanaFoundation\Console\RemoveDemo;
 use App\Modules\SiteThyroidGhanaFoundation\Console\SeedDemo;
+use App\Modules\SiteThyroidGhanaFoundation\Support\SitemapPaths;
 
 final class SiteThyroidGhanaFoundationServiceProvider extends CmsSiteServiceProvider
 {
@@ -23,6 +24,11 @@ final class SiteThyroidGhanaFoundationServiceProvider extends CmsSiteServiceProv
     public function getTenantSlug(): string
     {
         return 'thyroid-ghana-foundation';
+    }
+
+    protected function registerBindings(): void
+    {
+        $this->app->tag([SitemapPaths::class], 'cms.sitemap.paths');
     }
 
     protected function registerCommands(): void
