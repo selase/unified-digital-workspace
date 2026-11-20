@@ -113,7 +113,7 @@
         </section>
     @endif
 
-    @include('site-thyroid-ghana-foundation::public.pages._questions', ['type' => 'membership', 'subject' => 'Membership enquiry'])
+    @include('site-thyroid-ghana-foundation::public.pages._questions', ['type' => 'membership', 'subject' => 'Membership enquiry', 'form' => $tiers->isEmpty()])
 
     @include('site-thyroid-ghana-foundation::public.pages._cta')
 @endsection

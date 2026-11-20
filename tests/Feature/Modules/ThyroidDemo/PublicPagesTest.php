@@ -104,6 +104,20 @@ describe('Membership page', function (): void {
     });
 });
 
+describe('One form per page', function (): void {
+    test('membership, donate and volunteer show their own form and no second enquiry form', function (): void {
+        $tenant = tgfSiteTenant();
+        (new MembershipTiersSection)->ensure($tenant);
+        TenantPaymentGateway::query()->withoutGlobalScopes()->create(['tenant_id' => $tenant->id, 'provider' => 'paystack', 'api_key_encrypted' => 'sk_test_give', 'public_key_encrypted' => 'pk_test', 'is_active' => true]);
+
+        foreach (['/membership' => 'name="type_id"', '/donate' => 'name="amount"', '/volunteer' => 'name="skills"'] as $path => $ownForm) {
+            $html = $this->get(TGF_SITE.$path)->assertOk()->getContent();
+
+            expect($html)->toContain($ownForm)->not->toContain('id="enquiry"');
+        }
+    });
+});
+
 describe('Donate page', function (): void {
     test('hides demo campaigns and offers contact details and the enquiry form while online giving is off', function (): void {
         $tenant = tgfSiteTenant();

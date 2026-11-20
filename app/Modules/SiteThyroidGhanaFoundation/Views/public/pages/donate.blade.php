@@ -88,7 +88,7 @@
         </div>
     </section>
 
-    @include('site-thyroid-ghana-foundation::public.pages._questions', ['type' => 'donation', 'subject' => 'Donation enquiry'])
+    @include('site-thyroid-ghana-foundation::public.pages._questions', ['type' => 'donation', 'subject' => 'Donation enquiry', 'form' => ! $online])
 
     @include('site-thyroid-ghana-foundation::public.pages._cta')
 @endsection

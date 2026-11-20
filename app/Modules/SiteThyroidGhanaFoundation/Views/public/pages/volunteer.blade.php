@@ -76,7 +76,7 @@
         </section>
     @endif
 
-    @include('site-thyroid-ghana-foundation::public.pages._questions', ['type' => 'volunteer', 'subject' => 'Volunteer enquiry'])
+    @include('site-thyroid-ghana-foundation::public.pages._questions', ['type' => 'volunteer', 'subject' => 'Volunteer enquiry', 'form' => ! $moduleOn])
 
     @include('site-thyroid-ghana-foundation::public.pages._cta')
 @endsection

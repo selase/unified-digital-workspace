@@ -5,9 +5,7 @@ declare(strict_types=1);
 use App\Modules\CmsCore\Models\Post;
 use App\Modules\CmsCore\Models\PostMeta;
 use App\Modules\CmsCore\Models\PostType;
-use App\Modules\CmsCore\Support\EnquiryToken;
 use App\Modules\SiteThyroidGhanaFoundation\Database\Seeders\ThyroidSitePagesSeeder;
-use Illuminate\Support\Facades\Mail;
 
 require_once __DIR__.'/SiteTenantHelper.php';
 
@@ -24,44 +22,42 @@ function tgfEvent(string $title, string $startsOn, array $meta = []): Post
 }
 
 describe('Site pages seeder', function (): void {
-    test('publishes Contact, keeps the legal pages as drafts and never overwrites edits', function (): void {
+    test('publishes Contact without a form, adds no legal pages and never overwrites edits', function (): void {
         tgfSiteTenant();
         app(ThyroidSitePagesSeeder::class)->run();
 
-        expect(Post::query()->where('slug', 'contact')->value('status'))->toBe('published');
-        foreach (['privacy-policy', 'terms-of-use', 'medical-disclaimer'] as $slug) {
-            expect(Post::query()->where('slug', $slug)->value('status'))->toBe('draft');
-        }
+        expect(Post::query()->where('slug', 'contact')->value('status'))->toBe('published')
+            ->and(PostMeta::query()->where('key', 'enquiry_form')->whereIn('post_id', Post::query()->where('slug', 'contact')->select('id'))->exists())->toBeFalse()
+            ->and(Post::query()->whereIn('slug', ['privacy-policy', 'terms-of-use', 'medical-disclaimer'])->exists())->toBeFalse();
 
-        Post::query()->where('slug', 'privacy-policy')->update(['body' => '<p>Lawyer approved text</p>']);
+        Post::query()->where('slug', 'contact')->update(['body' => '<p>Edited by the foundation</p>']);
         app(ThyroidSitePagesSeeder::class)->run();
 
-        expect(Post::query()->where('slug', 'privacy-policy')->count())->toBe(1)
-            ->and(Post::query()->where('slug', 'privacy-policy')->value('body'))->toBe('<p>Lawyer approved text</p>');
+        expect(Post::query()->where('slug', 'contact')->count())->toBe(1)
+            ->and(Post::query()->where('slug', 'contact')->value('body'))->toBe('<p>Edited by the foundation</p>');
     });
 });
 
 describe('Contact page', function (): void {
-    test('shows the details and a message form that reaches the foundation', function (): void {
+    test('shows the details and email links without a form', function (): void {
         tgfSiteTenant();
         app(ThyroidSitePagesSeeder::class)->run();
-        Mail::fake();
 
-        $this->get(TGF_SITE.'/contact')->assertOk()->assertSee('Get in touch')->assertSee('href="tel:&#43;233243376304"', false)->assertSee('href="mailto:info&#64;thyroidghanafoundation.org"', false)->assertSee('name="message"', false);
-
-        $this->postJson(TGF_SITE.'/enquiries', ['type' => 'general', 'name' => 'Kofi Visitor', 'email' => 'kofi@example.com', 'message' => 'Where is your next screening day?', 'form_token' => EnquiryToken::issue(time() - 10), 'website' => ''])->assertSuccessful();
+        $this->get(TGF_SITE.'/contact')->assertOk()->assertSee('Get in touch')->assertSee('href="tel:&#43;233243376304"', false)
+            ->assertSee('href="mailto:info&#64;thyroidghanafoundation.org"', false)->assertDontSee('name="message"', false)->assertDontSee('<form', false);
     });
 });
 
-describe('Legal pages', function (): void {
-    test('are hidden while drafts and linked in the footer once published', function (): void {
-        tgfSiteTenant();
+describe('Legal pages supplied by the foundation', function (): void {
+    test('are linked in the footer once the foundation publishes them', function (): void {
+        $tenant = tgfSiteTenant();
         app(ThyroidSitePagesSeeder::class)->run();
 
         $this->get(TGF_SITE.'/privacy-policy')->assertNotFound();
         expect($this->get(TGF_SITE.'/contact')->getContent())->not->toContain('Privacy Policy');
 
-        Post::query()->where('slug', 'privacy-policy')->update(['status' => 'published', 'published_at' => now()]);
+        $type = PostType::query()->where('tenant_id', $tenant->id)->where('slug', 'page')->firstOrFail();
+        Post::query()->create(['tenant_id' => $tenant->id, 'post_type_id' => $type->id, 'title' => 'Privacy Policy', 'slug' => 'privacy-policy', 'body' => '<h2>Who we are</h2>', 'status' => 'published', 'published_at' => now(), 'author_id' => (string) Post::query()->value('author_id')]);
 
         $this->get(TGF_SITE.'/privacy-policy')->assertOk()->assertSee('Who we are');
         expect($this->get(TGF_SITE.'/contact')->getContent())->toContain('Privacy Policy')->not->toContain('Terms of Use');
