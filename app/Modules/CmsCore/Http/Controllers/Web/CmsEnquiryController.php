@@ -10,6 +10,7 @@ use App\Modules\CmsCore\Mail\SiteEnquiryReceived;
 use App\Modules\CmsCore\Services\CmsThemeService;
 use App\Modules\CmsCore\Support\EnquiryToken;
 use App\Modules\CmsCore\Support\EnquiryType;
+use App\Services\Email\TenantSender;
 use App\Services\Tenancy\TenantContext;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
@@ -59,7 +60,7 @@ final class CmsEnquiryController extends Controller
         }
 
         try {
-            Mail::to($recipient)->send(new SiteEnquiryReceived(
+            $mail = new SiteEnquiryReceived(
                 $type,
                 $this->theme->siteName(),
                 $data['name'],
@@ -67,7 +68,14 @@ final class CmsEnquiryController extends Controller
                 $data['phone'] ?? null,
                 $data['organisation'] ?? null,
                 $data['message'],
-            ));
+            );
+
+            $sender = app(TenantSender::class)->for($this->tenantContext->getTenant(), $this->theme->siteName());
+            if ($sender !== null) {
+                $mail->from($sender['address'], $sender['name']);
+            }
+
+            Mail::to($recipient)->send($mail);
         } catch (Throwable $exception) {
             Log::error('Site enquiry could not be emailed', [
                 'tenant_id' => $this->tenantContext->getTenant()?->id,

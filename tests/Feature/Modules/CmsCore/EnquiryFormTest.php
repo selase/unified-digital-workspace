@@ -79,6 +79,25 @@ test('a valid enquiry is emailed to the site owner with the visitor as reply-to'
     Mail::assertSentCount(1);
 });
 
+test('mail is sent from the tenant\'s own domain once SES has verified it, and from the platform sender before that', function (): void {
+    $domain = App\Models\TenantEmailDomain::query()->withoutGlobalScopes()->create([
+        'tenant_id' => $this->tenant->id, 'domain' => 'client-site.example', 'mailbox_provider' => 'google', 'from_address' => 'info@client-site.example',
+        'mail_from_domain' => 'bounce.client-site.example',
+    ]);
+
+    $this->postJson(ENQUIRY_URL, enquiryPayload())->assertSuccessful();
+    expect(Mail::sent(SiteEnquiryReceived::class)->first()->from)->toBe([]);
+
+    $domain->forceFill(['status' => App\Models\TenantEmailDomain::VERIFIED])->save();
+    $this->postJson(ENQUIRY_URL, enquiryPayload(['form_token' => EnquiryToken::issue(time() - 10)]))->assertSuccessful();
+
+    $last = Mail::sent(SiteEnquiryReceived::class)->last();
+
+    expect(Mail::sent(SiteEnquiryReceived::class))->toHaveCount(2)
+        ->and($last->from[0]['address'])->toBe('info@client-site.example')
+        ->and($last->hasReplyTo('jane@example.test'))->toBeTrue();
+});
+
 test('the email shows the visitor details and escapes what they typed', function (): void {
     $html = (new SiteEnquiryReceived(
         EnquiryType::Partnership,

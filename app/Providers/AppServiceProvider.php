@@ -23,6 +23,9 @@ final class AppServiceProvider extends ServiceProvider
             $this->app->register(TelescopeServiceProvider::class);
         }
 
+        $this->app->bind(\Aws\SesV2\SesV2Client::class, fn (): \Aws\SesV2\SesV2Client => new \Aws\SesV2\SesV2Client($this->awsClientConfig()));
+        $this->app->bind(\Aws\Route53\Route53Client::class, fn (): \Aws\Route53\Route53Client => new \Aws\Route53\Route53Client(['region' => 'us-east-1'] + $this->awsClientConfig()));
+
         $this->app->singleton(\App\Contracts\Secrets\SecretsProvider::class, function ($app) {
             $config = config('secrets');
             $driver = $config['default'] ?? 'local';
@@ -151,6 +154,20 @@ final class AppServiceProvider extends ServiceProvider
         $this->configureQueue();
 
         \App\Models\Tenant::observe(\App\Observers\TenantObserver::class);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function awsClientConfig(): array
+    {
+        $config = ['version' => 'latest', 'region' => (string) config('services.ses.region')];
+
+        if (filled(config('services.ses.key')) && filled(config('services.ses.secret'))) {
+            $config['credentials'] = ['key' => config('services.ses.key'), 'secret' => config('services.ses.secret')];
+        }
+
+        return $config;
     }
 
     private function registerBladeDirectives(): void
